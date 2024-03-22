@@ -631,7 +631,7 @@ class cards:
             #     self.canATK = True
             self.health += value
             return True
-        elif self.health+value > self.maxHeart and self.health < self.maxHeart:
+        elif self.health+value > self.maxHeart:
             # if self.canATK == False:
             #     self.canATK = True
             self.health += value
