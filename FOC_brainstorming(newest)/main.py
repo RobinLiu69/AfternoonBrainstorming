@@ -491,13 +491,13 @@ def main():
                     if turn == "player1" and P1Heal[0] >= 1:
                         for i in player1:
                             if i.Board == BX+(BY*4):
-                                if i.heal(3):
+                                if i.heal(5):
                                     P1Heal[0] -= 1
                                     print(f"{turn} heal {i.type} on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     if turn == "player2" and P2Heal[0] >= 1:
                         for i in player2:
                             if i.Board == BX+(BY*4):
-                                if i.heal(3):
+                                if i.heal(5):
                                     P2Heal[0] -= 1
                                     print(f"{turn} heal {i.type} on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
             canH = False

@@ -627,18 +627,20 @@ class cards:
     
     def heal(self, value):
         if self.health+value <= self.maxHeart:
-            if self.canATK == False:
-                self.canATK = True
+            # if self.canATK == False:
+            #     self.canATK = True
             self.health += value
             return True
         elif self.health+value > self.maxHeart and self.health < self.maxHeart:
-            if self.canATK == False:
-                self.canATK = True
+            # if self.canATK == False:
+            #     self.canATK = True
+            self.health += value
+            self.armor += (self.health - self.maxHeart)//2
             self.health = self.maxHeart
             return True
-        elif self.canATK == False:
-            self.canATK = True
-            return True
+        # elif self.canATK == False:
+        #     self.canATK = True
+        #     return True
         return False
 
     def update(self, screen):
