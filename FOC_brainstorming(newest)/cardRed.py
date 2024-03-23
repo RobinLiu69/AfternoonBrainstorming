@@ -218,12 +218,18 @@ class heavyFighter(cards):
             
     def display(self, screen):
         if self.anger == True:
-            drawText("anger", small_text_font, self.color,
+            drawText("anger", small_text_font, self.selfColor,
                     ((display_width/2)-(blocksize*2))+(self.x*blocksize)+(blocksize*0.6),
                     (display_height/2)-(blocksize*1.65)+(self.y*blocksize)+(blocksize*0.8), screen)
         self.update(screen)
         
     def ability(self, enemy, turn):
+        self.attack+=1
+        self.SPAdd("atk",1)
+        if self.health > 1:
+            self.health -=1
+        else:
+            self.anger = True
         return True
     
     def atk(self, turn):
@@ -233,6 +239,9 @@ class heavyFighter(cards):
         return True
     
     def eTurn(self, turn):
+        if self.anger == True:
+            self.damage(1, self, self.owner)    
+            return -1
         if self.canATK == False:
             self.canATK = True
             return -1

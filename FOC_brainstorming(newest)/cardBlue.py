@@ -121,7 +121,7 @@ class TANK(cards):
 
 
 class ADC(cards):
-    def __init__(self, owner, color, x, y, hp=4, atk=3):
+    def __init__(self, owner, color, x, y, hp=4, atk=2):
         if color == "blue":
             self.ATKtype = ""
             super().__init__(owner, "ADCB", hp, atk, x, y)

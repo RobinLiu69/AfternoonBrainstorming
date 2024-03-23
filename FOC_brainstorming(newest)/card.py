@@ -297,11 +297,6 @@ class cards:
         update_data(self.type, self.owner, '受到傷害次數', 1)
 
         #red
-        if self.type=="HFR":
-            if self.health<=4 and self.anger==False:
-                self.attack+=3
-                self.SPAdd("atk",3)
-                self.anger=True
         if attacker.type=="APR":
             if self.attack>=1:
                 attacker.attack+=1
@@ -450,6 +445,15 @@ class cards:
             elif self.owner == "player2":
                 P2Token[0] += 2
                 self.APTAdd("armor", 2)
+                return True
+        if self.type == "ADCB":
+            if self.owner == "player1":
+                P1Token[0] += 1
+                self.APTAdd("armor", 1)
+                return True
+            elif self.owner == "player2":
+                P2Token[0] += 1
+                self.APTAdd("armor", 1)
                 return True
             
         #dkg

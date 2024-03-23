@@ -332,7 +332,17 @@ class AP(cards):
 
     def ability(self, enemy: cards, turn):
         enemy.canATK = False
-        r = random.randint(1, 5)
+        r = 0
+        if self.owner == "player1":
+            if random.randint(1, 100) <= P1Luck[0]:
+                r = random.randint(1, 5)
+            else:
+                r = 0
+        if self.owner == "player2":
+            if random.randint(1, 100) <= P2Luck[0]:
+                r = random.randint(1, 5)
+            else:
+                r = 0
         if r == 1:
             self.armor += 4
         elif r == 2:
@@ -342,8 +352,22 @@ class AP(cards):
         elif r == 4:
             self.moving = True
         elif r == 5:
-            pass
-        r = random.randint(1, 5)
+                    for i in Board:
+                        if (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY) or (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY) or (i.BoardX == self.BoardX and i.BoardY == self.BoardY-1) or (i.BoardX == self.BoardX and i.BoardY == self.BoardY+1):
+                            if i.card == False:
+                                luckyBlock("neutral", "green", i.BoardX, i.BoardY)
+                                i.card = True
+                                
+        if self.owner == "player1":
+            if random.randint(1, 100) > P2Luck[0]:
+                r = random.randint(1, 5)
+            else:
+                r = 0
+        if self.owner == "player2":
+            if random.randint(1, 100) > P1Luck[0]:
+                r = random.randint(1, 5)
+            else:
+                r = 0
         if r == 1:
             update_data(enemy.type, enemy.owner,'受到傷害次數', 1)
             update_data(enemy.type, enemy.owner,'受到傷害', enemy.armor)

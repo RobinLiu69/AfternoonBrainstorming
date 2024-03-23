@@ -718,7 +718,6 @@ def main():
                 del i
                 continue
             i.display(gameDisplay)
-            
         for i in player2:
             if i.health <= 0:
                 player2Trash.append(i.type)
@@ -727,7 +726,6 @@ def main():
                 del i
                 continue
             i.display(gameDisplay)
-            
         for i in neutral:
             if i.health <= 0:
                 Board[i.Board].card = False
@@ -781,13 +779,13 @@ def main():
         drawText(str(P2totemHP[0])+"/"+str(P2totemAD[0]), text_font, (85, 107, 47),
                 display_width/2+(display_width/4.51),  display_height/6.4, gameDisplay)
         
-        if P1Token[0] >= 3:
-            P1Token[0] -= 3
+        if P1Token[0] >= 4:
+            P1Token[0] -= 4
             drawCard("player1")
             for i in player1:
                 i.drawCard()
-        if P2Token[0] >= 3:
-            P2Token[0] -= 3
+        if P2Token[0] >= 4:
+            P2Token[0] -= 4
             drawCard("player2")
             for i in player2:
                 i.drawCard()

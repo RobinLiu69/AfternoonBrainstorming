@@ -336,7 +336,7 @@ class SP(cards):
     
     def Maction(self, turn):
         self.M = self.attack
-        self.attack = 3
+        self.attack = 5
         self.Attack(["farest"], 1, turn)
         self.attack = self.M
         return True
