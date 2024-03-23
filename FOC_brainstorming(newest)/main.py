@@ -718,6 +718,7 @@ def main():
                 del i
                 continue
             i.display(gameDisplay)
+            
         for i in player2:
             if i.health <= 0:
                 player2Trash.append(i.type)
@@ -726,6 +727,7 @@ def main():
                 del i
                 continue
             i.display(gameDisplay)
+            
         for i in neutral:
             if i.health <= 0:
                 Board[i.Board].card = False
