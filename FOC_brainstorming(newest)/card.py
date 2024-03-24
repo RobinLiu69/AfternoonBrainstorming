@@ -263,12 +263,14 @@ class cards:
                 for i in player1:
                     if i.type == "APTO":
                         i.armor += 1
+                        self.armor += 1
                     if i.type == "SPO":
                         i.Maction(i.owner)
             if self.owner == "player2":
                 for i in player2:
                     if i.type == "APTO":
                         i.armor += 1
+                        self.armor += 1
                     if i.type == "SPO":
                         i.Maction(i.owner)
             if self.type == "APTO":
@@ -585,6 +587,8 @@ class cards:
                 atker.Enhance = 0
         value = self.reduction(value)
         if value <= 0 or self.health <= 0:
+            if self.selfColor == (255, 69, 0):
+                self.ability(self, turn)
             return False
         if self.armor > 0 and self.armor >= value:
             if (self.type != "HFDKG" and self.owner != turn) or self.type != atker.type:

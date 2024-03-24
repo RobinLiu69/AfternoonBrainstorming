@@ -8,8 +8,9 @@ def drawText(text, font, textColor, x, y, screen):
     img = font.render(text, True, textColor)
     screen.blit(img, (x, y))
 
-def spawnLuckyBlock(x: int, y: int) -> bool:
+def spawnLuckyBlock(x: int, y: int, bx: int=None, by: int=None) -> bool:
     global Board
+    if x == bx and y == by: return False
     for i in Board:
         if i.BoardX == x and i.BoardY == y and i.card == False:
             luckyBlock("neutral", "green", x, y)
@@ -456,7 +457,7 @@ class lightFighter(cards):
     def ability(self, enemy, turn):
         if self.owner == "player1":
             if random.randint(1, 100) <= P1Luck[0]:
-                r = random.randint(1, 3)
+                r = random.randint(0, 2)
                 if r == 0:
                     self.moving = True
                 elif r == 1:
@@ -467,7 +468,7 @@ class lightFighter(cards):
                 return True
         elif self.owner == "player2":
             if random.randint(1, 100) <= P2Luck[0]:
-                r = random.randint(1, 3)
+                r = random.randint(0, 2)
                 if r == 0:
                     self.moving = True
                 elif r == 1:
@@ -506,11 +507,11 @@ class SP(cards):
         if self.owner == "player1":
             num = max(0, P1Luck[0] - 50) // 10
             for i in range(num):
-                while not spawnLuckyBlock(random.randint(0, 3), random.randint(0, 3)): pass
+                while not spawnLuckyBlock(random.randint(0, 3), random.randint(0, 3), x, y): pass
         elif self.owner == "player2":
             num = max(0, P2Luck[0] - 50) // 10
             for i in range(num):
-                while not spawnLuckyBlock(random.randint(0, 3), random.randint(0, 3)): pass
+                while not spawnLuckyBlock(random.randint(0, 3), random.randint(0, 3), x, y): pass
 
     def display(self, screen):
         self.update(screen)
