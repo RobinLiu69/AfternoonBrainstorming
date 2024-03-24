@@ -177,7 +177,7 @@ class ASS(cards):
 
 
 class AP(cards):
-    def __init__(self, owner, color, x, y, hp=4, atk=0):
+    def __init__(self, owner, color, x, y, hp=3, atk=3):
         if color == "dkgreen":
             self.ATKtype = ""
             super().__init__(owner, "APDKG", hp, atk, x, y)
@@ -185,8 +185,9 @@ class AP(cards):
     def display(self, screen):
         self.update(screen)
 
-    def ability(self, enemy, turn):
+    def ability(self, enemy: cards, turn: str):
         enemy.canATK = False
+        self.toteming(5)
         return True
 
     def atk(self, turn):
@@ -268,10 +269,10 @@ class lightFighter(cards):
 
 
 class SP(cards):
-    def __init__(self, owner, color, x, y):
+    def __init__(self, owner, color, x, y, hp=1, atk=5):
         if color == "dkgreen":
             self.ATKtype = ""
-            super().__init__(owner, "SPDKG", 1, 3, x, y)
+            super().__init__(owner, "SPDKG", 1, 5, x, y, hp, atk)
             if owner=="player1":
                 if P1totemHP[0]>=2:
                     self.armor+=int(P1totemHP[0]-1)
@@ -313,15 +314,12 @@ class APT(cards):
         if color == "dkgreen":
             self.ATKtype = ""
             super().__init__(owner, "APTDKG", 2, 2, x, y)
-            if owner=="player1":
-                self.armor+=int(P1totemHP[0]/2)
-            if owner=="player2":
-                self.armor+=int(P2totemHP[0]/2)
 
     def display(self, screen):
         self.update(screen)
 
     def ability(self, enemy, turn):
+        self.toteming(self.armor//2)
         return False
 
     def atk(self, turn):

@@ -286,7 +286,7 @@ class heavyFighter(cards):
 
 
 class lightFighter(cards):
-    def __init__(self, owner, color, x, y, hp=6, atk=2):
+    def __init__(self, owner, color, x, y, hp=6, atk=3):
         if color == "orange":
             self.ATKtype = ""
             super().__init__(owner, "LFO", hp, atk, x, y)
@@ -357,7 +357,7 @@ class SP(cards):
 
 
 class APT(cards):
-    def __init__(self, owner, color, x, y, hp=4, atk=3):
+    def __init__(self, owner, color, x, y, hp=6, atk=0):
         if color == "orange":
             self.ATKtype = ""
             super().__init__(owner, "APTO", hp, atk, x, y)
@@ -369,54 +369,10 @@ class APT(cards):
         return False
     
     def Maction(self, turn):
-        if turn == "player1":
-            Min = []
-            if len(player1) > 1:
-                for i in player1:
-                    if i != self:
-                        Min = [i]
-                        break
-            elif len(player1) == 1:
-                self.armor += 1
-                return True
-            for i in player1:
-                if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) < abs(Min[0].BoardX-self.BoardX)+abs(Min[0].BoardY-self.BoardY) and i != self:
-                    Min = [i]
-                if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) == abs(Min[0].BoardX-self.BoardX)+abs(Min[0].BoardY-self.BoardY) and i != self:
-                    Min.append(i)
-            if len(Min) > 1:
-                i = random.randint(0, len(Min)-1)
-                self.armor += 1
-                Min[i].armor += 1
-                return True
-            elif len(Min) == 1:
-                self.armor += 1
-                Min[0].armor += 1
-                return True
-        elif turn == "player2":
-            Min = []
-            if len(player2) > 1:
-                for i in player2:
-                    if i != self:
-                        Min = [i]
-                        break
-            elif len(player2) == 1:
-                self.armor += 1
-                return True
-            for i in player2:
-                if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) < abs(Min[0].BoardX-self.BoardX)+abs(Min[0].BoardY-self.BoardY) and i != self:
-                    Min = [i]
-                if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) == abs(Min[0].BoardX-self.BoardX)+abs(Min[0].BoardY-self.BoardY) and i != self:
-                    Min.append(i)
-            if len(Min) > 1:
-                i = random.randint(0, len(Min)-1)
-                self.armor += 1
-                Min[i].armor += 1
-                return True
-            elif len(Min) == 1:
-                self.armor += 1
-                Min[0].armor += 1
-                return True
+        if self.armor > 0:
+            self.attack += self.armor//2
+            self.armor = 0
+            return True
         return False
 
     def atk(self, turn):

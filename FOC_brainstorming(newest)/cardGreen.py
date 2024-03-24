@@ -8,6 +8,14 @@ def drawText(text, font, textColor, x, y, screen):
     img = font.render(text, True, textColor)
     screen.blit(img, (x, y))
 
+def spawnLuckyBlock(x: int, y: int) -> bool:
+    global Board
+    for i in Board:
+        if i.BoardX == x and i.BoardY == y and i.card == False:
+            luckyBlock("neutral", "green", x, y)
+            i.card = True
+            return True
+    return False
 
 def playCardGreen(turn, card, BX, BY, mouseX, mouseY):
     if turn == "player1":
@@ -146,8 +154,6 @@ class luckyBlock(cards):
 
     def ability(self, enemy, turn):
         global P1Luck, P2Luck
-        if enemy.type == "LFG":
-            enemy.ability("op", "op")
         if enemy.owner == "player1" and enemy.limited > 0:
             enemy.limited -= 1
             if enemy.limited == 0:
@@ -448,18 +454,35 @@ class lightFighter(cards):
         self.update(screen)
 
     def ability(self, enemy, turn):
-        if enemy == "op" and turn == "op":
-            r = random.randint(0,1)
-            if self.owner == "player1" and r == 1:
-                P1atk[0] += 1
-            if self.owner == "player2" and r == 1:
-                P2atk[0] += 1
-        return True
+        if self.owner == "player1":
+            if random.randint(1, 100) <= P1Luck[0]:
+                r = random.randint(1, 3)
+                if r == 0:
+                    self.moving = True
+                elif r == 1:
+                    P1atk[0] += 1
+                else:
+                    self.attack += 2
+                    self.health += 2
+                return True
+        elif self.owner == "player2":
+            if random.randint(1, 100) <= P2Luck[0]:
+                r = random.randint(1, 3)
+                if r == 0:
+                    self.moving = True
+                elif r == 1:
+                    P2atk[0] += 1
+                else:
+                    self.attack += 2
+                    self.health += 2
+                return True
+        return False
 
     def atk(self, turn):
         return self.Attack(self.ATKtype.split(" "), 1, turn)
     
     def sTurn(self, turn):
+        
         return True
     
     def eTurn(self, turn):
@@ -480,6 +503,14 @@ class SP(cards):
                 P1Luck[0] += 10
             if owner == "player2":
                 P2Luck[0] += 10
+        if self.owner == "player1":
+            num = max(0, P1Luck[0] - 50) // 10
+            for i in range(num):
+                while not spawnLuckyBlock(random.randint(0, 3), random.randint(0, 3)): pass
+        elif self.owner == "player2":
+            num = max(0, P2Luck[0] - 50) // 10
+            for i in range(num):
+                while not spawnLuckyBlock(random.randint(0, 3), random.randint(0, 3)): pass
 
     def display(self, screen):
         self.update(screen)
@@ -503,7 +534,7 @@ class SP(cards):
 
 
 class APT(cards):  
-    def __init__(self, owner, color, x, y, hp=8, atk=0):
+    def __init__(self, owner, color, x, y, hp=6, atk=0):
         if color == "green":
             self.ATKtype = ""
             super().__init__(owner, "APTG", hp, atk, x, y)
@@ -521,6 +552,7 @@ class APT(cards):
                     if i.card == False:
                         luckyBlock("neutral", "green", i.BoardX, i.BoardY)
                         i.card = True
+                        self.armor += 1
             return True
         return False
     

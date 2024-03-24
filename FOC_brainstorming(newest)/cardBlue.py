@@ -333,7 +333,7 @@ class SP(cards):
         
 
 class APT(cards):
-    def __init__(self, owner, color, x, y, hp=4, atk=2):
+    def __init__(self, owner, color, x, y, hp=5, atk=3):
         if color == "blue":
             self.ATKtype = ""
             super().__init__(owner, "APTB", hp, atk, x, y)
@@ -342,6 +342,16 @@ class APT(cards):
         self.update(screen)
 
     def ability(self, enemy, turn):
+        if self.owner == "player1":
+            if self.armor >= 4:
+                P1Token[0] += self.armor//4
+                self.armor %= 4
+                return True
+        elif self.owner == "player2":
+            if self.armor >= 4:
+                P2Token[0] += self.armor//4
+                self.armor %= 4
+                return True
         return False
 
     def atk(self, turn):

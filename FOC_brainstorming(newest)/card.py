@@ -155,42 +155,40 @@ class cards:
             if color == 'Cyan':
                 displayCardC.append(self)
 
-    def SPAdd(self,type,value):#Red
-        if type=="atk":
+    def SPAdd(self, type: str, value: int) -> bool:#Red
+        if type == "atk":
             if self.owner=="player1":
                 for i in player1:
                     if i.type=="SPR":
                         i.attack+=value
-                    
                 return True
             if self.owner=="player2":
                 for i in player2:
                     if i.type=="SPR":
                         i.attack+=value
-        if type=="armor":
+                    return True
+        if type == "armor":
             if self.owner=="player1":
                 for i in player1:
                     if i.type=="SPR":
                         i.armor+=value
-                    
                 return True
             if self.owner=="player2":
                 for i in player2:
                     if i.type=="SPR":
                         i.armor+=value
-                        
                 return True
-        if type=="hael":
+        if type == "hael":
             if self.owner=="player1":
                 for i in player1:
                     if i.type=="SPR":
                         i.heal(value)
-                    
                 return True
             if self.owner=="player2":
                 for i in player2:
                     if i.type=="SPR":
                         i.heal(value)
+        return False
 
     def reduction(self, value):
         if self.type == "TANKC":
@@ -253,26 +251,28 @@ class cards:
             elif self.type == "ASSO":
                 self.Maction(self.owner) # type: ignore
 
-            if self.owner=="player2":
+            if self.owner == "player2":
                 for i in player1:
-                    if i.type=="TANKP":
+                    if i.type == "TANKP":
                         self.damage(2, i, self.owner)  
-            if self.owner=="player1":
+            if self.owner == "player1":
                 for i in player2:
-                    if i.type=="TANKP":
+                    if i.type == "TANKP":
                         self.damage(2, i, self.owner)   
             if self.owner == "player1":
                 for i in player1:
                     if i.type == "APTO":
-                        i.Maction(i.owner)
+                        i.armor += 1
                     if i.type == "SPO":
                         i.Maction(i.owner)
             if self.owner == "player2":
                 for i in player2:
                     if i.type == "APTO":
-                        i.Maction(i.owner)
+                        i.armor += 1
                     if i.type == "SPO":
                         i.Maction(i.owner)
+            if self.type == "APTO":
+                self.Maction(self.owner)
             return True
         self.moving = False
         return False
@@ -292,30 +292,31 @@ class cards:
                 return True
         return False
 
-    def beenAttack(self, attacker):
+    def beenAttack(self, attacker: "cards"):
         print(f"{self.owner}的{self.type}被{attacker.owner}的{attacker.type}攻擊了")
         update_data(self.type, self.owner, '受到傷害次數', 1)
 
         #red
-        if attacker.type=="APR":
-            if self.attack>=1:
-                attacker.attack+=1
-                attacker.SPAdd("atk",1)
-                self.attack-=1
-        if self.type=="TANKR":      
-            if self.owner=="player1":
-                temp=[]
-                if len(player1)>1:
+        if attacker.type == "APR":
+            if self.attack >= 1:
+                attacker.attack += self.attack//2
+                attacker.SPAdd("atk", self.attack//2)
+                self.attack -= self.attack//2
+                
+        if self.type == "TANKR":      
+            if self.owner == "player1":
+                temp = []
+                if len(player1) > 1:
                     for i in player1:
                         if i != self:
-                            temp=[i]
+                            temp = [i]
                             break
-                elif len(player1)==1:
+                elif len(player1) == 1:
                     return True
                 for i in player1:
-                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY)<abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
+                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) < abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
                         temp=[i]
-                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY)==abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
+                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) == abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
                         temp.append(i)
                 if len(temp)>1:
                     i=random.randint(0,len(temp)-1)
@@ -504,61 +505,54 @@ class cards:
                         P2DrawCard[0] += 1
         
         #red
-        if self.type=="ASSR":
-            if self.owner=="player1":
-                temp=[]
-                if len(player1)>1:
+        if self.type == "ASSR":
+            if self.owner == "player1":
+                temp = []
+                if len(player1) > 1:
                     for i in player1:
                         if i != self:
-                            temp=[i]
+                            temp = [i]
                             break
-                elif len(player1)==1:
+                elif len(player1) == 1:
                     return True
                 for i in player1:
-                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY)<abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
-                        temp=[i]
-                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY)==abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
+                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) < abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
+                        temp = [i]
+                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) == abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
                         temp.append(i)
-                if len(temp)>1:
-                    i=random.randint(0,len(temp)-1)
-                    temp[i].armor+=1
-                    temp[i].attack+=1
-                    self.SPAdd("atk",1)
-                    self.SPAdd("armor",1)
+                if len(temp) > 1:
+                    i = random.randint(0, len(temp)-1)
+                    temp[i].attack += 2
+                    self.SPAdd("atk", 2)
                     return True
-                elif len(temp)==1:
-                    temp[0].armor+=1
-                    temp[0].attack+=1
-                    self.SPAdd("atk",1)
-                    self.SPAdd("armor",1)
+                elif len(temp) == 1:
+                    temp[0].attack += 2
+                    self.SPAdd("atk", 2)
                     return True
-            elif self.owner=="player2":
-                temp=[]
-                if len(player2)>1:
+            elif self.owner == "player2":
+                temp = []
+                if len(player2) > 1:
                     for i in player2:
                         if i != self:
-                            temp=[i]
+                            temp = [i]
                             break
-                elif len(player1)==1:
+                elif len(player1) == 1:
                     return True
                 for i in player2:
-                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY)<abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
-                        temp=[i]
-                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY)==abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
+                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) < abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
+                        temp = [i]
+                    if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) == abs(temp[0].BoardX-self.BoardX)+abs(temp[0].BoardY-self.BoardY) and i!=self:
                         temp.append(i)
-                if len(temp)>1:
-                    i=random.randint(0,len(temp)-1)
-                    temp[i].armor+=1
-                    temp[i].attack+=1
-                    self.SPAdd("atk",1)
-                    self.SPAdd("armor",1)
+                if len(temp) > 1:
+                    i = random.randint(0, len(temp)-1)
+                    temp[i].attack += 2
+                    self.SPAdd("atk", 2)
                     return True
-                elif len(temp)==1:
-                    temp[0].armor+=1
-                    temp[0].attack+=1
-                    self.SPAdd("atk",1)
-                    self.SPAdd("armor",1)
+                elif len(temp) == 1:
+                    temp[0].attack += 2
+                    self.SPAdd("atk", 2)
                     return True
+        
         #Cyan
         if self.type == "ASSC":
             if self.owner == "player1":
@@ -568,14 +562,24 @@ class cards:
                 P2Coin[0] += 5
                 return True
         return False
+    
+    def die(self, atker: "cards") -> bool:
+        if self.type == "SPDKG":
+            self.toteming(self.attack)
+        return True
 
-    def damage(self, value, atker, turn):
-        if atker.type == "APDKG":
+    def damage(self, value: int, atker: "cards", turn: str):
+        if atker.type == "ADCDKG":
+            if atker.owner == "player1":
+                value += int(P1totemAD[0]/3)
+            elif atker.owner == "player2":
+                value += int(P2totemAD[0]/3)
+        elif atker.type == "APTDKG":
             if atker.owner == "player1":
                 value += int(P1totemAD[0]/2)
             elif atker.owner == "player2":
                 value += int(P2totemAD[0]/2)
-        if atker.type == "ASSC":
+        elif atker.type == "ASSC":
             if atker.Enhance == 1:
                 value += 3
                 atker.Enhance = 0
@@ -586,14 +590,25 @@ class cards:
             if (self.type != "HFDKG" and self.owner != turn) or self.type != atker.type:
                 update_data(atker.type, atker.owner, '造成傷害', value)
             update_data(self.type, self.owner, '受到傷害', value)
+            if atker.type == "APTDKG":
+                atker.armor += value//2 
             self.armor -= value
             self.beenAttack(atker)
-            atker.ability(self, turn)
+            atker.ability(self, turn)           
             return True
         elif self.armor > 0 and self.armor < value:
-            if (self.type != "HFDKG" and self.owner != turn) or self.type != atker.type:
-                update_data(atker.type, atker.owner, '造成傷害', value)
-            update_data(self.type, self.owner, '受到傷害', value)
+            if self.health >= value-self.armor:
+                if (self.type != "HFDKG" and self.owner != turn) or self.type != atker.type:
+                    update_data(atker.type,atker.owner, '造成傷害', value)
+                if atker.type == "APTDKG":
+                    atker.armor += value//2
+                update_data(self.type, self.owner, '受到傷害', value)
+            if self.health < value-self.armor:
+                if (self.type != "HFDKG" and self.owner != turn) or self.type != atker.type:
+                    update_data(atker.type, atker.owner, '造成傷害', self.health+self.armor)
+                if atker.type == "APTDKG":
+                    atker.armor += self.health+self.armor//2
+                update_data(self.type, self.owner, '受到傷害', self.health+self.armor)
             value = self.armor-value
             self.armor = 0
             self.health += value
@@ -601,6 +616,7 @@ class cards:
             atker.ability(self, turn)
             if self.health <= 0:
                 atker.Kill()
+                self.die(atker)
             return True
         elif self.armor == 0:
             if self.health >= value:
@@ -616,6 +632,7 @@ class cards:
             atker.ability(self, turn)
             if self.health <= 0:
                 atker.Kill()
+                self.die(atker)
             return True
         return False
 

@@ -1,5 +1,6 @@
 from variable import *
 from calculate import update_data
+import random
 from card import cards
 
 def drawText(text, font, textColor, x, y, screen):
@@ -309,27 +310,85 @@ class SP(cards):
 
 
 class APT(cards):
-    def __init__(self, owner, color, x, y, hp=3, atk=3):
+    def __init__(self, owner, color, x, y, hp=6, atk=2):
         if color == "red":
             self.ATKtype = ""
             super().__init__(owner, "APTR", hp, atk, x, y)
-            count = 0
-            if owner=="player1":
-                for i in player1:
-                    if i !=self:
-                        count+=i.attack
-                self.armor+=int(count/2)
-                self.SPAdd("armor",int(count/2))
-            if owner=="player2":
-                for i in player2:
-                    if i !=self:
-                        count+=i.attack
-                self.armor+=int(count/2)
-                self.SPAdd("armor",int(count/2))
+            
     def display(self, screen):
         self.update(screen)
         
-    def ability(self, enemy, turn):
+    def ability(self, enemy: cards, turn: str) -> bool:
+        if self.owner == "player1":
+            Min: list[cards]= []
+            if len(player1) > 1:
+                for i in player1:
+                    if i != self:
+                        Min = [i]
+                        break
+            elif len(player1) == 1:
+                self.attack += 1
+                self.armor += 1
+                self.SPAdd("atk", 1)
+                self.SPAdd("armor", 1)
+                return True
+            for i in player1:
+                if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) < abs(Min[0].BoardX-self.BoardX)+abs(Min[0].BoardY-self.BoardY) and i != self:
+                    Min = [i]
+                if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) == abs(Min[0].BoardX-self.BoardX)+abs(Min[0].BoardY-self.BoardY) and i != self:
+                    Min.append(i)
+            if len(Min) > 1:
+                i = random.randint(0, len(Min)-1)
+                self.attack += 1
+                self.armor += 1
+                Min[i].attack += 1
+                Min[i].armor += 1
+                self.SPAdd("atk", 2)
+                self.SPAdd("armor", 2)
+                return True
+            elif len(Min) == 1:
+                self.attack += 1
+                self.armor += 1
+                Min[0].attack += 1
+                Min[0].armor += 1
+                self.SPAdd("atk", 2)
+                self.SPAdd("armor", 2)
+                return True
+        elif self.owner == "player2":
+            Min: list[cards]= []
+            if len(player2) > 1:
+                for i in player2:
+                    if i != self:
+                        Min = [i]
+                        break
+            elif len(player2) == 1:
+                self.attack += 1
+                self.armor += 1
+                self.SPAdd("atk", 1)
+                self.SPAdd("armor", 1)
+                return True
+            for i in player2:
+                if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) < abs(Min[0].BoardX-self.BoardX)+abs(Min[0].BoardY-self.BoardY) and i != self:
+                    Min = [i]
+                if abs(i.BoardX-self.BoardX)+abs(i.BoardY-self.BoardY) == abs(Min[0].BoardX-self.BoardX)+abs(Min[0].BoardY-self.BoardY) and i != self:
+                    Min.append(i)
+            if len(Min) > 1:
+                i = random.randint(0, len(Min)-1)
+                self.attack += 1
+                self.armor += 1
+                Min[i].attack += 1
+                Min[i].armor += 1
+                self.SPAdd("atk", 2)
+                self.SPAdd("armor", 2)
+                return True
+            elif len(Min) == 1:
+                self.attack += 1
+                self.armor += 1
+                Min[0].attack += 1
+                Min[0].armor += 1
+                self.SPAdd("atk", 2)
+                self.SPAdd("armor", 2)
+                return True
         return False
     
     def atk(self, turn):
