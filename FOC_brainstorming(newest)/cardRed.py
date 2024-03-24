@@ -224,7 +224,7 @@ class heavyFighter(cards):
         self.update(screen)
         
     def ability(self, enemy, turn):
-        self.attack+=1
+        self.attack += 1
         self.SPAdd("atk",1)
         if self.health > 1:
             self.health -=1
