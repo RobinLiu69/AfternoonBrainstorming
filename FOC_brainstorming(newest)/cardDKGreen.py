@@ -121,7 +121,7 @@ class TANK(cards):
     
     
 class ADC(cards):
-    def __init__(self, owner, color, x, y, hp=4, atk=2):
+    def __init__(self, owner, color, x, y, hp=5, atk=1):
         if color == "dkgreen":
             self.ATKtype = ""
             super().__init__(owner, "ADCDKG", hp, atk, x, y)
@@ -272,7 +272,7 @@ class SP(cards):
     def __init__(self, owner, color, x, y, hp=1, atk=5):
         if color == "dkgreen":
             self.ATKtype = ""
-            super().__init__(owner, "SPDKG", 1, 5, x, y, hp, atk)
+            super().__init__(owner, "SPDKG", hp, atk, x, y)
             if owner=="player1":
                 if P1totemHP[0]>=2:
                     self.armor+=int(P1totemHP[0]-1)
@@ -310,10 +310,10 @@ class SP(cards):
 
 
 class APT(cards):
-    def __init__(self, owner, color, x, y):
+    def __init__(self, owner, color, x, y, hp=6, atk=0):
         if color == "dkgreen":
             self.ATKtype = ""
-            super().__init__(owner, "APTDKG", 2, 2, x, y)
+            super().__init__(owner, "APTDKG", hp, atk, x, y)
 
     def display(self, screen):
         self.update(screen)
