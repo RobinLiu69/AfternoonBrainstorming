@@ -241,7 +241,7 @@ class heavyFighter(cards):
     
     def eTurn(self, turn):
         if self.anger == True:
-            self.damage(1, self, self.owner)    
+            self.health = 0
             return -1
         if self.canATK == False:
             self.canATK = True
