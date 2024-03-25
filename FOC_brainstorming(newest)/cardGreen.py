@@ -341,15 +341,9 @@ class AP(cards):
         enemy.canATK = False
         r = 0
         if self.owner == "player1":
-            if random.randint(1, 100) <= P1Luck[0]:
-                r = random.randint(1, 5)
-            else:
-                r = 0
+            if random.randint(1, 100) <= P1Luck[0]: r = random.randint(1, 5)
         if self.owner == "player2":
-            if random.randint(1, 100) <= P2Luck[0]:
-                r = random.randint(1, 5)
-            else:
-                r = 0
+            if random.randint(1, 100) <= P2Luck[0]: r = random.randint(1, 5)
         if r == 1:
             self.armor += 4
         elif r == 2:
@@ -366,15 +360,10 @@ class AP(cards):
                                 i.card = True
                                 
         if self.owner == "player1":
-            if random.randint(1, 100) > P2Luck[0]:
-                r = random.randint(1, 5)
-            else:
-                r = 0
+            if random.randint(1, 100) > P2Luck[0]: r = random.randint(1, 5) 
         if self.owner == "player2":
-            if random.randint(1, 100) > P1Luck[0]:
-                r = random.randint(1, 5)
-            else:
-                r = 0
+            if random.randint(1, 100) > P1Luck[0]: r = random.randint(1, 5)
+            
         if r == 1:
             update_data(enemy.type, enemy.owner,'受到傷害次數', 1)
             update_data(enemy.type, enemy.owner,'受到傷害', enemy.armor)
