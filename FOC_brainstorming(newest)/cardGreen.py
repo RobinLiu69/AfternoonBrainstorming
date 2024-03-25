@@ -457,23 +457,23 @@ class lightFighter(cards):
     def ability(self, enemy, turn):
         if self.owner == "player1":
             if random.randint(1, 100) <= P1Luck[0]:
-                r = random.randint(0, 2)
+                r = random.randint(0, 3)
                 if r == 0:
                     self.moving = True
                 elif r == 1:
                     P1atk[0] += 1
-                else:
+                elif r == 3:
                     self.attack += 2
                     self.armor += 2
                 return True
         elif self.owner == "player2":
             if random.randint(1, 100) <= P2Luck[0]:
-                r = random.randint(0, 2)
+                r = random.randint(0, 3)
                 if r == 0:
                     self.moving = True
                 elif r == 1:
                     P2atk[0] += 1
-                else:
+                elif r == 3:
                     self.attack += 2
                     self.armor += 2
                 return True
