@@ -240,17 +240,13 @@ class lightFighter(cards):
         if color == "dkgreen":
             self.ATKtype = ""
             super().__init__(owner, "LFDKG", hp, atk, x, y)
-            if owner=="player1":
-                for i in player2:
-                    self.toteming(1)
-            if owner=="player2":
-                for i in player1:
-                    self.toteming(1)
+            self.Attack(self.ATKtype.split(" "), 1, self.owner, 2)
 
     def display(self, screen):
         self.update(screen)
 
     def ability(self, enemy, turn):
+        self.toteming(2)
         return True
 
     def atk(self, turn):

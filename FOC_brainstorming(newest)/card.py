@@ -779,27 +779,32 @@ class cards:
         else:
             pygame.draw.lines(screen, self.selfColor, True, self.shape, 4) # type: ignore
 
-    def Attack(self, type, time, turn):
+    def Attack(self, type, time, turn, value: int=None):
+        
         if self.canATK == True:
             count = 0
             if "cross" in type:
                 if turn == "player1":
                     for i in player2:
                         if (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY) or (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY) or (i.BoardX == self.BoardX and i.BoardY == self.BoardY-1) or (i.BoardX == self.BoardX and i.BoardY == self.BoardY+1):
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                     for i in neutral:
                         if (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY) or (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY) or (i.BoardX == self.BoardX and i.BoardY == self.BoardY-1) or (i.BoardX == self.BoardX and i.BoardY == self.BoardY+1):
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                 if turn == "player2":
                     for i in player1:
                         if (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY) or (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY) or (i.BoardX == self.BoardX and i.BoardY == self.BoardY-1) or (i.BoardX == self.BoardX and i.BoardY == self.BoardY+1):
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                     for i in neutral:
                         if (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY) or (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY) or (i.BoardX == self.BoardX and i.BoardY == self.BoardY-1) or (i.BoardX == self.BoardX and i.BoardY == self.BoardY+1):
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                 if count == 1 and len(type) == 1:
                     return True
@@ -807,20 +812,24 @@ class cards:
                 if turn == "player1":
                     for i in player2:
                         if (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY+1) or (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY+1) or (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY-1) or (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY-1):
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                     for i in neutral:
                         if (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY+1) or (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY+1) or (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY-1) or (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY-1):
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                 if turn == "player2":
                     for i in player1:
                         if (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY+1) or (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY+1) or (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY-1) or (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY-1):
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                     for i in neutral:
                         if (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY+1) or (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY+1) or (i.BoardX == self.BoardX-1 and i.BoardY == self.BoardY-1) or (i.BoardX == self.BoardX+1 and i.BoardY == self.BoardY-1):
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                 if count == 1 and len(type) == 1:
                     return True
@@ -828,20 +837,24 @@ class cards:
                 if turn == "player1":
                     for i in player2:
                         if (i.BoardX == self.BoardX or i.BoardY == self.BoardY) and i.Board != self.Board:
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                     for i in neutral:
                         if (i.BoardX == self.BoardX or i.BoardY == self.BoardY) and i.Board != self.Board:
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                 if turn == "player2":
                     for i in player1:
                         if (i.BoardX == self.BoardX or i.BoardY == self.BoardY) and i.Board != self.Board:
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                     for i in neutral:
                         if (i.BoardX == self.BoardX or i.BoardY == self.BoardY) and i.Board != self.Board:
-                            i.damage(self.attack, self, turn)
+                            if value != None: i.damage(value, self, turn)
+                            else: i.damage(self.attack, self, turn)
                             count = 1
                 if len(type) == 1 and count == 1:
                     return True
@@ -864,10 +877,12 @@ class cards:
                             temp.append(i)
                     if len(temp) > 1 and len(type) == 1:
                         i = random.randint(0, len(temp)-1)
-                        temp[i].damage(self.attack, self, turn)
+                        if value != None: temp[i].damage(value, self, turn)
+                        else: temp[i].damage(self.attack, self, turn)
                         return True
                     elif len(temp) == 1 and len(type) == 1:
-                        temp[0].damage(self.attack, self, turn)
+                        if value != None: temp[i].damage(value, self, turn)
+                        else: temp[0].damage(self.attack, self, turn)
                         return True
                 if turn == "player2":
                     if len(player1) >= 1:
@@ -886,10 +901,12 @@ class cards:
                             temp.append(i)
                     if len(temp) > 1 and len(type) == 1:
                         i = random.randint(0, len(temp)-1)
-                        temp[i].damage(self.attack, self, turn)
+                        if value != None: temp[i].damage(value, self, turn)
+                        else: temp[i].damage(self.attack, self, turn)
                         return True
                     elif len(temp) == 1 and len(type) == 1:
-                        temp[0].damage(self.attack, self, turn)
+                        if value != None: temp[0].damage(value, self, turn)
+                        else: temp[0].damage(self.attack, self, turn)
                         return True
             if "farest" in type:
                 temp = [] # min暫代最遠的意思
@@ -910,10 +927,12 @@ class cards:
                             temp.append(i)
                     if len(temp) > 1 and len(type) == 1:
                         i = random.randint(0, len(temp)-1)
-                        temp[i].damage(self.attack, self, turn)
+                        if value != None: temp[i].damage(value, self, turn)
+                        else: temp[i].damage(self.attack, self, turn)
                         return True
                     elif len(temp) == 1 and len(type) == 1:
-                        temp[0].damage(self.attack, self, turn)
+                        if value != None: temp[0].damage(value, self, turn)
+                        else: temp[0].damage(self.attack, self, turn)
                         return True
                 if turn == "player2":
                     if len(player1) >= 1:
@@ -932,10 +951,12 @@ class cards:
                             temp.append(i)
                     if len(temp) > 1 and len(type) == 1:
                         i = random.randint(0, len(temp)-1)
-                        temp[i].damage(self.attack, self, turn)
+                        if value != None: temp[i].damage(value, self, turn)
+                        else: temp[i].damage(self.attack, self, turn)
                         return True
                     elif len(temp) == 1 and len(type) == 1:
-                        temp[0].damage(self.attack, self, turn)
+                        if value != None: temp[0].damage(value, self, turn)
+                        else: temp[0].damage(self.attack, self, turn)
                         return True
             if count == 1:
                 return True
