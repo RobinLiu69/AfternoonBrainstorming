@@ -464,7 +464,7 @@ class lightFighter(cards):
                     P1atk[0] += 1
                 else:
                     self.attack += 2
-                    self.health += 2
+                    self.armor += 2
                 return True
         elif self.owner == "player2":
             if random.randint(1, 100) <= P2Luck[0]:
@@ -475,7 +475,7 @@ class lightFighter(cards):
                     P2atk[0] += 1
                 else:
                     self.attack += 2
-                    self.health += 2
+                    self.armor += 2
                 return True
         return False
 

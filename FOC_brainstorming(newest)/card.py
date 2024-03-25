@@ -780,7 +780,6 @@ class cards:
             pygame.draw.lines(screen, self.selfColor, True, self.shape, 4) # type: ignore
 
     def Attack(self, type, time, turn, value: int=None):
-        
         if self.canATK == True:
             count = 0
             if "cross" in type:

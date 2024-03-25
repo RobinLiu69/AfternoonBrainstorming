@@ -240,7 +240,9 @@ class lightFighter(cards):
         if color == "dkgreen":
             self.ATKtype = ""
             super().__init__(owner, "LFDKG", hp, atk, x, y)
+            self.canATK = True
             self.Attack(self.ATKtype.split(" "), 1, self.owner, 2)
+            self.canATK = False
 
     def display(self, screen):
         self.update(screen)
