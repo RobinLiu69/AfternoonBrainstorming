@@ -16,7 +16,7 @@ def spawnLuckyBlock(x: int, y: int, bx: int=None, by: int=None) -> bool:
             luckyBlock("neutral", "green", x, y)
             i.card = True
             return True
-    return False
+    return True
 
 def playCardGreen(turn, card, BX, BY, mouseX, mouseY):
     if turn == "player1":
