@@ -16,7 +16,7 @@ def spawnLuckyBlock(x: int, y: int, bx: int=None, by: int=None) -> bool:
             luckyBlock("neutral", "green", x, y)
             i.card = True
             return True
-    return True
+    return False
 
 def playCardGreen(turn, card, BX, BY, mouseX, mouseY):
     if turn == "player1":
@@ -495,10 +495,18 @@ class SP(cards):
                 P2Luck[0] += 10
         if self.owner == "player1":
             num = max(0, P1Luck[0] - 50) // 10
+            temp  = 0
+            for i in Board:
+                if not i.card: temp += 1
+            if num > temp-1: num = temp - 1
             for i in range(num):
                 while not spawnLuckyBlock(random.randint(0, 3), random.randint(0, 3), x, y): pass
         elif self.owner == "player2":
             num = max(0, P2Luck[0] - 50) // 10
+            temp  = 0
+            for i in Board:
+                if not i.card: temp += 1
+            if num > temp-1: num = temp - 1
             for i in range(num):
                 while not spawnLuckyBlock(random.randint(0, 3), random.randint(0, 3), x, y): pass
 

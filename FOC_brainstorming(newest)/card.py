@@ -232,6 +232,7 @@ class cards:
             if (((abs(self.y-y) == 1 and (abs(self.x-x) == 1 or abs(self.x-x) == 0)) or (abs(self.y-y) == 0 and abs(self.x-x) == 1)) and (self.y != y or self.x != x) and self.moving == True) == False:
                 self.moving = False
                 return False
+            
             Board[self.x+(self.y*4)].card = False
             self.x = x
             self.BoardX = x
@@ -251,28 +252,26 @@ class cards:
             elif self.type == "ASSO":
                 self.Maction(self.owner) # type: ignore
 
-            if self.owner == "player2":
+            if self.owner == "player1":
                 for i in player1:
                     if i.type == "TANKP":
                         self.damage(2, i, self.owner)  
-            if self.owner == "player1":
-                for i in player2:
-                    if i.type == "TANKP":
-                        self.damage(2, i, self.owner)   
-            if self.owner == "player1":
-                for i in player1:
                     if i.type == "APTO":
                         i.armor += 1
                         self.armor += 1
                     if i.type == "SPO":
                         i.Maction(i.owner)
+            
             if self.owner == "player2":
                 for i in player2:
+                    if i.type == "TANKP":
+                        self.damage(2, i, self.owner)
                     if i.type == "APTO":
                         i.armor += 1
                         self.armor += 1
                     if i.type == "SPO":
                         i.Maction(i.owner)
+            
             if self.type == "APTO":
                 self.Maction(self.owner)
             return True
