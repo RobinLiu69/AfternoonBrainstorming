@@ -572,14 +572,14 @@ class cards:
     def damage(self, value: int, atker: "cards", turn: str):
         if atker.type == "ADCDKG":
             if atker.owner == "player1":
-                value += int(P1totemAD[0]/3)
+                value += P1totemAD[0]//3
             elif atker.owner == "player2":
-                value += int(P2totemAD[0]/3)
+                value += P2totemAD[0]//3
         elif atker.type == "APTDKG":
             if atker.owner == "player1":
-                value += int(P1totemAD[0]/2)
+                value += P1totemAD[0]//2
             elif atker.owner == "player2":
-                value += int(P2totemAD[0]/2)
+                value += P2totemAD[0]//2
         elif atker.type == "ASSC":
             if atker.Enhance == 1:
                 value += 3
