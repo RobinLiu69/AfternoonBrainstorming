@@ -215,7 +215,7 @@ class heavyFighter(cards):
         self.update(screen)
 
     def ability(self, enemy, turn):
-        self.heal(self.attack)
+        self.heal(self.value)
         return True
 
     def atk(self, turn):
@@ -223,7 +223,7 @@ class heavyFighter(cards):
     
     def sTurn(self, turn):
         self.health -= 2
-        self.toteming(4)
+        self.toteming(2)
         return True
     
     def eTurn(self, turn):

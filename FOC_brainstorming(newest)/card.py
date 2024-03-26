@@ -40,7 +40,7 @@ class cards:
         self.shape = None
         self.limited = 20
         self.anger = False
-        
+        self.value = 0
         name = self.type
         self.ATKtype = None
         types = (0, 0)
@@ -593,6 +593,7 @@ class cards:
             if (self.type != "HFDKG" and self.owner != turn) or self.type != atker.type:
                 update_data(atker.type, atker.owner, '造成傷害', value)
             update_data(self.type, self.owner, '受到傷害', value)
+            atker.value = value
             if atker.type == "APTDKG":
                 atker.armor += value//2 
             self.armor -= value
@@ -606,12 +607,14 @@ class cards:
                 if atker.type == "APTDKG":
                     atker.armor += value//2
                 update_data(self.type, self.owner, '受到傷害', value)
+                atker.value = value
             if self.health < value-self.armor:
                 if (self.type != "HFDKG" and self.owner != turn) or self.type != atker.type:
                     update_data(atker.type, atker.owner, '造成傷害', self.health+self.armor)
                 if atker.type == "APTDKG":
                     atker.armor += self.health+self.armor//2
                 update_data(self.type, self.owner, '受到傷害', self.health+self.armor)
+                atker.value = self.health+self.armor
             value = self.armor-value
             self.armor = 0
             self.health += value
