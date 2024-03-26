@@ -215,15 +215,15 @@ class heavyFighter(cards):
         self.update(screen)
 
     def ability(self, enemy, turn):
-        self.heal(1)
+        self.heal(self.attack)
         return True
 
     def atk(self, turn):
         return self.Attack(self.ATKtype.split(" "), 2, turn)
     
     def sTurn(self, turn):
-        self.damage(2, self, self.owner)
-        self.toteming(2)
+        self.health -= 2
+        self.toteming(4)
         return True
     
     def eTurn(self, turn):
@@ -241,7 +241,10 @@ class lightFighter(cards):
             self.ATKtype = ""
             super().__init__(owner, "LFDKG", hp, atk, x, y)
             self.canATK = True
-            self.Attack(self.ATKtype.split(" "), 1, self.owner, 2)
+            if self.owner == "player1":
+                self.Attack(self.ATKtype.split(" "), 1, self.owner, P1totemHP[0])
+            elif self.owner == "player2":
+                self.Attack(self.ATKtype.split(" "), 1, self.owner, P1totemHP[0])
             self.canATK = False
 
     def display(self, screen):
