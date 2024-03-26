@@ -242,9 +242,9 @@ class lightFighter(cards):
             super().__init__(owner, "LFDKG", hp, atk, x, y)
             self.canATK = True
             if self.owner == "player1":
-                self.Attack(self.ATKtype.split(" "), 1, self.owner, P1totemHP[0])
+                self.Attack(self.ATKtype.split(" "), 1, self.owner, P1totemHP[0]/4)
             elif self.owner == "player2":
-                self.Attack(self.ATKtype.split(" "), 1, self.owner, P1totemHP[0])
+                self.Attack(self.ATKtype.split(" "), 1, self.owner, P2totemHP[0]/4)
             self.canATK = False
 
     def display(self, screen):
