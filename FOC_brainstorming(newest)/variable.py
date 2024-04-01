@@ -80,6 +80,7 @@ text_font = pygame.font.Font("8bitOperatorPlus-Bold.ttf", text_font_size)
 big_text_font = pygame.font.Font(
     "8bitOperatorPlus-Bold.ttf", int(display_width/1500*25))
 small_text_font = pygame.font.Font("8bitOperatorPlus-Bold.ttf", int(text_font_size/15*8.66))
+text_fontCHI = pygame.font.Font("Cubic_11_1.100_R.ttf", text_font_size)
 
 WHOwin = [0]
 

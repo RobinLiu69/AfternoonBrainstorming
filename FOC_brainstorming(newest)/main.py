@@ -13,6 +13,8 @@ import cardOrange as cO
 import cardPurple as cP
 import cardDKGreen as cDKG
 import cardCyan as cC
+from Chinese_Support import CHIsupport
+
 
 import pygame
 start_main()
@@ -354,6 +356,10 @@ def main():
     x = display_width/2-(blocksize*2)
     y = display_height/2-(blocksize*1.65)
 
+
+    Chisup = CHIsupport(display_width/1.6/2, display_height/6)
+    Chisupon = 0
+
     for i in range(4):
         x = display_width/2-(blocksize*2)
         for ii in range(4):
@@ -383,6 +389,8 @@ def main():
     can0 = True
     canU = True
     canI = True
+    canN = True
+    
     turn = "player1"
     ScoreGraph = ScoreDisplay(display_width/2-display_width/1.6/45/2, display_height/10, display_width/1.6/45, display_height/45)
     
@@ -416,7 +424,14 @@ def main():
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE]:
             run = False
-        if keys[pygame.K_e] and canE == True:
+
+        if keys[pygame.K_n] and canN:
+            Chisupon = not Chisupon
+            canN = False
+        elif not keys[pygame.K_n] and not canN:
+            canN = True
+
+        if keys[pygame.K_e] and canE:
             if turn == "player1":
                 Turns[0] += 1
                 score -= len(player1)
@@ -467,7 +482,7 @@ def main():
                 turn = "player1"
             TimeLine.append(score)
             canE = False
-        elif not keys[pygame.K_e] and canE == False:
+        elif not keys[pygame.K_e] and not canE:
             canE = True
 
         displayHand(gameDisplay)
@@ -485,7 +500,7 @@ def main():
                         Board[BX+(BY*4)].card = True
                         print(f"{turn} spawn cube on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
 
-        if keys[pygame.K_h] and canH == True:
+        if keys[pygame.K_h] and canH:
             if BX <= 3 and BY <= 3 and mouseX > int((display_width/2-blocksize*2)) and mouseY > int((display_height/2-blocksize*1.65)):
                 if Board[BX+(BY*4)].card == True:
                     if turn == "player1" and P1Heal[0] >= 1:
@@ -501,9 +516,9 @@ def main():
                                     P2Heal[0] -= 1
                                     print(f"{turn} heal {i.type} on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
             canH = False
-        elif not keys[pygame.K_h] and canH == False:
+        elif not keys[pygame.K_h] and not canH :
             canH = True
-        if keys[pygame.K_m] and canM == True:
+        if keys[pygame.K_m] and canM:
             if BX <= 3 and BY <= 3 and mouseX > int((display_width/2-blocksize*2)) and mouseY > int((display_height/2-blocksize*1.65)):
                 tag = 0
                 if turn == "player1":
@@ -537,9 +552,9 @@ def main():
                         if i.move(BX, BY): # type: ignore
                             print(f"{turn} move {i.type} from BX:{targetX}, BY:{targetY} to BX:{BX}, BY:{BY} at turns:{Turns[0]}") # type: ignore
             canM = False
-        elif not keys[pygame.K_m] and canM == False:
+        elif not keys[pygame.K_m] and not canM:
             canM = True
-        if keys[pygame.K_1] and can1 == True:
+        if keys[pygame.K_1] and can1:
             if turn == "player1":
                 if len(player1Hand) >= 1:
                     print(f"{turn} used {player1Hand[0]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -549,9 +564,9 @@ def main():
                     print(f"{turn} used {player2Hand[0]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[0], BX, BY, mouseX, mouseY)
             can1 = False
-        elif not keys[pygame.K_1] and can1 == False:
+        elif not keys[pygame.K_1] and not can1:
             can1 = True
-        if keys[pygame.K_2] and can2 == True:
+        if keys[pygame.K_2] and can2:
             if turn == "player1":
                 if len(player1Hand) >= 2:
                     print(f"{turn} used {player1Hand[1]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -561,9 +576,9 @@ def main():
                     print(f"{turn} used {player2Hand[1]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[1], BX, BY, mouseX, mouseY)
             can2 = False
-        elif not keys[pygame.K_2] and can2 == False:
+        elif not keys[pygame.K_2] and not can2:
             can2 = True
-        if keys[pygame.K_3] and can3 == True:
+        if keys[pygame.K_3] and can3:
             if turn == "player1":
                 if len(player1Hand) >= 3:
                     print(f"{turn} used {player1Hand[2]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -573,9 +588,9 @@ def main():
                     print(f"{turn} used {player2Hand[2]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[2], BX, BY, mouseX, mouseY)
             can3 = False
-        elif not keys[pygame.K_3] and can3 == False:
+        elif not keys[pygame.K_3] and not can3:
             can3 = True
-        if keys[pygame.K_4] and can4 == True:
+        if keys[pygame.K_4] and can4:
             if turn == "player1":
                 if len(player1Hand) >= 4:
                     print(f"{turn} used {player1Hand[3]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -585,9 +600,9 @@ def main():
                     print(f"{turn} used {player2Hand[3]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[3], BX, BY, mouseX, mouseY)
             can4 = False
-        elif not keys[pygame.K_4] and can4 == False:
+        elif not keys[pygame.K_4] and not can4:
             can4 = True
-        if keys[pygame.K_5] and can5 == True:
+        if keys[pygame.K_5] and can5:
             if turn == "player1":
                 if len(player1Hand) >= 5:
                     print(f"{turn} used {player1Hand[4]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -597,9 +612,9 @@ def main():
                     print(f"{turn} used {player2Hand[4]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[4], BX, BY, mouseX, mouseY)
             can5 = False
-        elif not keys[pygame.K_5] and can5 == False:
+        elif not keys[pygame.K_5] and not can5:
             can5 = True
-        if keys[pygame.K_6] and can6 == True:
+        if keys[pygame.K_6] and can6:
             if turn == "player1":
                 if len(player1Hand) >= 6:
                     print(f"{turn} used {player1Hand[5]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -609,9 +624,9 @@ def main():
                     print(f"{turn} used {player2Hand[5]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[5], BX, BY, mouseX, mouseY)
             can6 = False
-        elif not keys[pygame.K_6] and can6 == False:
+        elif not keys[pygame.K_6] and not can6:
             can6 = True
-        if keys[pygame.K_7] and can7 == True:
+        if keys[pygame.K_7] and can7:
             if turn == "player1":
                 if len(player1Hand) >= 7:
                     print(f"{turn} used {player1Hand[6]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -621,9 +636,9 @@ def main():
                     print(f"{turn} used {player2Hand[6]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[6], BX, BY, mouseX, mouseY)
             can7 = False
-        elif not keys[pygame.K_7] and can7 == False:
+        elif not keys[pygame.K_7] and not can7:
             can7 = True
-        if keys[pygame.K_8] and can8 == True:
+        if keys[pygame.K_8] and can8:
             if turn == "player1":
                 if len(player1Hand) >= 8:
                     print(f"{turn} used {player1Hand[7]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -633,9 +648,9 @@ def main():
                     print(f"{turn} used {player2Hand[7]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[7], BX, BY, mouseX, mouseY)
             can8 = False
-        elif not keys[pygame.K_8] and can8 == False:
+        elif not keys[pygame.K_8] and not can8:
             can8 = True
-        if keys[pygame.K_9] and can9 == True:
+        if keys[pygame.K_9] and can9:
             if turn == "player1":
                 if len(player1Hand) >= 9:
                     print(f"{turn} used {player1Hand[8]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -645,9 +660,9 @@ def main():
                     print(f"{turn} used {player2Hand[8]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[8], BX, BY, mouseX, mouseY)
             can9 = False
-        elif not keys[pygame.K_9] and can9 == False:
+        elif not keys[pygame.K_9] and not can9:
             can0 = True
-        if keys[pygame.K_0] and can0 == True:
+        if keys[pygame.K_0] and can0:
             if turn == "player1":
                 if len(player1Hand) >= 10:
                     print(f"{turn} used {player1Hand[9]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -657,9 +672,9 @@ def main():
                     print(f"{turn} used {player2Hand[9]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[9], BX, BY, mouseX, mouseY)
             can0 = False
-        elif not keys[pygame.K_0] and can0 == False:
+        elif not keys[pygame.K_0] and not can0:
             can0 = True
-        if keys[pygame.K_u] and canU == True:
+        if keys[pygame.K_u] and canU:
             if turn == "player1":
                 if len(player1Hand) >= 11:
                     print(f"{turn} used {player1Hand[10]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -669,9 +684,9 @@ def main():
                     print(f"{turn} used {player2Hand[10]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[10], BX, BY, mouseX, mouseY)
             canU = False
-        elif not keys[pygame.K_u] and canU == False:
+        elif not keys[pygame.K_u] and not canU:
             canU = True
-        if keys[pygame.K_i] and canI == True:
+        if keys[pygame.K_i] and canI:
             if turn == "player1":
                 if len(player1Hand) >= 12:
                     print(f"{turn} used {player1Hand[11]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
@@ -681,9 +696,9 @@ def main():
                     print(f"{turn} used {player1Hand[11]}card on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                     playCard(turn, player2Hand[11], BX, BY, mouseX, mouseY)
             canI = False
-        elif not keys[pygame.K_i] and canI == False:
+        elif not keys[pygame.K_i] and not canI:
             canI = True
-        if keys[pygame.K_a] and canA == True:
+        if keys[pygame.K_a] and canA:
             if BX <= 3 and BY <= 3 and mouseX > int((display_width/2-blocksize*2)) and mouseY > int((display_height/2-blocksize*1.65)):
                 if turn == "player1" and P1atk[0] >= 1:
                     for i in player1:
@@ -700,7 +715,7 @@ def main():
                                 print(f"{turn} attack, use {i.type} on BX:{BX}, BY:{BY} at turns:{Turns[0]}")
                                 P2atk[0] -= 1
                 canA = False
-        elif not keys[pygame.K_a] and canA == False:
+        elif not keys[pygame.K_a] and not canA:
             canA = True
         if BX <= 3 and BY <= 3 and mouseX > int((display_width/2-blocksize*2)) and mouseY > int((display_height/2-blocksize*1.65)):
             detectATKArea(BX, BY, turn)
@@ -733,6 +748,8 @@ def main():
                 del i
                 continue
             i.display(gameDisplay)
+        if Chisupon: Chisup.displayBlocks(gameDisplay)
+        
             
         drawText("P1ATK:"+str(P1atk[0]), text_font, (255, 255, 255),
                 display_width/10*0.85, display_height/10*9, gameDisplay)
