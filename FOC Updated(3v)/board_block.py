@@ -1,6 +1,6 @@
 import pygame
-from dataclasses import dataclass, fields
-from typing import Sequence, Any
+from dataclasses import dataclass, field
+from typing import Sequence, Any, cast
 
 
 @dataclass(kw_only=True)
@@ -11,12 +11,14 @@ class Board:
     width: int
     height: int
     card: bool
-    size: int = width
-    color: tuple[int, ...]
-    BoardX: int
-    BoardY: int
-    Board: int = BoardX+(BoardY*4)
+    color: tuple[int, int, int]
+    board_x: int
+    board_y: int
     thickness: int = 2
+
+    def __post_init__(self) -> None:
+        self.size = self.width
+        self.board_position = self.board_x + (self.board_y * 4)
 
     def display(self, surface: pygame.surface.Surface) -> int:
         pygame.draw.rect(surface, self.color, (self.x, self.y, self.width, self.height), 4)

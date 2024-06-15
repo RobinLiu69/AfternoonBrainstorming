@@ -1,9 +1,13 @@
 import os, json, shutil
 from zipfile import ZipFile
+from typing import cast
 
+from type_hint import AutoUpdateSetting
 
 FOLDER_PATH = os.path.realpath(os.path.dirname(__file__))
-SETTING = json.loads(open(f"{FOLDER_PATH}/auto_updatr_setting.json", "r").read())
+
+with open(f"{FOLDER_PATH}/auto_updatr_setting.json", "r") as file:
+    SETTING: AutoUpdateSetting = json.loads(file.read())
 
 def get_project_info(name: str="更新日誌", time: int=0) -> tuple[str, str, str, str]:
     with open(f"{FOLDER_PATH}/{name}.txt", 'r', encoding='utf-8') as file:
@@ -95,8 +99,8 @@ def main() -> int:
         rename()
     elif options.lower() == "zip":
         zip_file_name = FOLDER_PATH.split("/")[-1]
-        zipped(zip_file_name, SETTING["no_zip_files"])
-        move_file(f"{zip_file_name}.zip", SETTING["zip_file_save_to"])
+        zipped(zip_file_name, cast(list[str], SETTING["no_zip_files"]))
+        move_file(f"{zip_file_name}.zip", cast(str, SETTING["zip_file_save_to"]))
     return 0
 
 
