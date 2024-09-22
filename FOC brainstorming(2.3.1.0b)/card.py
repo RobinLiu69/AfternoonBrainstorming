@@ -670,7 +670,7 @@ class cards:
         #     return True
         return False
 
-    def update(self, screen):
+    def update(self, screen):   
         if self.type == "SPG":
             drawText("HP:"+"?", text_font, self.textColor,
                     ((display_width/2)-(blocksize*2))+(self.x*blocksize)+(blocksize*0.1),
@@ -729,7 +729,6 @@ class cards:
         if self.attack < 0:
             self.attack = 0
         # shapes draw
-        
         elif self.shapeType == "ADC":
             self.shape = (((display_width/2-blocksize*2)+(self.x*blocksize)+(blocksize*0.5), (display_height/2-blocksize*1.65)+(self.y*blocksize)+(blocksize*0.3)), 
                         ((display_width/2-blocksize*2)+(self.x*blocksize)+(blocksize*0.25), (display_height/2-blocksize*1.65)+(self.y*blocksize)+(blocksize*0.7)),

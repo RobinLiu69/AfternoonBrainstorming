@@ -205,7 +205,7 @@ def main():
             canT = True
         if Timer[0]:
             drawText("Timer:ON", text_font, white, display_width/5,
-                    display_height/1.4, gameDisplay)
+                    display_height/1.4, gameDisplay)        
         else:
             drawText("Timer:OFF", text_font, white, display_width/5,
                     display_height/1.4, gameDisplay)

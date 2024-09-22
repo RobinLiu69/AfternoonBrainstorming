@@ -1,5 +1,5 @@
 {
-    "colors_dict" : {
+    "colors_dict": {
         "B": "Blue",
         "R": "Red",
         "G": "Green",
@@ -18,18 +18,19 @@
       "Orange": "255, 69, 0",
       "Purple": "128, 0, 255",
       "DarkGreen": "85, 107, 47",
-      "Cyan": "0, 238, 238"
-
+      "Cyan": "0, 238, 238",
+      "Black": "0, 0, 0"
     },
 
-    "attack_type_tags" : {
-        "ADC": "big_x",
+    "attack_type_tags": {
+        "ADC": "large_cross",
         "AP": "nearest",
-        "TANK": "cross",
-        "HF": "cross x",
-        "LF": "cross",
-        "ASS": "x",
+        "TANK": "small_cross",
+        "HF": "small_cross small_x",
+        "LF": "small_cross",
+        "ASS": "small_x",
         "APT": "nearest",
-        "SP": "farest"
+        "SP": "farthest",
+        "CUBE": "None"
     }
 }

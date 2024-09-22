@@ -62,7 +62,7 @@ class ScoreDisplay:
             if i.canATK == True:
                 P2Score += 1
                 if i.type == "SPW":
-                    P2Score += 1
+                    P2Score += 1    
         if turn == "player1":
             color1 = (100, 100, 255)
             color2 = (255, 100, 100)

@@ -6,7 +6,7 @@ from type_hint import AutoUpdateSetting
 
 FOLDER_PATH = os.path.realpath(os.path.dirname(__file__))
 
-with open(f"{FOLDER_PATH}/auto_updatr_setting.json", "r") as file:
+with open(f"{FOLDER_PATH}/auto_update_setting.json", "r") as file:
     SETTING: AutoUpdateSetting = json.loads(file.read())
 
 def get_project_info(name: str="更新日誌", time: int=0) -> tuple[str, str, str, str]:

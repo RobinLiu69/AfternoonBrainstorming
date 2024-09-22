@@ -1,5 +1,6 @@
 import pygame
 pygame.init()
+
 Board = []
 BoardUI = []
 neutral = []

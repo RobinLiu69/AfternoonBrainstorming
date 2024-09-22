@@ -434,7 +434,7 @@ def main():
         if keys[pygame.K_e] and canE:
             if turn == "player1":
                 Turns[0] += 1
-                score -= len(player1)
+                    score -= len(player1)
                 for i in player1:
                     score -= i.endTurn(turn)
                 if len(player1Hand)>=1:
