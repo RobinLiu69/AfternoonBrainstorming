@@ -151,9 +151,11 @@ class Ass(Card):
         return True
     
     def end_turn(self, clear_numbness: bool=True) -> int:
-        self.anger = False
-        if self.numbness == True and clear_numbness:
-            self.numbness = False
+        if clear_numbness:
+            self.anger = False
+        if self.numbness == True:
+            if clear_numbness:
+                self.numbness = False
             return 0
         else:
             return 1

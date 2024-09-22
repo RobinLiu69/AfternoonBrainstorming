@@ -173,7 +173,7 @@ class Card:
                 self.moving = False
                 return False
 
-            board_dict[str(self.board_x)+"-"+str(self.board_x)].occupy = False
+            board_dict[str(self.board_x)+"-"+str(self.board_y)].occupy = False
             self.board_x = board_x
             self.board_y = board_y
             board_dict[str(board_x)+"-"+str(board_y)].occupy = True
@@ -405,8 +405,9 @@ class Card:
         return 0
     
     def end_turn(self, clear_numbness: bool=True) -> int:
-        if self.numbness == True and clear_numbness:
-            self.numbness = False
+        if self.numbness == True:
+            if clear_numbness:
+                self.numbness = False
             return 0
         else:
             return 1

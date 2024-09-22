@@ -42,7 +42,7 @@ class GameScreen:
         self.score: int = 0
         self.players_luck: dict[str, int] = {"player1": 50, "player2": 50, "neutral": 50}
         self.how_many_token_to_draw_a_card: int = int(SETTING["how_many_token_to_draw_a_card"])
-        self.players_token: dict[str, int] = {"player1": 0, "player2": 50, "neutral": 0}
+        self.players_token: dict[str, int] = {"player1": 0, "player2": 0, "neutral": 0}
         
         self.number_of_attacks: dict[str, int] = {"player1": 0, "player2": 0}
         self.number_of_movings: dict[str, int] = {"player1": 0, "player2": 0}

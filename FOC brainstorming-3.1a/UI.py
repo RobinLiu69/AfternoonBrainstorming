@@ -61,7 +61,7 @@ class ScoreDisplay:
                 score_list.append(score_list[-1]+score)
                 score = 0
                 for card in filter(lambda card: card.owner == "player2", on_board_cards):
-                    score -= card.end_turn(False)
+                    score += card.end_turn(False)
                 score_list.append(score_list[-1]+score)
             case "player2":
                 score = 0
@@ -70,7 +70,7 @@ class ScoreDisplay:
                 score_list.append(score_list[-1]+score)
                 score = 0
                 for card in filter(lambda card: card.owner == "player1", on_board_cards):
-                    score += card.end_turn(False)
+                    score -= card.end_turn(False)
                 score_list.append(score_list[-1]+score)
         
         for i in range(-10, 11):
