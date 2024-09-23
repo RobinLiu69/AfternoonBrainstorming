@@ -70,7 +70,7 @@ class Ap(Card):
         
         super().__init__(owner=self.owner, job_and_color="APW", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
     
-    def ability(self, target: Card, in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         target.numbness = True
         return True
 
@@ -129,7 +129,7 @@ class Apt(Card):
         
         super().__init__(owner=self.owner, job_and_color="APTW", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
     
-    def ability(self, target: Card, in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         on_board_cards = on_board_neutral + player1_on_board + player2_on_board
         for card in self.detection("nearest", filter(lambda card: card.owner == self.owner and card != self, on_board_cards)):
             card.armor += 2

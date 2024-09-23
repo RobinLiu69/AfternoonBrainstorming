@@ -82,27 +82,27 @@ class ScoreDisplay:
                 pygame.draw.rect(game_screen.surface, BLUE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
             if i == score_list[2]:
                 pygame.draw.rect(game_screen.surface, RED, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
-        
-        
 
-# class TokenDisplay:
-#     def __init__(self, x, y, radius):
-#         self.x = x
-#         self.y = y
-#         self.radius = radius
-#         self.time = 0
-#         self.bool = True
+
+@dataclass(kw_only=True)
+class TokenDisplay:
+    def __init__(self, x, y, radius):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.time = 0
+        self.rea = True
     
-#     def displayCircle(self, game_screen.surface, number: int):
-#         if  self.bool:
-#             self.time += 1
-#             if self.time == 60:
-#                 self.bool = not self.bool
-#         else:
-#             self.time -= 1
-#             if self.time == 0:
-#                 self.bool = not self.bool
-#         if number > 0:
-#             for i in range(0, number):
-#                 pygame.draw.circle(game_screen.surface, (60*min(1, self.time/30), 100*min(1, self.time/30), 225*min(1, self.time/30)), (self.x, self.y-self.radius*i*2.2), self.radius)
+    def displayCircle(self, game_screen, number: int):
+        if  self.bool:
+            self.time += 1
+            if self.time == 60:
+                self.bool = not self.bool
+        else:
+            self.time -= 1
+            if self.time == 0:
+                self.bool = not self.bool
+        if number > 0:
+            for i in range(0, number):
+                pygame.draw.circle(game_screen.surface, (60*min(1, self.time/30), 100*min(1, self.time/30), 225*min(1, self.time/30)), (self.x, self.y-self.radius*i*2.2), self.radius)
             

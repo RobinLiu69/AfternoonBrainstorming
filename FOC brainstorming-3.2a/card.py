@@ -167,7 +167,7 @@ class Card:
             case _:
                 if self.shape == None: raise AttributeError("Dosen't have valid shape.")        
     
-    def move(self, board_x: int, board_y: int, in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move(self, board_x: int, board_y: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if board_dict[str(board_x)+"-"+str(board_y)].occupy == False:
             if (((abs(self.board_y-board_y) == 1 and (abs(self.board_x-board_x) == 1 or abs(self.board_x-board_x) == 0)) or (abs(self.board_y-board_y) == 0 and abs(self.board_x-board_x) == 1)) and (self.board_y != board_y or self.board_x != board_x) and self.moving == True) == False:
                 self.moving = False
@@ -178,21 +178,22 @@ class Card:
             self.board_y = board_y
             board_dict[str(board_x)+"-"+str(board_y)].occupy = True
             self.moving = False
-            self.moved(in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for card in ((on_board_neutral+player1_on_board+player2_on_board)):
-                card.move_signal(self, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                card.move_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             return True
         self.moving = False
         return False
 
-    def damage_calculate(self, value: int, attacker: "Card", in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        attacker.ability(self, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+    def damage_calculate(self, value: int, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen, ability: bool = True) -> bool:
+        if ability:
+            attacker.ability(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         value = attacker.damage_bonus(value, self, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         if self.armor > 0 and self.armor >= value:
             self.armor -= value
-            self.been_attacked(attacker, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)   
+            self.been_attacked(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)   
             return True
         elif self.armor > 0 and self.armor < value:
             if self.health >= value-self.armor:
@@ -202,10 +203,10 @@ class Card:
             value = self.armor-value                        
             self.armor = 0
             self.health += value
-            self.been_attacked(attacker, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.been_attacked(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             if self.health <= 0:
-                attacker.killed(self, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
-                self.been_killed(attacker, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                attacker.killed(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                self.been_killed(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         elif self.armor == 0:
             if self.health >= value:
@@ -213,10 +214,10 @@ class Card:
             if self.health < value:
                 value = self.health
             self.health -= value
-            self.been_attacked(attacker, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.been_attacked(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             if self.health == 0:
-                attacker.killed(self, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
-                self.been_killed(attacker, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                attacker.killed(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                self.been_killed(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         return False
     
@@ -306,34 +307,37 @@ class Card:
     # def deploy(self, on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> "Card":
     #     return self
 
-    def ability(self, target: "Card", in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
-    def killed(self, victim: "Card", in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def killed(self, victim: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
-    def moved(self, in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def moved(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
-    def move_signal(self, target: "Card", in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move_signal(self, target: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
-    def been_attacked(self, attacker: "Card", in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def been_attacked(self, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
-    def been_killed(self, attacker: "Card", in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def been_killed(self, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
 
     def damage_bonus(self, value: int, victim: "Card", on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         return value
 
-    def can_be_killed(self, in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def can_be_killed(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return True
 
-    def token_draw(self, in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def token_draw(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
-    def got_token(self, in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def got_token(self) -> bool:
+        return False
+    
+    def spawned_luckyblock(self) -> bool:
         return False
     
     def detection(self, attack_types: str, target_card_list: Iterable["Card"]) -> Generator["Card", None, None]:
@@ -359,7 +363,7 @@ class Card:
                     if nearby_cards:
                         temp_card = nearby_cards[0]
                         nearet_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), nearby_cards))
-
+                        print(len(nearby_cards))
                         random_number = random.randint(0, len(nearet_cards)-1)
                         yield nearet_cards[random_number]
                     
@@ -373,23 +377,23 @@ class Card:
                         yield farthest_cards[random_number]
         return None
     
-    def attack(self, in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        return self.launch_attack(self.attack_types, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+    def attack(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        return self.launch_attack(self.attack_types, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
     
-    def launch_attack(self, attack_types: str | None, in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def launch_attack(self, attack_types: str | None, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if self.numbness or attack_types is None: return False
-        enemies: Iterable["Card"] = filter(lambda card: card.owner != self.owner and card.health > 0, on_board_neutral+player1_on_board+player2_on_board)
+        enemies: Iterable["Card"] = list(filter(lambda card: card.owner != self.owner and card.health > 0, on_board_neutral+player1_on_board+player2_on_board))
         target_generator = tuple(self.detection(attack_types, enemies))
         if target_generator:
             for target in target_generator:
-                target.damage_calculate(self.damage, self, in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                target.damage_calculate(self.damage, self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         else:
             return False
 
-    def start_of_the_turn(self, in_hand: list[str], game_screen: GameScreen) -> None:
+    def start_of_the_turn(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], game_screen: GameScreen) -> None:
         self.moving = False
-        self.start_turn(in_hand)
+        self.start_turn(plsyer1_in_hand, player2_in_hand)
 
     
     def end_of_the_turn(self, game_screen: GameScreen) -> None:
@@ -401,7 +405,7 @@ class Card:
                 game_screen.score += self.end_turn(True)
     
     
-    def start_turn(self, in_hand: list[str]) -> int:
+    def start_turn(self, plsyer1_in_hand: list[str], player2_in_hand: list[str]) -> int:
         return 0
     
     def end_turn(self, clear_numbness: bool=True) -> int:

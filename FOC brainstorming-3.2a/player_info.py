@@ -3,7 +3,7 @@ import random, time
 from typing import cast
 
 from spawn import spawn_card
-from card import Card, Board, GameScreen, draw_text, WHITE
+from card import Card, Board, GameScreen, draw_text, WHITE, GREEN
 from UI import AttackCountDisplay
 
 MAGIC_CARDS = ["CUBES", "MOVE", "MOVEO", "HEAL"]
@@ -30,10 +30,12 @@ class Player:
             self.menu_deck_offset_y = 1
             self.clock_offset_x: float = 1.25
             self.deck_info_offeset_x: float = 2
+            self.luck_offeset_x: float = 2
         elif self.name == "player2":
             self.menu_deck_offset_y = 1.5
             self.clock_offset_x = -0.7
             self.deck_info_offeset_x = -0.7
+            self.luck_offeset_x = -1.3
     
     def init_cards(self, game_screen: GameScreen) -> None:
         match self.name:
@@ -50,22 +52,23 @@ class Player:
         self.init_cards(game_screen)
         self.timer_start(game_screen)
     
-    def turn_start(self, game_screen: GameScreen) -> None:
+    def turn_start(self, player1_in_hand: list[str], playuer2_in_hand: list[str], game_screen: GameScreen) -> None:
         self.draw_card()
         game_screen.number_of_attacks[self.name] += 1
         for card in self.on_board:
-            card.start_of_the_turn(self.in_hand, game_screen)
+            card.start_of_the_turn(player1_in_hand, playuer2_in_hand, game_screen)
+
 
     def turn_end(self, game_screen: GameScreen) -> None:
         self.in_hand = list(filter(lambda card: card != "MOVEO", self.in_hand))
         for card in self.on_board:
             card.end_of_the_turn(game_screen)
     
-    def attack(self, board_x: int, board_y: int, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def attack(self, board_x: int, board_y: int, player1_in_hand: list[str], playuer2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if game_screen.number_of_attacks[self.name] > 0:
             for card in self.on_board:
                 if card.board_x == board_x and card.board_y == board_y:
-                    if card.attack(self.in_hand, on_board_neutral, player1_on_board ,player2_on_board, board_dict, game_screen):
+                    if card.attack(player1_in_hand, playuer2_in_hand, on_board_neutral, player1_on_board ,player2_on_board, board_dict, game_screen):
                         game_screen.number_of_attacks[self.name] -= 1
                         break
     
@@ -85,7 +88,7 @@ class Player:
             else:
                 print(f"{self.name} has no more cards to draw.")
     
-    def play_card(self, board_x: int, board_y: int, index: int, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def play_card(self, board_x: int, board_y: int, index: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if -len(self.in_hand) > index or index >= len(self.in_hand):
             print("Invalid card index.")
             return
@@ -99,11 +102,12 @@ class Player:
                 self.discard_pile.append(self.in_hand.pop(index))
             case "MOVEO":
                 game_screen.number_of_movings[self.name] += 1
+                self.in_hand.pop(index)
             case "CUBES":
                 game_screen.number_of_cudes[self.name] += 2
                 self.discard_pile.append(self.in_hand.pop(index))
             case _:
-                if spawn_card(board_x, board_y, card, self.name, self.in_hand, self.on_board, on_board_neutral, player1_on_board, player2_on_board, self.discard_pile, board_dict, game_screen):
+                if spawn_card(board_x, board_y, card, self.name, player1_in_hand, player2_in_hand, self.on_board, on_board_neutral, player1_on_board, player2_on_board, self.discard_pile, board_dict, game_screen):
                     self.in_hand.pop(index)
                     print(f"{self.name} played a {card} on board position {board_x}, {board_y}.")
                 else:
@@ -117,7 +121,7 @@ class Player:
                     card.heal(5)
                     break
     
-    def move_card(self, board_x: int, board_y: int, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def move_card(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         moving_cards = list(filter(lambda card: card.moving, self.on_board))
         if len(moving_cards) == 0:
             for card in self.on_board:
@@ -130,7 +134,7 @@ class Player:
         else:
             if len(moving_cards) == 1:
                 moving_card = moving_cards[0]
-                if moving_card.move(board_x, board_y, self.in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+                if moving_card.move(board_x, board_y, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
                     print(f"{self.name} moved a card to board position {board_x}, {board_y}.")
             else:
                 selected_cards = list(filter(lambda card: card.mouse_selected, self.on_board))
@@ -138,7 +142,7 @@ class Player:
                     selected_card = selected_cards[0]
                     selected_card.mouse_selected = False
                     selected_card.moving = True
-                    if selected_card.move(board_x, board_y, self.in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+                    if selected_card.move(board_x, board_y, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
                         print(f"{self.name} moved a card to board position {board_x}, {board_y}.")
                 elif len(selected_cards) == 0:
                     for card in self.on_board:
@@ -147,9 +151,9 @@ class Player:
                             break
                 
     
-    def recycle_cards(self, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def recycle_cards(self, player1_in_hand: list[str], player2_in_hand:list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         for i, card in enumerate(self.on_board):
-            if card.health <= 0 and card.can_be_killed(self.in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+            if card.health <= 0 and card.can_be_killed(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
                 self.discard_pile.append(self.on_board.pop(i).job_and_color)
                 board_dict[str(card.board_x)+"-"+str(card.board_y)].occupy = False
                 print(f"{self.name} recycled a {card.job_and_color}.")
@@ -162,9 +166,9 @@ class Player:
         if len(self.deck) > 0:
             self.deck.pop()
     
-    def spawn_cude(self, mouse_board_x: int, mouse_board_y: int, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def spawn_cude(self, mouse_board_x: int, mouse_board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if game_screen.number_of_cudes[self.name] > 0:
-            if spawn_card(mouse_board_x, mouse_board_y, "CUBE", "None", self.in_hand, self.on_board, on_board_neutral, player1_on_board, player2_on_board, self.discard_pile, board_dict, game_screen):
+            if spawn_card(mouse_board_x, mouse_board_y, "CUBE", "None", player1_in_hand, player2_in_hand, self.on_board, on_board_neutral, player1_on_board, player2_on_board, self.discard_pile, board_dict, game_screen):
                 game_screen.number_of_cudes[self.name] -= 1
                 print(f"{self.name} spawned a CUBE.")
     
@@ -209,8 +213,8 @@ class Player:
                 self.elapsed_time = game_screen.coutdown_time
         self.update_timer(game_screen)
     
-    def update(self, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], update_timer: bool, game_screen: GameScreen) -> None:
-        self.recycle_cards(on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+    def update(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], update_timer: bool, game_screen: GameScreen) -> None:
+        self.recycle_cards(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         if update_timer:
             self.update_timer(game_screen)
         else:
@@ -218,16 +222,17 @@ class Player:
         self.display_hand_cards(game_screen)
         self.display_on_board_cards(game_screen)
         self.display_deck_info(game_screen)
+        self.display_luck(game_screen)
         self.attack_count_display.display_blocks(game_screen.number_of_attacks[self.name], game_screen)
         if game_screen.players_token[self.name] // game_screen.how_many_token_to_draw_a_card >= 1:
             game_screen.players_token[self.name] -= game_screen.how_many_token_to_draw_a_card
             self.draw_card()
-            self.draw_card_effect(on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.draw_card_effect(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             pass
     
-    def draw_card_effect(self, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def draw_card_effect(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         for card in self.on_board:
-            card.token_draw(self.in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            card.token_draw(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
     
     def display_on_board_cards(self, game_screen: GameScreen) -> None:
         for card in self.on_board:
@@ -246,6 +251,9 @@ class Player:
         draw_text(f"{self.short_name}DrawDeck: {len(self.draw_deck)} cards", game_screen.text_font, WHITE, game_screen.display_width/2-(game_screen.block_size*self.deck_info_offeset_x), game_screen.display_height-(game_screen.block_size*0.5), game_screen.surface)
         draw_text(f"{self.short_name}DiscardPile: {len(self.discard_pile)} cards", game_screen.text_font, WHITE, game_screen.display_width/2-(game_screen.block_size*self.deck_info_offeset_x), game_screen.display_height-(game_screen.block_size*0.4), game_screen.surface)
     
+    def display_luck(self, game_screen: GameScreen) -> None:
+        draw_text(f"{self.short_name}Luck: {game_screen.players_luck[self.name]}%", game_screen.text_font, GREEN, game_screen.display_width/2-(game_screen.block_size*self.luck_offeset_x), (game_screen.block_size*1.1), game_screen.surface)
+        
     def update_timer(self, game_screen: GameScreen) -> None:
         match game_screen.timer_mode:
             case "countdown":
