@@ -39,7 +39,7 @@ class Card:
     
     def __post_init__(self) -> None:
         self.max_health: int = self.health
-        self.originalAttack: int = self.damage
+        self.original_damage: int = self.damage
         self.board_position: int = self.board_x+(self.board_y*4)
         match self.job_and_color:
             case "MOVE":
@@ -359,11 +359,9 @@ class Card:
                     pass
                 case"nearest":
                     nearby_cards: list["Card"] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y))
-                    nearby_cards
                     if nearby_cards:
                         temp_card = nearby_cards[0]
                         nearet_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), nearby_cards))
-                        print(len(nearby_cards))
                         random_number = random.randint(0, len(nearet_cards)-1)
                         yield nearet_cards[random_number]
                     

@@ -4,7 +4,7 @@ from typing import cast
 
 from spawn import spawn_card
 from card import Card, Board, GameScreen, draw_text, WHITE, GREEN
-from UI import AttackCountDisplay
+from UI import AttackCountDisplay, TokenDisplay
 
 MAGIC_CARDS = ["CUBES", "MOVE", "MOVEO", "HEAL"]
     
@@ -23,6 +23,7 @@ class Player:
         self.time: str = "0:00"
         self.start_time: float = 0
         self.elapsed_time: int = 0
+        self.time_out: bool = False
         self.time_minutes_and_seconds: str = "00:00"
         self.menu_deck_offset_y: float = 1
         
@@ -48,7 +49,8 @@ class Player:
                 for i in range(3): self.draw_card()
     
     def initialize(self, game_screen: GameScreen) -> None:
-        self.attack_count_display = AttackCountDisplay(player=self.name, width=int(game_screen.block_size*0.1), height=int(game_screen.block_size*0.1))
+        self.attack_count_display = AttackCountDisplay(player_name=self.name, width=int(game_screen.block_size*0.1), height=int(game_screen.block_size*0.1))
+        self.token_count_display = TokenDisplay(player_name=self.name, radius=int(game_screen.block_size*0.1))
         self.init_cards(game_screen)
         self.timer_start(game_screen)
     
@@ -67,7 +69,7 @@ class Player:
     def attack(self, board_x: int, board_y: int, player1_in_hand: list[str], playuer2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if game_screen.number_of_attacks[self.name] > 0:
             for card in self.on_board:
-                if card.board_x == board_x and card.board_y == board_y:
+                if card.board_position == board_x+(board_y*4):
                     if card.attack(player1_in_hand, playuer2_in_hand, on_board_neutral, player1_on_board ,player2_on_board, board_dict, game_screen):
                         game_screen.number_of_attacks[self.name] -= 1
                         break
@@ -132,23 +134,18 @@ class Player:
                     break
             
         else:
-            if len(moving_cards) == 1:
-                moving_card = moving_cards[0]
-                if moving_card.move(board_x, board_y, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+            selected_cards = list(filter(lambda card: card.mouse_selected, self.on_board))
+            if len(selected_cards) == 1:
+                selected_card = selected_cards[0]
+                selected_card.mouse_selected = False
+                selected_card.moving = True
+                if selected_card.move(board_x, board_y, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
                     print(f"{self.name} moved a card to board position {board_x}, {board_y}.")
-            else:
-                selected_cards = list(filter(lambda card: card.mouse_selected, self.on_board))
-                if len(selected_cards) == 1:
-                    selected_card = selected_cards[0]
-                    selected_card.mouse_selected = False
-                    selected_card.moving = True
-                    if selected_card.move(board_x, board_y, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
-                        print(f"{self.name} moved a card to board position {board_x}, {board_y}.")
-                elif len(selected_cards) == 0:
-                    for card in self.on_board:
-                        if card.board_x == board_x and card.board_y == board_y:
-                            card.mouse_selected = True
-                            break
+            elif len(selected_cards) == 0:
+                for card in self.on_board:
+                    if card.board_x == board_x and card.board_y == board_y:
+                        card.mouse_selected = True
+                        break
                 
     
     def recycle_cards(self, player1_in_hand: list[str], player2_in_hand:list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
@@ -224,6 +221,7 @@ class Player:
         self.display_deck_info(game_screen)
         self.display_luck(game_screen)
         self.attack_count_display.display_blocks(game_screen.number_of_attacks[self.name], game_screen)
+        self.token_count_display.display_circle(game_screen.players_token[self.name], game_screen)
         if game_screen.players_token[self.name] // game_screen.how_many_token_to_draw_a_card >= 1:
             game_screen.players_token[self.name] -= game_screen.how_many_token_to_draw_a_card
             self.draw_card()
@@ -266,6 +264,8 @@ class Player:
                 time_minutes = str(int(self.elapsed_time//60)) if len(str(int(self.elapsed_time//60))) > 1 else "0"+str(int(self.elapsed_time//60))
                 time_seconds = str(int(self.elapsed_time%60)) if len(str(int(self.elapsed_time%60))) > 1 else "0"+str(int(self.elapsed_time%60))
                 self.time_minutes_and_seconds = time_minutes+":"+time_seconds
+                if self.elapsed_time <= 0:
+                    self.time_out = True
             case "timer":
                 if self.start_time == -1:
                     self.start_time = time.time()

@@ -156,14 +156,15 @@ class Lf(Card):
         
         super().__init__(owner=self.owner, job_and_color="LFG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
     
-    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        cards = tuple(self.detection("nearest", filter(lambda card: card.owner != self.owner and card.health > 0 and card != self, on_board_neutral + player1_on_board + player2_on_board)))
-        if cards:
-            cards[0].damage_calculate(3, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen, False)
-        if target.job_and_color == "LUCKYBLOCK":
+    def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        if victim.job_and_color == "LUCKYBLOCK":
+            except_cards =tuple(self.detection("small_cross", filter(lambda card: card.owner != self.owner and card.health - self.damage <= 0 and card != self, on_board_neutral + player1_on_board + player2_on_board)))
+            cards = tuple(self.detection("nearest", filter(lambda card: card.owner != self.owner and card not in except_cards and card != self, on_board_neutral + player1_on_board + player2_on_board)))
+            if cards:
+                cards[0].damage_calculate(3, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen, False)
+            
             if random.randint(0, 3) == 0:
                 game_screen.number_of_attacks[self.owner] += 1
-        
         return True
 
 
@@ -181,9 +182,9 @@ class Ass(Card):
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_luck[self.owner] += 5
         match self.owner:
-            case "Player1":
+            case "player1":
                 game_screen.players_luck["Player2"] -= 5
-            case "Player2":
+            case "player2":
                 game_screen.players_luck["Player1"] -= 5
         return True
 
