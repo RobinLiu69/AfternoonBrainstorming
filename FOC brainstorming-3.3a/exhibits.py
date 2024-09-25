@@ -9,6 +9,7 @@ import card_red as red
 import card_green as green
 import card_blue as blue
 import card_orange as orange
+import card_purple as purple
 from game_screen import GameScreen, draw_text, WHITE, BLACK
 
 
@@ -24,6 +25,7 @@ all_exhibit_cards: list[list[Card]] = [[white.Adc("display", 0, 0), white.Ap("di
                                        [green.Adc("display", 0, 0), green.Ap("display", 1, 0), green.Tank("display", 2, 0), green.Hf("display", 3, 0), green.Lf("display", 0, 1), green.Ass("display", 1, 1), green.Apt("display", 2, 1), green.Sp("display", 3, 1)],
                                        [blue.Adc("display", 0, 0), blue.Ap("display", 1, 0), blue.Tank("display", 2, 0), blue.Hf("display", 3, 0), blue.Lf("display", 0, 1), blue.Ass("display", 1, 1), blue.Apt("display", 2, 1), blue.Sp("display", 3, 1)],
                                        [orange.Adc("display", 0, 0), orange.Ap("display", 1, 0), orange.Tank("display", 2, 0), orange.Hf("display", 3, 0), orange.Lf("display", 0, 1), orange.Ass("display", 1, 1), orange.Apt("display", 2, 1), orange.Sp("display", 3, 1)],
+                                       [purple.Adc("display", 0, 0), purple.Ap("display", 1, 0), purple.Tank("display", 2, 0), purple.Hf("display", 3, 0), purple.Lf("display", 0, 1), purple.Ass("display", 1, 1), purple.Apt("display", 2, 1), purple.Sp("display", 3, 1)],
                                        [white.Cube("display", 0, 2), white.Heal("display", 1, 2), white.Move("display", 2, 2)]]
 
 

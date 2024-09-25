@@ -59,11 +59,12 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                             case "player1":
                                 controller = "player2"
                                 player1.turn_end(game_screen)
-                                player2.turn_start(player1.in_hand, player2.in_hand, game_screen)
+                                player2.turn_start(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
                             case "player2":
                                 controller = "player1"
                                 player2.turn_end(game_screen)
-                                player1.turn_start(player1.in_hand, player2.in_hand, game_screen)
+                                player1.turn_start(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        game_screen.data.score_records.append(game_screen.score)
                         if game_screen.score <= -10:
                             winner = "player1"
                             running = False

@@ -1,4 +1,4 @@
-import menu, battling
+import menu, battling, end_game
 from player_info import Player, GameScreen
 
 def main() -> None:
@@ -7,8 +7,10 @@ def main() -> None:
     game_screen = GameScreen()
     menu.main(game_screen, player1, player2)
     if player1.deck == [] and player2.deck == []:
-        player1.deck = ['ADCW', 'ADCW', 'LFW', 'LFW', 'TANKW', 'TANKW', 'ASSW', 'ASSW', 'SPW', 'SPW', 'HFW', 'HFW']
-        player2.deck = ['CUBES', 'CUBES', 'ASSO', 'ASSO', 'ADCR', 'ADCR', 'TANKR', 'TANKR', 'TANKG', 'TANKG', 'SPB', 'SPB']
+        player1.deck = ['APTR', 'APTR', 'TANKR', 'TANKR', 'TANKG', 'TANKO', 'ASSR', 'ASSO', 'ADCO', 'ADCO', 'TANKO', 'HEAL']
+        player2.deck = ['HFR', 'HFR', 'LFR', 'LFR', 'ADCW', 'ADCW', 'ASSW', 'ASSO', 'MOVE', 'SPW', 'TANKR', 'TANKR']
+        
+        
     winner = battling.main(game_screen, player1, player2)
     print(f"winner: {winner}\n")
     
@@ -17,5 +19,8 @@ def main() -> None:
     print(f"P1 Deck: {player1.deck}")
     print(f"P2 Deck: {player2.deck}")
 
+    end_game.main(game_screen)
+    
+    
 if __name__ == "__main__":
     main()

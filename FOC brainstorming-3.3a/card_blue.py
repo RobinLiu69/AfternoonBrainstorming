@@ -5,10 +5,23 @@ from typing import Sequence, Any, cast
 
 from card import Board, Card, GameScreen, BLUE
 
-def got_token(target: Card, player1_on_board: list[Card], player2_on_board: list[Card]) -> None:
+def got_token(target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
     cards = list(filter(lambda card: card.owner == target.owner, player1_on_board+player2_on_board))
     for card in cards:
         card.got_token()
+    
+    if game_screen.players_token[target.owner] // game_screen.how_many_token_to_draw_a_card >= 1:
+        game_screen.players_token[target.owner] -= game_screen.how_many_token_to_draw_a_card
+        game_screen.card_to_draw[target.owner] += 1
+        game_screen.data.data_update("use_token_count", target.owner, 1)
+        draw_card_effect(target, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        
+    
+    
+def draw_card_effect(target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    for card in filter(lambda card: card.owner == target.owner, player1_on_board+player2_on_board):
+        card.token_draw(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+
 
 class Adc(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=4, damage:int=2):
@@ -22,7 +35,7 @@ class Adc(Card):
     
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += 1
-        got_token(self, player1_on_board, player2_on_board)
+        got_token(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True
     
     def token_draw(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
@@ -47,8 +60,8 @@ class Ap(Card):
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         target.numbness = True
         game_screen.players_token[self.owner] += 2
-        got_token(self, player1_on_board, player2_on_board)
-        got_token(self, player1_on_board, player2_on_board)
+        got_token(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        got_token(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True
 
 
@@ -65,7 +78,7 @@ class Tank(Card):
     
     def been_attacked(self, attacker: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += 1
-        got_token(self, player1_on_board, player2_on_board)
+        got_token(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True
 
 
@@ -97,7 +110,7 @@ class Lf(Card):
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += 1
-        got_token(self, player1_on_board, player2_on_board)
+        got_token(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True
 
 
@@ -114,8 +127,8 @@ class Ass(Card):
     
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += 2
-        got_token(self, player1_on_board, player2_on_board)
-        got_token(self, player1_on_board, player2_on_board)
+        got_token(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        got_token(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True
 
 
@@ -132,7 +145,7 @@ class Apt(Card):
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += self.armor//4
-        for i in range(self.armor//4): got_token(self, player1_on_board, player2_on_board)
+        for i in range(self.armor//4): got_token(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True
 
     def got_token(self) -> bool:

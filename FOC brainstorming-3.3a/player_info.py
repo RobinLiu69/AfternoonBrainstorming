@@ -54,11 +54,11 @@ class Player:
         self.init_cards(game_screen)
         self.timer_start(game_screen)
     
-    def turn_start(self, player1_in_hand: list[str], playuer2_in_hand: list[str], game_screen: GameScreen) -> None:
+    def turn_start(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         self.draw_card()
         game_screen.number_of_attacks[self.name] += 1
         for card in self.on_board:
-            card.start_of_the_turn(player1_in_hand, playuer2_in_hand, game_screen)
+            card.start_of_the_turn(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
 
 
     def turn_end(self, game_screen: GameScreen) -> None:
@@ -95,6 +95,7 @@ class Player:
             print("Invalid card index.")
             return
         card = self.in_hand[index]
+        game_screen.data.data_update("card_use_count", self.name, 1)
         match card:
             case "HEAL":
                 game_screen.number_of_heals[self.name] += 1
@@ -118,9 +119,10 @@ class Player:
     def heal_card(self, board_x: int, board_y: int, game_screen: GameScreen) -> None:
         if game_screen.number_of_heals[self.name] > 0:
             game_screen.number_of_heals[self.name] -= 1
+            game_screen.data.data_update("use_heal_count", self.name, 1)
             for card in self.on_board:
                 if card.board_x == board_x and card.board_y == board_y:
-                    card.heal(5)
+                    card.heal(5, game_screen)
                     break
     
     def move_card(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
@@ -167,6 +169,7 @@ class Player:
         if game_screen.number_of_cudes[self.name] > 0:
             if spawn_card(mouse_board_x, mouse_board_y, "CUBE", "None", player1_in_hand, player2_in_hand, self.on_board, on_board_neutral, player1_on_board, player2_on_board, self.discard_pile, board_dict, game_screen):
                 game_screen.number_of_cudes[self.name] -= 1
+                game_screen.data.data_update("cube_used_count", self.name, 1)
                 print(f"{self.name} spawned a CUBE.")
     
     def menu_display_timer_state(self, game_screen: GameScreen) -> None:
@@ -222,15 +225,10 @@ class Player:
         self.display_luck(game_screen)
         self.attack_count_display.display_blocks(game_screen.number_of_attacks[self.name], game_screen)
         self.token_count_display.display_circle(game_screen.players_token[self.name], game_screen)
-        if game_screen.players_token[self.name] // game_screen.how_many_token_to_draw_a_card >= 1:
-            game_screen.players_token[self.name] -= game_screen.how_many_token_to_draw_a_card
+        
+        if game_screen.card_to_draw[self.name] > 0:
+            game_screen.card_to_draw[self.name] -= 1
             self.draw_card()
-            self.draw_card_effect(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
-            pass
-    
-    def draw_card_effect(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
-        for card in self.on_board:
-            card.token_draw(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
     
     def display_on_board_cards(self, game_screen: GameScreen) -> None:
         for card in self.on_board:

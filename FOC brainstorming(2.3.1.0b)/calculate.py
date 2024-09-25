@@ -222,8 +222,8 @@ def makebarchart(data, parts, whose):
     plt.close()
     return True
 
-def makeplot(data): 
-    if data != []:
+def makeplot(data) -> bool:
+    if data != []:      
         mean_value = np.mean(data)
         zero_value = 0
         title_text = "Score-Turns"

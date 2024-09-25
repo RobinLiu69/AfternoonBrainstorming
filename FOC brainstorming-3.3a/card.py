@@ -87,7 +87,13 @@ class Card:
                 pass
     
     def get_job(self) -> str:
-        return [self.job_and_color.replace(tag, "", 1) for tag in COLOR_TAG_LIST if self.job_and_color.endswith(tag)][0]
+        for tag in COLOR_TAG_LIST:
+            if self.job_and_color.endswith(tag):
+                if self.job_and_color.count(tag) > 1:
+                    return self.job_and_color[::-1].replace(tag, "", 1)[::-1]
+                else:
+                    return self.job_and_color.replace(tag, "", 1)
+        return "None"
     
     def get_attack_type(self) -> str:
         if self.job is None: raise ValueError("Job must be string.")
@@ -172,10 +178,11 @@ class Card:
             if (((abs(self.board_y-board_y) == 1 and (abs(self.board_x-board_x) == 1 or abs(self.board_x-board_x) == 0)) or (abs(self.board_y-board_y) == 0 and abs(self.board_x-board_x) == 1)) and (self.board_y != board_y or self.board_x != board_x) and self.moving == True) == False:
                 self.moving = False
                 return False
-
+            game_screen.data.data_update("move_count", f"{self.owner}_{self.job_and_color}", 1)
             board_dict[str(self.board_x)+"-"+str(self.board_y)].occupy = False
             self.board_x = board_x
             self.board_y = board_y
+            self.board_position = self.board_x+(self.board_y*4)
             board_dict[str(board_x)+"-"+str(board_y)].occupy = True
             self.moving = False
             self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
@@ -188,14 +195,20 @@ class Card:
         return False
 
     def damage_calculate(self, value: int, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen, ability: bool = True) -> bool:
+        game_screen.data.data_update("damage_taken_count", f"{self.owner}_{self.job_and_color}", 1)
         if ability:
-            attacker.ability(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            if attacker.ability(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):            
+                game_screen.data.data_update("ability_count", f"{attacker.owner}_{attacker.job_and_color}", 1)
         value = attacker.damage_bonus(value, self, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         if self.armor > 0 and self.armor >= value:
+            game_screen.data.data_update("damage_dealt", f"{attacker.owner}_{attacker.job_and_color}", value)
+            game_screen.data.data_update("damage_taken", f"{self.owner}_{self.job_and_color}", value)
             self.armor -= value
             self.been_attacked(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)   
             return True
         elif self.armor > 0 and self.armor < value:
+            game_screen.data.data_update("damage_dealt", f"{attacker.owner}_{attacker.job_and_color}", value)
+            game_screen.data.data_update("damage_taken", f"{self.owner}_{self.job_and_color}", value)
             if self.health >= value-self.armor:
                 pass
             if self.health < value-self.armor:
@@ -213,19 +226,24 @@ class Card:
                 pass
             if self.health < value:
                 value = self.health
+            game_screen.data.data_update("damage_dealt", f"{attacker.owner}_{attacker.job_and_color}", value)
+            game_screen.data.data_update("damage_taken", f"{self.owner}_{self.job_and_color}", value)
             self.health -= value
             self.been_attacked(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             if self.health == 0:
+                game_screen.data.data_update("killed_count", f"{attacker.owner}_{attacker.job_and_color}", 1)
+                game_screen.data.data_update("death_count", f"{self.owner}_{self.job_and_color}", 1)
                 attacker.killed(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
                 self.been_killed(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         return False
     
-    def heal(self, value: int):
+    def heal(self, value: int, game_screen: GameScreen):
         if self.health+value <= self.max_health:
             # if self.canATK == False:
             #     self.canATK = True
             self.health += value
+            game_screen.data.data_update("damage_taken_count", f"{self.owner}_{self.job_and_color}", 1)
             return True
         elif self.health+value > self.max_health:
             # if self.canATK == False:
@@ -380,6 +398,7 @@ class Card:
     
     def launch_attack(self, attack_types: str | None, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if self.numbness or attack_types is None: return False
+        game_screen.data.data_update("hit_count", f"{self.owner}_{self.job_and_color}", 1)
         enemies: Iterable["Card"] = list(filter(lambda card: card.owner != self.owner and card.health > 0, on_board_neutral+player1_on_board+player2_on_board))
         target_generator = tuple(self.detection(attack_types, enemies))
         if target_generator:
@@ -389,13 +408,14 @@ class Card:
         else:
             return False
 
-    def start_of_the_turn(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], game_screen: GameScreen) -> None:
+    def start_of_the_turn(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         self.moving = False
-        self.start_turn(plsyer1_in_hand, player2_in_hand)
+        self.start_turn(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
 
     
     def end_of_the_turn(self, game_screen: GameScreen) -> None:
         self.moving = False
+        game_screen.data.data_update("scored", f"{self.owner}_{self.job_and_color}", self.end_turn(False))
         match self.owner:
             case "player1":
                 game_screen.score -= self.end_turn(True)
@@ -403,7 +423,7 @@ class Card:
                 game_screen.score += self.end_turn(True)
     
     
-    def start_turn(self, plsyer1_in_hand: list[str], player2_in_hand: list[str]) -> int:
+    def start_turn(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         return 0
     
     def end_turn(self, clear_numbness: bool=True) -> int:

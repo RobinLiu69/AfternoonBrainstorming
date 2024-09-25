@@ -5,6 +5,8 @@ import card_red as red
 import card_green as green
 import card_blue as blue
 import card_orange as orange
+import card_purple as purple
+
 
 def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_hand: list[str], player2_in_hand: list[str], on_board: list[Card], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], discard_pile: list[str], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
     if spawn_check(board_x, board_y, board_dict):
@@ -95,6 +97,23 @@ def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_han
                 on_board.append(orange.Apt(owner, board_x, board_y))
             case "SPO":
                 on_board.append(orange.Sp(owner, board_x, board_y))
+            
+            case "ADCP":
+                on_board.append(purple.Adc(owner, board_x, board_y))
+            case "APP":
+                on_board.append(purple.Ap(owner, board_x, board_y))
+            case "TANKP":
+                on_board.append(purple.Tank(owner, board_x, board_y))
+            case "HFP":
+                on_board.append(purple.Hf(owner, board_x, board_y))
+            case "LFP":
+                on_board.append(purple.Lf(owner, board_x, board_y))
+            case "ASSP":
+                on_board.append(purple.Ass(owner, board_x, board_y))
+            case "APTP":
+                on_board.append(purple.Apt(owner, board_x, board_y))
+            case "SPP":
+                on_board.append(purple.Sp(owner, board_x, board_y))
             
             case _:
                 return False

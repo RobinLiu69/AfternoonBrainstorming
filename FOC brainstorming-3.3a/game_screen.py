@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 import os, json, pygame
 import random
 from typing import cast
+from in_game_data import Data
 pygame.init()
 
 from type_hint import JobDictionary
@@ -20,6 +21,7 @@ BLUE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTI
 RED: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Red"].split(", "))))
 GREEN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Green"].split(", "))))
 ORANGE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Orange"].split(", "))))
+PURPLE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Purple"].split(", "))))
 
 def draw_text(text: str, font: pygame.font.Font, textColor: tuple[int, ...], x: float, y: float, surface: pygame.surface.Surface) -> None:
     rendered_text = font.render(text, True, textColor)
@@ -39,10 +41,12 @@ class GameScreen:
         self.clock = pygame.time.Clock()
         self.timer_mode: str = "timer"
         self.coutdown_time = int(SETTING["countdown_time"])
+        self.data = Data()
         self.score: int = 0
         self.players_luck: dict[str, int] = {"player1": 50, "player2": 50, "neutral": 50}
         self.how_many_token_to_draw_a_card: int = int(SETTING["how_many_token_to_draw_a_card"])
         self.players_token: dict[str, int] = {"player1": 0, "player2": 0, "neutral": 0}
+        self.card_to_draw: dict[str, int] = {"player1": 0, "player2": 0}
         
         self.number_of_attacks: dict[str, int] = {"player1": 0, "player2": 0}
         self.number_of_movings: dict[str, int] = {"player1": 0, "player2": 0}
