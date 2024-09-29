@@ -3,11 +3,12 @@ import os, json
 import random
 from typing import Sequence, Any, cast
 
-from card import Board, Card, GameScreen, PURPLE
+from card import Board, Card, GameScreen, Purple_setting, PURPLE
 
+card_settings = Purple_setting
 
 class Adc(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=0, damage:int=0):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -18,7 +19,7 @@ class Adc(Card):
 
 
 class Ap(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=3, damage:int=1):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -35,7 +36,7 @@ class Ap(Card):
 
 
 class Tank(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=9, damage:int=1):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -46,13 +47,13 @@ class Tank(Card):
     
     def move_signal(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if target.owner != self.owner:
-            target.damage_calculate(2, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            target.damage_calculate(card_settings["TANK"]["movement_damage"], self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         return False
 
 
 class Hf(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=8, damage:int=1):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -71,7 +72,7 @@ class Hf(Card):
     
 
 class Lf(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=0, damage:int=0):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -82,7 +83,7 @@ class Lf(Card):
 
 
 class Ass(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=2, damage:int=3):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -95,18 +96,18 @@ class Ass(Card):
         count: int = 0
         match self.owner:
             case "player1":
-                count = len(player2_on_board)-len(player1_on_board) if len(player2_on_board)-len(player1_on_board) < 2 else 2
+                count = len(player2_on_board)-len(player1_on_board) if len(player2_on_board)-len(player1_on_board) < card_settings["ASS"]["maximum_card_draw_from_killed"] else card_settings["ASS"]["maximum_card_draw_from_killed"]
                 for i in range(count):
                     game_screen.card_to_draw[self.owner] += 1
             case "player2":
-                count = len(player1_on_board)-len(player2_on_board) if len(player1_on_board)-len(player2_on_board) < 2 else 2
+                count = len(player1_on_board)-len(player2_on_board) if len(player1_on_board)-len(player2_on_board) < card_settings["ASS"]["maximum_card_draw_from_killed"] else card_settings["ASS"]["maximum_card_draw_from_killed"]
                 for i in range(count):
                     game_screen.card_to_draw[self.owner] += 1
         return True
 
 
 class Apt(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=0, damage:int=0):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -117,7 +118,7 @@ class Apt(Card):
     
 
 class Sp(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=0, damage:int=0):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y

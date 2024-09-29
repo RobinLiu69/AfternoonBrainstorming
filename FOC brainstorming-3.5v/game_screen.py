@@ -5,15 +5,22 @@ from typing import cast
 from in_game_data import Data
 pygame.init()
 
-from type_hint import JobDictionary
+from type_hint import JobDictionary, CardSetting
 
 __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__))
 
-with open(f"{__FOLDER_PATH}/setting.json", "r", encoding="utf-8") as file:
+with open(f"{__FOLDER_PATH}/setting/setting.json", "r", encoding="utf-8") as file:
     SETTING: dict[str, str] = json.loads(file.read())
 
-with open(f"{__FOLDER_PATH}/job_dictionary.json", "r", encoding="utf-8") as file:
+with open(f"{__FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
+
+with open(f"{__FOLDER_PATH}/setting/card_setting.json", "r", encoding="utf-8") as file:
+    CARD_SETTING: CardSetting = json.loads(file.read())
+
+BASIC_FONT = __FOLDER_PATH+SETTING["basic_font"]
+CHINESE_FONT = __FOLDER_PATH+SETTING["chinese_font"]
+
         
 BLACK: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Black"].split(", "))))
 WHITE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["White"].split(", "))))
@@ -25,8 +32,19 @@ PURPLE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DIC
 DARKGREEN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["DarkGreen"].split(", "))))
 CYAN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Cyan"].split(", "))))
 
+
+White_setting = CARD_SETTING["White"]
+Red_setting = CARD_SETTING["Red"]
+Green_setting = CARD_SETTING["Green"]
+Blue_setting = CARD_SETTING["Blue"]
+Orange_setting = CARD_SETTING["Orange"]
+DarkGreen_setting = CARD_SETTING["DarkGreen"]
+Cyan_setting = CARD_SETTING["Cyan"]
+Purple_setting = CARD_SETTING["Purple"]
+
 KEYS_TO_CHECK = SETTING["keys_to_check"]
 PIE_TITLE_TEXTS = SETTING["pie_title_texts"]
+
 
 
 def draw_text(text: str, font: pygame.font.Font, textColor: tuple[int, ...], x: float, y: float, surface: pygame.surface.Surface) -> None:
@@ -85,11 +103,11 @@ class GameScreen:
 
     def font_init(self) -> None:
         self.text_font_size: int = int(self.display_width/1500*16.5)
-        self.text_font: pygame.font.Font = pygame.font.Font(SETTING["basic_font"], self.text_font_size)
-        self.info_text_font: pygame.font.Font = pygame.font.Font(SETTING["basic_font"], int(self.text_font_size/1.1))
-        self.big_text_font: pygame.font.Font = pygame.font.Font(SETTING["basic_font"], int(self.display_width/1500*25))
-        self.small_text_font: pygame.font.Font = pygame.font.Font(SETTING["basic_font"], int(self.text_font_size/15*8.66))
-        self.text_fontCHI: pygame.font.Font = pygame.font.Font(SETTING["chinese_font"], self.text_font_size)
+        self.text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, self.text_font_size)
+        self.info_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size/1.1))
+        self.big_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.display_width/1500*25))
+        self.small_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size/15*8.66))
+        self.text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, self.text_font_size)
 
 
     def update(self) -> None:

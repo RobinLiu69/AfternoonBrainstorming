@@ -365,6 +365,7 @@ class Card:
         return False
     
     def detection(self, attack_types: str, target_card_list: Iterable["Card"]) -> Generator["Card", None, None]:
+        target_card_list = tuple(target_card_list)
         for attack_type in attack_types.split(" "):
             match attack_type:
                 case "small_cross":

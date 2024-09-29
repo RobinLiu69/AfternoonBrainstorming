@@ -3,10 +3,12 @@ import os, json
 import random
 from typing import Sequence, Any, cast
 
-from card import Board, Card, GameScreen, GREEN
+from card import Board, Card, GameScreen, Green_setting, GREEN
+
+card_settings = Green_setting
 
 def lucky_effects(target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen, AP: bool=False, AP_target: bool=False, TANK: bool=False) -> None:
-    if random.randint(1, 100) < game_screen.players_luck[target.owner]:
+    if random.randint(1, 100) <= game_screen.players_luck[target.owner]:
         if AP_target or TANK: return
         game_screen.players_luck[target.owner] += 1
         match random.randint(1, 5):
@@ -46,7 +48,7 @@ def lucky_effects(target: Card, player1_in_hand: list[str], player2_in_hand: lis
 
 
 class LuckyBlock(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=1, damage:int=0):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LUCKYBLOCK"]["health"], damage:int=card_settings["LUCKYBLOCK"]["damage"]) -> None:
         self.owner = owner if owner == "display" else "neutral"
         self.board_x = board_x
         self.board_y = board_y
@@ -68,7 +70,7 @@ class LuckyBlock(Card):
 
 
 class Adc(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=3, damage:int=3):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -80,7 +82,7 @@ class Adc(Card):
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         for board in board_dict.values():
             if (board.board_x == self.board_x or board.board_y == self.board_y) and not board.occupy:
-                if random.randint(0, 1) == 0:
+                if random.randint(1, 100) <= card_settings["ADC"]["chance_to_spawn_luckyblock"]:
                     on_board_neutral.append(LuckyBlock("None", board.board_x, board.board_y))
                     for card in filter(lambda card: card.owner == self.owner, on_board_neutral+player1_on_board+player2_on_board):
                         card.spawned_luckyblock()
@@ -89,7 +91,7 @@ class Adc(Card):
 
 
 class Ap(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=3, damage:int=2):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -107,7 +109,7 @@ class Ap(Card):
 
 
 class Tank(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=10, damage:int=1):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -123,7 +125,7 @@ class Tank(Card):
 
 
 class Hf(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=8, damage:int=1):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -134,7 +136,7 @@ class Hf(Card):
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if target.job_and_color == "LUCKYBLOCK":
-            game_screen.players_luck[self.owner] += 5
+            game_screen.players_luck[self.owner] += card_settings["HF"]["luck_increase"]
         board_list = list(filter(lambda board: board.occupy == False, board_dict.values()))
         if board_list:
             board = board_list[random.randrange(len(board_list))]
@@ -147,7 +149,7 @@ class Hf(Card):
 
 
 class Lf(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=6, damage:int=2):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -158,19 +160,18 @@ class Lf(Card):
     
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if victim.job_and_color == "LUCKYBLOCK":
-            except_cards =tuple(self.detection("small_cross", filter(lambda card: card.owner != self.owner and card.health - self.damage <= 0 and card != self, on_board_neutral + player1_on_board + player2_on_board)))
-            cards = tuple(self.detection("nearest", filter(lambda card: card.owner != self.owner and card not in except_cards and card != self, on_board_neutral + player1_on_board + player2_on_board)))
+            cards = tuple(self.detection("nearest", filter(lambda card: card.owner != self.owner and card.health >= 0 and card != self, player1_on_board + player2_on_board)))
             if cards:
-                cards[0].damage_calculate(3, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen, False)
+                cards[0].damage_calculate(card_settings["LF"]["damage_from_killed_luckyblock"], self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen, False)
             
-            if random.randint(0, 3) == 0:
-                game_screen.number_of_attacks[self.owner] += 1
+            if random.randint(1, 100) <= card_settings["LF"]["chance_to_get_attack_count_increase"]:
+                game_screen.number_of_attacks[self.owner] += card_settings["LF"]["number_of_attack_increase_from_killed_luckyblock"]
         return True
 
 
 
 class Ass(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=2, damage:int=4):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -183,15 +184,15 @@ class Ass(Card):
         game_screen.players_luck[self.owner] += 5
         match self.owner:
             case "player1":
-                game_screen.players_luck["player2"] -= 5
+                game_screen.players_luck["player2"] -= card_settings["ASS"]["luck_increase"]
             case "player2":
-                game_screen.players_luck["player1"] -= 5
+                game_screen.players_luck["player1"] -= card_settings["ASS"]["luck_decrease"]
         return True
 
 
 
 class Apt(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=6, damage:int=0):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -206,16 +207,17 @@ class Apt(Card):
                 on_board_neutral.append(LuckyBlock("None", board.board_x, board.board_y))
                 for card in filter(lambda card: card.owner == self.owner, on_board_neutral+player1_on_board+player2_on_board):
                     card.spawned_luckyblock()
+                board.occupy = True
         return True
 
     def spawned_luckyblock(self) -> bool:
-        self.armor += 1
+        self.armor += card_settings["APT"]["luck_increase"]
         return True
 
 
 
 class Sp(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=1, damage:int=5):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -225,12 +227,12 @@ class Sp(Card):
         super().__init__(owner=self.owner, job_and_color="SPG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
     
     def deploy(self, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> Card:
-        game_screen.players_luck[self.owner] += 10
+        game_screen.players_luck[self.owner] += card_settings["SP"]["luck_add"]
         board_list = list(filter(lambda board: board.occupy == False and board.board_x != self.board_x and board.board_y != self.board_y, board_dict.values()))
         if board_list:
             random.shuffle(board_list)
-            if game_screen.players_luck[self.owner] > 50:
-                for i in range(min((game_screen.players_luck[self.owner]-50)//10, len(board_list))):
+            if game_screen.players_luck[self.owner] > card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"]:
+                for i in range(min((game_screen.players_luck[self.owner]-card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"])//10, len(board_list))):
                     on_board_neutral.append(LuckyBlock("None", board_list[i].board_x, board_list[i].board_y))
                     for card in filter(lambda card: card.owner == self.owner, on_board_neutral+player1_on_board+player2_on_board):
                         card.spawned_luckyblock()

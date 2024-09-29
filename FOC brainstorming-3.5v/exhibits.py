@@ -17,7 +17,7 @@ from game_screen import GameScreen, draw_text, WHITE, BLACK
 __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__))
 
 
-with open(f"{__FOLDER_PATH}/card_hints.json", "r", encoding="utf-8") as file:
+with open(f"{__FOLDER_PATH}/setting/card_hints.json", "r", encoding="utf-8") as file:
     CARDS_HINTS_DICTIONARY: dict[str, str] = json.loads(file.read())
 
 

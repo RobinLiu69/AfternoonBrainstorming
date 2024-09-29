@@ -3,11 +3,12 @@ import os, json
 import random
 from typing import Sequence, Any, cast
 
-from card import Board, Card, GameScreen, ORANGE
+from card import Board, Card, GameScreen, Orange_setting, ORANGE
 
+card_settings = Orange_setting
 
 class Adc(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=4, damage:int=2):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -29,7 +30,7 @@ class Adc(Card):
 
 
 class Ap(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=3, damage:int=2):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -52,7 +53,7 @@ class Ap(Card):
 
 
 class Tank(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=10, damage:int=1):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -71,7 +72,7 @@ class Tank(Card):
 
 
 class Hf(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=9, damage:int=1):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -89,7 +90,7 @@ class Hf(Card):
             return False
         
     def moved(self, player1_in_hand: list[str], plaeyr2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        self.extra_damage += 1
+        self.extra_damage += card_settings["HF"]["extra_damage_from_moving"]
         self.anger = True
         return True
     
@@ -108,7 +109,7 @@ class Hf(Card):
 
 
 class Lf(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=6, damage:int=3):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -132,7 +133,7 @@ class Lf(Card):
 
 
 class Ass(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=2, damage:int=4):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -148,7 +149,7 @@ class Ass(Card):
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         self.moving = True
         if self.anger:
-            game_screen.number_of_attacks[self.owner] += 1
+            game_screen.number_of_attacks[self.owner] += card_settings["ASS"]["number_of_attack_increase_from_killed"]
             self.anger = False
         return True
     
@@ -164,7 +165,7 @@ class Ass(Card):
 
 
 class Apt(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=6, damage:int=0):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -172,13 +173,9 @@ class Apt(Card):
         self.damage = damage
         
         super().__init__(owner=self.owner, job_and_color="APTO", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
-    
-    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        game_screen.players_token[self.owner] += self.armor//4
-        return True
 
     def moved(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        self.armor += 1
+        self.armor += card_settings["APT"]["armor_get_from_moving"]
         value = self.armor // 2
         if value > 0:
             self.damage += value
@@ -187,13 +184,13 @@ class Apt(Card):
 
     def move_signal(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if target.owner == self.owner and target != self:
-            target.armor += 1
-            self.armor += 1
+            target.armor += card_settings["APT"]["armor_get_from_moving"]
+            self.armor += card_settings["APT"]["armor_get_from_moving"]
         return True
     
 
 class Sp(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=1, damage:int=5):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -206,5 +203,5 @@ class Sp(Card):
         if target.owner == self.owner:
             cards = tuple(self.detection("farthest", filter(lambda card: card.owner != self.owner and card != self, on_board_neutral + player1_on_board + player2_on_board)))
             if cards:
-                cards[0].damage_calculate(3, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                cards[0].damage_calculate(card_settings["SP"]["movement_damage"], self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True

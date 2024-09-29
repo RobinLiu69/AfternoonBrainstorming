@@ -3,11 +3,13 @@ import os, json
 import random
 from typing import Sequence, Any, cast
 
-from card import Board, Card, GameScreen, WHITE
+from card import Board, Card, GameScreen, White_setting, WHITE
+
+card_settings = White_setting
 
 
 class Cube(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=4, damage:int=0):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["CUBE"]["health"], damage:int=card_settings["CUBE"]["damage"]) -> None:
         self.owner = owner if owner == "display" else "neutral"
         self.board_x = board_x
         self.board_y = board_y
@@ -24,7 +26,7 @@ class Cube(Card):
             return 0
 
 class Heal(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=-1, damage:int=-1):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=-1, damage:int=-1) -> None:
         self.owner = owner if owner == "display" else "neutral"
         self.board_x = board_x
         self.board_y = board_y
@@ -37,7 +39,7 @@ class Heal(Card):
         self.display_update(game_screen)
 
 class Move(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=-1, damage:int=-1):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=-1, damage:int=-1) -> None:
         self.owner = owner if owner == "display" else "neutral"
         self.board_x = board_x
         self.board_y = board_y
@@ -50,7 +52,7 @@ class Move(Card):
         self.display_update(game_screen)
 
 class Adc(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=5, damage:int=4):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -61,7 +63,7 @@ class Adc(Card):
 
 
 class Ap(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=4, damage:int=3):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -76,7 +78,7 @@ class Ap(Card):
 
 
 class Tank(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=15, damage:int=1):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -87,7 +89,7 @@ class Tank(Card):
 
 
 class Hf(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=9, damage:int=2):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -98,7 +100,7 @@ class Hf(Card):
 
 
 class Lf(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=7, damage:int=3):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -109,7 +111,7 @@ class Lf(Card):
 
 
 class Ass(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=2, damage:int=5):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -120,7 +122,7 @@ class Ass(Card):
 
 
 class Apt(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=8, damage:int=2):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -132,13 +134,13 @@ class Apt(Card):
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         on_board_cards = on_board_neutral + player1_on_board + player2_on_board
         for card in self.detection("nearest", filter(lambda card: card.owner == self.owner and card != self, on_board_cards)):
-            card.armor += 2
-        self.armor += 2
+            card.armor += card_settings["APT"]["armor_increase"]
+        self.armor += card_settings["APT"]["armor_increase"]
         return True
 
 
 class Sp(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=1, damage:int=5):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
         self.owner = owner
         self.board_x = board_x
         self.board_y = board_y
@@ -152,4 +154,4 @@ class Sp(Card):
             self.numbness = False
             return 0
         else:
-            return 2
+            return 1 + card_settings["SP"]["extra_score"]

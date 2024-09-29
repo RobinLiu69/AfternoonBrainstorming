@@ -13,7 +13,7 @@ from type_hint import JobDictionary
 
 __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__))
 
-with open(f"{__FOLDER_PATH}/job_dictionary.json", "r", encoding="utf-8") as file:
+with open(f"{__FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
 BLACK: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Black"].split(", "))))
@@ -25,9 +25,11 @@ ORANGE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DIC
 
 COLORS_DICT: dict[str, tuple[float, float, float]] = dict(zip(JOB_DICTIONARY["colors_dict"].keys(), (cast(tuple[float, float, float], tuple(map(lambda RGB_color: float(RGB_color)/255, RGB_colors.split(", ")))) for RGB_colors in JOB_DICTIONARY["RGB_colors"].values())))
 
-font_file_path = os.path.join(__FOLDER_PATH,"fonts/8bitOperatorPlus-Bold.ttf")
+font_file_path = __FOLDER_PATH+"/fonts/8bitOperatorPlus-Bold.ttf"
 
-output_folder = "./output"
+output_folder = f"{__FOLDER_PATH}/output"
+
+
 
 custom_font_prop = font_manager.FontProperties(fname=font_file_path)
 
@@ -166,7 +168,6 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
         
         plt.tight_layout()
 
-        output_folder = './output'
         os.makedirs(output_folder, exist_ok=True)
         if title_text != "KDA":
             title_text = title_text.lower().replace(" ", "_")
