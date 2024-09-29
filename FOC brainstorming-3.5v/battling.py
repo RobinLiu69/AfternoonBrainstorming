@@ -179,6 +179,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                         
             if event.type == pygame.QUIT:
                 running = False
+                quit()
         
         score_display.display_blocks(controller, game_screen.score, on_board_cards, game_screen)
         display_controller(controller, game_screen)

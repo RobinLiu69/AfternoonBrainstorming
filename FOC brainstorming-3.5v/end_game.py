@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import cast, Generator
 
 
-from game_screen import GameScreen, os, draw_text, __FOLDER_PATH, PIE_TITLE_TEXTS, KEYS_TO_CHECK, BLACK, WHITE
+from game_screen import GameScreen, os, draw_text, __FOLDER_PATH, PIE_TITLE_TEXTS, KEYS_TO_CHECK, KETYS_TO_DISPLAY, BLACK, WHITE
 from chart_make import make_plot_chart, make_pie_chart, make_bar_chart
 from controls import key_pressed
 
@@ -66,7 +66,7 @@ def display_chart(pie_paths: dict[str, list[str]], bar_paths: dict[str, list[str
     for i, path in enumerate(bar_paths["player2"]):
         charts["player2"]["bar"].append(Chart(file_path=path, x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(bar_paths["player2"])/2+i*2.2))), y=int(game_screen.display_height/2+(game_screen.block_size*0.7)), width=int(game_screen.block_size*2), height=int(game_screen.block_size*2)))
     
-    score_chart = Chart(file_path=plot_path, x=int(game_screen.display_width/2-(game_screen.block_size*3.75)), y=int(game_screen.display_height/2-(game_screen.block_size*1)), width=int(game_screen.block_size*7.5), height=int(game_screen.block_size*3))
+    score_chart = Chart(file_path=plot_path, x=int(game_screen.display_width/2-(game_screen.block_size*3.75/1.1)), y=int(game_screen.display_height/2+(game_screen.block_size*0.1)), width=int(game_screen.block_size*7.5/1.1), height=int(game_screen.block_size*3/1.1))
     
     return score_chart, charts
 
@@ -125,9 +125,35 @@ def loading_screen(game_screen: GameScreen) -> None:
     draw_text("Loading...", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*0.425, game_screen.display_height/2-game_screen.block_size*0.3, game_screen.surface)
     pygame.display.update()
 
+def display_raw_data(player1_profession_data: dict[str, dict[str, int]], player2_profession_data: dict[str, dict[str, int]], game_screen: GameScreen) -> None:
+    display_player1_data = [[profession[cat] for cat in profession] for profession in player1_profession_data.values()]
+    display_player2_data = [[profession[cat] for cat in profession] for profession in player2_profession_data.values()]
+
+    for i in range(len(KEYS_TO_CHECK)):
+        draw_text(KETYS_TO_DISPLAY[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-3.3+0.75*i), game_screen.display_height/2+game_screen.block_size*(-2.25), game_screen.surface)
+    
+    for i in range(len(display_player1_data)):
+        for j in range(len(display_player1_data[i])):
+            draw_text(str(display_player1_data[i][j]), game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-3.2+0.75*j), game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
+    
+        draw_text(tuple(player1_profession_data.keys())[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*4, game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
+    
+    
+    for i in range(len(display_player2_data)):
+        for j in range(len(display_player2_data[i])):
+            draw_text(str(display_player2_data[i][j]), game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-3.2+0.75*j), game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
+    
+        draw_text(tuple(player2_profession_data.keys())[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*4, game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
 
 
-def main(game_screen: GameScreen) -> None:
+def display_end_game_data(winner: str, game_screen: GameScreen):
+    draw_text(f"Winner: {winner.capitalize()}!!", game_screen.title_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*1.5, game_screen.display_height/2-game_screen.block_size*2, game_screen.surface)
+    draw_text(f"Total Turns: {len(game_screen.data.score_records)}", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1, game_screen.display_height/2-game_screen.block_size*0.4, game_screen.surface)
+    draw_text(f"Player1 Timer: {game_screen.player_timer["player1"]},   Player2 Timer: {game_screen.player_timer["player2"]}", game_screen.text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1, game_screen.display_height/2-game_screen.block_size*0.2, game_screen.surface)
+    
+    
+
+def main(winner: str, game_screen: GameScreen) -> None:
     player1_datas, player2_datas, player1_profession_data, player2_profession_data = init_datas(game_screen)
     loading_screen(game_screen)
     plot_path, pie_paths, bar_paths = making_image(player1_datas, player2_datas, player1_profession_data, player2_profession_data, game_screen)
@@ -138,6 +164,7 @@ def main(game_screen: GameScreen) -> None:
     score_chart.visible = True
     
     running = True
+
     
     while running:
         game_screen.update()
@@ -153,6 +180,15 @@ def main(game_screen: GameScreen) -> None:
                 match key_pressed(keys):
                     case pygame.K_ESCAPE:
                         running = False
+                    case pygame.K_TAB:
+                        match display_state:
+                            case "raw":
+                                display_state = "mid"
+                                set_all_invisible(score_chart, charts)
+                                score_chart.visible = True
+                            case _:
+                                display_state = "raw"
+                                set_all_invisible(score_chart, charts)
                     case pygame.K_SPACE:
                         match display_state:
                             case "mid":
@@ -207,6 +243,10 @@ def main(game_screen: GameScreen) -> None:
                 for chart in value:
                     chart.display(game_screen)
         
+        if display_state == "raw":
+            display_raw_data(player1_profession_data, player2_profession_data, game_screen)
+        elif display_state == "mid":
+            display_end_game_data(winner, game_screen)
         
         score_chart.display(game_screen)
 

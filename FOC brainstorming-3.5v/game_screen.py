@@ -42,6 +42,7 @@ DarkGreen_setting = CARD_SETTING["DarkGreen"]
 Cyan_setting = CARD_SETTING["Cyan"]
 Purple_setting = CARD_SETTING["Purple"]
 
+KETYS_TO_DISPLAY = SETTING["keys_to_display"]
 KEYS_TO_CHECK = SETTING["keys_to_check"]
 PIE_TITLE_TEXTS = SETTING["pie_title_texts"]
 
@@ -64,6 +65,8 @@ class GameScreen:
         self.font_init()
         self.clock = pygame.time.Clock()
         self.timer_mode: str = "timer"
+        self.player_timer: dict[str, str] = {"player1": "0", "player2": "0"}
+        
         self.coutdown_time = int(SETTING["countdown_time"])
         self.file_auto_delet: bool = True 
         self.data = Data()
@@ -104,6 +107,8 @@ class GameScreen:
     def font_init(self) -> None:
         self.text_font_size: int = int(self.display_width/1500*16.5)
         self.text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, self.text_font_size)
+        self.mid_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size*1.25))
+        self.title_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size*3))
         self.info_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size/1.1))
         self.big_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.display_width/1500*25))
         self.small_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size/15*8.66))

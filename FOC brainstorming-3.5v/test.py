@@ -89,6 +89,7 @@ def bubble_chart(data, categories):
 # Preparation for Heatmap
 def heatmap(data, categories):
     values = np.array([[d[cat] for cat in categories] for d in data.values()])
+    print([[d[cat] for cat in categories] for d in data.values()])
     fig, ax = plt.subplots(figsize=(10, 7))
     
     cax = ax.matshow(values, cmap='coolwarm')
@@ -103,8 +104,8 @@ def heatmap(data, categories):
     plt.show()
 
 # Generate all the charts
-radar_chart_fixed(data, categories)
-stacked_bar_chart(data, categories)
-box_plot(data, categories)
-bubble_chart(data, categories)
+# radar_chart_fixed(data, categories)
+# stacked_bar_chart(data, categories)
+# box_plot(data, categories)
+# bubble_chart(data, categories)
 heatmap(data, categories)

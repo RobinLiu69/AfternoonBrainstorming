@@ -33,7 +33,7 @@ output_folder = f"{__FOLDER_PATH}/output"
 
 custom_font_prop = font_manager.FontProperties(fname=font_file_path)
 
-def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict[str, int], fontsize: int=5, figsize: tuple[float, float]=(15, 15)) -> str:
+def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict[str, int], fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
     if len(data) > 0:
         labels: list[str] = list(map(lambda key: key.split("_")[-1], data.keys()))
         sorted_tags = sorted(COLORS_DICT.keys(), key=len, reverse=True)
@@ -73,7 +73,7 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
         plt.savefig(os.path.join(output_folder, player_name+"_pie_chart_"+title_text+".png"), transparent=True)
     return player_name+"_pie_chart_"+title_text+".png"
 
-def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str, int]], turns: int, fontsize: int=5, figsize: tuple[float, float]=(15, 15)) -> str:
+def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str, int]], turns: int, fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
     '''
     title_text:
         1: 'KDA',
@@ -104,11 +104,7 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
                 if name.endswith(tag):
                     colors.append(COLORS_DICT[tag])
                     break
-        
-        # 1: 'Average Attack Damage',
-        # 2: 'Attack Efficiency Index',
-        # 3: 'Per Round Influence',
-        # 4: 'Survival Index'
+
         
         width: list[float] = [0]
         
@@ -118,14 +114,11 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
             case "Average Attack Damage":
                 width =  [datas[key]["damage_dealt"]/max(1, datas[key]["hit_count"]) for key in datas.keys()]
             case "Attack Efficiency Index":
-            # 'NoA/NoHT',攻擊效率指數
                 width =  [datas[key]["hit_count"]/max(1, datas[key]["damage_taken_count"]) for key in datas.keys()]
             case "Per Round Influence":
-            # 'DD*HT/Score',每回合影響力
-                width =  [datas[key]["damage_dealt"]*datas[key]["damage_taken"]/max(1, turns) for key in datas.keys()]
+                width =  [datas[key]["damage_dealt"]*datas[key]["damage_taken"]/max(1, datas[key]["rounds_survived"]) for key in datas.keys()]
             case "Survival Index":
-            # '((Score*5)+(DD/NoA*2)+(HT/NoHT*2))/Turns'#生存指數
-                width =  [((datas[key]["scored"]*5)+(datas[key]["damage_dealt"]/max(1, datas[key]["hit_count"])*2)+(datas[key]["damage_taken"]/max(1, datas[key]["damage_taken_count"])*2))/max(1, turns) for key in datas.keys()]
+                width =  [((datas[key]["scored"]*5)+(datas[key]["damage_dealt"]/max(1, datas[key]["hit_count"])*2)+(datas[key]["damage_taken"]/max(1, datas[key]["damage_taken_count"])*2))/max(1, datas[key]["rounds_survived"]) for key in datas.keys()]
 
         for i in range(len(width)-1, -1, -1):
             if width[i] <= 0:
@@ -178,7 +171,7 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
         return "None"
 
 
-def make_plot_chart(data: list [int], fontsize: int=5, figsize: tuple[float, float]=(20, 8)) ->  str:
+def make_plot_chart(data: list [int], fontsize: int=6, figsize: tuple[float, float]=(20, 8)) ->  str:
     if data:
         mean_value = float(np.mean(data))
         zero_value = 0

@@ -12,20 +12,30 @@ def main() -> None:
         
         
     winner = battling.main(game_screen, player1, player2)
+    
+    game_screen.player_timer["player1"] = player1.time_minutes_and_seconds
+    game_screen.player_timer["player2"] = player2.time_minutes_and_seconds
+    
     print(f"winner: {winner}\n")
+    
     
     print(f"P1 score: {abs(game_screen.score)}" if game_screen.score <= 0 else "")
     print(f"P2 score: {game_screen.score}" if game_screen.score >= 0 else "")
     print(f"P1 Deck: {player1.deck}")
     print(f"P2 Deck: {player2.deck}")
     
+    print(f"player1 timer: {player1.time_minutes_and_seconds}")
+    print(f"player2 timer: {player2.time_minutes_and_seconds}")
+    
     print(game_screen.data.data_dicts)
     print(game_screen.data.score_records)
     
-    # game_screen.data.data_dicts = {'card_use_count': {'player1': 16, 'player2': 15}, 'hit_count': {'player1_TANKO': 1, 'player1_APTR': 11, 'player1_ASSR': 1, 'player2_ASSO': 7, 'player1_ASSO': 3, 'player2_HFR': 3, 'player2_ASSW': 1, 'player2_ADCW': 4}, 'damage_dealt': {'player1_TANKO': 3, 'player1_APTR': 51, 'player1_ASSR': 4, 'player2_ASSO': 27, 'player1_ASSO': 5, 'player2_HFR': 33, 'player2_ASSW': 4, 'player2_ADCW': 16}, 'damage_taken_count': {'player2_SPW': 2, 'player2_HFR': 3, 'player2_ADCW': 4, 'player2_LFR': 4, 'player1_ASSR': 1, 'player1_TANKO': 3, 'player1_ADCO': 3, 'player1_TANKR': 6, 'player2_ASSO': 1, 'player2_TANKR': 3, 'player1_TANKG': 3, 'player1_ASSO': 2, 'player2_ASSW': 1, 'player1_APTR': 4}, 'damage_taken': {'player2_SPW': 2, 'player2_HFR': 12, 'player2_ADCW': 17, 'player2_LFR': 10, 'player1_ASSR': 2, 'player1_TANKO': 10, 'player1_ADCO': 10, 'player1_TANKR': 18, 'player2_ASSO': 2, 'player2_TANKR': 18, 'player1_TANKG': 15, 'player1_ASSO': 9, 'player2_ASSW': 2, 'player1_APTR': 16}, 'scored': {'player1_TANKR': 8, 'player1_APTR': 19, 'player2_SPW': 6, 'player2_HFR': 11, 'player1_TANKO': 10, 'player2_ADCW': 7, 'player2_LFR': 1, 'player2_TANKR': 14, 'player1_ADCO': 3, 'player1_ASSR': 1, 'player2_ASSO': 1, 'player1_ASSO': 9, 'player1_TANKG': 2, 'player2_ASSW': 3}, 'ability_count': {'player1_APTR': 11, 'player2_HFR': 8}, 'healing_amount': {}, 'heal_count': {}, 'move_count': {'player2_ASSO': 5, 'player1_ASSO': 4, 'player2_ADCW': 1}, 'use_move_count': {}, 'cube_used_count': {}, 'killed_count': {'player1_TANKO': 1, 'player1_APTR': 6, 'player1_ASSR': 1, 'player2_ASSO': 4, 'player1_ASSO': 3, 'player2_HFR': 1, 'player2_ASSW': 1}, 'death_count': {'player2_SPW': 2, 'player2_LFR': 2, 'player2_ADCW': 2, 'player1_ASSR': 1, 'player1_ADCO': 2, 'player1_TANKR': 2, 'player1_TANKO': 1, 'player2_ASSO': 1, 'player2_ASSW': 1, 'player2_TANKR': 2, 'player2_HFR': 1}, 'use_token_count': {}, 'rounds_survived': {'player1_TANKR': 8, 'player1_APTR': 19, 'player2_SPW': 1, 'player2_HFR': 11, 'player1_TANKO': 10, 'player2_ADCW': 7, 'player2_LFR': 1, 'player2_TANKR': 14, 'player1_ASSO': 7, 'player1_ADCO': 3, 'player2_ASSW': 2, 'player1_TANKG': 3}}
-    # game_screen.data.score_records = [i for i in range(35)]
     
-    end_game.main(game_screen)
+#     game_screen.data.data_dicts = {'card_use_count': {'player1': 19, 'player2': 12}, 'hit_count': {'player2_APB': 6, 'player1_LFO': 2}, 'damage_dealt': {'player2_APB': 12, 'player2_TANKP': 8, 'player1_LFO': 17, 'player2_SPB': 12}, 'damage_taken_count': {'player1_LFG': 3, 'player1_TANKO': 15, 'player2_HFP': 3, 'player2_TANKR': 3, 'player1_LFO': 4}, 'damage_taken': {'player1_LFG': 6, 'player1_TANKO': 20, 'player2_HFP': 8, 'player2_TANKR': 9, 
+# 'player1_LFO': 6}, 'scored': {'player1_TANKO': 5, 'player2_HFP': 2, 'player2_TANKR': 4, 'player2_APB': 6, 'player1_LFO': 2, 'player2_TANKB': 4, 'player2_TANKP': 3, 'player1_LFG': 0, 'player2_SPB': 2, 'player2_ASSB': 2}, 'ability_count': {'player2_APB': 6}, 'healing_amount': {}, 'heal_count': {}, 'move_count': {'player1_TANKO': 2, 'player1_LFO': 2}, 'use_move_count': {}, 'cube_used_count': {}, 'killed_count': {'player2_APB': 1, 'player1_LFO': 2, 'player2_SPB': 3}, 'death_count': {'player1_LFG': 1, 'player2_TANKR': 1, 'player2_HFP': 1, 'player1_LFO': 1, 'player1_TANKO': 2}, 'use_token_count': {'player2': 4}, 'rounds_survived': {'player1_TANKO': 6, 'player2_HFP': 2, 'player2_TANKR': 4, 'player2_APB': 6, 'player1_LFO': 2, 'player2_TANKB': 4, 'player2_TANKP': 3, 'player2_SPB': 2}}
+#     game_screen.data.score_records = [0, 0, -2, 1, -2, 3, 1, 6, 6, 16]
+    
+    end_game.main(winner, game_screen)
     
     
 if __name__ == "__main__":

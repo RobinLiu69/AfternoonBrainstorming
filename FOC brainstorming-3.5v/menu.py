@@ -40,6 +40,8 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> None:
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
                 match key_pressed(keys):
+                    case pygame.K_SPACE:
+                        page = turn_page(page, 1, last_page)
                     case pygame.K_a:
                         page = turn_page(page, -1, last_page)
                     case pygame.K_d:
@@ -85,6 +87,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> None:
                         
             if event.type == pygame.QUIT:
                 running = False
+                quit()
         
         player1.menu_deck_display(deck_editor, game_screen)
         player2.menu_deck_display(deck_editor, game_screen)
