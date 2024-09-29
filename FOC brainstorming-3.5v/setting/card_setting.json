@@ -121,7 +121,7 @@
         "APT": {
             "health": 6,
             "damage": 0,
-            "armor_increase": 1
+            "luck_increase": 1
         },
         "SP": {
             "health": 1,
@@ -133,7 +133,8 @@
     "Blue": {
         "ADC": {
             "health": 4,
-            "damage": 2
+            "damage": 2,
+            "token_gets": 2
         },
         "AP": {
             "health": 4,
