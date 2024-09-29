@@ -1,0 +1,9 @@
+{
+    "basic_font": "/fonts/8bitOperatorPlus-Bold.ttf",
+    "chinese_font": "/fonts/Cubic_11_1.100_R.ttf",
+    "countdown_time": "600",
+    "how_many_token_to_draw_a_card": "3",
+    "keys_to_check" : ["hit_count", "damage_dealt", "damage_taken_count", "damage_taken", "scored", "ability_count", "move_count", "killed_count", "death_count", "rounds_survived"],
+    "keys_to_display" : ["hit_C", "damage_D", "got_hit_C", "damage_T", "scored", "ability_C", "move_C", "killed_C", "death_C", "R_survived"],
+    "pie_title_texts": ["hit_count", "damage_dealt", "scored", "killed_count"]
+}
