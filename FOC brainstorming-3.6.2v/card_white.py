@@ -150,8 +150,9 @@ class Sp(Card):
         super().__init__(owner=self.owner, job_and_color="SPW", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
     
     def end_turn(self, clear_numbness: bool=True) -> int:
-        if self.numbness == True and clear_numbness:
-            self.numbness = False
+        if self.numbness == True:
+            if  clear_numbness:
+                self.numbness = False
             return 0
         else:
             return 1 + card_settings["SP"]["extra_score"]

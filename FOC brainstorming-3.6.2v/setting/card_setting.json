@@ -108,7 +108,7 @@
         "LF": {
             "health": 6,
             "damage": 2,
-            "damage_from_killed_luckyblock": 3,
+            "damage_from_killed_luckyblock": 4,
             "chance_to_get_attack_count_increase": 25,
             "number_of_attack_increase_from_killed_luckyblock": 1
         },
@@ -218,12 +218,12 @@
         "AP": {
             "health": 3,
             "damage": 3,
-            "engraved_totem": 3
+            "engraved_totem": 5
         },
         "TANK": {
             "health": 9,
             "damage": 1,
-            "engraved_totem": 1
+            "engraved_totem": 2
         },
         "HF": {
             "health": 8,

@@ -70,7 +70,7 @@ def display_chart(pie_paths: dict[str, list[str]], bar_paths: dict[str, list[str
     
     return score_chart, charts
 
-def init_datas(game_screen: GameScreen) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]], dict[str, dict[str, int]], dict[str, dict[str, int]]]:
+def init_datas(game_screen: GameScreen) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]], dict[str, dict[str, int]], dict[str, dict[str, int]], list[list[int]], list[list[int]], list[str], list[str]]:
     player1_datas: dict[str, dict[str, int]] = dict(zip(game_screen.data.data_dicts.keys(), ((cast(dict[str, int], dict((key, value) for (key, value) in datas.items() if key.startswith("player1")))) for datas in game_screen.data.data_dicts.values())))
     player2_datas: dict[str, dict[str, int]]  = dict(zip(game_screen.data.data_dicts.keys(), ((cast(dict[str, int], dict((key, value) for (key, value) in datas.items() if key.startswith("player2")))) for datas in game_screen.data.data_dicts.values())))
     
@@ -110,8 +110,30 @@ def init_datas(game_screen: GameScreen) -> tuple[dict[str, dict[str, int]], dict
             if sub_key not in player2_profession_data[key]:
                 player2_profession_data[key][sub_key] = 0
     
+    display_player1_data: list[list[int]] = []
+    display_player1_name: list[str] = []
+    display_player2_data: list[list[int]] = []
+    display_player2_name: list[str] = []
     
-    return player1_datas, player2_datas, player1_profession_data, player2_profession_data
+    data_list: list[int] = []
+    
+    for i, (name, data) in enumerate(player1_profession_data.items()):
+        data_list = []
+        for key in KEYS_TO_CHECK:
+            data_list.append(data[key])
+        display_player1_data.append(data_list)
+        display_player1_name.append(name)
+    
+    for i, (name, data) in enumerate(player2_profession_data.items()):
+        data_list = []
+        for key in KEYS_TO_CHECK:
+            data_list.append(data[key])
+        display_player2_data.append(data_list)
+        display_player2_name.append(name)
+
+    
+    
+    return player1_datas, player2_datas, player1_profession_data, player2_profession_data, display_player1_data, display_player2_data, display_player1_name, display_player2_name
 
 def set_all_invisible(score_chart: Chart, charts: dict[str, dict[str, list[Chart]]]) -> None:
     score_chart.visible = False
@@ -125,9 +147,7 @@ def loading_screen(game_screen: GameScreen) -> None:
     draw_text("Loading...", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*0.425, game_screen.display_height/2-game_screen.block_size*0.3, game_screen.surface)
     pygame.display.update()
 
-def display_raw_data(player1_profession_data: dict[str, dict[str, int]], player2_profession_data: dict[str, dict[str, int]], game_screen: GameScreen) -> None:
-    display_player1_data = [[profession[cat] for cat in profession] for profession in player1_profession_data.values()]
-    display_player2_data = [[profession[cat] for cat in profession] for profession in player2_profession_data.values()]
+def display_raw_data(display_player1_data: list[list[int]], display_player2_data: list[list[int]], display_player1_name: list[str], display_player2_name: list[str], game_screen: GameScreen) -> None:
 
     for i in range(len(KEYS_TO_CHECK)):
         draw_text(KETYS_TO_DISPLAY[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-3.3+0.75*i), game_screen.display_height/2+game_screen.block_size*(-2.25), game_screen.surface)
@@ -136,35 +156,36 @@ def display_raw_data(player1_profession_data: dict[str, dict[str, int]], player2
         for j in range(len(display_player1_data[i])):
             draw_text(str(display_player1_data[i][j]), game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-3.2+0.75*j), game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
     
-        draw_text(tuple(player1_profession_data.keys())[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*4, game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
+        draw_text(display_player1_name[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*4, game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
     
     
     for i in range(len(display_player2_data)):
         for j in range(len(display_player2_data[i])):
             draw_text(str(display_player2_data[i][j]), game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-3.2+0.75*j), game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
     
-        draw_text(tuple(player2_profession_data.keys())[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*4, game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
+        draw_text(display_player2_name[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*4, game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
 
 
 def display_end_game_data(winner: str, game_screen: GameScreen):
     draw_text(f"Winner: {winner.capitalize()}!!", game_screen.title_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*1.5, game_screen.display_height/2-game_screen.block_size*2, game_screen.surface)
     draw_text(f"Total Turns: {len(game_screen.data.score_records)}", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1, game_screen.display_height/2-game_screen.block_size*0.4, game_screen.surface)
-    draw_text(f"Player1 Timer: {game_screen.player_timer["player1"]},   Player2 Timer: {game_screen.player_timer["player2"]}", game_screen.text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1, game_screen.display_height/2-game_screen.block_size*0.2, game_screen.surface)
+    draw_text("Player1 Timer: "+game_screen.player_timer["player1"]+",   Player2 Timer: "+game_screen.player_timer["player2"], game_screen.text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1, game_screen.display_height/2-game_screen.block_size*0.2, game_screen.surface)
     
     
 
 def main(winner: str, game_screen: GameScreen) -> None:
-    player1_datas, player2_datas, player1_profession_data, player2_profession_data = init_datas(game_screen)
+    player1_datas, player2_datas, player1_profession_data, player2_profession_data, display_player1_data, display_player2_data, display_player1_name, display_player2_name = init_datas(game_screen)
     loading_screen(game_screen)
     plot_path, pie_paths, bar_paths = making_image(player1_datas, player2_datas, player1_profession_data, player2_profession_data, game_screen)
-    print(pie_paths)
+    
     score_chart, charts = display_chart(pie_paths, bar_paths, plot_path, game_screen)
     
     display_state: str = "mid"
     score_chart.visible = True
     
     running = True
-
+    
+    
     
     while running:
         game_screen.update()
@@ -244,7 +265,7 @@ def main(winner: str, game_screen: GameScreen) -> None:
                     chart.display(game_screen)
         
         if display_state == "raw":
-            display_raw_data(player1_profession_data, player2_profession_data, game_screen)
+            display_raw_data(display_player1_data, display_player2_data, display_player1_name, display_player2_name, game_screen)
         elif display_state == "mid":
             display_end_game_data(winner, game_screen)
         

@@ -24,7 +24,7 @@ def lucky_effects(target: Card, player1_in_hand: list[str], player2_in_hand: lis
                 if AP: return
                 for board in board_dict.values():
                     if ((board.board_x == target.board_x+1 and board.board_y == target.board_y+1) or (board.board_x == target.board_x-1 and board.board_y == target.board_y+1) or (board.board_x == target.board_x-1 and board.board_y == target.board_y-1) or (board.board_x == target.board_x+1 and board.board_y == target.board_y-1)):
-                        if board.occupy: return
+                        if board.occupy: continue
                         on_board_neutral.append(LuckyBlock("None", board.board_x, board.board_y))
                         for card in filter(lambda card: card.owner == target.owner, on_board_neutral+player1_on_board+player2_on_board):
                             card.spawned_luckyblock()
@@ -227,7 +227,7 @@ class Sp(Card):
         super().__init__(owner=self.owner, job_and_color="SPG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
     
     def deploy(self, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> Card:
-        game_screen.players_luck[self.owner] += card_settings["SP"]["luck_add"]
+        game_screen.players_luck[self.owner] += card_settings["SP"]["luck_increase"]
         board_list = list(filter(lambda board: board.occupy == False and board.board_x != self.board_x and board.board_y != self.board_y, board_dict.values()))
         if board_list:
             random.shuffle(board_list)

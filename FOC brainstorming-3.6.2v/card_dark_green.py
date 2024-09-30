@@ -90,9 +90,9 @@ class Lf(Card):
         super().__init__(owner=self.owner, job_and_color="LFDKG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
     
     def deploy(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> Card:
-        targets = self.detection("small_cross", list(filter(lambda card: card.owner != self and card.health > 0, on_board_neutral+player1_on_board+player2_on_board)))
+        targets = self.detection("small_cross", tuple(filter(lambda card: card.owner != self.owner and card.health > 0, on_board_neutral+player1_on_board+player2_on_board)))
         for target in targets:
-            target.damage_calculate(game_screen.players_token[self.owner]//4, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            target.damage_calculate(game_screen.players_totem[self.owner]//4, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return self
     
     def ability(self, target: Card, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
@@ -129,11 +129,11 @@ class Apt(Card):
         super().__init__(owner=self.owner, job_and_color="APTDKG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        game_screen.players_token[self.owner] += self.armor//2
+        game_screen.players_totem[self.owner] += self.armor//2
         return True
     
     def damage_bonus(self, value: int, victim: Card, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
-        value += game_screen.players_totem[self.owner]
+        value += game_screen.players_totem[self.owner]//2
         engraved_totem(self, self.armor//2, player1_on_board, player2_on_board, game_screen)
         return value
     
