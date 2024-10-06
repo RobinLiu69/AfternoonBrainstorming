@@ -64,13 +64,17 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
         on_board_cards = on_board_neutral + player1.on_board + player2.on_board
         game_screen.update()
         
-        for board in board_dict.values():
-            board.update(game_screen)
-        
         mouse_x, mouse_y = pygame.mouse.get_pos()
         mouse_board_x = int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 and mouse_x < game_screen.display_width/2+game_screen.block_size*2 else None
         mouse_board_y = int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 and mouse_y < game_screen.display_height/2+game_screen.block_size*2.35 else None
         
+        
+        if mouse_board_x is not None and mouse_board_y is not None:
+            attack_area_display(controller, mouse_board_x, mouse_board_y, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+         
+        for board in board_dict.values():
+            board.update(game_screen)
+       
         
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
@@ -156,10 +160,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
             if event.type == pygame.QUIT:
                 running = False
                 quit()
-        
-        if mouse_board_x is not None and mouse_board_y is not None:
-            attack_area_display(controller, mouse_board_x, mouse_board_y, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-            
+           
         
         score_display.display_blocks(controller, game_screen.score, on_board_cards, game_screen)
         display_controller(controller, game_screen)

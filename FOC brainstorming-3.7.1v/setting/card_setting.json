@@ -290,7 +290,7 @@
             "damage": 2,
             "cost": 8,
             "upgrade_health": 7,
-            "upgrade_damage": 3,
+            "upgrade_damage": 4,
             "coin_gets": 2
         },
         "ASS": {
