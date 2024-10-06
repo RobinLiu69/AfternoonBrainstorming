@@ -24,20 +24,21 @@ class Card:
     armor: int = 0
     
     numbness: bool = field(init=False, default=True)
-    moving: bool = False
-    mouse_selected: bool = False
+    moving: bool = field(init=False, default=False)
+    mouse_selected: bool = field(init=False, default=False)
     
     board_x: int
     board_y: int
     
     shape: tuple = field(init=False, default=())
 
-    recursion_limit: int = 20
+    recursion_limit: int = field(init=False, default=20)
 
     anger: bool = False
-    
+    been_targeted: bool = field(init=False, default=False)
     
     def __post_init__(self) -> None:
+        self.trigered_by: "Card" | None = None
         self.max_health: int = self.health
         self.original_damage: int = self.damage
         self.board_position: int = self.board_x+(self.board_y*4)
@@ -152,20 +153,20 @@ class Card:
                         ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.75), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.75)),
                         ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.75), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.25)))
             case "CUBE":
-                self.shape = (((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.4), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.4)),
-                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.4), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.6)),
-                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.6), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.6)),
-                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.6), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.4)))    
+                self.shape = (((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.45), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.45)),
+                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.45), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.55)),
+                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.55), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.55)),
+                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.55), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.45)))
             case "CUBES":
-                self.shape = (((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.4), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.4)),
-                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.4), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.6)),
-                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.6), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.6)),
-                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.6), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.4)))    
+                self.shape = (((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.45), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.45)),
+                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.45), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.55)),
+                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.55), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.55)),
+                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.55), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.45))) 
             case "LUCKYBLOCK":
                 self.shape = (((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.4), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.4)),
                         ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.4), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.6)),
                         ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.6), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.6)),
-                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.6), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.4)))    
+                        ((display_width/2-block_size*2)+(self.board_x*block_size)+(block_size*0.6), (display_height/2-block_size*1.65)+(self.board_y*block_size)+(block_size*0.4))) 
             case "MOVE":
                 self.shape = ((-10, -10), (-10, -10))
             case "HEAL":
@@ -194,17 +195,28 @@ class Card:
         self.moving = False
         return False
 
-    def damage_calculate(self, value: int, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen, ability: bool = True                        ) -> bool:
+    def damage_calculate(self, value: int, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen, ability: bool = True) -> bool:
         game_screen.data.data_update("damage_taken_count", f"{self.owner}_{self.job_and_color}", 1)
+        
+        if self.damage_block(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen): return False
+        
+        
         if ability:
             if attacker.ability(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
                 game_screen.data.data_update("ability_count", f"{attacker.owner}_{attacker.job_and_color}", 1)
+                attacker.ability_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        
+        
         value = attacker.damage_bonus(value, self, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        
+        value = self.damage_reduce(value, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        
         if self.armor > 0 and self.armor >= value:
             game_screen.data.data_update("damage_dealt", f"{attacker.owner}_{attacker.job_and_color}", value)
             game_screen.data.data_update("damage_taken", f"{self.owner}_{self.job_and_color}", value)
             self.armor -= value
             self.been_attacked(attacker, value, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.been_attacked_signal(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             attacker.after_damage_calculated(self, value, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         elif self.armor > 0 and self.armor < value:
@@ -218,10 +230,13 @@ class Card:
             self.armor = 0
             self.health += value
             self.been_attacked(attacker, value, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.been_attacked_signal(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             attacker.after_damage_calculated(self, value, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             if self.health <= 0:
                 attacker.killed(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                attacker.killed_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
                 self.been_killed(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                self.been_killed_signal(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         elif self.armor == 0:
             if self.health >= value:
@@ -232,12 +247,15 @@ class Card:
             game_screen.data.data_update("damage_taken", f"{self.owner}_{self.job_and_color}", value)
             self.health -= value
             self.been_attacked(attacker, value, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.been_attacked_signal(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             attacker.after_damage_calculated(self, value, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             if self.health == 0:
                 game_screen.data.data_update("killed_count", f"{attacker.owner}_{attacker.job_and_color}", 1)
                 game_screen.data.data_update("death_count", f"{self.owner}_{self.job_and_color}", 1)
                 attacker.killed(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                attacker.killed_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
                 self.been_killed(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                self.been_killed_signal(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         return False
     
@@ -289,7 +307,7 @@ class Card:
                     draw_text(str(self.job_and_color), game_screen.info_text_font, self.text_color,
                              ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.1),
                              (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.8), game_screen.surface)
-                if self.numbness == True:
+                if self.numbness:
                     draw_text("numbness", game_screen.small_text_font, self.text_color,
                              ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.6),
                              (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.85), game_screen.surface)
@@ -297,14 +315,19 @@ class Card:
                     draw_text("arm:"+str(self.armor) if self.job_and_color != "SPG" else "arm: ?", game_screen.small_text_font, self.text_color,
                              ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.1),
                              (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.12), game_screen.surface)
-                if self.moving == True:
+                if self.moving:
                     draw_text("Moving" if not self.mouse_selected else "Selected", game_screen.small_text_font, self.text_color,
                              ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.6),
                              (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.12), game_screen.surface)
-                if self.anger == True:
+                if self.anger:
                     draw_text("Anger", game_screen.small_text_font, self.text_color,
                              ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.6),
                              (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.7725), game_screen.surface)
+                if self.been_targeted:
+                    draw_text("Target", game_screen.small_text_font, RED,
+                             ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.1),
+                             (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.75), game_screen.surface)
+
                 
     def draw_shape(self, game_screen: GameScreen) -> None:
         if game_screen.block_size is None: raise ValueError("Block size cna't be None.")
@@ -328,13 +351,25 @@ class Card:
     # def deploy(self, on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> "Card":
     #     return self
 
+    def trigger(self, victim: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        return False
+    
+    def damage_block(self, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        return False
+    
     def ability(self, target: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        return False
+    
+    def ability_signal(self, target: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
     def after_damage_calculated(self, target: "Card", value: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
     def killed(self, victim: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        return False
+
+    def killed_signal(self, victim: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
     def moved(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
@@ -345,11 +380,22 @@ class Card:
     
     def been_attacked(self, attacker: "Card", value: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
+
+    def been_attacked_signal(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        if self.been_targeted and self.trigered_by is not None:
+            self.trigered_by.trigger(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        return False
     
     def been_killed(self, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
 
+    def been_killed_signal(self, victim: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        return False
+
     def damage_bonus(self, value: int, victim: "Card", on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
+        return value
+
+    def damage_reduce(self, value: int, on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         return value
 
     def can_be_killed(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
@@ -383,21 +429,31 @@ class Card:
                 case "large_x":
                     pass
                 case"nearest":
-                    nearby_cards: list["Card"] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y))
-                    if nearby_cards:
-                        temp_card = nearby_cards[0]
-                        nearet_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), nearby_cards))
-                        random_number = random.randint(0, len(nearet_cards)-1)
-                        yield nearet_cards[random_number]
-                    
+                    for target in target_card_list:
+                        if target.been_targeted:
+                            yield target
+                            break
+                    else:
+                        nearby_cards: list["Card"] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y))
+                        if nearby_cards:
+                            temp_card = nearby_cards[0]
+                            nearet_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), nearby_cards))
+                            
+                            random_number = random.randint(0, len(nearet_cards)-1)
+                            yield nearet_cards[random_number]
                 case "farthest":
-                    faraway_cards: list["Card"] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y), reverse=True)
-                    if faraway_cards:
-                        temp_card = faraway_cards[0]
-                        farthest_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), faraway_cards))
+                    for target in target_card_list:
+                        if target.been_targeted:
+                            yield target
+                            break
+                    else:
+                        faraway_cards: list["Card"] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y), reverse=True)
+                        if faraway_cards:
+                            temp_card = faraway_cards[0]
+                            farthest_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), faraway_cards))
 
-                        random_number = random.randint(0, len(farthest_cards)-1)
-                        yield farthest_cards[random_number]
+                            random_number = random.randint(0, len(farthest_cards)-1)
+                            yield farthest_cards[random_number]
         return None
     
     def attack(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:

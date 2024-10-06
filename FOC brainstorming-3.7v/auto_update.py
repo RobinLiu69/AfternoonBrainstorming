@@ -1,13 +1,18 @@
-import os, json, shutil
+import os
+import json
+import shutil
 from zipfile import ZipFile
 from typing import cast
 
 from type_hint import AutoUpdateSetting
 
+
 FOLDER_PATH = os.path.realpath(os.path.dirname(__file__))
+
 
 with open(f"{FOLDER_PATH}/setting/auto_update_setting.json", "r") as file:
     SETTING: AutoUpdateSetting = json.loads(file.read())
+
 
 def get_project_info(name: str="更新日誌", time: int=0) -> tuple[str, str, str, str]:
     with open(f"{FOLDER_PATH}/{name}.txt", 'r', encoding='utf-8') as file:
@@ -24,34 +29,34 @@ def get_project_info(name: str="更新日誌", time: int=0) -> tuple[str, str, s
             raise Exception(f"Invalid file format: {name}.txt")
         return project_name, project_data, project_time, project_version
 
-def get_all_file_paths(directory: str, no_zip_files: list[str]=[]) -> list[str]:
 
+def get_all_file_paths(directory: str, no_zip_files: list[str]=[]) -> list[str]:
     file_paths = [] 
-  
     for root, directories, files in os.walk(directory): 
         for filename in files:
             filepath = os.path.join(root, filename)
             file_paths.append(filepath) 
-
-    file_paths = list(filter(lambda path: not any(path for no_zip_file in no_zip_files if no_zip_file in path), file_paths))
-
+    
+    file_paths = list(filter(lambda path: not any(no_zip_file in path for no_zip_file in no_zip_files), file_paths))
     return file_paths
 
+
 def zipped(zipped_file_name: str, no_zip_files: list[str]=[]) -> int: 
-
     file_paths = get_all_file_paths(FOLDER_PATH, no_zip_files)
-
 
     print('Following files will be zipped:')
     for file_name in file_paths:
         print(file_name)
     
-    with ZipFile(f"{zipped_file_name}.zip",'w') as zip:
-        for file in file_paths: 
-            zip.write(file) 
+
+    with ZipFile(f"{zipped_file_name}.zip", 'w') as zip:
+        for file in file_paths:
+            
+            zip.write(file, os.path.relpath(file, FOLDER_PATH))  
   
     print('All files zipped successfully!')
     return 0
+
 
 def move_file(file_name: str, folder_name: str) -> int:
     try:
@@ -66,6 +71,7 @@ def move_file(file_name: str, folder_name: str) -> int:
     except OSError as error:
         print(error)
     return 1
+
 
 def change_folder_path_name(folder_name: str, project_name: str="None") -> int:
     if project_name == "None":
@@ -88,10 +94,12 @@ def change_folder_path_name(folder_name: str, project_name: str="None") -> int:
         print(error)
     return 1
 
+
 def rename() -> int:
     project_name, project_data, project_time, project_version = get_project_info()
     change_folder_path_name(project_version, project_name)
     return 0
+
 
 def main() -> int:
     options = input("Chose following options (rename/zip):")
@@ -102,7 +110,6 @@ def main() -> int:
         zipped(zip_file_name, cast(list[str], SETTING["no_zip_files"]))
         move_file(f"{zip_file_name}.zip", cast(str, SETTING["zip_file_save_to"]))
     return 0
-
 
 
 if __name__ == "__main__":

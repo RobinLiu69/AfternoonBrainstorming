@@ -20,18 +20,28 @@ def attack_areas(board_x: int, board_y: int,  attack_types: str, other_cards: tu
             case "large_x":
                 pass
             case"nearest":
-                nearby_cards: list["Card"] = sorted(other_cards, key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y))
-                if nearby_cards:
-                    temp_card = nearby_cards[0]
-                    nearet_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y) == abs(temp_card.board_x-board_x)+abs(temp_card.board_y-board_y), nearby_cards))
-                    for card in nearet_cards: yield card.board_x, card.board_y
+                for card in other_cards:
+                    if card.been_targeted:
+                        yield card.board_x, card.board_y
+                        break
+                else:
+                    nearby_cards: list["Card"] = sorted(other_cards, key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y))
+                    if nearby_cards:
+                        temp_card = nearby_cards[0]
+                        nearet_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y) == abs(temp_card.board_x-board_x)+abs(temp_card.board_y-board_y), nearby_cards))
+                        for card in nearet_cards: yield card.board_x, card.board_y
                 
             case "farthest":
-                faraway_cards: list["Card"] = sorted(other_cards, key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y), reverse=True)
-                if faraway_cards:
-                    temp_card = faraway_cards[0]
-                    farthest_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y) == abs(temp_card.board_x-board_x)+abs(temp_card.board_y-board_y), faraway_cards))
-                    for card in farthest_cards: yield card.board_x, card.board_y
+                for card in other_cards:
+                    if card.been_targeted:
+                        yield card.board_x, card.board_y
+                        break
+                else:
+                    faraway_cards: list["Card"] = sorted(other_cards, key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y), reverse=True)
+                    if faraway_cards:
+                        temp_card = faraway_cards[0]
+                        farthest_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y) == abs(temp_card.board_x-board_x)+abs(temp_card.board_y-board_y), faraway_cards))
+                        for card in farthest_cards: yield card.board_x, card.board_y
     return None
 
 def attack_area_display(controller: str, board_x: int, board_y: int, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen) -> None:

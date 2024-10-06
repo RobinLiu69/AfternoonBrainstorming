@@ -27,13 +27,8 @@ def draw_card_effect(target: Card, player1_in_hand: list[str], player2_in_hand: 
 
 class Adc(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="ADCB", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+        super().__init__(owner=owner, job_and_color="ADCB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += card_settings["ADC"]["token_gets"]
@@ -50,14 +45,8 @@ class Adc(Card):
 
 class Ap(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="APB", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
-
+        super().__init__(owner=owner, job_and_color="APB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         target.numbness = True
@@ -68,14 +57,8 @@ class Ap(Card):
 
 class Tank(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="TANKB", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
-
+        super().__init__(owner=owner, job_and_color="TANKB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def been_attacked(self, attacker: Card, value: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += card_settings["TANK"]["token_gets"]
@@ -85,14 +68,8 @@ class Tank(Card):
 
 class Hf(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="HFB", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
-
+        super().__init__(owner=owner, job_and_color="HFB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def damage_bonus(self, value: int, victim: Card, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         return value + game_screen.players_token[self.owner]
@@ -100,14 +77,8 @@ class Hf(Card):
 
 class Lf(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="LFB", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
-
+        super().__init__(owner=owner, job_and_color="LFB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += card_settings["LF"]["token_gets"]
@@ -117,14 +88,8 @@ class Lf(Card):
 
 class Ass(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="ASSB", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
-
+        super().__init__(owner=owner, job_and_color="ASSB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += card_settings["ASS"]["token_gets"]
@@ -135,14 +100,8 @@ class Ass(Card):
 
 class Apt(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
-        
-        super().__init__(owner=self.owner, job_and_color="APTB", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
-    
+
+        super().__init__(owner=owner, job_and_color="APTB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += self.armor//card_settings["APT"]["token_from_armor_divisor"]
@@ -156,13 +115,8 @@ class Apt(Card):
 
 class Sp(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
-        
-        super().__init__(owner=self.owner, job_and_color="SPB", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+
+        super().__init__(owner=owner, job_and_color="SPB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def deploy(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], discard_pile: list[str], board_dict: dict[str, Board], game_screen: GameScreen) -> Card:
         enemies = list(filter(lambda card: card.owner != self.owner and card.health > 0, on_board_neutral+player1_on_board+player2_on_board))

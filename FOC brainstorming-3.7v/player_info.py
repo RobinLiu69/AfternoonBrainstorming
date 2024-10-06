@@ -3,7 +3,7 @@ import random, time
 from typing import cast
 
 from spawn import spawn_card
-from card import Card, Board, GameScreen, draw_text, WHITE, GREEN, DARKGREEN
+from card import Card, Board, GameScreen, draw_text, WHITE, GREEN, DARKGREEN, CYAN
 from UI import AttackCountDisplay, TokenDisplay
 
 MAGIC_CARDS = ["CUBES", "MOVE", "MOVEO", "HEAL"]
@@ -33,6 +33,7 @@ class Player:
         self.deck_info_offeset_x: float = 2
         self.totem_offeset_x: float = 2.5
         self.luck_offeset_x: float = 2
+        self.coin_offeset_x: float = 4.4
         
         if self.name == "player1":
             self.menu_deck_offset_y = 1
@@ -40,12 +41,14 @@ class Player:
             self.deck_info_offeset_x = 2
             self.totem_offeset_x = 4
             self.luck_offeset_x = 2
+            self.coin_offeset_x = 4.4
         elif self.name == "player2":
             self.menu_deck_offset_y = 1.5
             self.clock_offset_x = -0.7
             self.deck_info_offeset_x = -0.7
             self.totem_offeset_x = -3.25
             self.luck_offeset_x = -1.3
+            self.coin_offeset_x = -3.75
     
     def init_cards(self, game_screen: GameScreen) -> None:
         match self.name:
@@ -241,6 +244,7 @@ class Player:
         self.display_deck_info(game_screen)
         self.display_luck(game_screen)
         self.display_totems(game_screen)
+        self.display_coins(game_screen)
         self.attack_count_display.display_blocks(game_screen.number_of_attacks[self.name], game_screen)
         self.token_count_display.display_circle(game_screen.players_token[self.name], game_screen)
         
@@ -251,6 +255,10 @@ class Player:
     def display_totems(self, game_screen: GameScreen) -> None:
         if game_screen.players_totem[self.name]:
             draw_text(f"totems: {game_screen.players_totem[self.name]}", game_screen.text_font, DARKGREEN, game_screen.display_width/2-(game_screen.block_size*self.totem_offeset_x), game_screen.display_height-(game_screen.block_size*0.4), game_screen.surface)
+    
+    def display_coins(self, game_screen: GameScreen) -> None:
+        if game_screen.players_coin[self.name]:
+            draw_text(f"coins: {game_screen.players_coin[self.name]}", game_screen.text_font, CYAN, game_screen.display_width/2-(game_screen.block_size*self.coin_offeset_x), game_screen.display_height/2+(game_screen.block_size*1.3), game_screen.surface)
     
     
     def display_on_board_cards(self, game_screen: GameScreen) -> None:
@@ -266,13 +274,13 @@ class Player:
         for i, card in enumerate(self.in_hand):
             draw_text(f"{self.short_name}hand " + str(i+1) + ": "+card, game_screen.text_font, WHITE, x_position, game_screen.display_height/14*(i+1), game_screen.surface)
     
-    def hand_card_hints(self, mouse_x: int, mouse_y: int, game_screen: GameScreen) -> str:
+    def hand_card_hints(self, mouse_x: int, mouse_y: int, game_screen: GameScreen) -> tuple[str, int]:
         if (mouse_x < game_screen.display_width/2-game_screen.block_size*2.1 and mouse_x > game_screen.display_width/2-game_screen.block_size*3.3) or\
            (mouse_x > game_screen.display_width/2+game_screen.block_size*2.1 and mouse_x < game_screen.display_width/2+game_screen.block_size*3.3):
             i = int(mouse_y*14/game_screen.display_height+0.5)-1
             if -1 < i < len(self.in_hand):
-                return self.in_hand[i]
-        return "None"
+                return self.in_hand[i], i
+        return "None", 0
     
     def display_deck_info(self, game_screen: GameScreen) -> None:
         draw_text(f"{self.short_name}DrawDeck: {len(self.draw_deck)} cards", game_screen.text_font, WHITE, game_screen.display_width/2-(game_screen.block_size*self.deck_info_offeset_x), game_screen.display_height-(game_screen.block_size*0.5), game_screen.surface)

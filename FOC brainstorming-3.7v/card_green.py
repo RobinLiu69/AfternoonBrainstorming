@@ -3,7 +3,7 @@ import os, json
 import random
 from typing import Sequence, Any, cast
 
-from card import Board, Card, GameScreen, Green_setting, GREEN
+from card import Board, Card, GameScreen, draw_text, Green_setting, GREEN
 
 card_settings = Green_setting
 
@@ -49,17 +49,20 @@ def lucky_effects(target: Card, player1_in_hand: list[str], player2_in_hand: lis
 
 class LuckyBlock(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LUCKYBLOCK"]["health"], damage:int=card_settings["LUCKYBLOCK"]["damage"]) -> None:
-        self.owner = owner if owner == "display" else "neutral"
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="LUCKYBLOCK", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+        super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="LUCKYBLOCK", health=health, damage=damage, board_x=board_x, board_y=board_y)
+
+    def update(self, game_screen: GameScreen) -> None:
+        if self.text_color is not None:
+            draw_text("?", game_screen.info_text_font, self.text_color,
+                            ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.47),
+                            (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.43), game_screen.surface)
+        self.display_update(game_screen)
     
     def been_killed(self, attacker: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         lucky_effects(attacker, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True
+
     
     def end_turn(self, clear_numbness: bool=True) -> int:
         if self.numbness == True and clear_numbness:
@@ -71,13 +74,8 @@ class LuckyBlock(Card):
 
 class Adc(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="ADCG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+        super().__init__(owner=owner, job_and_color="ADCG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         for board in board_dict.values():
@@ -92,13 +90,8 @@ class Adc(Card):
 
 class Ap(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="APG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+        super().__init__(owner=owner, job_and_color="APG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         target.numbness = True
@@ -110,13 +103,8 @@ class Ap(Card):
 
 class Tank(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="TANKG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+        super().__init__(owner=owner, job_and_color="TANKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def been_attacked(self, attacker: Card, value: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         lucky_effects(attacker, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen, TANK=True)
@@ -126,13 +114,8 @@ class Tank(Card):
 
 class Hf(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="HFG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+        super().__init__(owner=owner, job_and_color="HFG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if target.job_and_color == "LUCKYBLOCK":
@@ -150,19 +133,13 @@ class Hf(Card):
 
 class Lf(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="LFG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+        super().__init__(owner=owner, job_and_color="LFG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if victim.job_and_color == "LUCKYBLOCK":
-            cards = tuple(self.detection("nearest", filter(lambda card: card.owner != self.owner and card.health >= 0 and card != self, player1_on_board + player2_on_board)))
-            if cards:
-                cards[0].damage_calculate(card_settings["LF"]["damage_from_killed_luckyblock"], self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen, False)
+            for card in self.detection("nearest", filter(lambda card: card.owner != self.owner and card.health >= 0 and card != self, player1_on_board + player2_on_board)):
+                card.damage_calculate(card_settings["LF"]["damage_from_killed_luckyblock"], self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen, False)
             
             if random.randint(1, 100) <= card_settings["LF"]["chance_to_get_attack_count_increase"]:
                 game_screen.number_of_attacks[self.owner] += card_settings["LF"]["number_of_attack_increase_from_killed_luckyblock"]
@@ -172,13 +149,8 @@ class Lf(Card):
 
 class Ass(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="ASSG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+        super().__init__(owner=owner, job_and_color="ASSG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_luck[self.owner] += 5
@@ -193,13 +165,8 @@ class Ass(Card):
 
 class Apt(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="APTG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+        super().__init__(owner=owner, job_and_color="APTG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         for board in board_dict.values():
@@ -218,13 +185,8 @@ class Apt(Card):
 
 class Sp(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
-        self.owner = owner
-        self.board_x = board_x
-        self.board_y = board_y
-        self.health = health
-        self.damage = damage
         
-        super().__init__(owner=self.owner, job_and_color="SPG", health=self.health, damage=self.damage, board_x=self.board_x, board_y=self.board_y)
+        super().__init__(owner=owner, job_and_color="SPG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def deploy(self, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> Card:
         game_screen.players_luck[self.owner] += card_settings["SP"]["luck_increase"]

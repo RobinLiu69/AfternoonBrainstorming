@@ -9,6 +9,32 @@ from controls import key_pressed
 from attack_detection import attack_area_display
 from UI import ScoreDisplay
 
+def number_key(number: int, mouse_x: int, mouse_y: int, mouse_board_x: int | None, mouse_board_y: int | None, controller: str, player1: Player, player2: Player, on_board_neutral: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    if mouse_board_x is not None and mouse_board_y is not None:
+        match controller:
+            case "player1":
+                player1.play_card(mouse_board_x, mouse_board_y, number-1, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+            case "player2":
+                player2.play_card(mouse_board_x, mouse_board_y, number-1, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+    elif mouse_x < game_screen.display_width/2-game_screen.block_size*2 or mouse_x > game_screen.display_width/2+game_screen.block_size*2:
+        if mouse_x < game_screen.display_width/2 and controller == "player1":
+            name, i = player1.hand_card_hints(mouse_x, mouse_y, game_screen)
+            if number-1 != i: return
+            if name != "None":
+                if player1.in_hand[i].endswith(" (+)"):
+                    player1.in_hand[i] = player1.in_hand[i].replace(" (+)", "")
+                else:
+                    player1.in_hand[i] += " (+)"
+        elif mouse_x > game_screen.display_width/2 and controller == "player2":
+            name, i = player2.hand_card_hints(mouse_x, mouse_y, game_screen)
+            if number-1 != i: return
+            if name != "None":
+                if player2.in_hand[i].endswith(" (+)"):
+                    player2.in_hand[i] = player2.in_hand[i].replace(" (+)", "")
+                else:
+                    player2.in_hand[i] += " (+)"
+
+
 def recycle_neutral(player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
     for i, card in enumerate(on_board_neutral):
         if card.health <= 0 and card.can_be_killed(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
@@ -42,8 +68,8 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
             board.update(game_screen)
         
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        mouse_board_x = int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 else None
-        mouse_board_y = int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 else None
+        mouse_board_x = int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 and mouse_x < game_screen.display_width/2+game_screen.block_size*2 else None
+        mouse_board_y = int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 and mouse_y < game_screen.display_height/2+game_screen.block_size*2.35 else None
         
         
         for event in pygame.event.get():
@@ -100,75 +126,25 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                                 case "player2":
                                     player2.move_card(mouse_board_x, mouse_board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
                     case pygame.K_1:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, 0, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, 0, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        number_key(1, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
                     case pygame.K_2:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, 1, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, 1, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        number_key(2, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
                     case pygame.K_3:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, 2, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, 2, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        number_key(3, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
                     case pygame.K_4:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, 3, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, 3, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        number_key(4, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
                     case pygame.K_5:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, 4, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, 4, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        number_key(5, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
                     case pygame.K_6:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, 5, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, 5, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        number_key(6, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
                     case pygame.K_7:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, 6, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, 6, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        number_key(7, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
                     case pygame.K_8:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, 7, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, 7, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        number_key(8, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
                     case pygame.K_9:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, 8, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, 8, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        number_key(9, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
                     case pygame.K_0:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, 9, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, 9, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        number_key(10, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
                     case pygame.K_SPACE:
                         if mouse_board_x is not None and mouse_board_y is not None:
                             match controller:
@@ -181,11 +157,12 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                 running = False
                 quit()
         
-        score_display.display_blocks(controller, game_screen.score, on_board_cards, game_screen)
-        display_controller(controller, game_screen)
-        
         if mouse_board_x is not None and mouse_board_y is not None:
             attack_area_display(controller, mouse_board_x, mouse_board_y, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+            
+        
+        score_display.display_blocks(controller, game_screen.score, on_board_cards, game_screen)
+        display_controller(controller, game_screen)
         
         match controller:
             case "player1":
@@ -206,9 +183,9 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                 
         if mouse_x < game_screen.display_width/2-game_screen.block_size*2 or mouse_x > game_screen.display_width/2+game_screen.block_size*2:
             if mouse_x < game_screen.display_width/2:
-                hint_box.update(mouse_x, mouse_y, player1.hand_card_hints(mouse_x, mouse_y, game_screen), game_screen)
+                hint_box.update(mouse_x, mouse_y, player1.hand_card_hints(mouse_x, mouse_y, game_screen)[0], game_screen)
             elif mouse_x > game_screen.display_width/2:
-                hint_box.update(mouse_x, mouse_y, player2.hand_card_hints(mouse_x, mouse_y, game_screen), game_screen)
+                hint_box.update(mouse_x, mouse_y, player2.hand_card_hints(mouse_x, mouse_y, game_screen)[0], game_screen)
                 
         if mouse_board_x is not None and mouse_board_y is not None:
             hint_box.update(mouse_x, mouse_y, get_card_name_in_battling(on_board_cards, mouse_board_x, mouse_board_y), game_screen)

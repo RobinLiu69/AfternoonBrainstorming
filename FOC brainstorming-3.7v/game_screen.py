@@ -78,6 +78,7 @@ class GameScreen:
         self.players_coin: dict[str, int] = {"player1": 0, "player2": 0}
         self.card_to_draw: dict[str, int] = {"player1": 0, "player2": 0}
         
+        
         self.number_of_attacks: dict[str, int] = {"player1": 0, "player2": 0}
         self.number_of_movings: dict[str, int] = {"player1": 0, "player2": 0}
         self.number_of_cudes: dict[str, int] = {"player1": 0, "player2": 0}
