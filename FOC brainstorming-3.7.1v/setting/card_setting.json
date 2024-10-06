@@ -263,7 +263,7 @@
         "AP": {
             "health": 4,
             "damage": 1,
-            "cost": 5,
+            "cost": 4,
             "upgrade_health": 5,
             "upgrade_damage": 3,
             "coin_gets": 3
@@ -279,7 +279,7 @@
         "HF": {
             "health": 7,
             "damage": 1,
-            "cost": 8,
+            "cost": 6,
             "upgrade_health": 9,
             "upgrade_damage": 2,
             "coin_gets": 2,
@@ -288,7 +288,7 @@
         "LF": {
             "health": 5,
             "damage": 2,
-            "cost": 8,
+            "cost": 4,
             "upgrade_health": 7,
             "upgrade_damage": 4,
             "coin_gets": 2
@@ -296,7 +296,7 @@
         "ASS": {
             "health": 1,
             "damage": 3,
-            "cost": 3,
+            "cost": 4,
             "upgrade_health": 2,
             "upgrade_damage": 4,
             "coin_gets": 5,
@@ -319,7 +319,7 @@
             "upgrade_health": 2,
             "upgrade_damage": 5,
             "coin_gets": 10,
-            "coin_reduced": 1
+            "coin_reduced": 2
         }
     },
     "Purple": {
@@ -348,7 +348,7 @@
             "health": 2,
             "damage": 3,
             "unit_gap": 3,
-            "maximum_card_draw_from_killed": 2
+            "maximum_card_draw_from_killed": 12
         },
         "APT": {
             "health": 0,

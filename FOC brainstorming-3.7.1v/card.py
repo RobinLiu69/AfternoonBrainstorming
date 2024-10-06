@@ -432,28 +432,26 @@ class Card:
                     for target in target_card_list:
                         if target.been_targeted:
                             yield target
-                            break
-                    else:
-                        nearby_cards: list["Card"] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y))
-                        if nearby_cards:
-                            temp_card = nearby_cards[0]
-                            nearet_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), nearby_cards))
-                            
-                            random_number = random.randint(0, len(nearet_cards)-1)
-                            yield nearet_cards[random_number]
+                    
+                    nearby_cards: list["Card"] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y))
+                    if nearby_cards:
+                        temp_card = nearby_cards[0]
+                        nearet_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), nearby_cards))
+                        
+                        random_number = random.randint(0, len(nearet_cards)-1)
+                        yield nearet_cards[random_number]
                 case "farthest":
                     for target in target_card_list:
                         if target.been_targeted:
                             yield target
-                            break
-                    else:
-                        faraway_cards: list["Card"] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y), reverse=True)
-                        if faraway_cards:
-                            temp_card = faraway_cards[0]
-                            farthest_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), faraway_cards))
+                    
+                    faraway_cards: list["Card"] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y), reverse=True)
+                    if faraway_cards:
+                        temp_card = faraway_cards[0]
+                        farthest_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), faraway_cards))
 
-                            random_number = random.randint(0, len(farthest_cards)-1)
-                            yield farthest_cards[random_number]
+                        random_number = random.randint(0, len(farthest_cards)-1)
+                        yield farthest_cards[random_number]
         return None
     
     def attack(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:

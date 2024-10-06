@@ -171,13 +171,12 @@ class Lf(Card):
         self.display_update(game_screen)
 
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.upgrade:
-            get_coins(self, card_settings["LF"]["coin_gets"], game_screen)
-            return True
+        get_coins(self, card_settings["LF"]["coin_gets"], game_screen)
         return False
 
     def start_turn(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
-        self.attack_types = random.choice(["large_cross", "nearest", "small_cross", "small_cross small_x", "farthest"])
+        if self.upgrade:
+            self.attack_types = random.choice(["large_cross", "nearest", "small_cross", "small_cross small_x", "farthest"])
         return 0
 
 

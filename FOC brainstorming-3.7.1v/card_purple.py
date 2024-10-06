@@ -65,11 +65,11 @@ class Ass(Card):
         count: int = 0
         match self.owner:
             case "player1":
-                count = len(player2_on_board)-len(player1_on_board) if len(player2_on_board)-len(player1_on_board) < card_settings["ASS"]["maximum_card_draw_from_killed"] else card_settings["ASS"]["maximum_card_draw_from_killed"]
+                count = len(player2_on_board)-len(player1_on_board)-card_settings["ASS"]["unit_gap"] if len(player2_on_board)-len(player1_on_board)-card_settings["ASS"]["unit_gap"] < card_settings["ASS"]["maximum_card_draw_from_killed"] else card_settings["ASS"]["maximum_card_draw_from_killed"]
                 for i in range(count):
                     game_screen.card_to_draw[self.owner] += 1
             case "player2":
-                count = len(player1_on_board)-len(player2_on_board) if len(player1_on_board)-len(player2_on_board) < card_settings["ASS"]["maximum_card_draw_from_killed"] else card_settings["ASS"]["maximum_card_draw_from_killed"]
+                count = len(player1_on_board)-len(player2_on_board)-card_settings["ASS"]["unit_gap"] if len(player1_on_board)-len(player2_on_board)-card_settings["ASS"]["unit_gap"] < card_settings["ASS"]["maximum_card_draw_from_killed"] else card_settings["ASS"]["maximum_card_draw_from_killed"]
                 for i in range(count):
                     game_screen.card_to_draw[self.owner] += 1
         return True
