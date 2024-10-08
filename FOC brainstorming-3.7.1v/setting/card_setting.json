@@ -187,7 +187,8 @@
         },
         "HF": {
             "health": 9,
-            "damage": 1
+            "damage": 1,
+            "extra_damage_from_moving": 1
         },
         "LF": {
             "health": 6,
