@@ -30,6 +30,8 @@ class Card:
     board_x: int
     board_y: int
     
+    extra_damage: int = 0
+    
     shape: tuple = field(init=False, default=())
 
     recursion_limit: int = field(init=False, default=20)
@@ -293,18 +295,23 @@ class Card:
                          (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.3725), game_screen.surface)
                 
             case _:
-                draw_text("HP:"+str(self.health) if self.job_and_color != "SPG" else "HP: ?", game_screen.info_text_font, self.text_color,
+                draw_text(f"HP:{self.health}" if self.job_and_color != "SPG" else "HP: ?", game_screen.info_text_font, self.text_color,
                          ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.1),
                          (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.03), game_screen.surface)
-                draw_text("ATK:"+str(self.damage) if self.job_and_color != "SPG" else "ATK: ?", game_screen.info_text_font, self.text_color,
-                         ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.6),
-                         (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.03), game_screen.surface)
+                if not self.extra_damage:
+                    draw_text(f"ATK:{self.damage}" if self.job_and_color != "SPG" else "ATK: ?", game_screen.info_text_font, self.text_color,
+                             ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.6),
+                             (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.03), game_screen.surface)
+                else:
+                    draw_text(f"ATK:{self.damage}+{self.extra_damage}", game_screen.info_text_font, self.text_color,
+                             ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.5),
+                             (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.03), game_screen.surface)
                 if self.owner != "display":
-                    draw_text(str(self.owner), game_screen.info_text_font, self.text_color,
+                    draw_text(self.owner, game_screen.info_text_font, self.text_color,
                              ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.1),
                              (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.8), game_screen.surface)
                 else:
-                    draw_text(str(self.job_and_color), game_screen.info_text_font, self.text_color,
+                    draw_text(self.job_and_color, game_screen.info_text_font, self.text_color,
                              ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.1),
                              (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.8), game_screen.surface)
                 if self.numbness:
@@ -312,7 +319,7 @@ class Card:
                              ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.6),
                              (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.85), game_screen.surface)
                 if self.armor > 0:
-                    draw_text("arm:"+str(self.armor) if self.job_and_color != "SPG" else "arm: ?", game_screen.small_text_font, self.text_color,
+                    draw_text(f"arm:{self.armor}" if self.job_and_color != "SPG" else "arm: ?", game_screen.small_text_font, self.text_color,
                              ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.1),
                              (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.12), game_screen.surface)
                 if self.moving:
@@ -393,7 +400,7 @@ class Card:
         return False
 
     def damage_bonus(self, value: int, victim: "Card", on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
-        return value
+        return value + self.extra_damage
 
     def damage_reduce(self, value: int, on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         return value

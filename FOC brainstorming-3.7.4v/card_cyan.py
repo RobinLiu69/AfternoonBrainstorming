@@ -189,6 +189,7 @@ class Ass(Card):
     
         if self.upgrade:
             self.anger = True
+            self.extra_damage = card_settings["ASS"]["damage_bonus"]
     
     def update(self, game_screen: GameScreen) -> None:
         if self.text_color is not None and self.upgrade:
@@ -198,7 +199,10 @@ class Ass(Card):
         self.display_update(game_screen)
 
     def damage_bonus(self, value: int, victim: Card, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
-        return value + card_settings["ASS"]["damage_bonus"]
+        self.anger = False
+        value += self.extra_damage
+        self.extra_damage = 0
+        return value
     
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         get_coins(self, card_settings["ASS"]["coin_gets"], game_screen)

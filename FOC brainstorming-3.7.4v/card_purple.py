@@ -46,7 +46,7 @@ class Hf(Card):
     def start_turn(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         if self.attack_types is not None:
             count = len(tuple(self.detection(self.attack_types, tuple(filter(lambda card: card.owner != self.owner, player1_on_board+player2_on_board)))))
-            game_screen.number_of_attacks[self.owner] += count//2
+            game_screen.number_of_attacks[self.owner] += count//3
         return 0
     
 

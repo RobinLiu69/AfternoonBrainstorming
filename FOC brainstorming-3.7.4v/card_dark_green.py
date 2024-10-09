@@ -15,9 +15,13 @@ class Adc(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=DarkGreen_setting["ADC"]["health"], damage:int=DarkGreen_setting["ADC"]["damage"]) -> None:
 
         super().__init__(owner=owner, job_and_color="ADCDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
+
+    def update(self, game_screen: GameScreen) -> None:
+        self.extra_damage = (game_screen.players_totem[self.owner]//DarkGreen_setting["ADC"]["damage_divisor"])
+        self.display_update(game_screen)
     
     def damage_bonus(self, value: int, victim: Card, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
-        return value + (game_screen.players_totem[self.owner]//DarkGreen_setting["ADC"]["damage_divisor"])
+        return value + self.extra_damage
 
 
 class Ap(Card):
@@ -82,9 +86,8 @@ class Ass(Card):
         super().__init__(owner=owner, job_and_color="ASSDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.health > 0:
-            self.health = 0
-            engraved_totem(self, DarkGreen_setting["ASS"]["engraved_totem"], player1_on_board, player2_on_board, game_screen)
+        self.health = 0
+        engraved_totem(self, DarkGreen_setting["ASS"]["engraved_totem"], player1_on_board, player2_on_board, game_screen)
         return True
 
 
@@ -97,10 +100,13 @@ class Apt(Card):
         game_screen.players_totem[self.owner] += self.armor//2
         return True
     
+    def update(self, game_screen: GameScreen) -> None:
+        self.extra_damage = game_screen.players_totem[self.owner]//2
+        self.display_update(game_screen)
+    
     def damage_bonus(self, value: int, victim: Card, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
-        value += game_screen.players_totem[self.owner]//2
         engraved_totem(self, self.armor//2, player1_on_board, player2_on_board, game_screen)
-        return value
+        return value + self.extra_damage
     
     def after_damage_calculated(self, target: Card, value: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         self.armor += value//2
