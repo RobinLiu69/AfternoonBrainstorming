@@ -12,7 +12,7 @@ def get_coins(target: Card, value: int, game_screen: GameScreen) -> None:
     game_screen.players_coin[target.owner] = game_screen.players_coin[target.owner] + value if game_screen.players_coin[target.owner] + value <= 50 else 50
 
 def price_check(owner: str, job: str, player1_on_board: list[Card], player2_on_board: list[Card], game_screen: GameScreen) -> bool:
-    price = card_settings[job]["cost"] - (card_settings["SP"]["coin_reduced"]*len(tuple(filter(lambda card: card.job_and_color == "SPC" and card.owner == owner, player1_on_board+player2_on_board))))
+    price = card_settings[job]["cost"] - (card_settings["SP"]["coin_reduced"]*len(tuple(filter(lambda card: card.job_and_color == "SPC" and card.upgrade and card.owner == owner, player1_on_board+player2_on_board))))
     if game_screen.players_coin[owner] >= price:
         game_screen.players_coin[owner] -= price
         return True
@@ -22,9 +22,9 @@ def price_check(owner: str, job: str, player1_on_board: list[Card], player2_on_b
 class Adc(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
         
-        self.upgrade = upgrade
-        
         super().__init__(owner=owner, job_and_color="ADCC", health=health if not upgrade else card_settings["ADC"]["upgrade_health"], damage=damage if not upgrade else card_settings["ADC"]["upgrade_damage"], board_x=board_x, board_y=board_y)
+        
+        self.upgrade = upgrade
 
     def update(self, game_screen: GameScreen) -> None:
         if self.text_color is not None and self.upgrade:
@@ -50,11 +50,11 @@ class Adc(Card):
 
 class Ap(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
-
-        self.upgrade = upgrade
-        
+         
         super().__init__(owner=owner, job_and_color="APC", health=health if not upgrade else card_settings["AP"]["upgrade_health"], damage=damage if not upgrade else card_settings["AP"]["upgrade_damage"], board_x=board_x, board_y=board_y)
-    
+ 
+        self.upgrade = upgrade
+
     def update(self, game_screen: GameScreen) -> None:
         if self.text_color is not None and self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color,
@@ -86,10 +86,10 @@ class Ap(Card):
 class Tank(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
         
-        self.upgrade = upgrade
-        
         super().__init__(owner=owner, job_and_color="TANKC", health=health if not upgrade else card_settings["TANK"]["upgrade_health"], damage=damage if not upgrade else card_settings["TANK"]["upgrade_damage"], board_x=board_x, board_y=board_y)
-    
+        
+        self.upgrade = upgrade
+
         if upgrade:
             self.anger = True
         
@@ -115,10 +115,10 @@ class Tank(Card):
 class Hf(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
 
-        self.upgrade = upgrade
-        self.count = 1
-        
+        self.count = 1        
         super().__init__(owner=owner, job_and_color="HFC", health=health if not upgrade else card_settings["HF"]["upgrade_health"], damage=damage if not upgrade else card_settings["HF"]["upgrade_damage"], board_x=board_x, board_y=board_y)
+        
+        self.upgrade = upgrade
         
     def update(self, game_screen: GameScreen) -> None:
         if self.text_color is not None and self.upgrade:
@@ -158,11 +158,11 @@ class Hf(Card):
 
 class Lf(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
-
-        self.upgrade = upgrade
         
         super().__init__(owner=owner, job_and_color="LFC", health=health if not upgrade else card_settings["LF"]["upgrade_health"], damage=damage if not upgrade else card_settings["LF"]["upgrade_damage"], board_x=board_x, board_y=board_y)
-    
+        
+        self.upgrade = upgrade
+
     def update(self, game_screen: GameScreen) -> None:
         if self.text_color is not None and self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color,
@@ -182,11 +182,11 @@ class Lf(Card):
 
 class Ass(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
-
-        self.upgrade = upgrade
-            
+ 
         super().__init__(owner=owner, job_and_color="ASSC", health=health if not upgrade else card_settings["ASS"]["upgrade_health"], damage=damage if not upgrade else card_settings["ASS"]["upgrade_damage"], board_x=board_x, board_y=board_y)
-    
+        
+        self.upgrade = upgrade
+
         if self.upgrade:
             self.anger = True
             self.extra_damage = card_settings["ASS"]["damage_bonus"]
@@ -211,11 +211,11 @@ class Ass(Card):
 
 class Apt(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
-
-        self.upgrade = upgrade
         
         super().__init__(owner=owner, job_and_color="APTC", health=health if not upgrade else card_settings["APT"]["upgrade_health"], damage=damage if not upgrade else card_settings["APT"]["upgrade_damage"], board_x=board_x, board_y=board_y)
-    
+        
+        self.upgrade = upgrade
+
     def update(self, game_screen: GameScreen) -> None:
         if self.text_color is not None and self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color,
@@ -235,10 +235,10 @@ class Apt(Card):
 class Sp(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
 
-        self.upgrade = upgrade
-        
         super().__init__(owner=owner, job_and_color="SPC", health=health if not upgrade else card_settings["SP"]["upgrade_health"], damage=damage if not upgrade else card_settings["SP"]["upgrade_damage"], board_x=board_x, board_y=board_y)
-    
+        
+        self.upgrade = upgrade
+
     def update(self, game_screen: GameScreen) -> None:
         if self.text_color is not None and self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color,

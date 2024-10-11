@@ -31,6 +31,7 @@ class Card:
     board_y: int
     
     extra_damage: int = 0
+    upgrade: bool = False
     
     shape: tuple = field(init=False, default=())
 
