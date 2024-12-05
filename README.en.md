@@ -62,7 +62,7 @@ The second player starts their turn with four cards in hand and one attack oppor
   - Select a friendly unit (**M**) to grant it a "Moving" effect, displayed below its attack value.  
 
 > [!NOTE]
-> Press **M** again on a moving unit to mark it as "Selected". Then choose an empty spot on the board and press **M** to move the unit there.  
+> Press **M** again on a moving unit to mark it as "Selected". Then choose an empty spot which are in a 3x3 grid around the unit on the board and press **M** to move the unit there.  
 
 > [!WARNING]
 > Units in a stunned state cannot move.  
@@ -129,95 +129,94 @@ The second player starts their turn with four cards in hand and one attack oppor
 ## White Faction
 ![Screenshot](https://github.com/user-attachments/assets/192971d8-e20d-4e2c-8b89-e6352705c007)
 
-- **Triangle (ADC)** - 5/4 - **Large Cross**
-- **Circle (AP)** - 4/3 - **Nearest Target** / Paralyzes on attack.  
-- **Square (TANK)** - 15/1 - **Small Cross**
-- **Trapezoid (HF)** - 9/2 - **Nine Grid**
-- **Double Diamond (LF)** - 7/3 -**Small Cross**
-- **Assassin (ASS)** - 2/5 - **Diagonal Cross**
-- **Hexagon (APT)** - 8/2 - **Nearest Target** / Provides 2 points of shield to self and nearest ally upon attack.  
-- **Diamond (SP)** - 1/5 - **Farthest Target** / Gains an extra point each round.  
+- **Triangle (ADC) - 5/4 - Large Cross**
+- **Circle (AP) - 4/3 - Nearest Target** / Paralyzes on attack.  
+- **Square (TANK) - 15/1 - Small Cross**
+- **Trapezoid (HF) - 9/2 - Nine Grid**
+- **Double Diamond (LF) - 7/3 -Small Cross**
+- **Assassin (ASS) - 2/5 - Diagonal Cross**
+- **Hexagon (APT) - 8/2 - Nearest Target** / Provides 2 points of shield to self and nearest ally upon attack.  
+- **Diamond (SP) - 1/5 - Farthest Target** / Gains an extra point each round.  
 
 ## Red Faction
 ![Screenshot](https://github.com/user-attachments/assets/102ae8a6-988a-4332-8214-2ea4582e0ecd)
 
-- **Triangle (ADC)** - 4/1 - **Large Cross** / Gains +1 attack after dealing damage.  
-- **Circle (AP)** - 3/2 - **Nearest Target** / Paralyzes and steals 100% of the target's attack.  
-- **Square (TANK)** - 9/1 - **Small Cross** / Provides 2 points of shield to the nearest ally when taking damage.  
-- **Trapezoid (HF)** - 9/1 - **Nine Grid** / Loses 1 HP after dealing damage, gains 1 attack, and cannot die directly from this damage (delayed until end of turn).  
+- **Triangle (ADC) - 4/1 - Large Cross** / Gains +1 attack after dealing damage.  
+- **Circle (AP) - 3/2 - Nearest Target** / Paralyzes and steals 100% of the target's attack.  
+- **Square (TANK) - 9/1 - Small Cross** / Provides 2 points of shield to the nearest ally when taking damage.  
+- **Trapezoid (HF) - 9/1 - Nine Grid** / Loses 1 HP after dealing damage, gains 1 attack, and cannot die directly from this damage (delayed until end of turn).  
 > [!IMPORTANT]  
 > Does not gain points, when it's HP below 1.  
-- **Double Diamond (LF)** - 5/2 - **Small Cross** / Gains +1/+1 after dealing damage.  
-- **Assassin (ASS)** - 2/4 - **Diagonal Cross** / Grants the nearest ally +2 attack after killing an enemy.  
-- **Hexagon (APT)** - 6/2 - **Nearest Target** / Grants +1/+1 to self and nearest ally when attacking.  
-- **Diamond (SP)** - 1/2 - **Farthest Target** / All buffs gained by Red units are also transferred to this unit.
+- **Double Diamond (LF) - 5/2 - Small Cross** / Gains +1/+1 after dealing damage.  
+- **Assassin (ASS) - 2/4 - Diagonal Cross** / Grants the nearest ally +2 attack after killing an enemy.  
+- **Hexagon (APT) - 6/2 - Nearest Target** / Grants +1/+1 to self and nearest ally when attacking.  
+- **Diamond (SP) - 1/2 - Farthest Target** / All buffs gained by Red units are also transferred to this unit.
 
 ## Green Faction
 ![Screenshot_20241007_215718](https://github.com/user-attachments/assets/21980993-b2d8-4a5b-a61e-5a8296f2ab52)
 
-- **Triangle (ADC)** - 3/3 - **Large Cross** / After attack, there is a 50% chance to spawn a lucky block for each block in the attack range.
-- **Circle (AP)** - 3/2 - **Nearest Target** / Attack includes paralysis and, based on the enemy's luck value, causes a random bad luck effect. Additionally, based on your own luck value, it causes a random good luck effect or none. (See [Effect Explanation](#effect-explanation))
-- **Square (TANK)** - 10/1 - **Small Cross** / After taking damage, a bad luck effect or none is applied to the attacker, depending on their luck effect. (See [Effect Explanation](#effect-explanation))
-- **Trapezoid (HF)** - 8/1 - **Nine Grid** / Destroying blocks increases luck by 5% and randomly places a lucky block on the board.
-- **Double Diamond (LF)** - 6/2 - **Small Cross** / Destroying a lucky block deals 4 damage to the nearest enemy, with a 25% chance to return a attack opportunity.
-- **Assassin (ASS)** - 2/4 - **Diagonal Cross** / After killing an enemy, you gain 5% luck, and the enemy loses 5% luck.
-- **Hexagon (APT)** - 6/0 - **Nearest Target** / After attacking, it places a lucky block in the small cross area, and it gains 1 shield for each lucky block placed in the rest of the game.
-- **Diamond (SP)** - ?/? - **Farthest Target** / When it enters, increases luck by 10% and randomly places lucky blocks based on the luck value (for every 10 luck, one lucky block is placed).
+- **Triangle (ADC) - 3/3 - Large Cross** / After attack, there is a 50% chance to spawn a lucky block for each block in the attack range.
+- **Circle (AP) - 3/2 - Nearest Target** / Attack includes paralysis and, based on the enemy's luck value, causes a random bad luck effect. Additionally, based on your own luck value, it causes a random good luck effect or none. (See [Effect Explanation](#effect-explanation))
+- **Square (TANK) - 10/1 - Small Cross** / After taking damage, a bad luck effect or none is applied to the attacker, depending on their luck effect. (See [Effect Explanation](#effect-explanation))
+- **Trapezoid (HF) - 8/1 - Nine Grid** / Destroying blocks increases luck by 5% and randomly places a lucky block on the board.
+- **Double Diamond (LF) - 6/2 - Small Cross** / Destroying a lucky block deals 4 damage to the nearest enemy, with a 25% chance to return a attack opportunity.
+- **Assassin (ASS) - 2/4 - Diagonal Cross** / After killing an enemy, you gain 5% luck, and the enemy loses 5% luck.
+- **Hexagon (APT) - 6/0 - Nearest Target** / After attacking, it places a lucky block in the small cross area, and it gains 1 shield for each lucky block placed in the rest of the game.
+- **Diamond (SP) - ?/? - Farthest Target** / When it enters, increases luck by 10% and randomly places lucky blocks based on the luck value (for every 10 luck, one lucky block is placed).
 
 > [!NOTE]
 > **Green Special Unit**
 >
-> **Lucky Block (LuckyBlock)** - 1/0 - Similar to a block but will cause random effects on the unit that destroys it, depending on the unit owner's luck value. (See [Effect Explanation](#effect-explanation))
+> **Lucky Block (LuckyBlock) - 1/0** - Similar to a block but will cause random effects on the unit that destroys it, depending on the unit owner's luck value. (See [Effect Explanation](#effect-explanation))
 
 ## **Blue Faction**
 ![Screenshot_20241007_215726](https://github.com/user-attachments/assets/c1934832-6e5a-439a-8635-54fcca8ed202)
 
-- **Triangle (ADC)** - 4/2 - **Large Cross** / Automatically attacks after using blue balls to drawing a card. If the unit is paralyzed, it will remove the paralysis but not attack. After dealing damage, gains 1 blue ball.
-- **Circle (AP)** - 4/2 - **Nearest Target** / Attack includes paralysis and gains 2 blue balls.
-- **Square (TANK)** - 10/1 - **Small Cross** / After taking damage, gains 1 blue ball.
-- **Trapezoid (HF)** - 8/2 - **Nine Grid** / Attack deals additional damage based on the number of blue balls.
-- **Double Diamond (LF)** - 6/3 - **Small Cross** / After dealing damage, gains 1 blue ball.
-- **Assassin (ASS)** - 2/4 - **Diagonal Cross** / After killing an enemy, gain 2 blue balls.
-- **Hexagon (APT)** - 5/3 - **Nearest Target** / Gaining a blue ball also grants 1 shield. When attacking, for every 4 points of shield, 1 blue ball is gained.
-- **Diamond (SP)** - 1/5 - **Farthest Target** / When placed, it deals 1 point of damage to a random enemy, repeating based on the number of cards in your discard pile and on the field.
+- **Triangle (ADC) - 4/2 - Large Cross** / Automatically attacks after using blue balls to drawing a card. If the unit is paralyzed, it will remove the paralysis but not attack. After dealing damage, gains 1 blue ball.
+- **Circle (AP) - 4/2 - Nearest Target** / Attack includes paralysis and gains 2 blue balls.
+- **Square (TANK) - 10/1 - Small Cross** / After taking damage, gains 1 blue ball.
+- **Trapezoid (HF) - 8/2 - Nine Grid** / Attack deals additional damage based on the number of blue balls.
+- **Double Diamond (LF) - 6/3 - Small Cross** / After dealing damage, gains 1 blue ball.
+- **Assassin (ASS) - 2/4 - Diagonal Cross** / After killing an enemy, gain 2 blue balls.
+- **Hexagon (APT) - 5/3 - Nearest Target** / Gaining a blue ball also grants 1 shield. When attacking, for every 4 points of shield, 1 blue ball is gained.
+- **Diamond (SP) - 1/5 - Farthest Target** / When placed, it deals 1 point of damage to a random enemy, repeating based on the number of cards in your discard pile and on the field.
 
 > [!NOTE]
-> **Blue Token (Blue Ball)**: This value only applies to blue units. When it reaches 3, the player will draw a card from the deck.
+> **Blue Token (Blue Ball):** This value only applies to blue units. When it reaches 3, the player will draw a card from the deck.
 
 ## **Orange Faction**
 ![Screenshot_20241007_215736](https://github.com/user-attachments/assets/44312b89-eb8b-4a29-bb38-9680e0aeb94c)
 
-- **Triangle (ADC)** - 4/2 - **Large Cross** / After attacking, can move and will automatically attack again after moving.
-- **Circle (AP)** - 3/2 - **Nearest Target** / Attack includes paralysis, and at the start of the turn, it gains a usable movement magic card for the turn.
-- **Square (TANK)** - 10/1 - **Small Cross** / After taking damage, gains a usable movement magic card for the turn.
-- **Trapezoid (HF)** - 9/1 - **Nine Grid** / After attacking, can move and gains +1 attack. The effect disappears after the turn ends.
-- **Double Diamond (LF)** - 6/3 - **Small Cross** / After attacking, can move and deal damage to the nearest target again.
-- **Assassin (ASS)** - 2/4 - **Diagonal Cross** / After killing an enemy, can move and enter a rage state (See [Effect Explanation](#effect-explanation)). In rage mode, killing enemies will return the attack opportunity and remove the rage state.
-- **Hexagon (APT)** - 6/0 - **Nearest Target** / After a teammate moves, both itself and the moving ally gain 1 shield. If itslef moves, the shield is converted into attack at a 2:1 ratio.
-- **Diamond (SP)** - 1/5 - **Farthest Target** / After a teammate moves, deals 3 points of damage to the farthest target.
+- **Triangle (ADC) - 4/2 - Large Cross** / After attacking, can move and will automatically attack again after moving.
+- **Circle (AP) - 3/2 - Nearest Target** / Attack includes paralysis, and at the start of the turn, it gains a usable movement magic card for the turn.
+- **Square (TANK) - 10/1 - Small Cross** / After taking damage, gains a usable movement magic card for the turn.
+- **Trapezoid (HF) - 9/1 - Nine Grid** / After attacking, can move and gains +1 attack. The effect disappears after the turn ends.
+- **Double Diamond (LF) - 6/3 - Small Cross** / After attacking, can move and deal damage to the nearest target again.
+- **Assassin (ASS) - 2/4 - Diagonal Cross** / After killing an enemy, can move and enter a rage state (See [Effect Explanation](#effect-explanation)). In rage mode, killing enemies will return the attack opportunity and remove the rage state.
+- **Hexagon (APT) - 6/0 - Nearest Target** / After a teammate moves, both itself and the moving ally gain 1 shield. If itslef moves, the shield is converted into attack at a 2:1 ratio.
+- **Diamond (SP) - 1/5 - Farthest Target** / After a teammate moves, deals 3 points of damage to the farthest target.
 
 ## **Dark Green Faction**
 ![Screenshot_20241007_220122](https://github.com/user-attachments/assets/a015caca-21ca-40e8-9014-b62f266887d0)
 
-- **Triangle (ADC)** - 4/1 - **Long Cross** / Deals additional 1/4 damage from the totem when attacking.
-- **Circle (AP)** - 3/3 - **Nearest Target** / After attacking, marks 5 layers of the totem.
-- **Square (TANK)** - 9/1 - **Small Cross** / After taking damage, marks 2 layers of the totem.
-- **Trapezoid (HF)** - 8/2 - **Nine Grid** / At the start of the owner's turn, it takes 2 damage and marks 2 layers of the totem. After dealing damage, it restores 1 health point.
-- **Double Diamond (LF)** - 6/3 - **Small Cross** / Upon placement, deals 1/4 damage to all enemies in the attack range, and the attack marks 1 layer of the totem for each unit within the range.
-- **Assassin (ASS)** - 2/4 - **Diagonal Cross** / After killing an enemy, it dies. Each kill marks 4 layers of the totem.
-- **Hexagon (APT)** - 6/0 - **Nearest Target** / When attacking, it triggers additional damage of 1/2 from the totem, gains shield based on half the layers of the totem, and gains shield equal to half of the damage dealt.
-- **Diamond (SP)** - 1/5 - **In-play effect** / Doubles the mark count of all units in play.
+- **Triangle (ADC) - 4/1 - Long Cross** / Deals additional 1/4 damage from the totem when attacking.
+- **Circle (AP) - 3/3 - Nearest Target** / After attacking, marks 5 layers of the totem.
+- **Square (TANK) - 9/1 - Small Cross** / After taking damage, marks 2 layers of the totem.
+- **Trapezoid (HF) - 8/2 - Nine Grid** / At the start of the owner's turn, it takes 2 damage and marks 2 layers of the totem. After dealing damage, it restores 1 health point.
+- **Double Diamond (LF) - 6/3 - Small Cross** / Upon placement, deals 1/4 damage to all enemies in the attack range, and the attack marks 1 layer of the totem for each unit within the range.
+- **Assassin (ASS) - 2/4 - Diagonal Cross** / After killing an enemy, it dies. Each kill marks 4 layers of the totem.
+- **Hexagon (APT) - 6/0 - Nearest Target** / When attacking, it triggers additional damage of 1/2 from the totem, gains shield based on half the layers of the totem, and gains shield equal to half of the damage dealt.
+- **Diamond (SP) - 1/5 - In-play effect** / Doubles the mark count of all units in play.
 
 ### **Purple Faction**
 ![Screenshot_20241007_215754](https://github.com/user-attachments/assets/59a60549-3eba-427d-9564-4251818eaa79)
 
-- **Circle (AP)** - 3/1 - **Nearest Target** / Attack includes paralysis, breaks shields, and reduces the target's attack to its original value.
-- **Square (TANK)** - 9/1 - **Small Cross** / After the enemy moves, they lose 2 health points.
-  
-> **Important Note**: This faction's units are not affected by paralysis immunity effects.
-
-- **Assassin (ASS)** - 2/3 - **Diagonal Cross** / After a kill, draws a number of cards based on the difference between the enemy and player field piles, with a maximum of 2 cards per kill.
-- **Trapezoid (HF)** - 8/1 - **Nine Grid** / At the start of the player's turn, calculates all the enemy units in its attack range (excluding neutral units), and add an attack opportunity for every 3 enemies.
+- **Circle (AP) - 3/1 - Nearest Target** / Attack includes paralysis, breaks shields, and reduces the target's attack to its original value.
+- **Square (TANK) - 9/1 - Small Cross** / After the enemy moves, they lose 2 health points.
+> [!IMPORTANT]
+> This faction's units are not affected by paralysis immunity effects.
+- **Assassin (ASS) - 2/3 - Diagonal Cross** / After a kill, draws a number of cards based on the difference between the enemy and player field piles, with a maximum of 2 cards per kill.
+- **Trapezoid (HF) - 8/1 - Nine Grid** / At the start of the player's turn, calculates all the enemy units in its attack range (excluding neutral units), and add an attack opportunity for every 3 enemies.
 
 # Endgame Summary Screen
 
@@ -232,7 +231,7 @@ The second player starts their turn with four cards in hand and one attack oppor
 
 > [!TIP]  
 > Use **Tab** to view data for both players. Player 1's data is on top, Player 2's is below.  
-> Use **keys 1, 2, SPACE** to toggle between player charts.  
+> Use **keys** **1**, **2**, **SPACE** to toggle between player charts.  
 > Press **ESC** to exit.
 
 ## Data Explanation
