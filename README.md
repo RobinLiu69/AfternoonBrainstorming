@@ -1,8 +1,8 @@
 
 # 午後激盪 規則介紹
 
-[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.md)
-![Static Badge](https://img.shields.io/badge/lang-zh.tw-blue)
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.en.md)
+[![Static Badge](https://img.shields.io/badge/lang-zh.tw-blue)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.md)
 
 ## 遊戲簡介
 你將會有12張卡牌(在遊戲開始前組建它)，而每一回合你會獲得一次攻擊機會(可以存下來)，你可以透過召喚手下或使用魔法的方式去取得優勢。
