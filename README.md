@@ -1,7 +1,7 @@
 
 # 午後激盪 規則介紹
 
-[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/RobinLiu69/AfternoonBrainstorming/main/readme.md)
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/readme.md)
 ![Static Badge](https://img.shields.io/badge/lang-zh.tw-blue)
 
 ## 遊戲簡介
