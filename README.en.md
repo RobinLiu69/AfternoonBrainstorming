@@ -3,14 +3,14 @@
 [![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.en.md)  [![Static Badge](https://img.shields.io/badge/lang-zh.tw-blue)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.md)
 
 ## Game Overview  
-You will have 12 cards (constructed before the game starts). Each turn, you gain one attack opportunity (which can be saved for later). Use summoned minions or magic to gain an advantage.  
+You will have 12 cards (Chose before the game starts). Each turn, you gain one attack opportunity (which can be saved for later). Use summoned minions or magic to gain an advantage.  
 
 Each active minion on the field (not stunned) scores one point for its owner. The scores offset each other, and the first player to lead their opponent by 10 points wins the game.  
 
 ## Before the Game  
 ![Screenshot_20241007_214036](https://github.com/user-attachments/assets/2c5819b8-a59d-4ed5-9383-99700cbd5b8c)  
 
-Construct your 12 cards. Each type of minion can be included up to twice, and each spell up to three times.  
+Choose your 12 cards. Each type of minion can be included up to twice, and each spell up to three times.  
 
 The first player selects 6 cards, then passes the selection to the next player (use the **E** key for toggling). After both players select their 12 cards, the game starts. During selection, you can only see the opponent's first six cards.  
 
@@ -35,14 +35,14 @@ The second player starts their turn with four cards in hand and one attack oppor
 > Each turn, draw one card from your deck and gain one attack opportunity.  
 
 > [!NOTE]
-> Attack opportunities are displayed as colored squares in the bottom-left corner: white, blue, and red, each with 10 uses.  
+> Attack opportunities are displayed as colored squares in the bottom corner: First, when attack opportunity is under 10 or equal will be displayed in white, then blue, then red.
 
 > [!TIP]
 > - Press **1–9**, **0** to place the corresponding card in your hand onto the board at the mouse position (or cast a spell).  
 > - **Space**: Place the last card in your hand.  
 > - **A**: Attack.  
 > - **E**: End your turn.  
-> - The bottom area displays your deck and discard pile. Minions that die or used spell cards go to the discard pile.  
+> - The bottom area displays your deck and discard pile card infos. Minions that die or used spell cards go to the discard pile.  
 
 ---
 
