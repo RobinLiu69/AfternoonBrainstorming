@@ -244,5 +244,6 @@ The second player starts their turn with four cards in hand and one attack oppor
 [Rules on Bahamut](https://home.gamer.com.tw/artwork.php?sn=5702820)  
 > [!CAUTION]  
 > Rules on this page take precedence!
+[Godot Version](https://github.com/AaronCheng1996/AfternoonBrainstorming_godot)
 
  
