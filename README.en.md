@@ -192,7 +192,7 @@ The second player starts their turn with four cards in hand and one attack oppor
 - **Square (TANK) - 10/1 - Small Cross** / After taking damage, gains a usable movement magic card for the turn.
 - **Trapezoid (HF) - 9/1 - Nine Grid** / After attacking, can move and gains +1 attack. The effect disappears after the turn ends.
 - **Double Diamond (LF) - 6/3 - Small Cross** / After attacking, can move and deal damage to the nearest target again.
-- **Assassin (ASS) - 2/4 - Diagonal Cross** / After killing an enemy, can move and enter a rage state (See [Effect Explanation](#effect-explanation)). In rage mode, killing enemies will return the attack opportunity and remove the rage state.
+- **Assassin (ASS) - 2/3 - Diagonal Cross** / After killing an enemy, can move and enter a rage state (See [Effect Explanation](#effect-explanation)). In rage mode, killing enemies will return the attack opportunity and remove the rage state.
 - **Hexagon (APT) - 6/0 - Nearest Target** / After a teammate moves, both itself and the moving ally gain 1 shield. If itslef moves, the shield is converted into attack at a 2:1 ratio.
 - **Diamond (SP) - 1/5 - Farthest Target** / After a teammate moves, deals 3 points of damage to the farthest target.
 
@@ -215,7 +215,7 @@ The second player starts their turn with four cards in hand and one attack oppor
 - **Square (TANK) - 9/1 - Small Cross** / After the enemy moves, they lose 2 health points.
 > [!IMPORTANT]
 > This faction's units are not affected by paralysis immunity effects.
-- **Assassin (ASS) - 2/3 - Diagonal Cross** / After a kill, draws a number of cards based on the difference between the enemy and player field piles, with a maximum of 2 cards per kill.
+- **Assassin (ASS) - 2/3 - Diagonal Cross** / After a kill, draws a number of cards based on the difference between the enemy and (player field piles + 3).
 - **Trapezoid (HF) - 8/1 - Nine Grid** / At the start of the player's turn, calculates all the enemy units in its attack range (excluding neutral units), and add an attack opportunity for every 3 enemies.
 
 # Endgame Summary Screen
