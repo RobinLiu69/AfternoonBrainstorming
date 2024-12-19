@@ -1,0 +1,4 @@
+{
+    "no_zip_files": [".git", ".mypy_cache", "__pycache__"],
+    "zip_file_save_to" : "history"
+}
