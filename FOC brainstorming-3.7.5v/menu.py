@@ -27,8 +27,6 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> None:
     while running:
         game_screen.update()
         
-        for board in board_list.values():
-            board.update(game_screen)
         
         mouse_x, mouse_y = pygame.mouse.get_pos()
         mouse_board_x = int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 else None
@@ -95,9 +93,12 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> None:
         player1.menu_display_timer_state(game_screen)
         player1.menu_file_auto_delet_state(game_screen)
         
+        for board in board_list.values():
+            board.update(game_screen)
         
         if mouse_board_x is not None and mouse_board_y is not None:
             hint_box.update(mouse_x, mouse_y, get_card_name_in_menu(page, mouse_board_x, mouse_board_y), game_screen)
+        
         
         pygame.display.update()
         game_screen.clock.tick(60)

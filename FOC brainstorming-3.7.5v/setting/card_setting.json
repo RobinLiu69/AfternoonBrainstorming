@@ -323,6 +323,41 @@
             "coin_reduced": 2
         }
     },
+    "Fuchsia": {
+        "ADC": {
+            "health": 4,
+            "damage": 2
+        },
+        "AP": {
+            "health": 4,
+            "damage": 1
+        },
+        "TANK": {
+            "health": 13,
+            "damage": 1
+        },
+        "HF": {
+            "health": 8,
+            "damage": 1
+        },
+        "LF": {
+            "health": 6,
+            "damage": 1
+        },
+        "ASS": {
+            "health": 2,
+            "damage": 3
+        },
+        "APT": {
+            "health": 2,
+            "damage": 3,
+            "damage_divisor": 2
+        },
+        "SP": {
+            "health": 1,
+            "damage": 5
+        }
+    },
     "Purple": {
         "ADC": {
             "health": 0,

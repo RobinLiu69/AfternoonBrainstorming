@@ -7,7 +7,8 @@
         "O": "Orange",
         "P": "Purple",
         "DKG": "DarkGreen",
-        "C": "Cyan"
+        "C": "Cyan",
+        "F": "Fuchsia"
     },
 
     "RGB_colors": {
@@ -19,6 +20,7 @@
       "Purple": "128, 0, 255",
       "DarkGreen": "85, 107, 47",
       "Cyan": "0, 238, 238",
+      "Fuchsia": "159, 0, 80",
       "Black": "0, 0, 0"
     },
 

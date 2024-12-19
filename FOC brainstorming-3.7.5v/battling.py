@@ -44,7 +44,7 @@ def recycle_neutral(player1_in_hand: list[str], player2_in_hand: list[str], on_b
 def update_neutral(player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
     recycle_neutral(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
     for card in on_board_neutral:
-        card.update(game_screen)
+        card.update(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
 
 def display_controller(controller: str, game_screen: GameScreen) -> None:
     draw_text(f"Ture: {controller}", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*0.6, game_screen.display_height/2-game_screen.block_size*2.1, game_screen.surface)
@@ -71,9 +71,6 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
         
         if mouse_board_x is not None and mouse_board_y is not None:
             attack_area_display(controller, mouse_board_x, mouse_board_y, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-         
-        for board in board_dict.values():
-            board.update(game_screen)
        
         
         for event in pygame.event.get():
@@ -188,6 +185,9 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
             elif mouse_x > game_screen.display_width/2:
                 hint_box.update(mouse_x, mouse_y, player2.hand_card_hints(mouse_x, mouse_y, game_screen)[0], game_screen)
                 
+        for board in board_dict.values():
+            board.update(game_screen)
+        
         if mouse_board_x is not None and mouse_board_y is not None:
             hint_box.update(mouse_x, mouse_y, get_card_name_in_battling(on_board_cards, mouse_board_x, mouse_board_y), game_screen)
         

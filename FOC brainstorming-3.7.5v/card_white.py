@@ -20,21 +20,19 @@ class Cube(Card):
         else:
             return 0
 
+
 class Heal(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=-1, damage:int=-1) -> None:
         
         super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="HEAL", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def update(self, game_screen: GameScreen) -> None:
-        self.display_update(game_screen)
 
 class Move(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=-1, damage:int=-1) -> None:
         
         super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="MOVE", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def update(self, game_screen: GameScreen) -> None:
-        self.display_update(game_screen)
+
 
 class Adc(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:

@@ -3,11 +3,11 @@ import os, json, pygame
 import random
 from typing import Sequence, Any, cast
 
-from game_screen import GameScreen, WHITE
+from game_screen import GameScreen, WHITE, BOARD_SIZE
 
 
 def initialize_board(length: int, game_screen: GameScreen) -> dict[str, "Board"]:
-    return dict(zip(((str(i%4)+"-"+str(i//4)) for i in range(length)), (Board(width=int(game_screen.block_size), height=int(game_screen.block_size), occupy=False, color=WHITE, board_x=i % 4, board_y=i // 4) for i in range(length))))
+    return dict(zip(((str(i%BOARD_SIZE[0])+"-"+str(i//BOARD_SIZE[1])) for i in range(length)), (Board(width=int(game_screen.block_size), height=int(game_screen.block_size), occupy=False, color=WHITE, board_x=i % BOARD_SIZE[0], board_y=i // BOARD_SIZE[1]) for i in range(length))))
 
 @dataclass(kw_only=True)
 class Board:

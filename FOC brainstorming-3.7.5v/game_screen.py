@@ -18,6 +18,7 @@ with open(f"{__FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8")
 with open(f"{__FOLDER_PATH}/setting/card_setting.json", "r", encoding="utf-8") as file:
     CARD_SETTING: CardSetting = json.loads(file.read())
 
+
 BASIC_FONT = __FOLDER_PATH+SETTING["basic_font"]
 CHINESE_FONT = __FOLDER_PATH+SETTING["chinese_font"]
 
@@ -31,6 +32,7 @@ ORANGE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DIC
 PURPLE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Purple"].split(", "))))
 DARKGREEN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["DarkGreen"].split(", "))))
 CYAN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Cyan"].split(", "))))
+FUCHSIA: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Fuchsia"].split(", "))))
 
 
 White_setting = CARD_SETTING["White"]
@@ -40,13 +42,14 @@ Blue_setting = CARD_SETTING["Blue"]
 Orange_setting = CARD_SETTING["Orange"]
 DarkGreen_setting = CARD_SETTING["DarkGreen"]
 Cyan_setting = CARD_SETTING["Cyan"]
+Fuchsia_setting = CARD_SETTING["Fuchsia"]
 Purple_setting = CARD_SETTING["Purple"]
+
 
 KETYS_TO_DISPLAY = SETTING["keys_to_display"]
 KEYS_TO_CHECK = SETTING["keys_to_check"]
 PIE_TITLE_TEXTS = SETTING["pie_title_texts"]
-
-
+BOARD_SIZE: tuple[int, int] = cast(tuple[int, int], tuple(map(int, SETTING["board_size"])))
 
 def draw_text(text: str, font: pygame.font.Font, textColor: tuple[int, ...], x: float, y: float, surface: pygame.surface.Surface) -> None:
     rendered_text = font.render(text, True, textColor)
@@ -86,8 +89,7 @@ class GameScreen:
     
     def fitting_screen(self) -> tuple[pygame.surface.Surface, float]:
         if self.display_width/self.display_height == 1.6:
-            surface = pygame.display.set_mode(
-                (self.display_width, self.display_height))
+            surface = pygame.display.set_mode((self.display_width, self.display_height))
             block_size = (self.display_width/8)/1.2
         else:
             maxvalue = [0, 0]
@@ -100,8 +102,7 @@ class GameScreen:
                     break
             self.display_width = maxvalue[0]
             self.display_height = maxvalue[1]
-            surface = pygame.display.set_mode(
-                (self.display_width, self.display_height))
+            surface = pygame.display.set_mode((self.display_width, self.display_height))
             block_size = (self.display_width/8)/1.2
         return surface, block_size
 

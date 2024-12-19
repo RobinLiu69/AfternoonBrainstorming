@@ -240,7 +240,7 @@ class Player:
         else:
             self.display_timer(game_screen)
         self.display_hand_cards(game_screen)
-        self.display_on_board_cards(game_screen)
+        self.display_on_board_cards(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         self.display_deck_info(game_screen)
         self.display_luck(game_screen)
         self.display_totems(game_screen)
@@ -261,9 +261,9 @@ class Player:
             draw_text(f"coins: {game_screen.players_coin[self.name]}", game_screen.text_font, CYAN, game_screen.display_width/2-(game_screen.block_size*self.coin_offeset_x), game_screen.display_height/2+(game_screen.block_size*1.3), game_screen.surface)
     
     
-    def display_on_board_cards(self, game_screen: GameScreen) -> None:
+    def display_on_board_cards(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         for card in self.on_board:
-            card.update(game_screen) 
+            card.update(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen) 
     
     def display_hand_cards(self, game_screen: GameScreen) -> None:
         match self.name:

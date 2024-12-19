@@ -8,6 +8,7 @@ import card_orange as orange
 import card_purple as purple
 import card_dark_green as darkgreen
 import card_cyan as cyan
+import card_fuchsia as fuchsia
 
 
 def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_hand: list[str], player2_in_hand: list[str], on_board: list[Card], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], discard_pile: list[str], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
@@ -192,12 +193,30 @@ def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_han
                 else:
                     return False
             
+            case "ADCF":
+                temp = fuchsia.Adc(owner, board_x, board_y)
+                on_board.append(temp)
+                if temp.shadow:
+                    on_board.append(temp.shadow)
+            # case "APF":
+            #     on_board.append(fuchsia.Ap(owner, board_x, board_y).deploy(player1_on_board, player2_on_board, game_screen))
+            # case "TANKF":
+            #     on_board.append(fuchsia.Tank(owner, board_x, board_y))
+            # case "HFF":
+            #     on_board.append(fuchsia.Hf(owner, board_x, board_y))
+            # case "LFF":
+            #     on_board.append(fuchsia.Lf(owner, board_x, board_y))
+            # case "ASSF":
+            #     on_board.append(fuchsia.Ass(owner, board_x, board_y))
+            # case "APTF":
+            #     on_board.append(fuchsia.Apt(owner, board_x, board_y))
+            # case "SPF":
+            #     on_board.append(fuchsia.Sp(owner, board_x, board_y).deploy(game_screen))
             
             case _:
                 return False
             
         board_dict[str(board_x)+"-"+str(board_y)].occupy = True
-        print(board_dict)
         return True
     else:
         return False

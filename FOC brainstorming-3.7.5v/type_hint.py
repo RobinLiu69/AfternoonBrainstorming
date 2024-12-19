@@ -18,4 +18,5 @@ class CardSetting(TypedDict):
     Orange: dict[str, dict[str, int]]
     DarkGreen: dict[str, dict[str, int]]
     Cyan: dict[str, dict[str, int]]
+    Fuchsia: dict[str, dict[str, int]]
     Purple: dict[str, dict[str, int]]

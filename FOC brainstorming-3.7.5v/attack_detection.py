@@ -1,4 +1,4 @@
-from card import Card, GameScreen, Board, Generator, random, pygame, cast, WHITE, RED
+from card import Card, GameScreen, Board, Generator, random, pygame, cast, WHITE, RED, BOARD_SIZE
 
 def attack_areas(board_x: int, board_y: int,  attack_types: str, other_cards: tuple[Card], board_dict: dict[str, Board]) -> Generator[tuple[int, int], None, None]:
     board_position = board_x + (board_y * 4)
@@ -43,18 +43,33 @@ def attack_areas(board_x: int, board_y: int,  attack_types: str, other_cards: tu
     return None
 
 def attack_area_display(controller: str, board_x: int, board_y: int, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen) -> None:
-    target_cards = tuple(filter(lambda card: card.board_x == board_x and card.board_y == board_y, on_board_neutral+player1_on_board+player2_on_board))
+    target_cards = tuple(filter(lambda card: card.board_x == board_x and card.board_y == board_y and card.job_and_color != "SHADOW", on_board_neutral+player1_on_board+player2_on_board))
     if target_cards:
-        target_card = target_cards[0]
+        target_card: Card = target_cards[0]
         other_cards: tuple[Card] = cast(tuple[Card], tuple(filter(lambda card: card.owner != target_card.owner, on_board_neutral+player1_on_board+player2_on_board)))
-        if target_card.attack_types is not None:
-            if target_card.owner == controller:
-                color = (200, 200, 200)
-            else:
-                color = (200, 0, 0)
-            card_attack_blocks = attack_areas(target_card.board_x, target_card.board_y, target_card.attack_types, other_cards, board_dict)
-            for board_x, board_y in card_attack_blocks:
-                draw_board(color, board_x, board_y, game_screen)
+        match target_card.job_and_color:
+            case "ADCF":
+                if target_card.attack_types is not None:
+                    if target_card.owner == controller:
+                        color = (200, 200, 200)
+                    else:
+                        color = (200, 0, 0)
+                    card_attack_blocks = attack_areas(target_card.board_x, target_card.board_y, target_card.attack_types, other_cards, board_dict)
+                    for board_x, board_y in card_attack_blocks:
+                        draw_board(color, board_x, board_y, game_screen)
+                        
+                    card_attack_blocks = attack_areas(BOARD_SIZE[0]-1-target_card.board_x, BOARD_SIZE[1]-1-target_card.board_y, target_card.attack_types, other_cards, board_dict)
+                    for board_x, board_y in card_attack_blocks:
+                        draw_board(color, board_x, board_y, game_screen)
+            case _:
+                if target_card.attack_types is not None:
+                    if target_card.owner == controller:
+                        color = (200, 200, 200)
+                    else:
+                        color = (200, 0, 0)
+                    card_attack_blocks = attack_areas(target_card.board_x, target_card.board_y, target_card.attack_types, other_cards, board_dict)
+                    for board_x, board_y in card_attack_blocks:
+                        draw_board(color, board_x, board_y, game_screen)
 
 def draw_board(color: tuple[int, int, int], board_x: int, board_y: int, game_screen: GameScreen) -> None:
     image = pygame.surface.Surface((game_screen.block_size, game_screen.block_size))

@@ -51,13 +51,12 @@ class LuckyBlock(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LUCKYBLOCK"]["health"], damage:int=card_settings["LUCKYBLOCK"]["damage"]) -> None:
         
         super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="LUCKYBLOCK", health=health, damage=damage, board_x=board_x, board_y=board_y)
-
-    def update(self, game_screen: GameScreen) -> None:
-        if self.text_color is not None:
-            draw_text("?", game_screen.info_text_font, self.text_color,
-                            ((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0.47),
-                            (game_screen.display_height/2)-(game_screen.block_size*1.65)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0.43), game_screen.surface)
-        self.display_update(game_screen)
+    
+    def draw_shape(self, game_screen: GameScreen) -> None:
+        if self.surface is None: return
+        self.shape = self.shaped(game_screen.block_size)
+        if self.text_color:
+            draw_text("?", game_screen.info_text_font, self.text_color, (game_screen.block_size*0.47), (game_screen.block_size*0.43), self.surface)
     
     def been_killed(self, attacker: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         lucky_effects(attacker, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
