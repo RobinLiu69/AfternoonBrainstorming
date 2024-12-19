@@ -51,7 +51,6 @@ def zipped(zipped_file_name: str, no_zip_files: list[str]=[]) -> int:
 
     with ZipFile(f"{zipped_file_name}.zip", 'w') as zip:
         for file in file_paths:
-            
             zip.write(file, os.path.relpath(file, FOLDER_PATH))  
   
     print('All files zipped successfully!')
@@ -73,10 +72,10 @@ def move_file(file_name: str, folder_name: str) -> int:
     return 1
 
 
-def change_folder_path_name(folder_name: str, project_name: str="None") -> int:
+def change_folder_path_name(project_version: str, project_name: str="None") -> int:
     if project_name == "None":
         project_name = FOLDER_PATH.split("/")[-1].split("-")[0]
-    destination = f"{'/'.join(FOLDER_PATH.split('/')[:-1:])}/{project_name}-{folder_name}"
+    destination = f"{'/'.join(FOLDER_PATH.split('/')[:-1:])}/{project_name}-{project_version}"
     if FOLDER_PATH == destination:
         print("Source and destination are the same.")
         return 0
@@ -106,7 +105,8 @@ def main() -> int:
     if options.lower() == "rename":
         rename()
     elif options.lower() == "zip":
-        zip_file_name = FOLDER_PATH.split("/")[-1]
+        project_name, project_data, project_time, project_version = get_project_info()
+        zip_file_name = f"{project_name}-{project_version}"
         zipped(zip_file_name, cast(list[str], SETTING["no_zip_files"]))
         move_file(f"{zip_file_name}.zip", cast(str, SETTING["zip_file_save_to"]))
     return 0

@@ -1,4 +1,4 @@
 {
     "no_zip_files": [".git", ".mypy_cache", "__pycache__"],
-    "zip_file_save_to" : "history"
+    "zip_file_save_to" : "history version(zip, 7z, gar.tz)"
 }
