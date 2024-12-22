@@ -46,7 +46,6 @@ def lucky_effects(target: Card, player1_in_hand: list[str], player2_in_hand: lis
                     target.health -= 2
 
 
-
 class LuckyBlock(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LUCKYBLOCK"]["health"], damage:int=card_settings["LUCKYBLOCK"]["damage"]) -> None:
         
@@ -119,7 +118,7 @@ class Hf(Card):
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if target.job_and_color == "LUCKYBLOCK":
             game_screen.players_luck[self.owner] += card_settings["HF"]["luck_increase"]
-        board_list = list(filter(lambda board: board.occupy == False, board_dict.values()))
+        board_list = tuple(filter(lambda board: board.occupy == False, board_dict.values()))
         if board_list:
             board = board_list[random.randrange(len(board_list))]
             on_board_neutral.append(LuckyBlock("None", board.board_x, board.board_y))

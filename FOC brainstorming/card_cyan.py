@@ -36,6 +36,7 @@ class Adc(Card):
         if self.launch_attack(self.attack_types, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
             if self.upgrade:
                 self.launch_attack(self.attack_types, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.hit_cards.clear()
             return True
         else:
             return False
@@ -97,7 +98,7 @@ class Tank(Card):
         if self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color, (game_screen.block_size*0.388), (game_screen.block_size*0.41), self.surface)
 
-    def damage_block(self, attacker: Card, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def damage_block(self, value: int, attacker: Card, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if self.anger:
             self.anger = False
             return True

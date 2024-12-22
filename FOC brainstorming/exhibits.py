@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 import random, os, json, pygame
 from typing import cast
+#Vic Yeh 到此一遊
+#學測倒數29天
 
 
 from card import Card
@@ -30,7 +32,7 @@ all_exhibit_cards: list[list[Card]] = [[white.Adc("display", 0, 0), white.Ap("di
                                        [orange.Adc("display", 0, 0), orange.Ap("display", 1, 0), orange.Tank("display", 2, 0), orange.Hf("display", 3, 0), orange.Lf("display", 0, 1), orange.Ass("display", 1, 1), orange.Apt("display", 2, 1), orange.Sp("display", 3, 1)],
                                        [darkgreen.Adc("display", 0, 0), darkgreen.Ap("display", 1, 0), darkgreen.Tank("display", 2, 0), darkgreen.Hf("display", 3, 0), darkgreen.Lf("display", 0, 1), darkgreen.Ass("display", 1, 1), darkgreen.Apt("display", 2, 1), darkgreen.Sp("display", 3, 1)],
                                        [cyan.Adc("display", 0, 0), cyan.Ap("display", 1, 0), cyan.Tank("display", 2, 0), cyan.Hf("display", 3, 0), cyan.Lf("display", 0, 1), cyan.Ass("display", 1, 1), cyan.Apt("display", 2, 1), cyan.Sp("display", 3, 1)],
-                                       [fuchsia.Adc("display", 0, 0)],
+                                       [fuchsia.Adc("display", 0, 0), fuchsia.Ap("display", 1, 0), fuchsia.Tank("display", 2, 0), fuchsia.Hf("display", 3, 0), fuchsia.Lf("display", 0, 1), fuchsia.Ass("display", 1, 1), fuchsia.Apt("display", 2, 1), fuchsia.Sp("display", 3, 1)],
                                        
                                        [purple.Adc("display", 0, 0), purple.Ap("display", 1, 0), purple.Tank("display", 2, 0), purple.Hf("display", 3, 0), purple.Lf("display", 0, 1), purple.Ass("display", 1, 1), purple.Apt("display", 2, 1), purple.Sp("display", 3, 1)],
                                        [white.Cube("display", 0, 2), white.Heal("display", 1, 2), white.Move("display", 2, 2)]]

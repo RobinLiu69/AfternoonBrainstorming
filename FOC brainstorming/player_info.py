@@ -82,7 +82,7 @@ class Player:
     def attack(self, board_x: int, board_y: int, player1_in_hand: list[str], playuer2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if game_screen.number_of_attacks[self.name] > 0:
             for card in self.on_board:
-                if card.board_position == board_x+(board_y*4):
+                if card.board_x == board_x and card.board_y == board_y:
                     if card.attack(player1_in_hand, playuer2_in_hand, on_board_neutral, player1_on_board ,player2_on_board, board_dict, game_screen):
                         game_screen.number_of_attacks[self.name] -= 1
                         break
@@ -166,7 +166,13 @@ class Player:
     def recycle_cards(self, player1_in_hand: list[str], player2_in_hand:list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         for i, card in enumerate(self.on_board):
             if card.health <= 0 and card.can_be_killed(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
-                self.discard_pile.append(self.on_board.pop(i).job_and_color)
+                card.die(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                card_name = self.on_board.pop(i).job_and_color
+                match card_name:
+                    case "SHADOW":
+                        None
+                    case _:
+                        self.discard_pile.append(card_name)
                 board_dict[str(card.board_x)+"-"+str(card.board_y)].occupy = False
                 print(f"{self.name} recycled a {card.job_and_color}.")
     

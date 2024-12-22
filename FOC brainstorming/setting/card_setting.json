@@ -333,7 +333,7 @@
             "damage": 1
         },
         "TANK": {
-            "health": 13,
+            "health": 11,
             "damage": 1
         },
         "HF": {
@@ -342,7 +342,7 @@
         },
         "LF": {
             "health": 6,
-            "damage": 1
+            "damage": 2
         },
         "ASS": {
             "health": 2,
