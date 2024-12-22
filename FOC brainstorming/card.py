@@ -43,6 +43,7 @@ class Card:
     damage: int
     attack_types: str | None = field(init=False, default=None)
     armor: int = 0
+    attack_uses: int = 1
     
     numbness: bool = field(init=False, default=True)
     moving: bool = field(init=False, default=False)
