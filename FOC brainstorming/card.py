@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-import os, json, pygame
-import random
+import pygame
+import random, math
 from typing import Sequence, Any, TypeVar, cast, Generator, Iterable
 
 from board_block import Board
@@ -246,7 +246,8 @@ class Card:
         
         value = self.damage_reduce(value, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         
-        if self.shadow_block(value, attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen): return False
+        if self.shadow_block(value, attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+            value = math.ceil(value / 2)
         
         if self.armor > 0 and self.armor >= value:
             game_screen.data.data_update("damage_dealt", f"{attacker.owner}_{attacker.job_and_color}", value)

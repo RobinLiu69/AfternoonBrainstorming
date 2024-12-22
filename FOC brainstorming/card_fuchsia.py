@@ -52,16 +52,8 @@ class Shadow(Card):
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         match self.linker.job_and_color:
             case "ASSF":
-                shadow = spawn_shadow(self.owner, BOARD_SIZE[1]-1-victim.board_x, BOARD_SIZE[1]-1-victim.board_y, self)
+                shadow = spawn_shadow(self.owner, BOARD_SIZE[1]-1-victim.board_x, BOARD_SIZE[1]-1-victim.board_y, self.linker)
                 self.linker.shadows.append(shadow)
-                match self.linker.owner:
-                    case "player1":
-                        player1_on_board.append(shadow)
-                    case "player2":
-                        player2_on_board.append(shadow)
-                    case _:
-                        return True
-                    
                 return False
             case _:
                 return False
@@ -105,6 +97,13 @@ class Adc(Card):
             self.hit_cards.clear()
             return True
         else:
+            count = 0
+            for shadow in self.shadows:
+                if shadow.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+                    count += 1
+            self.hit_cards.clear()
+            if count:
+                return True
             return False
     
     def update(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
@@ -248,6 +247,13 @@ class Hf(Card):
             self.hit_cards.clear()
             return True
         else:
+            count = 0
+            for shadow in self.shadows:
+                if shadow.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+                    count += 1
+            self.hit_cards.clear()
+            if count:
+                return True
             return False
     
     def update(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
@@ -303,6 +309,13 @@ class Lf(Card):
             self.hit_cards.clear()
             return True
         else:
+            count = 0
+            for shadow in self.shadows:
+                if shadow.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+                    count += 1
+            self.hit_cards.clear()
+            if count:
+                return True
             return False
     
     def move(self, board_x: int, board_y: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
@@ -354,7 +367,12 @@ class Ass(Card):
                 return True
             
         return False
-
+    
+    def die(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        for shadow in self.shadows:
+            shadow.die(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        return False
+    
     def attack(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         shadow_attack = len(self.shadows)
         if self.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
@@ -364,6 +382,14 @@ class Ass(Card):
                 self.hit_cards.clear()
             return True
         else:
+            if shadow_attack:
+                count = 0
+                for shadow in self.shadows:
+                    if shadow.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+                        count += 1
+                self.hit_cards.clear()
+                if count:
+                    return True
             return False
     
     def update(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
