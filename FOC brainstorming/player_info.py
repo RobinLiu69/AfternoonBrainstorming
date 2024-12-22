@@ -76,6 +76,10 @@ class Player:
 
     def turn_end(self, game_screen: GameScreen) -> None:
         self.in_hand = list(filter(lambda card: card != "MOVEO", self.in_hand))
+        game_screen.number_of_cudes[self.name] = 0
+        game_screen.number_of_movings[self.name] = 0
+        game_screen.number_of_heals[self.name] = 0
+        
         for card in self.on_board:
             card.end_of_the_turn(game_screen)
     
@@ -84,7 +88,7 @@ class Player:
             for card in self.on_board:
                 if card.board_x == board_x and card.board_y == board_y:
                     if card.attack(player1_in_hand, playuer2_in_hand, on_board_neutral, player1_on_board ,player2_on_board, board_dict, game_screen):
-                        game_screen.number_of_attacks[self.name] -= 1
+                        game_screen.number_of_attacks[self.name] -= card.attack_uses
                         break
     
     def draw_card(self) -> None:
