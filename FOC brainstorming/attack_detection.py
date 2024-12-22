@@ -1,7 +1,7 @@
 from card import Card, GameScreen, Board, Generator, random, pygame, cast, WHITE, RED, BOARD_SIZE
 
-def attack_areas(board_x: int, board_y: int,  attack_types: str, other_cards: tuple[Card], board_dict: dict[str, Board]) -> Generator[tuple[int, int], None, None]:
-    board_position = board_x + (board_y * 4)
+def attack_areas(board_x: int, board_y: int,  attack_types: str | None, other_cards: tuple[Card], board_dict: dict[str, Board]) -> Generator[tuple[int, int], None, None]:
+    if attack_types is None: return None
     board_list = tuple((board_dict.values()))
     for attack_type in attack_types.split(" "):
         match attack_type:
@@ -11,7 +11,7 @@ def attack_areas(board_x: int, board_y: int,  attack_types: str, other_cards: tu
                         yield board.board_x, board.board_y
             case "large_cross":
                 for board in board_list:
-                    if ((board.board_x == board_x or board.board_y == board_y) and board.board_position != board_position):
+                    if ((board.board_x == board_x or board.board_y == board_y) and not (board.board_x == board_x and board.board_y == board_y)):
                         yield board.board_x, board.board_y
             case "small_x":
                 for board in board_list:
@@ -48,7 +48,7 @@ def attack_area_display(controller: str, board_x: int, board_y: int, on_board_ne
         target_card: Card = target_cards[0]
         other_cards: tuple[Card] = cast(tuple[Card], tuple(filter(lambda card: card.owner != target_card.owner, on_board_neutral+player1_on_board+player2_on_board)))
         match target_card.job_and_color:
-            case "ADCF":
+            case "ADCF" | "HFF" | "ASSF" | "SPF":
                 if target_card.attack_types is not None:
                     if target_card.owner == controller:
                         color = (200, 200, 200)
@@ -57,8 +57,8 @@ def attack_area_display(controller: str, board_x: int, board_y: int, on_board_ne
                     card_attack_blocks = attack_areas(target_card.board_x, target_card.board_y, target_card.attack_types, other_cards, board_dict)
                     for board_x, board_y in card_attack_blocks:
                         draw_board(color, board_x, board_y, game_screen)
-                        
-                    card_attack_blocks = attack_areas(BOARD_SIZE[0]-1-target_card.board_x, BOARD_SIZE[1]-1-target_card.board_y, target_card.attack_types, other_cards, board_dict)
+                for shadow in target_card.shadows:  
+                    card_attack_blocks = attack_areas(shadow.board_x, shadow.board_y, target_card.attack_types, other_cards, board_dict)
                     for board_x, board_y in card_attack_blocks:
                         draw_board(color, board_x, board_y, game_screen)
             case _:

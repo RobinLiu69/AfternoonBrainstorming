@@ -38,6 +38,7 @@ def number_key(number: int, mouse_x: int, mouse_y: int, mouse_board_x: int | Non
 def recycle_neutral(player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
     for i, card in enumerate(on_board_neutral):
         if card.health <= 0 and card.can_be_killed(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+            card.die(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             board_dict[str(card.board_x)+"-"+str(card.board_y)].occupy = False
             on_board_neutral.pop(i)
 

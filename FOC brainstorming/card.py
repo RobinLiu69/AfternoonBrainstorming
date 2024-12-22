@@ -1,13 +1,34 @@
 from dataclasses import dataclass, field
 import os, json, pygame
 import random
-from typing import Sequence, Any, cast, Generator, Iterable
+from typing import Sequence, Any, TypeVar, cast, Generator, Iterable
 
 from board_block import Board
 from game_screen import *
 
 
 COLOR_TAG_LIST: list[str] = sorted(JOB_DICTIONARY["colors_dict"].keys(), key=len, reverse=True)
+
+elements = TypeVar("elements")
+
+def most_frequent_elements(lst: list[elements]) -> list[elements]:
+    unique_elements: list[elements] = []
+    counts: list[int] = []
+    
+    
+    for item in lst:
+        try:
+            index = unique_elements.index(item)
+            counts[index] += 1
+        except ValueError:
+            unique_elements.append(item)
+            counts.append(1)
+
+    max_count = max(counts)
+
+    most_frequent = [unique_elements[i] for i, count in enumerate(counts) if count == max_count]
+
+    return most_frequent
 
 
 @dataclass(kw_only=True)
@@ -43,9 +64,10 @@ class Card:
     
     def __post_init__(self) -> None:
         self.trigered_by: "Card" | None = None
+        self.shadows: list["Card"] = []
+        self.hit_cards: list[Card] = []
         self.max_health: int = self.health
         self.original_damage: int = self.damage
-        self.board_position: int = self.board_x+(self.board_y*4)
         match self.job_and_color:
             case "MOVE":
                 self.job = self.job_and_color
@@ -79,6 +101,7 @@ class Card:
                 self.text_color = self.color
             case "SHADOW":
                 self.job = self.job_and_color
+                self.numbness = False
                 self.attack_types = None
                 self.color_name = "Fuchsia"
                 self.color = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"][self.color_name].split(", "))))
@@ -195,7 +218,6 @@ class Card:
             board_dict[str(self.board_x)+"-"+str(self.board_y)].occupy = False
             self.board_x = board_x
             self.board_y = board_y
-            self.board_position = self.board_x+(self.board_y*4)
             board_dict[str(board_x)+"-"+str(board_y)].occupy = True
             self.moving = False
             self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
@@ -207,14 +229,14 @@ class Card:
         self.moving = False
         return False
 
-    def damage_calculate(self, value: int, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen, ability: bool = True) -> bool:
+    def damage_calculate(self, value: int, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen, ability: bool=True) -> bool:
         game_screen.data.data_update("damage_taken_count", f"{self.owner}_{self.job_and_color}", 1)
-        
-        if self.damage_block(attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen): return False
+        if self.damage_block(value, attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen): return False
         
         
         if ability:
             if attacker.ability(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+                attacker.hit_cards.append(self)
                 game_screen.data.data_update("ability_count", f"{attacker.owner}_{attacker.job_and_color}", 1)
                 attacker.ability_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         
@@ -222,6 +244,8 @@ class Card:
         value = attacker.damage_bonus(value, self, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         
         value = self.damage_reduce(value, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        
+        if self.shadow_block(value, attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen): return False
         
         if self.armor > 0 and self.armor >= value:
             game_screen.data.data_update("damage_dealt", f"{attacker.owner}_{attacker.job_and_color}", value)
@@ -367,13 +391,32 @@ class Card:
     def trigger(self, victim: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
-    def damage_block(self, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def damage_block(self, value: int, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
     
     def ability(self, target: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        self.hit_cards.append(target)
         return False
     
     def ability_signal(self, target: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        return False
+    
+    def shadow_block(self, value: int, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        match self.owner:
+            case "player1":
+                for card in player1_on_board:
+                    if card.job_and_color == "APTF":
+                        for shadow in card.shadows:
+                            if shadow.board_x == self.board_x and shadow.board_y == self.board_y:
+                                shadow.damage_block(value, attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                                return True
+            case "player2":
+                for card in player2_on_board:
+                    if card.job_and_color == "APTF":
+                        for shadow in card.shadows:
+                            if shadow.board_x == self.board_x and shadow.board_y == self.board_y:
+                                shadow.damage_block(value, attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                                return True
         return False
     
     def after_damage_calculated(self, target: "Card", value: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
@@ -404,7 +447,10 @@ class Card:
 
     def been_killed_signal(self, victim: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
-
+    
+    def die(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        return False
+        
     def damage_bonus(self, value: int, victim: "Card", on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         return value + self.extra_damage
 
@@ -433,7 +479,7 @@ class Card:
                             yield card
                 case "large_cross":
                     for card in target_card_list:
-                        if ((card.board_x == self.board_x or card.board_y == self.board_y) and card.board_position != self.board_position):
+                        if (card.board_x == self.board_x or card.board_y == self.board_y) and not (card.board_x == self.board_x and card.board_y == self.board_y):
                             yield card
                 case "small_x":
                     for card in target_card_list:
@@ -468,13 +514,16 @@ class Card:
         return None
     
     def attack(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        return self.launch_attack(self.attack_types, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
-    
+        attack_success = self.launch_attack(self.attack_types, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        self.hit_cards.clear()
+        return attack_success
+        
     def launch_attack(self, attack_types: str | None, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if self.numbness or attack_types is None: return False
         game_screen.data.data_update("hit_count", f"{self.owner}_{self.job_and_color}", 1)
         enemies: Iterable["Card"] = list(filter(lambda card: card.owner != self.owner and card.health > 0 and card.job_and_color != "SHADOW", on_board_neutral+player1_on_board+player2_on_board))
         target_generator = tuple(self.detection(attack_types, enemies))
+        
         if target_generator:
             for target in target_generator:
                 target.damage_calculate(self.damage, self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
@@ -485,7 +534,6 @@ class Card:
     def start_of_the_turn(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         self.moving = False
         self.start_turn(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
-
     
     def end_of_the_turn(self, game_screen: GameScreen) -> None:
         self.moving = False
@@ -495,7 +543,6 @@ class Card:
                 game_screen.score -= self.end_turn(True)
             case "player2":
                 game_screen.score += self.end_turn(True)
-    
     
     def start_turn(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         return 0
