@@ -139,7 +139,7 @@ class Player:
             game_screen.data.data_update("use_heal_count", self.name, 1)
             for card in self.on_board:
                 if card.board_x == board_x and card.board_y == board_y:
-                    card.heal(5, game_screen)
+                    card.heal(6, game_screen)
                     break
     
     def move_card(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:

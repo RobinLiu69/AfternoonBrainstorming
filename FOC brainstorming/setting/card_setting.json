@@ -349,7 +349,7 @@
             "damage": 3
         },
         "APT": {
-            "health": 2,
+            "health": 5,
             "damage": 3,
             "damage_divisor": 2
         },

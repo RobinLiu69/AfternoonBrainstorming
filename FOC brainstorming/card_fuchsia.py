@@ -368,20 +368,22 @@ class Ass(Card):
         return False
     
     def attack(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        temp_shadow_list = self.shadows.copy()
         if self.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
-            for shadow in self.shadows:
+            for shadow in temp_shadow_list:
                 shadow.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             self.hit_cards.clear()
             return True
         else:
             if self.numbness == False:
                 count = 0
-                for shadow in self.shadows:
+                for shadow in temp_shadow_list:
                     if shadow.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
                         count += 1
                 self.hit_cards.clear()
                 if count:
                     return True
+            del temp_shadow_list
             return False
     
     def update(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
