@@ -126,7 +126,7 @@ class Adc(Card):
             self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
-                if not shadow.anger:
+                if shadow.anger:
                     shadow.board_x = BOARD_SIZE[0] - 1 - board_x
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                 
@@ -172,7 +172,7 @@ class Ap(Card):
             self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
-                if not shadow.anger:
+                if shadow.anger:
                     shadow.board_x = BOARD_SIZE[0] - 1 - board_x
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                 
@@ -218,7 +218,7 @@ class Tank(Card):
             self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
-                if not shadow.anger:
+                if shadow.anger:
                     shadow.die(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
                     shadow.board_x = BOARD_SIZE[0] - 1 - board_x
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
@@ -277,7 +277,7 @@ class Hf(Card):
             self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
-                if not shadow.anger:
+                if shadow.anger:
                     shadow.board_x = BOARD_SIZE[0] - 1 - board_x
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                 
@@ -310,15 +310,7 @@ class Lf(Card):
                 target.damage_calculate(self.damage, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             self.hit_cards.clear()
             return True
-        else:
-            count = 0
-            for shadow in self.shadows:
-                if shadow.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
-                    count += 1
-            self.hit_cards.clear()
-            if count:
-                return True
-            return False
+        return False
     
     def move(self, board_x: int, board_y: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if board_dict[str(board_x)+"-"+str(board_y)].occupy == False:
@@ -334,7 +326,7 @@ class Lf(Card):
             self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
-                if not shadow.anger:
+                if shadow.anger:
                     shadow.board_x = BOARD_SIZE[0] - 1 - board_x
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                 
@@ -414,7 +406,7 @@ class Apt(Card):
             self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
-                if not shadow.anger:
+                if shadow.anger:
                     shadow.board_x = BOARD_SIZE[0] - 1 - board_x
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                 
@@ -438,7 +430,7 @@ class Sp(Card):
         super().__init__(owner=owner, job_and_color="SPF", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def deploy(self, player1_in_hand: list[str], player2_in_hand: list[str], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> Card:
-        targets = tuple(filter(lambda card: card.owner == self.owner and card.health > 0, player1_on_board+player2_on_board))
+        targets = tuple(filter(lambda card: card.owner == self.owner and card.health > 0 and card.color_name == "Fuchsia", player1_on_board+player2_on_board))
         if targets:
             for card in self.detection("nearest", targets):
                 card.shadows.append(spawn_shadow(self.owner, self.board_x, self.board_y, card, True))
