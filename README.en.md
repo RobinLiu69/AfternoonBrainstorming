@@ -126,8 +126,9 @@ The second player starts their turn with four cards in hand and one attack oppor
 
 # Faction Overview
 
-## White Faction
 ![Screenshot](https://github.com/user-attachments/assets/192971d8-e20d-4e2c-8b89-e6352705c007)
+
+## White Faction
 
 - **Triangle (ADC) - 5/4 - Large Cross**
 - **Circle (AP) - 4/3 - Nearest Target** / Paralyzes on attack.  
@@ -139,7 +140,6 @@ The second player starts their turn with four cards in hand and one attack oppor
 - **Diamond (SP) - 1/5 - Farthest Target** / Gains an extra point each round.  
 
 ## Red Faction
-![Screenshot](https://github.com/user-attachments/assets/102ae8a6-988a-4332-8214-2ea4582e0ecd)
 
 - **Triangle (ADC) - 4/2 - Large Cross** / Gains +1 attack after dealing damage.  
 - **Circle (AP) - 3/2 - Nearest Target** / Paralyzes and steals 100% of the target's attack.  
@@ -153,7 +153,6 @@ The second player starts their turn with four cards in hand and one attack oppor
 - **Diamond (SP) - 1/5 - Farthest Target** / All buffs gained by Red units are also transferred to this unit.
 
 ## Green Faction
-![Screenshot_20241007_215718](https://github.com/user-attachments/assets/21980993-b2d8-4a5b-a61e-5a8296f2ab52)
 
 - **Triangle (ADC) - 3/3 - Large Cross** / After attack, there is a 50% chance to spawn a lucky block for each block in the attack range.
 - **Circle (AP) - 3/2 - Nearest Target** / Attack includes paralysis and, causes a random bad luck effect. Additionally, it causes a random good luck effect or none. (See [Effect Explanation](#effect-explanation))
@@ -170,7 +169,6 @@ The second player starts their turn with four cards in hand and one attack oppor
 > **Lucky Block (LuckyBlock) - 1/0** - Similar to a block but will cause random effects on the unit that destroys it, depending on the unit owner's luck value. (See [Effect Explanation](#effect-explanation))
 
 ## **Blue Faction**
-![Screenshot_20241007_215726](https://github.com/user-attachments/assets/c1934832-6e5a-439a-8635-54fcca8ed202)
 
 - **Triangle (ADC) - 4/2 - Large Cross** / Automatically attacks after using blue balls to drawing a card. If the unit is paralyzed, it will remove the paralysis but not attack. After killing an enemy, gains 2 blue balls.
 - **Circle (AP) - 4/2 - Nearest Target** / Attack includes paralysis and gains 2 blue balls.
@@ -185,7 +183,6 @@ The second player starts their turn with four cards in hand and one attack oppor
 > **Blue Token (Blue Ball):** This value only applies to blue units. When it reaches 3, the player will draw a card from the deck.
 
 ## **Orange Faction**
-![Screenshot_20241007_215736](https://github.com/user-attachments/assets/44312b89-eb8b-4a29-bb38-9680e0aeb94c)
 
 - **Triangle (ADC) - 4/2 - Large Cross** / After attacking, can move and will automatically attack again after moving.
 - **Circle (AP) - 3/2 - Nearest Target** / Attack includes paralysis, and at the start of the turn, it gains a usable movement magic card for the turn.
@@ -197,7 +194,6 @@ The second player starts their turn with four cards in hand and one attack oppor
 - **Diamond (SP) - 1/5 - Farthest Target** / After a teammate moves, deals 3 points of damage to the farthest target.
 
 ## **Dark Green Faction**
-![Screenshot_20241007_220122](https://github.com/user-attachments/assets/a015caca-21ca-40e8-9014-b62f266887d0)
 
 - **Triangle (ADC) - 4/2 - Long Cross** / Deals additional 1/4 damage from the totem when attacking.
 - **Circle (AP) - 3/3 - Nearest Target** / Attack includes paralysis, and marks 5 layers of the totem.
@@ -209,7 +205,6 @@ The second player starts their turn with four cards in hand and one attack oppor
 - **Diamond (SP) - 1/5 - In-play effect** / Doubles the mark count of all units in play.
 
 ### **Purple Faction**
-![Screenshot_20241007_215754](https://github.com/user-attachments/assets/59a60549-3eba-427d-9564-4251818eaa79)
 
 - **Circle (AP) - 3/1 - Nearest Target** / when placed, nearest other units you don't contol breaks shields, and reduces the its attack to its original value. Also works when you attack, inadditionly paralysis the target.
 - **Square (TANK) - 9/1 - Small Cross** / After the enemy moves, they lose 2 health points.
