@@ -163,6 +163,9 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
         score_display.display_blocks(controller, game_screen.score, on_board_cards, game_screen)
         display_controller(controller, game_screen)
         
+        for board in board_dict.values():
+            board.update(game_screen)
+        
         match controller:
             case "player1":
                 player1.update(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, True, game_screen)
@@ -185,9 +188,6 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                 hint_box.update(mouse_x, mouse_y, player1.hand_card_hints(mouse_x, mouse_y, game_screen)[0], game_screen)
             elif mouse_x > game_screen.display_width/2:
                 hint_box.update(mouse_x, mouse_y, player2.hand_card_hints(mouse_x, mouse_y, game_screen)[0], game_screen)
-                
-        for board in board_dict.values():
-            board.update(game_screen)
         
         if mouse_board_x is not None and mouse_board_y is not None:
             hint_box.update(mouse_x, mouse_y, get_card_name_in_battling(on_board_cards, mouse_board_x, mouse_board_y), game_screen)
