@@ -8,7 +8,7 @@ from card import Board, Card, GameScreen, draw_text, Green_setting, GREEN
 card_settings = Green_setting
 
 def lucky_effects(target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen, AP: bool=False, AP_target: bool=False, TANK: bool=False) -> None:
-    if random.randint(1, 100) <= game_screen.players_luck[target.owner]:
+    if not AP_target and random.randint(1, 100) <= game_screen.players_luck[target.owner]:
         if AP_target or TANK: return
         game_screen.players_luck[target.owner] += 1
         match random.randint(1, 5):
@@ -166,19 +166,21 @@ class Apt(Card):
         
         super().__init__(owner=owner, job_and_color="APTG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def attack(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        return False
+
+    def spawned_luckyblock(self) -> bool:
+        self.armor += card_settings["APT"]["luck_increase"]
+        return True
+    
+    def start_turn(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         for board in board_dict.values():
             if ((board.board_x == self.board_x-1 and board.board_y == self.board_y) or (board.board_x == self.board_x+1 and board.board_y == self.board_y) or (board.board_x == self.board_x and board.board_y == self.board_y-1) or (board.board_x == self.board_x and board.board_y == self.board_y+1)) and not board.occupy:
                 on_board_neutral.append(LuckyBlock("None", board.board_x, board.board_y))
                 for card in filter(lambda card: card.owner == self.owner, on_board_neutral+player1_on_board+player2_on_board):
                     card.spawned_luckyblock()
                 board.occupy = True
-        return True
-
-    def spawned_luckyblock(self) -> bool:
-        self.armor += card_settings["APT"]["luck_increase"]
-        return True
-
+        return 0
 
 
 class Sp(Card):

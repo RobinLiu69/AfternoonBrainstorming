@@ -82,8 +82,8 @@ class Apt(Card):
     
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         for card in self.detection("nearest", filter(lambda card: card.owner == self.owner and card != self, on_board_neutral+player1_on_board+player2_on_board)):
-            card.armor += card_settings["APT"]["armor_increase"]
-        self.armor += card_settings["APT"]["armor_increase"]
+            card.armor += self.damage
+        self.armor += self.damage
         return True
 
 

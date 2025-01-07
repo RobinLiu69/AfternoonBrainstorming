@@ -18,6 +18,12 @@ class Ap(Card):
         
         super().__init__(owner=owner, job_and_color="APP", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
+    def deploy(self, on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card]) -> Card:
+        for target in self.detection("nearest", tuple(filter(lambda card: card.owner != self.owner and card.health > 0, on_board_neutral+player1_on_board+player2_on_board))):
+            target.armor = 0
+            target.damage = target.original_damage
+        return self
+    
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         target.numbness = True
         target.armor = 0
