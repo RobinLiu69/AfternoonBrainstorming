@@ -22,7 +22,7 @@
         },
         "LF": {
             "health": 7,
-            "damage": 3
+            "damage": 4
         },
         "ASS": {
             "health": 2,
@@ -30,8 +30,7 @@
         },
         "APT": {
             "health": 8,
-            "damage": 2,
-            "armor_increase": 2
+            "damage": 2
         },
         "SP": {
             "health": 1,
@@ -42,7 +41,7 @@
     "Red": {
         "ADC": {
             "health": 4,
-            "damage": 1,
+            "damage": 2,
             "damage_increase": 1
         },
         "AP": {
@@ -56,13 +55,13 @@
             "armor_increase": 2
         },
         "HF": {
-            "health": 9,
+            "health": 8,
             "damage": 1,
             "health_decrease": 1,
             "damage_increase": 1
         },
         "LF": {
-            "health": 5,
+            "health": 6,
             "damage": 2,
             "damage_increase": 1,
             "armor_increase": 1
@@ -80,7 +79,7 @@
         },
         "SP": {
             "health": 1,
-            "damage": 2
+            "damage": 5
         }
     },
     "Green": {
@@ -98,7 +97,7 @@
             "damage": 2
         },
         "TANK": {
-            "health": 10,
+            "health": 9,
             "damage": 1
         },
         "HF": {
@@ -108,7 +107,7 @@
         },
         "LF": {
             "health": 6,
-            "damage": 2,
+            "damage": 3,
             "damage_from_killed_luckyblock": 4,
             "chance_to_get_attack_count_increase": 25,
             "number_of_attack_increase_from_killed_luckyblock": 1
@@ -152,7 +151,7 @@
             "damage": 2
         },
         "LF": {
-            "health": 6,
+            "health": 7,
             "damage": 3,
             "token_gets": 1
         },
@@ -164,7 +163,7 @@
         "APT": {
             "health": 5,
             "damage": 3,
-            "token_from_armor_divisor": 4
+            "token_from_armor_divisor": 3
         },
         "SP": {
             "health": 1,
@@ -214,7 +213,7 @@
     "DarkGreen": {
         "ADC": {
             "health": 4,
-            "damage": 1,
+            "damage": 2,
             "damage_divisor": 4
         },
         "AP": {
@@ -240,7 +239,7 @@
         "ASS": {
             "health": 2,
             "damage": 4,
-            "engraved_totem": 4
+            "engraved_totem": 7
         },
         "APT": {
             "health": 6,
@@ -333,7 +332,7 @@
             "damage": 1
         },
         "TANK": {
-            "health": 11,
+            "health": 10,
             "damage": 1
         },
         "HF": {

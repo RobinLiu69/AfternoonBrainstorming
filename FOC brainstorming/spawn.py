@@ -104,7 +104,7 @@ def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_han
             case "ADCP":
                 on_board.append(purple.Adc(owner, board_x, board_y))
             case "APP":
-                on_board.append(purple.Ap(owner, board_x, board_y))
+                on_board.append(purple.Ap(owner, board_x, board_y).deploy(on_board_neutral, player1_on_board, player2_on_board))
             case "TANKP":
                 on_board.append(purple.Tank(owner, board_x, board_y))
             case "HFP":
