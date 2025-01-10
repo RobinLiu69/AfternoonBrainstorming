@@ -1,11 +1,7 @@
-from dataclasses import dataclass, field
-import os, json
-import random
-from typing import Sequence, Any, cast
-
 from card import Board, Card, GameScreen, Red_setting, RED
 
 card_settings = Red_setting
+
 
 class Adc(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage: int=card_settings["ADC"]["damage"]) -> None:

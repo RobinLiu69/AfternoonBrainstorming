@@ -1,6 +1,5 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import random, time
-from typing import cast
 
 from spawn import spawn_card
 from card import Card, Board, GameScreen, draw_text, WHITE, GREEN, DARKGREEN, CYAN
@@ -255,8 +254,8 @@ class Player:
         self.display_luck(game_screen)
         self.display_totems(game_screen)
         self.display_coins(game_screen)
-        self.attack_count_display.display_blocks(game_screen.number_of_attacks[self.name], game_screen)
-        self.token_count_display.display_circle(game_screen.players_token[self.name], game_screen)
+        self.attack_count_display.display(game_screen.number_of_attacks[self.name], game_screen)
+        self.token_count_display.display(game_screen.players_token[self.name], game_screen)
         
         if game_screen.card_to_draw[self.name] > 0:
             game_screen.card_to_draw[self.name] -= 1

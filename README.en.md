@@ -160,7 +160,7 @@ The second player starts their turn with four cards in hand and one attack oppor
 - **Trapezoid (HF) - 8/1 - Nine Grid** / Destroying blocks increases luck by 5% and randomly places a lucky block on the board.
 - **Double Diamond (LF) - 6/3 - Small Cross** / Destroying a lucky block deals 4 damage to the nearest enemy, with a 25% chance to return a attack opportunity.
 - **Assassin (ASS) - 2/4 - Diagonal Cross** / After killing an enemy, you gain 5% luck, and the enemy loses 5% luck.
-- **Hexagon (APT) - 6/0 - Nearest Target** / After your turn start, it places a lucky block in the small cross area, and it gains 1 shield for each lucky block placed in the rest of the game.
+- **Hexagon (APT) - 5/0 - Nearest Target** / After your turn start, it places a lucky block in the small cross area, and it gains 1 shield for each lucky block destory by allies in the rest of the game.
 - **Diamond (SP) - ?/? - Farthest Target** / When it enters, increases luck by 10% and randomly places lucky blocks based on the luck value (for every 10 luck, one lucky block is placed).
 
 > [!NOTE]

@@ -1,6 +1,6 @@
 import pygame, shutil
 from dataclasses import dataclass, field
-from typing import cast, Generator
+from typing import cast
 
 
 from game_screen import GameScreen, os, draw_text, __FOLDER_PATH, PIE_TITLE_TEXTS, KEYS_TO_CHECK, KETYS_TO_DISPLAY, BLACK, WHITE

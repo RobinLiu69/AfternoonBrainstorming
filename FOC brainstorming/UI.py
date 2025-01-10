@@ -1,10 +1,8 @@
 from dataclasses import dataclass, field
 import random, pygame
-from typing import cast
 
-from game_screen import GameScreen, draw_text, BLACK, WHITE, RED, BLUE
+from game_screen import GameScreen, BLACK, WHITE, RED, BLUE
 from card import Card
-
 
 
 @dataclass(kw_only=True)
@@ -13,7 +11,7 @@ class AttackCountDisplay:
     width: int
     height: int
     
-    def display_blocks(self, attack_cout: int, game_screen: GameScreen) -> None:
+    def display(self, attack_cout: int, game_screen: GameScreen) -> None:
         match self.player_name:
             case "player1":
                 self.x, self.y = game_screen.display_width/2-game_screen.block_size*3.75, game_screen.display_height/2+game_screen.block_size*2.5
@@ -50,7 +48,7 @@ class ScoreDisplay:
     width: int
     height: int
        
-    def display_blocks(self, controller: str, score: int, on_board_cards: list[Card],  game_screen: GameScreen) -> None:
+    def display(self, controller: str, score: int, on_board_cards: list[Card],  game_screen: GameScreen) -> None:
         score_list: list[int] = [score]
         self.x, self.y = game_screen.display_width/2-self.width/2, game_screen.display_height/10
         match controller:
@@ -91,7 +89,7 @@ class TokenDisplay:
     time: int = field(init=False, default=0)
     is_glowing: bool = field(init=False, default=True)
     
-    def display_circle(self, token_count: int, game_screen: GameScreen) -> None:
+    def display(self, token_count: int, game_screen: GameScreen) -> None:
         if token_count > 0:
             if  self.is_glowing:
                 self.time += 1

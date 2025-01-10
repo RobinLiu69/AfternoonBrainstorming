@@ -1,11 +1,10 @@
-import spawn, pygame
-from typing import Callable, cast
+import pygame
 
 
 from exhibits import exhibit, get_card_name_in_menu, all_exhibit_cards, HintBox
 from player_info import Player
 from game_screen import GameScreen
-from board_block import Board, initialize_board
+from board_block import initialize_board
 from controls import key_pressed
 
 

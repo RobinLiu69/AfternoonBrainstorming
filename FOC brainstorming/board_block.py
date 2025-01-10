@@ -1,7 +1,5 @@
-from dataclasses import dataclass, field
-import os, json, pygame
-import random
-from typing import Sequence, Any, cast
+from dataclasses import dataclass
+import pygame
 
 from game_screen import GameScreen, WHITE, BOARD_SIZE
 

@@ -119,7 +119,7 @@
             "luck_decrease": 5
         },
         "APT": {
-            "health": 6,
+            "health": 5,
             "damage": 0,
             "luck_increase": 1
         },

@@ -1,11 +1,8 @@
-from dataclasses import dataclass, field
-import os, json
 import random
-from typing import Sequence, Any, cast
-
 from card import Board, Card, GameScreen, Blue_setting, BLUE
 
 card_settings = Blue_setting
+
 
 def got_token(target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
     cards = list(filter(lambda card: card.owner == target.owner, player1_on_board+player2_on_board))
