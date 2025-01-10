@@ -1,5 +1,4 @@
-import spawn, pygame
-from typing import Callable, cast
+import pygame
 
 
 from exhibits import HintBox, Card, get_card_name_in_battling, draw_text, WHITE
@@ -160,7 +159,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                 quit()
            
         
-        score_display.display_blocks(controller, game_screen.score, on_board_cards, game_screen)
+        score_display.display(controller, game_screen.score, on_board_cards, game_screen)
         display_controller(controller, game_screen)
         
         for board in board_dict.values():

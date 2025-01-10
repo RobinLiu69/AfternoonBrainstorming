@@ -1,8 +1,4 @@
-from dataclasses import dataclass, field
-import os, json, pygame
-import random
-from typing import Iterable, Any, cast
-
+from typing import Iterable
 from card import Board, Card, GameScreen, Fuchsia_setting, FUCHSIA, BOARD_SIZE, most_frequent_elements
 
 card_settings = Fuchsia_setting

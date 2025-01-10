@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import os, json, pygame
-import random
-from typing import cast
+
+from typing import cast, Sequence
 from in_game_data import Data
 pygame.init()
 
@@ -51,7 +51,7 @@ KEYS_TO_CHECK = SETTING["keys_to_check"]
 PIE_TITLE_TEXTS = SETTING["pie_title_texts"]
 BOARD_SIZE: tuple[int, int] = cast(tuple[int, int], tuple(map(int, SETTING["board_size"])))
 
-def draw_text(text: str, font: pygame.font.Font, textColor: tuple[int, ...], x: float, y: float, surface: pygame.surface.Surface) -> None:
+def draw_text(text: str, font: pygame.font.Font, textColor: Sequence[int], x: float, y: float, surface: pygame.surface.Surface) -> None:
     rendered_text = font.render(text, True, textColor)
     surface.blit(rendered_text, (x, y))
 

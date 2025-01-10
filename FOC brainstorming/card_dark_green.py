@@ -1,11 +1,7 @@
-from dataclasses import dataclass, field
-import os, json
-import random
-from typing import Sequence, Any, cast
-
 from card import Board, Card, GameScreen, DarkGreen_setting, DARKGREEN
 
 card_settings = DarkGreen_setting
+
 
 def engraved_totem(target: Card, times: int, player1_on_board: list[Card], player2_on_board: list[Card], game_screen: GameScreen) -> None:
     for i in range(times):

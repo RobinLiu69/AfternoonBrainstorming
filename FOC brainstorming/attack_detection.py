@@ -1,4 +1,4 @@
-from card import Card, GameScreen, Board, Generator, random, pygame, cast, WHITE, RED, BOARD_SIZE
+from card import Card, GameScreen, Board, Generator, pygame, cast, WHITE, RED, BOARD_SIZE
 
 def attack_areas(board_x: int, board_y: int,  attack_types: str | None, other_cards: tuple[Card], board_dict: dict[str, Board]) -> Generator[tuple[int, int], None, None]:
     if attack_types is None: return None

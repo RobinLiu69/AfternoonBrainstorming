@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import pygame
 import random, math
-from typing import Sequence, Any, TypeVar, cast, Generator, Iterable
+from typing import TypeVar, cast, Generator, Iterable
 
 from board_block import Board
 from game_screen import *
@@ -231,6 +231,7 @@ class Card:
         return False
 
     def damage_calculate(self, value: int, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen, ability: bool=True) -> bool:
+        print(f"{attacker.board_x}-{attacker.board_y}:{attacker.job_and_color} 對 {self.board_x}-{self.board_y}:{self.job_and_color} 造成了 {value} 點傷害")
         game_screen.data.data_update("damage_taken_count", f"{self.owner}_{self.job_and_color}", 1)
         if self.damage_block(value, attacker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen): return False
         
@@ -467,9 +468,7 @@ class Card:
     
     def got_token(self) -> bool:
         return False
-    
-    def spawned_luckyblock(self) -> bool:
-        return False
+
     
     def detection(self, attack_types: str, target_card_list: Iterable["Card"]) -> Generator["Card", None, None]:
         target_card_list = tuple(filter(lambda card: card.health > 0, target_card_list))

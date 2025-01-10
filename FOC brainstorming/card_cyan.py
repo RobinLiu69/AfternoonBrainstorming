@@ -1,8 +1,4 @@
-from dataclasses import dataclass, field
-import os, json
 import random
-from typing import Sequence, Any, cast
-
 from card import Board, Card, GameScreen, draw_text, Cyan_setting, CYAN
 
 card_settings = Cyan_setting
