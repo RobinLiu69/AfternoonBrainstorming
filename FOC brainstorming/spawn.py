@@ -196,7 +196,7 @@ def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_han
             case "ADCF":
                 on_board.append(fuchsia.Adc(owner, board_x, board_y))
             case "APF":
-                on_board.append(fuchsia.Ap(owner, board_x, board_y))
+                on_board.append(fuchsia.Ap(owner, board_x, board_y).deploy(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen))
             case "TANKF":
                 on_board.append(fuchsia.Tank(owner, board_x, board_y))
             case "HFF":

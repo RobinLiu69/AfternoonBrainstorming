@@ -108,9 +108,8 @@
         "LF": {
             "health": 6,
             "damage": 3,
-            "damage_from_killed_luckyblock": 4,
             "chance_to_get_attack_count_increase": 25,
-            "number_of_attack_increase_from_killed_luckyblock": 1
+            "number_of_attack_count_increase_from_killed_luckyblock": 1
         },
         "ASS": {
             "health": 2,
@@ -382,7 +381,7 @@
         "ASS": {
             "health": 2,
             "damage": 3,
-            "unit_gap": 3,
+            "unit_gap": 2,
             "maximum_card_draw_from_killed": 12
         },
         "APT": {

@@ -36,7 +36,7 @@ all_exhibit_cards: list[list[Card]] = [[white.Adc("display", 0, 0), white.Ap("di
                                        [cyan.Adc("display", 0, 0), cyan.Ap("display", 1, 0), cyan.Tank("display", 2, 0), cyan.Hf("display", 3, 0), cyan.Lf("display", 0, 1), cyan.Ass("display", 1, 1), cyan.Apt("display", 2, 1), cyan.Sp("display", 3, 1)],
                                        [fuchsia.Adc("display", 0, 0), fuchsia.Ap("display", 1, 0), fuchsia.Tank("display", 2, 0), fuchsia.Hf("display", 3, 0), fuchsia.Lf("display", 0, 1), fuchsia.Ass("display", 1, 1), fuchsia.Apt("display", 2, 1), fuchsia.Sp("display", 3, 1)],
                                        
-                                       [purple.Adc("display", 0, 0), purple.Ap("display", 1, 0), purple.Tank("display", 2, 0), purple.Hf("display", 3, 0), purple.Lf("display", 0, 1), purple.Ass("display", 1, 1), purple.Apt("display", 2, 1), purple.Sp("display", 3, 1)],
+                                       [purple.Ap("display", 1, 0), purple.Tank("display", 2, 0), purple.Hf("display", 3, 0), purple.Ass("display", 1, 1)],
                                        [white.Cube("display", 0, 2), white.Heal("display", 1, 2), white.Move("display", 2, 2)]]
 
 

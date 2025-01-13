@@ -141,16 +141,20 @@ class Ap(Card):
         self.shadows: list[Card] = []
         if self.owner != "display":
             self.shadows.append(spawn_shadow(owner, board_x, board_y, self))
-    
+
+    def deploy(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> Card:
+        for shadow in self.shadows:
+            enemies = tuple(filter(lambda card: card.owner != self.owner and card.health > 0 and shadow.board_x == card.board_x and shadow.board_y == card.board_y, on_board_neutral+player1_on_board+player2_on_board))
+            for enemy in enemies:
+                enemy.numbness = True
+        return self
+        
     def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         target.numbness = True
         return True
 
     def update(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         for shadow in self.shadows:
-            enemies = tuple(filter(lambda card: card.owner != self.owner and card.health > 0 and BOARD_SIZE[0]-1-self.board_x == card.board_x and BOARD_SIZE[1]-1-self.board_y == card.board_y, on_board_neutral+player1_on_board+player2_on_board))
-            for enemy in enemies:
-                self.ability(enemy, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             shadow.update(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         self.display_update(game_screen)
     
@@ -179,6 +183,12 @@ class Ap(Card):
         self.moving = False
         return False
     
+    def start_turn(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
+        for shadow in self.shadows:
+            enemies = tuple(filter(lambda card: card.owner != self.owner and card.health > 0 and shadow.board_x == card.board_x and shadow.board_y == card.board_y, on_board_neutral+player1_on_board+player2_on_board))
+            for enemy in enemies:
+                enemy.numbness = True
+        return 0
     
 
 class Tank(Card):

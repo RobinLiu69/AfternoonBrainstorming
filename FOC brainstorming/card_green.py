@@ -146,10 +146,10 @@ class Lf(Card):
     def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if victim.job_and_color == "LUCKYBLOCK":
             for card in self.detection("nearest", filter(lambda card: card.owner != self.owner and card.health >= 0 and card != self, player1_on_board + player2_on_board)):
-                card.damage_calculate(card_settings["LF"]["damage_from_killed_luckyblock"], self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen, False)
+                card.damage_calculate(self.damage, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen, False)
             
             if random.randint(1, 100) <= card_settings["LF"]["chance_to_get_attack_count_increase"]:
-                game_screen.number_of_attacks[self.owner] += card_settings["LF"]["number_of_attack_increase_from_killed_luckyblock"]
+                game_screen.number_of_attacks[self.owner] += card_settings["LF"]["number_of_attack_count_increase_from_killed_luckyblock"]
         return True
 
 
