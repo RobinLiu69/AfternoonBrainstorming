@@ -2,7 +2,7 @@ import pygame
 
 
 from exhibits import exhibit, get_card_name_in_menu, all_exhibit_cards, HintBox
-from player_info import Player
+from player import Player
 from game_screen import GameScreen
 from board_block import initialize_board
 from controls import key_pressed
@@ -16,7 +16,7 @@ def turn_page(page: int, count: int, last_page: int) -> int:
     else:
         return page + count
 
-def main(game_screen: GameScreen, player1: Player, player2: Player) -> None:
+def main(game_screen: GameScreen, player1: Player, player2: Player) -> bool:
     running = True
     board_list = initialize_board(12, game_screen)
     page = 0
@@ -84,7 +84,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> None:
                         
             if event.type == pygame.QUIT:
                 running = False
-                quit()
+                return False
         
         player1.menu_deck_display(deck_editor, game_screen)
         player2.menu_deck_display(deck_editor, game_screen)
@@ -101,3 +101,4 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> None:
         
         pygame.display.update()
         game_screen.clock.tick(60)
+    return True

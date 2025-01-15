@@ -2,7 +2,7 @@ import pygame
 
 
 from exhibits import HintBox, Card, get_card_name_in_battling, draw_text, WHITE
-from player_info import Player
+from player import Player
 from board_block import GameScreen, Board, initialize_board
 from controls import key_pressed
 from attack_detection import attack_area_display
@@ -59,6 +59,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
     player1.initialize(game_screen)
     player2.initialize(game_screen)
     controller: str = "player1"
+    game_screen.log.write("player1 start\n")
     winner: str = "None"
     while running:
         on_board_cards = on_board_neutral + player1.on_board + player2.on_board
@@ -156,7 +157,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                         
             if event.type == pygame.QUIT:
                 running = False
-                quit()
+                return "quit"
            
         
         score_display.display(controller, game_screen.score, on_board_cards, game_screen)

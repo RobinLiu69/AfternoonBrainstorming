@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-import os, json, pygame
+import os, json, pygame, random
 
 from typing import cast, Sequence
 from in_game_data import Data
@@ -73,6 +73,13 @@ class GameScreen:
         self.coutdown_time = int(SETTING["countdown_time"])
         self.file_auto_delet: bool = True 
         self.data = Data()
+        
+        self.log = open("log.txt", "w")
+        
+        seed = random.randint(-2**9, 2**9)
+        random.seed(seed)
+        self.log.write(f"random seed {seed}\n")
+        
         self.score: int = 0
         self.players_luck: dict[str, int] = {"player1": 50, "player2": 50, "neutral": 50}
         self.how_many_token_to_draw_a_card: int = int(SETTING["how_many_token_to_draw_a_card"])
