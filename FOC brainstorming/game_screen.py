@@ -1,7 +1,6 @@
-from dataclasses import dataclass, field
 import os, json, pygame, random
 
-from typing import cast, Sequence
+from typing import cast, Sequence, TextIO
 from in_game_data import Data
 pygame.init()
 
@@ -18,6 +17,8 @@ with open(f"{__FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8")
 with open(f"{__FOLDER_PATH}/setting/card_setting.json", "r", encoding="utf-8") as file:
     CARD_SETTING: CardSetting = json.loads(file.read())
 
+with open(f"{__FOLDER_PATH}/setting/card_hints.json", "r", encoding="utf-8") as file:
+    CARDS_HINTS_DICTIONARY: dict[str, str] = json.loads(file.read())
 
 BASIC_FONT = __FOLDER_PATH+SETTING["basic_font"]
 CHINESE_FONT = __FOLDER_PATH+SETTING["chinese_font"]
@@ -51,16 +52,15 @@ KEYS_TO_CHECK = SETTING["keys_to_check"]
 PIE_TITLE_TEXTS = SETTING["pie_title_texts"]
 BOARD_SIZE: tuple[int, int] = cast(tuple[int, int], tuple(map(int, SETTING["board_size"])))
 
-def draw_text(text: str, font: pygame.font.Font, textColor: Sequence[int], x: float, y: float, surface: pygame.surface.Surface) -> None:
-    rendered_text = font.render(text, True, textColor)
+def draw_text(text: str, font: pygame.font.Font, text_color: Sequence[int], x: float, y: float, surface: pygame.surface.Surface) -> None:
+    rendered_text = font.render(text, True, text_color)
     surface.blit(rendered_text, (x, y))
 
-@dataclass(kw_only=True)
+
 class GameScreen:
-    display_width: int = pygame.display.get_desktop_sizes()[0][0]
-    display_height: int = pygame.display.get_desktop_sizes()[0][1]
-    
-    def __post_init__(self) -> None:
+    def __init__(self) -> None:
+        self.display_width: int = pygame.display.get_desktop_sizes()[0][0]
+        self.display_height: int = pygame.display.get_desktop_sizes()[0][1]
         print(self.display_width, self.display_height)
         self.surface, self.block_size = self.fitting_screen()
         print(self.display_width, self.display_height)
@@ -74,11 +74,10 @@ class GameScreen:
         self.file_auto_delet: bool = True 
         self.data = Data()
         
-        self.log = open("log.txt", "w")
+        self.log: TextIO | None = None
+        self.playback: TextIO | None = None
         
-        seed = random.randint(-2**9, 2**9)
-        random.seed(seed)
-        self.log.write(f"random seed {seed}\n")
+        
         
         self.score: int = 0
         self.players_luck: dict[str, int] = {"player1": 50, "player2": 50, "neutral": 50}
@@ -94,6 +93,14 @@ class GameScreen:
         self.number_of_cudes: dict[str, int] = {"player1": 0, "player2": 0}
         self.number_of_heals: dict[str, int] = {"player1": 0, "player2": 0}
     
+    def seed_set(self, seed: int | None=None):
+        if seed == None:
+            seed = random.randint(-2**9, 2**9)
+        random.seed(seed)
+        if self.log is not None:
+            self.log.write(f"random seed {seed}\n")
+
+
     def fitting_screen(self) -> tuple[pygame.surface.Surface, float]:
         if self.display_width/self.display_height == 1.6:
             surface = pygame.display.set_mode((self.display_width, self.display_height))
@@ -119,7 +126,8 @@ class GameScreen:
         self.mid_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size*1.25))
         self.title_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size*3))
         self.info_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size/1.1))
-        self.big_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.display_width/1500*25))
+        self.big_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size/16.5*25))
+        self.big_big_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size*2))
         self.small_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size/15*8.66))
         self.text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, self.text_font_size)
 

@@ -48,7 +48,66 @@ def update_neutral(player1_in_hand: list[str], player2_in_hand: list[str], on_bo
 
 def display_controller(controller: str, game_screen: GameScreen) -> None:
     draw_text(f"Ture: {controller}", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*0.6, game_screen.display_height/2-game_screen.block_size*2.1, game_screen.surface)
-    
+
+def init_playback(game_screen: GameScreen):
+    if game_screen.playback is not None:
+        while True:
+            line = game_screen.playback.readline()
+            if line.split()[1] == "start":
+                break
+
+def next_move(controller: Player, player1: Player, player2: Player, on_board_neutral: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> Player:
+    line = next_action(game_screen).split()
+    action = line[1]
+    print(line)
+    match action:
+        case "ended":
+            match controller.name:
+                case "player1":
+                    controller.turn_end(game_screen)
+                    next_action(game_screen)
+                    controller = player2
+                    controller.turn_start(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                case "player2":
+                    controller.turn_end(game_screen)
+                    controller = player1
+                    next_action(game_screen)
+                    controller.turn_start(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+            game_screen.data.score_records.append(game_screen.score)
+        case "played":
+            index = int(line[2].split("-")[0])
+            board_x, board_y = map(int, line[-1].split("-"))
+            controller.play_card(board_x, board_y, index, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+        case "used":
+            match line[-2]:
+                case "playing":
+                    index = int(line[-1].split("-")[0])
+                    print(index)
+                    controller.play_card(0, 0, index, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                case "on":
+                    match line[2]:
+                        case "cube":
+                            board_x, board_y = map(int, line[-1].split("-"))
+                            controller.spawn_cude(board_x, board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                        case "heal":
+                            board_x, board_y = map(int, line[-1].split("-"))
+                            controller.heal_card(board_x, board_y, game_screen)
+                        case "move":
+                            board_x, board_y = map(int, line[-1].split("-"))
+                            controller.move_card(board_x, board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+        case "attacked":
+            board_x, board_y = map(int, line[-1].split(".")[-1].split("-"))
+            controller.attack(board_x, board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+    return controller
+
+def next_action(game_screen: GameScreen) -> str:
+    if game_screen.playback is not None:
+        while True:
+            line = game_screen.playback.readline()
+            if line.split()[1] != "recycled" and line.split()[1] != "drew":
+                break
+        return line
+    return "End"
     
 def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
     running: bool = True
@@ -58,9 +117,10 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
     score_display = ScoreDisplay(width=int(game_screen.block_size*0.15), height=int(game_screen.block_size*0.15))
     player1.initialize(game_screen)
     player2.initialize(game_screen)
-    controller: str = "player1"
-    if game_screen.log is not None: game_screen.log.write("player1 start\n")
+    controller: Player = player1
+    init_playback(game_screen)
     winner: str = "None"
+    delay = 0
     while running:
         on_board_cards = on_board_neutral + player1.on_board + player2.on_board
         game_screen.update()
@@ -71,9 +131,17 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
         
         
         if mouse_board_x is not None and mouse_board_y is not None:
-            attack_area_display(controller, mouse_board_x, mouse_board_y, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+            attack_area_display(controller.name, mouse_board_x, mouse_board_y, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
        
-        
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_SPACE] and delay == 0:
+            controller = next_move(controller, player1, player2, on_board_neutral, board_dict, game_screen)
+            delay = 10
+        elif delay > 0:
+            delay -= 1
+
+
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
@@ -82,90 +150,26 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                         running = False
                     case pygame.K_f:
                         hint_box.turn_on = not hint_box.turn_on
-                    case pygame.K_e:
-                        match controller:
-                            case "player1":
-                                controller = "player2"
-                                player1.turn_end(game_screen)
-                                player2.turn_start(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                            case "player2":
-                                controller = "player1"
-                                player2.turn_end(game_screen)
-                                player1.turn_start(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                        game_screen.data.score_records.append(game_screen.score)
-                        if game_screen.score <= -10:
-                            winner = "player1"
-                            running = False
-                        elif game_screen.score >= 10:
-                            running = False
-                            winner = "player2"
-                    case pygame.K_a:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.attack(mouse_board_x, mouse_board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.attack(mouse_board_x, mouse_board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                    case pygame.K_p:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.spawn_cude(mouse_board_x, mouse_board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.spawn_cude(mouse_board_x, mouse_board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                    case pygame.K_h:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.heal_card(mouse_board_x, mouse_board_y, game_screen)
-                                case "player2":
-                                    player2.heal_card(mouse_board_x, mouse_board_y, game_screen)
-                    case pygame.K_m:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.move_card(mouse_board_x, mouse_board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.move_card(mouse_board_x, mouse_board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                    case pygame.K_1:
-                        number_key(1, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
-                    case pygame.K_2:
-                        number_key(2, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
-                    case pygame.K_3:
-                        number_key(3, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
-                    case pygame.K_4:
-                        number_key(4, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
-                    case pygame.K_5:
-                        number_key(5, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
-                    case pygame.K_6:
-                        number_key(6, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
-                    case pygame.K_7:
-                        number_key(7, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
-                    case pygame.K_8:
-                        number_key(8, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
-                    case pygame.K_9:
-                        number_key(9, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
-                    case pygame.K_0:
-                        number_key(10, mouse_x, mouse_y, mouse_board_x, mouse_board_y, controller, player1, player2, on_board_neutral, board_dict, game_screen)
-                    case pygame.K_SPACE:
-                        if mouse_board_x is not None and mouse_board_y is not None:
-                            match controller:
-                                case "player1":
-                                    player1.play_card(mouse_board_x, mouse_board_y, -1, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                case "player2":
-                                    player2.play_card(mouse_board_x, mouse_board_y, -1, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                        
+                    case pygame.K_RIGHT:
+                        controller = next_move(controller, player1, player2, on_board_neutral, board_dict, game_screen)
             if event.type == pygame.QUIT:
+                running = False
                 return "quit"
-           
         
-        score_display.display(controller, game_screen.score, on_board_cards, game_screen)
-        display_controller(controller, game_screen)
+        if game_screen.score <= -10:
+            running = False
+            winner = "player1"
+        elif game_screen.score >= 10:
+            running = False
+            winner = "player2"
+        
+        score_display.display(controller.name, game_screen.score, on_board_cards, game_screen)
+        display_controller(controller.name, game_screen)
         
         for board in board_dict.values():
             board.update(game_screen)
         
-        match controller:
+        match controller.name:
             case "player1":
                 player1.update(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, True, game_screen)
                 player2.update(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, False, game_screen)
@@ -175,12 +179,6 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                 
         update_neutral(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
         
-        if player1.time_out:
-            winner = "player2"
-            running = False
-        if player2.time_out:
-            winner = "player1"
-            running = False
                 
         if mouse_x < game_screen.display_width/2-game_screen.block_size*2 or mouse_x > game_screen.display_width/2+game_screen.block_size*2:
             if mouse_x < game_screen.display_width/2:

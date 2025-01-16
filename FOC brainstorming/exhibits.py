@@ -17,14 +17,9 @@ import card_purple as purple
 import card_dark_green as darkgreen
 import card_cyan as cyan
 import card_fuchsia as fuchsia
-from game_screen import GameScreen, draw_text, WHITE, BLACK
+from game_screen import GameScreen, draw_text, WHITE, BLACK, CARDS_HINTS_DICTIONARY
 
 
-__FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__))
-
-
-with open(f"{__FOLDER_PATH}/setting/card_hints.json", "r", encoding="utf-8") as file:
-    CARDS_HINTS_DICTIONARY: dict[str, str] = json.loads(file.read())
 
 
 all_exhibit_cards: list[list[Card]] = [[white.Adc("display", 0, 0), white.Ap("display", 1, 0), white.Tank("display", 2, 0), white.Hf("display", 3, 0), white.Lf("display", 0, 1), white.Ass("display", 1, 1), white.Apt("display", 2, 1), white.Sp("display", 3, 1)],

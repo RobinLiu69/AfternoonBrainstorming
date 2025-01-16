@@ -83,7 +83,6 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> bool:
                         running = False
                         
             if event.type == pygame.QUIT:
-                running = False
                 return False
         
         player1.menu_deck_display(deck_editor, game_screen)
