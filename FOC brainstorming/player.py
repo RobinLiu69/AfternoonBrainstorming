@@ -66,7 +66,7 @@ class Player:
         self.timer_start(game_screen)
     
     def turn_start(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
-        game_screen.log.write(f"{self.name} started\n")
+        if game_screen.log is not None: game_screen.log.write(f"{self.name} started\n")
         self.draw_card(game_screen)
         game_screen.number_of_attacks[self.name] += 1
         for card in self.on_board:
@@ -75,7 +75,7 @@ class Player:
 
 
     def turn_end(self, game_screen: GameScreen) -> None:
-        game_screen.log.write(f"{self.name} ended\n")
+        if game_screen.log is not None: game_screen.log.write(f"{self.name} ended\n")
         self.in_hand = list(filter(lambda card: card != "MOVEO", self.in_hand))
         game_screen.number_of_cudes[self.name] = 0
         game_screen.number_of_movings[self.name] = 0
@@ -88,7 +88,7 @@ class Player:
         if game_screen.number_of_attacks[self.name] > 0:
             for card in self.on_board:
                 if card.board_x == board_x and card.board_y == board_y:
-                    game_screen.log.write(f"{self.name} attacked using {card.job_and_color}.{card.board_x}-{card.board_y}\n")
+                    if game_screen.log is not None: game_screen.log.write(f"{self.name} attacked using {card.job_and_color}.{card.board_x}-{card.board_y}\n")
                     if card.attack(player1_in_hand, playuer2_in_hand, on_board_neutral, player1_on_board ,player2_on_board, board_dict, game_screen):
                         game_screen.number_of_attacks[self.name] -= card.attack_uses
                         break
@@ -97,16 +97,15 @@ class Player:
         if self.draw_pile:
             card = self.draw_pile.pop()
             self.in_hand.append(card)
-            game_screen.log.write(f"{self.name} drew {card}\n")
+            if game_screen.log is not None: game_screen.log.write(f"{self.name} drew {card}\n")
         else:
             if self.discard_pile:
                 random.shuffle(self.discard_pile)
                 self.draw_pile = self.discard_pile.copy()
-                game_screen.log.write(f"{self.name} draw_pile.update {self.draw_pile}\n")
                 self.discard_pile = []
                 card = self.draw_pile.pop()
                 self.in_hand.append(card)
-                game_screen.log.write(f"{self.name} drew {card}\n")
+                if game_screen.log is not None: game_screen.log.write(f"{self.name} drew {card}\n")
     
     def play_card(self, board_x: int, board_y: int, index: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if -len(self.in_hand) > index or index >= len(self.in_hand): return
@@ -115,27 +114,27 @@ class Player:
         match card:
             case "HEAL":
                 game_screen.number_of_heals[self.name] += 1
-                game_screen.log.write(f"{self.name} used HEAL by playing {index}-{card}\n")
+                if game_screen.log is not None: game_screen.log.write(f"{self.name} used HEAL by playing {index}-{card}\n")
                 self.discard_pile.append(self.in_hand.pop(index))
             case "MOVE":
                 game_screen.number_of_movings[self.name] += 1
-                game_screen.log.write(f"{self.name} used MOVE by playing {index}-{card}\n")
+                if game_screen.log is not None: game_screen.log.write(f"{self.name} used MOVE by playing {index}-{card}\n")
                 self.discard_pile.append(self.in_hand.pop(index))
             case "MOVEO":
                 game_screen.number_of_movings[self.name] += 1
-                game_screen.log.write(f"{self.name} used MOVEO by playing {index}-{card}\n")
+                if game_screen.log is not None: game_screen.log.write(f"{self.name} used MOVEO by playing {index}-{card}\n")
                 self.in_hand.pop(index)
             case "CUBES":
                 game_screen.number_of_cudes[self.name] += 2
-                game_screen.log.write(f"{self.name} used CUBES by playing {index}-{card}\n")
+                if game_screen.log is not None: game_screen.log.write(f"{self.name} used CUBES by playing {index}-{card}\n")
                 self.discard_pile.append(self.in_hand.pop(index))
             case _:
                 if spawn_card(board_x, board_y, card, self.name, player1_in_hand, player2_in_hand, self.on_board, on_board_neutral, player1_on_board, player2_on_board, self.discard_pile, board_dict, game_screen):
                     self.in_hand.pop(index)
-                    game_screen.log.write(f"{self.name} played {index}-{card} at {board_x}-{board_y}\n")
+                    if game_screen.log is not None: game_screen.log.write(f"{self.name} played {index}-{card} at {board_x}-{board_y}\n")
                 
     def heal_card(self, board_x: int, board_y: int, game_screen: GameScreen) -> None:
-        game_screen.log.write(f"{self.name} used heal on {board_x}-{board_y}\n")
+        if game_screen.log is not None: game_screen.log.write(f"{self.name} used heal on {board_x}-{board_y}\n")
         if game_screen.number_of_heals[self.name] > 0:
             game_screen.number_of_heals[self.name] -= 1
             game_screen.data.data_update("use_heal_count", self.name, 1)
@@ -145,7 +144,7 @@ class Player:
                     break
     
     def move_card(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
-        game_screen.log.write(f"{self.name} used move on {board_x}-{board_y}\n")
+        if game_screen.log is not None: game_screen.log.write(f"{self.name} used move on {board_x}-{board_y}\n")
         moving_cards = list(filter(lambda card: card.moving, self.on_board))
         if len(moving_cards) == 0:
             for card in self.on_board:
@@ -180,7 +179,7 @@ class Player:
                     case _:
                         self.discard_pile.append(card_name)
                 board_dict[str(card.board_x)+"-"+str(card.board_y)].occupy = False
-                game_screen.log.write(f"{self.name} recycled {card_name}{card.board_x}-{card.board_y}\n")
+                if game_screen.log is not None: game_screen.log.write(f"{self.name} recycled {card_name}{card.board_x}-{card.board_y}\n")
     
     def add_card_to_deck(self, card: str) -> None:
         if card != "None" and len(self.deck) < 12 and ((self.deck.count(card) < 2 and card not in MAGIC_CARDS) or (self.deck.count(card) < 3 and card in MAGIC_CARDS)):
@@ -191,12 +190,11 @@ class Player:
             self.deck.pop()
     
     def spawn_cude(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
-        game_screen.log.write(f"{self.name} used cube on {board_x}-{board_y}\n")
+        if game_screen.log is not None: game_screen.log.write(f"{self.name} used cube on {board_x}-{board_y}\n")
         if game_screen.number_of_cudes[self.name] > 0:
             if spawn_card(board_x, board_y, "CUBE", "None", player1_in_hand, player2_in_hand, self.on_board, on_board_neutral, player1_on_board, player2_on_board, self.discard_pile, board_dict, game_screen):
                 game_screen.number_of_cudes[self.name] -= 1
                 game_screen.data.data_update("cube_used_count", self.name, 1)
-                print(f"{self.name} spawned a CUBE.")
     
     def menu_display_timer_state(self, game_screen: GameScreen) -> None:
         match self.name:

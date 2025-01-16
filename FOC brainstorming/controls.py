@@ -9,7 +9,8 @@ def key_pressed(keys: pygame.key.ScancodeWrapper) -> int:
     pygame.K_k, pygame.K_l, pygame.K_m, pygame.K_n, pygame.K_o,
     pygame.K_p, pygame.K_q, pygame.K_r, pygame.K_s, pygame.K_t,
     pygame.K_u, pygame.K_v, pygame.K_w, pygame.K_x, pygame.K_y,
-    pygame.K_z, pygame.K_SPACE, pygame.K_ESCAPE, pygame.K_TAB
+    pygame.K_z, pygame.K_SPACE, pygame.K_ESCAPE, pygame.K_TAB,
+    pygame.K_LEFT, pygame.K_UP, pygame.K_DOWN, pygame.K_RIGHT
     ]
     
     for pygame_key in keys_func:

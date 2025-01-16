@@ -1,0 +1,301 @@
+random seed -309
+player1 deck ASSP-CUBES-ADCW-ADCW-TANKR-TANKR-SPW-SPW-HFP-HFP-ASSO-MOVE
+player2 deck LFDKG-LFDKG-ASSDKG-ASSDKG-CUBES-CUBES-CUBES-ASSP-ASSP-SPDKG-HFR-HFR
+timer mode timer
+player1 drew CUBES
+player1 drew TANKR
+player1 drew ASSP
+player2 drew HFR
+player2 drew CUBES
+player2 drew CUBES
+player1 start
+player1 played 1-TANKR at 1-1
+player1 ended
+player2 started
+player2 drew LFDKG
+player2 ended
+player1 started
+player1 drew ADCW
+player1 played 2-ADCW at 0-0
+player1 ended
+player2 started
+player2 drew ASSDKG
+player2 played 3-LFDKG at 2-2
+player2 played 3-ASSDKG at 2-1
+player2 used CUBES by playing 1-CUBES
+player2 used CUBES by playing 1-CUBES
+player2 used cube on 3-0
+player2 used cube on 3-2
+player2 used cube on 1-0
+player2 used cube on 1-2
+player2 attacked using ASSDKG.2-1
+player2 recycled ASSDKG2-1
+player2 ended
+player1 started
+player1 drew ADCW
+player1 played 2-ADCW at 0-2
+player1 used CUBES by playing 0-CUBES
+player1 used cube on 1-3
+player1 used cube on 2-0
+player1 ended
+player2 started
+player2 drew ASSP
+player2 ended
+player1 started
+player1 drew MOVE
+player1 attacked using ADCW.0-2
+player1 attacked using ADCW.0-2
+player2 recycled LFDKG2-2
+player1 ended
+player2 started
+player2 drew CUBES
+player2 played 0-HFR at 2-1
+player2 used CUBES by playing 1-CUBES
+player2 used cube on 3-2
+player2 used cube on 1-2
+player2 used cube on 3-0
+player2 ended
+player1 started
+player1 drew SPW
+player1 played 0-ASSP at 3-0
+player1 attacked using ASSP.3-0
+player1 attacked using ASSP.3-0
+player1 attacked using ASSP.3-0
+player2 recycled HFR2-1
+player1 played 1-SPW at 0-3
+player1 ended
+player2 started
+player2 drew HFR
+player2 played 0-ASSP at 2-1
+player2 attacked using ASSP.2-1
+player2 drew SPDKG
+player1 recycled ASSP3-0
+player2 drew ASSDKG
+player2 attacked using ASSP.2-1
+player2 drew ASSP
+player2 drew LFDKG
+player2 played 4-LFDKG at 0-1
+player1 recycled ADCW0-0
+player1 recycled ADCW0-2
+player2 played 2-ASSDKG at 1-2
+player2 attacked using ASSDKG.1-2
+player2 recycled ASSDKG1-2
+player1 recycled SPW0-3
+player2 played 0-HFR at 1-2
+player2 ended
+player1 started
+player1 drew TANKR
+player1 used MOVE by playing 0-MOVE
+player1 played 0-TANKR at 3-1
+player1 ended
+player2 started
+player2 drew CUBES
+player2 attacked using LFDKG.0-1
+player1 recycled TANKR1-1
+player2 ended
+player1 started
+player1 drew SPW
+player1 ended
+player2 started
+player2 drew ASSDKG
+player2 ended
+player1 started
+player1 drew HFP
+player1 played 1-HFP at 2-2
+player1 played 0-SPW at 3-3
+player1 ended
+player2 started
+player2 drew ASSDKG
+player2 played 3-ASSDKG at 1-1
+player2 attacked using ASSDKG.1-1
+player2 recycled ASSDKG1-1
+player2 played 3-ASSDKG at 1-1
+player2 attacked using ASSDKG.1-1
+player2 recycled ASSDKG1-1
+player1 recycled HFP2-2
+player2 played 1-ASSP at 2-2
+player2 attacked using ASSP.2-2
+player1 recycled SPW3-3
+player2 ended
+player1 started
+player1 drew HFP
+player1 played 0-HFP at 1-1
+player1 ended
+player2 started
+player2 drew CUBES
+player2 played 0-SPDKG at 1-0
+player2 ended
+player1 started
+player1 drew ASSO
+player1 played 0-ASSO at 3-3
+player1 attacked using ASSO.3-3
+player2 recycled ASSP2-2
+player1 used move on 3-3
+player1 used move on 3-3
+player1 ended
+player2 started
+player2 drew HFR
+player2 used CUBES by playing 0-CUBES
+player2 used cube on 2-2
+player2 used cube on 2-3
+player2 ended
+player1 started
+player1 drew ASSP
+player1 played 0-ASSP at 3-2
+player1 attacked using ASSP.3-2
+player2 recycled ASSP2-1
+player1 attacked using ASSO.3-3
+player1 attacked using ASSO.3-3
+player1 used move on 3-3
+player1 used move on 2-2
+player1 attacked using ASSO.2-2
+player1 used move on 2-2
+player1 used move on 2-1
+player1 attacked using ASSO.2-1
+player2 recycled SPDKG1-0
+player1 used move on 2-1
+player1 used move on 2-2
+player1 ended
+player2 started
+player2 drew CUBES
+player2 attacked using HFR.1-2
+player1 recycled ASSO2-2
+player2 attacked using HFR.1-2
+player2 attacked using HFR.1-2
+player1 recycled HFP1-1
+player2 played 1-HFR at 2-2
+player2 ended
+player1 started
+player1 drew HFP
+player2 recycled HFR1-2
+player1 played 0-HFP at 2-1
+player1 ended
+player2 started
+player2 drew LFDKG
+player2 played 2-LFDKG at 1-1
+player1 recycled HFP2-1
+player2 ended
+player1 started
+player1 drew ADCW
+player1 played 0-ADCW at 0-3
+player1 ended
+player2 started
+player2 drew ASSDKG
+player2 played 2-ASSDKG at 1-2
+player2 attacked using ASSDKG.1-2
+player2 attacked using ASSDKG.1-2
+player2 recycled ASSDKG1-2
+player1 recycled ADCW0-3
+player2 ended
+player1 started
+player1 drew MOVE
+player1 used MOVE by playing 0-MOVE
+player1 used move on 3-2
+player1 used move on 3-3
+player1 used move on 3-2
+player1 used move on 3-3
+player1 attacked using ASSP.3-3
+player1 attacked using ASSP.3-3
+player1 attacked using ASSP.3-3
+player2 recycled HFR2-2
+player1 ended
+player2 started
+player2 drew ASSP
+player2 played 2-ASSP at 2-2
+player2 attacked using ASSP.2-2
+player2 ended
+player1 started
+player1 drew TANKR
+player1 played 0-TANKR at 1-2
+player1 ended
+player2 started
+player2 drew CUBES
+player2 attacked using ASSP.2-2
+player1 recycled ASSP3-3
+player2 used CUBES by playing 0-CUBES
+player2 used cube on 2-1
+player2 used cube on 2-0
+player2 used CUBES by playing 0-CUBES
+player2 used cube on 3-2
+player2 used cube on 3-3
+player2 used CUBES by playing 0-CUBES
+player2 used cube on 2-3
+player2 used cube on 1-3
+player2 ended
+player1 started
+player1 drew SPW
+player1 played 0-SPW at 0-3
+player1 ended
+player2 started
+player2 drew HFR
+player2 played 0-HFR at 0-2
+player2 ended
+player1 started
+player1 drew SPW
+player1 played 0-SPW at 3-0
+player1 ended
+player2 started
+player2 drew ASSP
+player2 attacked using HFR.0-2
+player2 attacked using HFR.0-2
+player1 recycled SPW0-3
+player2 ended
+player1 started
+player1 drew ADCW
+player1 attacked using SPW.3-0
+player2 recycled HFR0-2
+player1 attacked using SPW.3-0
+player1 attacked using SPW.3-0
+player1 attacked using SPW.3-0
+player2 recycled LFDKG0-1
+player1 attacked using SPW.3-0
+player1 attacked using SPW.3-0
+player2 recycled LFDKG1-1
+player1 attacked using SPW.3-0
+player1 attacked using SPW.3-0
+player2 recycled ASSP2-2
+player1 played 0-ADCW at 0-3
+player1 ended
+player2 started
+player2 drew ASSDKG
+player2 ended
+player1 started
+player1 drew CUBES
+player1 ended
+player2 started
+player2 drew SPDKG
+player2 played 0-ASSP at 2-3
+player2 attacked using ASSP.2-3
+player2 attacked using ASSP.2-3
+player2 drew CUBES
+player1 recycled TANKR1-2
+player2 drew CUBES
+player2 ended
+player1 started
+player1 drew ASSP
+player1 used CUBES by playing 0-CUBES
+player1 used cube on 1-2
+player1 used cube on 3-2
+player1 ended
+player2 started
+player2 drew HFR
+player2 used CUBES by playing 3-CUBES
+player2 played 3-HFR at 1-1
+player2 used cube on 2-2
+player2 used cube on 0-0
+player2 played 1-SPDKG at 1-0
+player2 played 0-ASSDKG at 3-3
+player2 ended
+player1 started
+player1 drew ASSO
+player1 played 0-ASSP at 0-1
+player1 played 0-ASSO at 0-2
+player1 ended
+player2 started
+player2 drew ASSP
+winner player1
+player1 score 11
+player1 timer 02:36
+player2 timer 04:27
+{'card_use_count': {'player1': 23, 'player2': 28}, 'hit_count': {'player2_ASSDKG': 6, 'player1_ADCW': 2, 'player1_ASSP': 7, 'player2_ASSP': 7, 'player2_LFDKG': 1, 'player1_ASSO': 5, 'player2_HFR': 5, 'player1_SPW': 8}, 'damage_dealt': {'player2_ASSDKG': 34, 'player1_ADCW': 6, 'player1_ASSP': 21, 'player2_ASSP': 39, 'player2_LFDKG': 29, 'player1_ASSO': 11, 'player2_HFR': 27, 'player1_SPW': 24}, 'damage_taken_count': {'neutral_CUBE': 21, 'player2_LFDKG': 6, 'player2_HFR': 8, 'player1_ASSP': 3, 'player1_TANKR': 9, 'player1_ADCW': 4, 'player1_SPW': 4, 'player1_HFP': 6, 'player2_ASSP': 3, 'player2_SPDKG': 1, 'player1_ASSO': 1}, 'damage_taken': {'neutral_CUBE': 56, 'player2_LFDKG': 18, 'player2_HFR': 21, 'player1_ASSP': 8, 'player1_TANKR': 27, 'player1_ADCW': 17, 'player1_SPW': 11, 'player1_HFP': 24, 'player2_ASSP': 6, 'player2_SPDKG': 1, 'player1_ASSO': 2}, 'scored': {'player1_TANKR': 24, 'player1_ADCW': 8, 'player2_LFDKG': 18, 'player2_HFR': 9, 'player1_ASSP': 7, 'player1_SPW': 10, 'player2_ASSP': 14, 'player1_HFP': 2, 'player2_SPDKG': 1, 'player1_ASSO': 3, 'player2_ASSDKG': 1}, 'ability_count': {'player2_LFDKG': 5, 'player2_HFR': 11}, 'healing_amount': {}, 'heal_count': {}, 'move_count': {'player1_ASSO': 3, 'player1_ASSP': 1}, 'use_move_count': {}, 'cube_used_count': {'player2': 16, 'player1': 4}, 'killed_count': {'player2_ASSDKG': 8, 'player1_ADCW': 1, 'player1_ASSP': 3, 'player2_ASSP': 5, 'player2_LFDKG': 3, 'player1_ASSO': 4, 'player2_HFR': 4, 'player1_SPW': 6}, 'death_count': {'neutral_CUBE': 14, 'player2_LFDKG': 3, 'player2_HFR': 3, 'player1_ASSP': 1, 'player1_ADCW': 2, 'player1_SPW': 1, 'player1_TANKR': 2, 'player1_HFP': 3, 'player2_ASSP': 3, 'player2_SPDKG': 1, 'player1_ASSO': 1}, 'use_token_count': {}, 'rounds_survived': {'player1_TANKR': 24, 'player1_ADCW': 8, 'player2_LFDKG': 18, 'player2_ASSP': 11, 'player2_HFR': 10, 'player1_HFP': 2, 'player2_SPDKG': 2, 'player1_ASSO': 1, 'player1_ASSP': 4, 'player1_SPW': 5, 'player2_ASSDKG': 1}}
+[0, 0, -1, -1, -3, -2, -5, -5, -9, -8, -9, -6, -7, -4, -5, -1, -2, 2, -1, 3, -1, 1, -1, 1, -1, 2, 0, 3, 1, 4, 2, 5, 1, 5, 1, 1, -4, -3, -7, -5, -11]

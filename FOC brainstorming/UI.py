@@ -1,8 +1,41 @@
 from dataclasses import dataclass, field
 import random, pygame
 
-from game_screen import GameScreen, BLACK, WHITE, RED, BLUE
+from game_screen import GameScreen, draw_text, BLACK, WHITE, RED, BLUE, Sequence
 from card import Card
+
+class Button:
+    def __init__(self, width: float, height: float, x: float, y: float, text_x: float, text_y: float, has_box: bool=True, box_color: Sequence[int]=WHITE, box_width: int=0, text_color: Sequence[int]=WHITE, text: str="", font: pygame.font.Font|None=None):
+        self.height = height
+        self.width = width
+        self.has_box = has_box
+        self.box_color = box_color
+        self.box_width = box_width
+        self.text_color = text_color
+        self.x = x
+        self.y = y
+        self.text_x = text_x
+        self.text_y = text_y
+        self.text = text
+        self.font = font
+        self.surface = pygame.Surface((width, height))
+        self.been_pressed: bool = False
+    
+    def update(self, game_screen: GameScreen):
+        self.display(game_screen)
+
+    def touch(self, mouse_x: float, mouse_y: float) -> bool:
+        return self.x<mouse_x<self.x+self.width and self.y<mouse_y<self.y+self.height
+    
+    def display(self, game_screen: GameScreen):
+        self.surface.fill((0, 0, 0, 0))
+        if self.has_box:
+            pygame.draw.rect(self.surface, self.box_color, (0, 0, self.width, self.height), self.box_width, border_radius=self.box_width*4)
+
+        if self.font is not None:
+            draw_text(self.text, self.font, self.text_color, self.text_x, self.text_y, self.surface)
+        
+        game_screen.surface.blit(self.surface, (self.x, self.y))
 
 
 @dataclass(kw_only=True)

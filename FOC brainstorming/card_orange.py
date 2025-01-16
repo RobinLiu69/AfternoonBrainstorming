@@ -78,8 +78,9 @@ class Hf(Card):
         if clear_numbness:
             self.extra_damage = 0
             self.anger = False
-        if self.numbness == True and clear_numbness:
-            self.numbness = False
+        if self.numbness == True:
+            if clear_numbness:
+                self.numbness = False
             return 0
         else:
             return 1
