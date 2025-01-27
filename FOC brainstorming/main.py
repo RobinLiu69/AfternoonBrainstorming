@@ -1,4 +1,4 @@
-import start_screen, menu, battling, end_game, playkack
+import start_screen, menu, battling, end_game, playback
 import datetime
 from player import Player, GameScreen
 
@@ -13,7 +13,7 @@ def main() -> None:
 
     match mode:
         case "start":
-            game_screen.log = open(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.txt", "w")
+            game_screen.log = open(f"{datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')}.txt", "w")
             game_screen.seed_set()
             if menu.main(game_screen, player1, player2) and game_screen.log is not None:
                 if player1.deck == [] and player2.deck == []:
@@ -60,7 +60,7 @@ def main() -> None:
 
         case "playback":
             try:
-                game_screen.playback = open("/record/playback.txt", "r")
+                game_screen.playback = open("playback.txt", "r")
             except FileNotFoundError:
                 return
             
@@ -69,7 +69,7 @@ def main() -> None:
             player2.deck = game_screen.playback.readline().split()[-1].split("-")
             game_screen.seed_set(seed)
             game_screen.timer_mode = game_screen.playback.readline().split()[-1]
-            winner = playkack.main(game_screen, player1, player2)
+            winner = playback.main(game_screen, player1, player2)
 
             game_screen.playback.close()
 

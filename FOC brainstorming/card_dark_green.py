@@ -36,7 +36,7 @@ class Tank(Card):
         
         super().__init__(owner=owner, job_and_color="TANKDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def been_damageed(self, damageer: Card, value: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def been_attacked(self, attacker: "Card", value: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         engraved_totem(self, DarkGreen_setting["TANK"]["engraved_totem"], player1_on_board, player2_on_board, game_screen)
         return True
 
@@ -48,7 +48,7 @@ class Hf(Card):
         
         super().__init__(owner=owner, job_and_color="HFDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         self.heal(1, game_screen)
         return True
     
@@ -70,7 +70,7 @@ class Lf(Card):
             target.damage_calculate(game_screen.players_totem[self.owner]//4, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return self
     
-    def ability(self, target: Card, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         engraved_totem(self, DarkGreen_setting["LF"]["engraved_totem"], player1_on_board, player2_on_board, game_screen)
         return True
     
@@ -104,7 +104,7 @@ class Apt(Card):
         engraved_totem(self, self.armor//2, player1_on_board, player2_on_board, game_screen)
         return value + self.extra_damage
     
-    def after_damage_calculated(self, target: Card, value: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def after_damage_calculated(self, target: Card, value: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         self.armor += value//2
         return True
     
