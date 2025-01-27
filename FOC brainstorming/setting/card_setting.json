@@ -298,7 +298,7 @@
             "cost": 4,
             "upgrade_health": 2,
             "upgrade_damage": 4,
-            "coin_gets": 5,
+            "coin_gets": 6,
             "damage_bonus": 2
         },
         "APT": {

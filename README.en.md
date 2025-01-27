@@ -53,7 +53,7 @@ The second player starts their turn with four cards in hand and one attack oppor
   - Place two small cubes (neutral units with 4 HP and no attack) on the board by selecting two points using **P**.  
 
 - **Heal**  
-  - Use **H** to heal a unit by 5 HP (health has a maximum value).  
+  - Use **H** to heal a unit by 6 HP (health has a maximum value).  
 
 > [!NOTE]
 > If healing exceeds the maximum HP, the excess is converted into shields at a 2:1 ratio.  

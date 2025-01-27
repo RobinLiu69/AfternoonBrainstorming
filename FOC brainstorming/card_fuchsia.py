@@ -18,7 +18,7 @@ class Shadow(Card):
         self.linker = linker
         self.job = self.linker.job
         
-    def move(self, board_x: int, board_y: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
 
     def heal(self, value: int, game_screen: GameScreen) -> bool:
@@ -36,11 +36,11 @@ class Shadow(Card):
     def update(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         self.display_update(game_screen)
     
-    def ability(self, target: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: "Card", player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         self.linker.hit_cards.append(target)
         return False
 
-    def damage_block(self, value: int, attacker: "Card", plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def damage_block(self, value: int, attacker: "Card", player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if self.linker.job_and_color == "APTF":
             self.linker.armor += value//2
         return False
@@ -54,14 +54,14 @@ class Shadow(Card):
             case _:
                 return False
     
-    def die(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def die(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         cards = tuple(filter(lambda card: card.health > 0 and self.board_x == card.board_x and self.board_y == card.board_y, on_board_neutral+player1_on_board+player2_on_board))
         if not cards:
             board_dict[str(self.board_x)+"-"+str(self.board_y)].occupy = False
         return False
 
     
-    def launch_attack(self, attack_types: str | None, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def launch_attack(self, attack_types: str | None, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if self.numbness or attack_types is None: return False
         game_screen.data.data_update("hit_count", f"{self.owner}_{self.job_and_color}", 1)
         enemies: Iterable["Card"] = tuple(filter(lambda card: card.owner != self.owner and card.health > 0 and card.job_and_color != "SHADOW", on_board_neutral+player1_on_board+player2_on_board))
@@ -69,7 +69,7 @@ class Shadow(Card):
         
         if target_generator:
             for target in target_generator:
-                target.damage_calculate(self.linker.damage, self.linker, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                target.damage_calculate(self.linker.damage, self.linker, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         else:
             return False
@@ -108,7 +108,7 @@ class Adc(Card):
             shadow.update(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         self.display_update(game_screen)
     
-    def move(self, board_x: int, board_y: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if board_dict[str(board_x)+"-"+str(board_y)].occupy == False:
             if (((abs(self.board_y-board_y) == 1 and (abs(self.board_x-board_x) == 1 or abs(self.board_x-board_x) == 0)) or (abs(self.board_y-board_y) == 0 and abs(self.board_x-board_x) == 1)) and (self.board_y != board_y or self.board_x != board_x) and self.moving == True) == False:
                 self.moving = False
@@ -119,7 +119,7 @@ class Adc(Card):
             self.board_y = board_y
             board_dict[str(board_x)+"-"+str(board_y)].occupy = True
             self.moving = False
-            self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.moved(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
                 if shadow.anger:
@@ -127,7 +127,7 @@ class Adc(Card):
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                 
             for card in ((on_board_neutral+player1_on_board+player2_on_board)):
-                card.move_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                card.move_signal(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             return True
         self.moving = False
@@ -158,7 +158,7 @@ class Ap(Card):
             shadow.update(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         self.display_update(game_screen)
     
-    def move(self, board_x: int, board_y: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if board_dict[str(board_x)+"-"+str(board_y)].occupy == False:
             if (((abs(self.board_y-board_y) == 1 and (abs(self.board_x-board_x) == 1 or abs(self.board_x-board_x) == 0)) or (abs(self.board_y-board_y) == 0 and abs(self.board_x-board_x) == 1)) and (self.board_y != board_y or self.board_x != board_x) and self.moving == True) == False:
                 self.moving = False
@@ -169,7 +169,7 @@ class Ap(Card):
             self.board_y = board_y
             board_dict[str(board_x)+"-"+str(board_y)].occupy = True
             self.moving = False
-            self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.moved(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
                 if shadow.anger:
@@ -177,7 +177,7 @@ class Ap(Card):
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                 
             for card in ((on_board_neutral+player1_on_board+player2_on_board)):
-                card.move_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                card.move_signal(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             return True
         self.moving = False
@@ -205,12 +205,12 @@ class Tank(Card):
             shadow.update(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         self.display_update(game_screen)
     
-    def die(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def die(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         for shadow in self.shadows:
-            shadow.die(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            shadow.die(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return False
     
-    def move(self, board_x: int, board_y: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if board_dict[str(board_x)+"-"+str(board_y)].occupy == False:
             if (((abs(self.board_y-board_y) == 1 and (abs(self.board_x-board_x) == 1 or abs(self.board_x-board_x) == 0)) or (abs(self.board_y-board_y) == 0 and abs(self.board_x-board_x) == 1)) and (self.board_y != board_y or self.board_x != board_x) and self.moving == True) == False:
                 self.moving = False
@@ -221,17 +221,17 @@ class Tank(Card):
             self.board_y = board_y
             board_dict[str(board_x)+"-"+str(board_y)].occupy = True
             self.moving = False
-            self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.moved(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
                 if shadow.anger:
-                    shadow.die(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                    shadow.die(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
                     shadow.board_x = BOARD_SIZE[0] - 1 - board_x
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                     board_dict[str(BOARD_SIZE[0] - 1 - board_x)+"-"+str(BOARD_SIZE[1] - 1 - board_y)].occupy = True
             
             for card in ((on_board_neutral+player1_on_board+player2_on_board)):
-                card.move_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                card.move_signal(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             return True
         self.moving = False
@@ -269,7 +269,7 @@ class Hf(Card):
             shadow.update(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         self.display_update(game_screen)
         
-    def move(self, board_x: int, board_y: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if board_dict[str(board_x)+"-"+str(board_y)].occupy == False:
             if (((abs(self.board_y-board_y) == 1 and (abs(self.board_x-board_x) == 1 or abs(self.board_x-board_x) == 0)) or (abs(self.board_y-board_y) == 0 and abs(self.board_x-board_x) == 1)) and (self.board_y != board_y or self.board_x != board_x) and self.moving == True) == False:
                 self.moving = False
@@ -280,7 +280,7 @@ class Hf(Card):
             self.board_y = board_y
             board_dict[str(board_x)+"-"+str(board_y)].occupy = True
             self.moving = False
-            self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.moved(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
                 if shadow.anger:
@@ -288,7 +288,7 @@ class Hf(Card):
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                 
             for card in ((on_board_neutral+player1_on_board+player2_on_board)):
-                card.move_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                card.move_signal(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             return True
         self.moving = False
@@ -318,7 +318,7 @@ class Lf(Card):
             return True
         return False
     
-    def move(self, board_x: int, board_y: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if board_dict[str(board_x)+"-"+str(board_y)].occupy == False:
             if (((abs(self.board_y-board_y) == 1 and (abs(self.board_x-board_x) == 1 or abs(self.board_x-board_x) == 0)) or (abs(self.board_y-board_y) == 0 and abs(self.board_x-board_x) == 1)) and (self.board_y != board_y or self.board_x != board_x) and self.moving == True) == False:
                 self.moving = False
@@ -329,7 +329,7 @@ class Lf(Card):
             self.board_y = board_y
             board_dict[str(board_x)+"-"+str(board_y)].occupy = True
             self.moving = False
-            self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.moved(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
                 if shadow.anger:
@@ -337,7 +337,7 @@ class Lf(Card):
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                 
             for card in ((on_board_neutral+player1_on_board+player2_on_board)):
-                card.move_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                card.move_signal(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             return True
         self.moving = False
@@ -360,9 +360,9 @@ class Ass(Card):
         self.shadows.append(shadow)
         return False
     
-    def die(self, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def die(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         for shadow in self.shadows:
-            shadow.die(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            shadow.die(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return False
     
     def attack(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
@@ -398,7 +398,7 @@ class Apt(Card):
         if self.owner != "display":
             self.shadows.append(spawn_shadow(owner, board_x, board_y, self))
     
-    def move(self, board_x: int, board_y: int, plsyer1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move(self, board_x: int, board_y: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if board_dict[str(board_x)+"-"+str(board_y)].occupy == False:
             if (((abs(self.board_y-board_y) == 1 and (abs(self.board_x-board_x) == 1 or abs(self.board_x-board_x) == 0)) or (abs(self.board_y-board_y) == 0 and abs(self.board_x-board_x) == 1)) and (self.board_y != board_y or self.board_x != board_x) and self.moving == True) == False:
                 self.moving = False
@@ -409,7 +409,7 @@ class Apt(Card):
             self.board_y = board_y
             board_dict[str(board_x)+"-"+str(board_y)].occupy = True
             self.moving = False
-            self.moved(plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            self.moved(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             for shadow in self.shadows:
                 if shadow.anger:
@@ -417,7 +417,7 @@ class Apt(Card):
                     shadow.board_y = BOARD_SIZE[1] - 1 - board_y
                 
             for card in ((on_board_neutral+player1_on_board+player2_on_board)):
-                card.move_signal(self, plsyer1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                card.move_signal(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             
             return True
         self.moving = False
