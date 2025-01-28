@@ -263,17 +263,20 @@ class Card:
                 pass
             if self.health < value-self.armor:
                 pass
-            value = self.armor-value
+            overflow_value = -(self.armor-value)
             self.armor = 0
-            self.health += value
+            self.health -= overflow_value
             self.been_attacked(attacker, value, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             self.been_attacked_signal(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
-            attacker.after_damage_calculated(self, value, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             if self.health <= 0:
+                value += self.health
+                attacker.after_damage_calculated(self, value, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
                 attacker.killed(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
                 attacker.killed_signal(self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
                 self.been_killed(attacker, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
                 self.been_killed_signal(attacker, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            else:
+                attacker.after_damage_calculated(self, value, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         elif self.armor == 0:
             if self.health >= value:
