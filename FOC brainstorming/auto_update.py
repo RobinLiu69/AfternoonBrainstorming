@@ -115,4 +115,4 @@ def main() -> int:
 if __name__ == "__main__":
     main()
 else:
-    raise Exception("Can not import this file in any approach.")
+    raise Exception("Should not import this file in any approach.")
