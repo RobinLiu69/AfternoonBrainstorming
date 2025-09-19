@@ -1,7 +1,7 @@
 import pygame
 
 
-from exhibits import HintBox, Card, get_card_name_in_battling, draw_text, WHITE
+from exhibits import HintBox, Card, get_card_in_battling, draw_text, WHITE
 from player import Player
 from board_block import GameScreen, Board, initialize_board
 from controls import key_pressed
@@ -189,7 +189,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                 hint_box.update(mouse_x, mouse_y, player2.hand_card_hints(mouse_x, mouse_y, game_screen)[0], game_screen)
         
         if mouse_board_x is not None and mouse_board_y is not None:
-            hint_box.update(mouse_x, mouse_y, get_card_name_in_battling(on_board_cards, mouse_board_x, mouse_board_y), game_screen)
+            hint_box.update(mouse_x, mouse_y, get_card_in_battling(on_board_cards, mouse_board_x, mouse_board_y), game_screen)
         
         
         pygame.display.update()
