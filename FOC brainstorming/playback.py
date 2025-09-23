@@ -1,12 +1,12 @@
 import pygame
 
 
-from exhibits import HintBox, Card, get_card_in_battling, draw_text, WHITE
+from exhibits import Card, get_card_in_battling, draw_text, WHITE
 from player import Player
 from board_block import GameScreen, Board, initialize_board
 from controls import key_pressed
 from attack_detection import attack_area_display
-from UI import ScoreDisplay
+from UI import ScoreDisplay, HintBox
 
 def number_key(number: int, mouse_x: int, mouse_y: int, mouse_board_x: int | None, mouse_board_y: int | None, controller: str, player1: Player, player2: Player, on_board_neutral: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
     if mouse_board_x is not None and mouse_board_y is not None:

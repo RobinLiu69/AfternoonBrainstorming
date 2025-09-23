@@ -1,7 +1,8 @@
 import pygame
 
 
-from exhibits import exhibit, get_card_name_in_menu, all_exhibit_cards, HintBox
+from exhibits import exhibit, get_card_name_in_menu, all_exhibit_cards
+from UI import HintBox
 from player import Player
 from game_screen import GameScreen
 from board_block import initialize_board
