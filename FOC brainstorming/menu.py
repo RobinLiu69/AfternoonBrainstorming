@@ -20,13 +20,13 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> bool:
     running = True
     board_list = initialize_board(12, game_screen)
     page = 0
+    scrool_cooldown = 0
     last_page = len(all_exhibit_cards)-1
     deck_editor = "player1"
     hint_box = HintBox(width=int(game_screen.block_size*2), height=int(game_screen.block_size))
     while running:
         game_screen.update()
-        
-        
+
         mouse_x, mouse_y = pygame.mouse.get_pos()
         mouse_board_x = int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 else None
         mouse_board_y = int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 else None
@@ -34,6 +34,32 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> bool:
         exhibit(page, game_screen)
         
         for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                match event.button:
+                    case 1:
+                        match deck_editor:
+                            case "player1":
+                                player1.add_card_to_deck(get_card_name_in_menu(page, mouse_board_x, mouse_board_y))
+                            case "player2":
+                                player2.add_card_to_deck(get_card_name_in_menu(page, mouse_board_x, mouse_board_y))
+                    case 3:
+                        target_card_name = get_card_name_in_menu(page, mouse_board_x, mouse_board_y)
+                        if target_card_name == "None":
+                            match deck_editor:
+                                case "player1":
+                                    player1.pop_card_from_deck()
+                                case "player2":
+                                    player2.pop_card_from_deck()
+                        else:
+                            match deck_editor:
+                                case "player1":
+                                    player1.remove_card_from_deck(target_card_name)
+                                case "player2":
+                                    player2.remove_card_from_deck(target_card_name)
+            if event.type == pygame.MOUSEWHEEL:
+                if scrool_cooldown == 0:
+                    page = turn_page(page, event.y, last_page)
+                    scrool_cooldown = 0.2
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
                 match key_pressed(keys):
@@ -99,5 +125,9 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> bool:
         
         
         pygame.display.update()
-        game_screen.clock.tick(60)
+        dt = game_screen.clock.tick(60)/1000
+
+        if scrool_cooldown != 0:
+            scrool_cooldown = round(scrool_cooldown - dt, 2)
+
     return True

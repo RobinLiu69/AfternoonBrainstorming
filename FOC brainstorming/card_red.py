@@ -9,7 +9,7 @@ class Adc(Card):
         super().__init__(owner=owner, job_and_color="ADCR", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     
-    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         on_board_cards = on_board_neutral + player1_on_board + player2_on_board
         self.damage += card_settings["ADC"]["damage_increase"]
         for card in on_board_cards:
@@ -24,7 +24,7 @@ class Ap(Card):
         super().__init__(owner=owner, job_and_color="APR", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     
-    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         on_board_cards = on_board_neutral + player1_on_board + player2_on_board
         target.numbness = True
         value = int(target.damage*(card_settings["AP"]["attack_steal_rate"]/100))
@@ -42,7 +42,7 @@ class Tank(Card):
         super().__init__(owner=owner, job_and_color="TANKR", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     
-    def been_attacked(self, attacker: Card, value: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def been_attacked(self, attacker: Card, value: int, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         on_board_cards = on_board_neutral + player1_on_board + player2_on_board
         for card in self.detection("nearest", filter(lambda card: card.owner == self.owner and card != self, on_board_cards)):
             card.armor += card_settings["TANK"]["armor_increase"]
@@ -58,7 +58,7 @@ class Hf(Card):
         super().__init__(owner=owner, job_and_color="HFR", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     
-    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         on_board_cards = on_board_neutral + player1_on_board + player2_on_board
         self.health -= card_settings["HF"]["health_decrease"]
         if self.health == 0:
@@ -68,7 +68,7 @@ class Hf(Card):
             card.damage += card_settings["HF"]["damage_increase"]
         return True
 
-    def can_be_killed(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def can_be_killed(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if self.anger:
             return False
         else:
@@ -91,7 +91,7 @@ class Lf(Card):
         super().__init__(owner=owner, job_and_color="LFR", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     
-    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         on_board_cards = on_board_neutral + player1_on_board + player2_on_board
         self.armor += card_settings["LF"]["armor_increase"]
         self.damage += card_settings["LF"]["damage_increase"]
@@ -107,7 +107,7 @@ class Ass(Card):
         super().__init__(owner=owner, job_and_color="ASSR", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     
-    def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def killed(self, victim: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         on_board_cards = on_board_neutral + player1_on_board + player2_on_board
         for card in self.detection("nearest", filter(lambda card: card.owner == self.owner and card != self, on_board_cards)):
             card.damage += card_settings["ASS"]["damage_increase"]
@@ -121,7 +121,7 @@ class Apt(Card):
         
         super().__init__(owner=owner, job_and_color="APTR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         on_board_cards = on_board_neutral + player1_on_board + player2_on_board
         for card in self.detection("nearest", filter(lambda card: card.owner == self.owner and card != self, on_board_cards)):
             card.armor += card_settings["APT"]["armor_increase"]
