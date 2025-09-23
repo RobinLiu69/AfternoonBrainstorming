@@ -20,7 +20,7 @@ class Ap(Card):
             target.damage = target.original_damage
         return self
     
-    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         target.numbness = True
         target.armor = 0
         target.damage = target.original_damage
@@ -32,9 +32,9 @@ class Tank(Card):
         
         super().__init__(owner=owner, job_and_color="TANKP", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def move_signal(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move_signal(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if target.owner != self.owner:
-            target.damage_calculate(card_settings["TANK"]["movement_damage"], self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            target.damage_calculate(card_settings["TANK"]["movement_damage"], self, player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             return True
         return False
 
@@ -45,7 +45,7 @@ class Hf(Card):
         super().__init__(owner=owner, job_and_color="HFP", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     
-    def start_turn(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
+    def start_turn(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         if self.attack_types is not None:
             count = len(tuple(self.detection(self.attack_types, tuple(filter(lambda card: card.owner != self.owner, player1_on_board+player2_on_board)))))
             game_screen.number_of_attacks[self.owner] += count//3
@@ -63,7 +63,7 @@ class Ass(Card):
         
         super().__init__(owner=owner, job_and_color="ASSP", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def killed(self, victim: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         count: int = 0
         match self.owner:
             case "player1":

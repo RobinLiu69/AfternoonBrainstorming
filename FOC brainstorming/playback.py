@@ -12,39 +12,39 @@ def number_key(number: int, mouse_x: int, mouse_y: int, mouse_board_x: int | Non
     if mouse_board_x is not None and mouse_board_y is not None:
         match controller:
             case "player1":
-                player1.play_card(mouse_board_x, mouse_board_y, number-1, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                player1.play_card(mouse_board_x, mouse_board_y, number-1, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
             case "player2":
-                player2.play_card(mouse_board_x, mouse_board_y, number-1, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                player2.play_card(mouse_board_x, mouse_board_y, number-1, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
     elif mouse_x < game_screen.display_width/2-game_screen.block_size*2 or mouse_x > game_screen.display_width/2+game_screen.block_size*2:
         if mouse_x < game_screen.display_width/2 and controller == "player1":
             name, i = player1.hand_card_hints(mouse_x, mouse_y, game_screen)
             if number-1 != i: return
             if name != "None":
-                if player1.in_hand[i].endswith(" (+)"):
-                    player1.in_hand[i] = player1.in_hand[i].replace(" (+)", "")
+                if player1.hand[i].endswith(" (+)"):
+                    player1.hand[i] = player1.hand[i].replace(" (+)", "")
                 else:
-                    player1.in_hand[i] += " (+)"
+                    player1.hand[i] += " (+)"
         elif mouse_x > game_screen.display_width/2 and controller == "player2":
             name, i = player2.hand_card_hints(mouse_x, mouse_y, game_screen)
             if number-1 != i: return
             if name != "None":
-                if player2.in_hand[i].endswith(" (+)"):
-                    player2.in_hand[i] = player2.in_hand[i].replace(" (+)", "")
+                if player2.hand[i].endswith(" (+)"):
+                    player2.hand[i] = player2.hand[i].replace(" (+)", "")
                 else:
-                    player2.in_hand[i] += " (+)"
+                    player2.hand[i] += " (+)"
 
 
-def recycle_neutral(player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+def recycle_neutral(player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
     for i, card in enumerate(on_board_neutral):
-        if card.health <= 0 and card.can_be_killed(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
-            card.die(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        if card.health <= 0 and card.can_be_killed(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+            card.die(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
             board_dict[str(card.board_x)+"-"+str(card.board_y)].occupy = False
             on_board_neutral.pop(i)
 
-def update_neutral(player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
-    recycle_neutral(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+def update_neutral(player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    recycle_neutral(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
     for card in on_board_neutral:
-        card.update(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        card.update(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
 
 def display_controller(controller: str, game_screen: GameScreen) -> None:
     draw_text(f"Ture: {controller}", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*0.6, game_screen.display_height/2-game_screen.block_size*2.1, game_screen.surface)
@@ -67,37 +67,37 @@ def next_move(controller: Player, player1: Player, player2: Player, on_board_neu
                     controller.turn_end(game_screen)
                     next_action(game_screen)
                     controller = player2
-                    controller.turn_start(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                    controller.turn_start(player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
                 case "player2":
                     controller.turn_end(game_screen)
                     controller = player1
                     next_action(game_screen)
-                    controller.turn_start(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                    controller.turn_start(player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
             game_screen.data.score_records.append(game_screen.score)
         case "played":
             index = int(line[2].split("-")[0])
             board_x, board_y = map(int, line[-1].split("-"))
-            controller.play_card(board_x, board_y, index, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+            controller.play_card(board_x, board_y, index, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
         case "used":
             match line[-2]:
                 case "playing":
                     index = int(line[-1].split("-")[0])
                     print(index)
-                    controller.play_card(0, 0, index, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                    controller.play_card(0, 0, index, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
                 case "on":
                     match line[2]:
                         case "cube":
                             board_x, board_y = map(int, line[-1].split("-"))
-                            controller.spawn_cude(board_x, board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                            controller.spawn_cude(board_x, board_y, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
                         case "heal":
                             board_x, board_y = map(int, line[-1].split("-"))
                             controller.heal_card(board_x, board_y, game_screen)
                         case "move":
                             board_x, board_y = map(int, line[-1].split("-"))
-                            controller.move_card(board_x, board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                            controller.move_card(board_x, board_y, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
         case "attacked":
             board_x, board_y = map(int, line[-1].split(".")[-1].split("-"))
-            controller.attack(board_x, board_y, player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+            controller.attack(board_x, board_y, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
     return controller
 
 def next_action(game_screen: GameScreen) -> str:
@@ -171,13 +171,13 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
         
         match controller.name:
             case "player1":
-                player1.update(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, True, game_screen)
-                player2.update(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, False, game_screen)
+                player1.update(player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, True, game_screen)
+                player2.update(player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, False, game_screen)
             case "player2":
-                player2.update(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, True, game_screen)
-                player1.update(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, False, game_screen)
+                player2.update(player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, True, game_screen)
+                player1.update(player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, False, game_screen)
                 
-        update_neutral(player1.in_hand, player2.in_hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+        update_neutral(player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
         
                 
         if mouse_x < game_screen.display_width/2-game_screen.block_size*2 or mouse_x > game_screen.display_width/2+game_screen.block_size*2:
