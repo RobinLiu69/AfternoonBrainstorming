@@ -4,6 +4,47 @@ import random, pygame
 from game_screen import GameScreen, draw_text, BLACK, WHITE, RED, BLUE, Sequence
 from card import Card
 
+
+@dataclass(kw_only=True)
+class BasicUI:
+    x: int = 0
+    y: int = 0
+    height: int = 0
+    width: int = 0
+    surface : pygame.Surface | None = field(init=False, default=None)
+
+    def update(self, game_screen: GameScreen) -> None:
+        self.display(game_screen)
+    
+    def display(self, game_screen: GameScreen) -> None:
+        return
+
+
+@dataclass
+class HighLightBox(BasicUI):
+    box_color: tuple[int, int, int] | None = None
+    box_height: int = 0
+    box_width: int = 0
+    line_width: int = 0
+    border_radius: int = 0
+    visable: bool = False
+
+    def update(self, index: int, length: int, game_screen: GameScreen) -> None:
+        self.display(index, length, game_screen)
+
+    def display(self, index: int, length: int, game_screen: GameScreen) -> None:
+        if self.visable:
+            prefix = 7 if index < 9 else 7.5
+            self.box_width = game_screen.block_size/10*(length*0.8+prefix)
+            self.y = game_screen.display_height/14*(index+0.8)
+            pygame.draw.rect(game_screen.surface, self.box_color, (self.x, self.y, self.box_width, self.box_height), width=self.line_width)
+            
+@dataclass(kw_only=True)
+class HandDisplay(BasicUI):
+    def display(self, game_screen: GameScreen) -> None:
+        ### 之後會需要更新這部份的東西
+        return
+
 class Button:
     def __init__(self, width: float, height: float, x: float, y: float, text_x: float, text_y: float, has_box: bool=True, box_color: Sequence[int]=WHITE, box_width: int=0, text_color: Sequence[int]=WHITE, text: str="", font: pygame.font.Font|None=None):
         self.height = height

@@ -8,16 +8,16 @@ class Adc(Card):
         
         super().__init__(owner=owner, job_and_color="ADCO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def attack(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+    def attack(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        if self.launch_attack(self.attack_types, player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
             self.moving = True
             self.hit_cards.clear()
             return True
         else:
             return False
     
-    def moved(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        self.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+    def moved(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        self.launch_attack(self.attack_types, player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True
 
 
@@ -26,16 +26,16 @@ class Ap(Card):
         
         super().__init__(owner=owner, job_and_color="APO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         target.numbness = True
         return True
     
-    def start_turn(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
+    def start_turn(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> int:
         match self.owner:
             case "player1":
-                player1_in_hand.append("MOVEO")
+                player1_hand.append("MOVEO")
             case "player2":
-                player2_in_hand.append("MOVEO")
+                player2_hand.append("MOVEO")
         return 0
 
 
@@ -44,12 +44,12 @@ class Tank(Card):
         
         super().__init__(owner=owner, job_and_color="TANKO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def been_attacked(self, attacker: Card, value: int, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def been_attacked(self, attacker: Card, value: int, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         match self.owner:
             case "player1":
-                player1_in_hand.append("MOVEO")
+                player1_hand.append("MOVEO")
             case "player2":
-                player2_in_hand.append("MOVEO")
+                player2_hand.append("MOVEO")
         return True
 
 
@@ -58,15 +58,15 @@ class Hf(Card):
         
         super().__init__(owner=owner, job_and_color="HFO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+    def attack(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        if self.launch_attack(self.attack_types, player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
             self.moving = True
             self.hit_cards.clear()
             return True
         else:
             return False
         
-    def moved(self, player1_in_hand: list[str], plaeyr2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def moved(self, player1_hand: list[str], plaeyr2_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         self.extra_damage += card_settings["HF"]["extra_damage_from_moving"]
         self.anger = True
         return True
@@ -92,17 +92,17 @@ class Lf(Card):
         
         super().__init__(owner=owner, job_and_color="LFO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.launch_attack(self.attack_types, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
+    def attack(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+        if self.launch_attack(self.attack_types, player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
             self.moving = True
             self.hit_cards.clear()
             return True
         else:
             return False
         
-    def moved(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def moved(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         for card in self.detection("nearest", filter(lambda card: card.owner != self.owner and card != self, on_board_neutral + player1_on_board + player2_on_board)):
-            card.damage_calculate(self.damage, self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            card.damage_calculate(self.damage, self, player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True
 
 
@@ -111,11 +111,11 @@ class Ass(Card):
         
         super().__init__(owner=owner, job_and_color="ASSO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def moved(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def moved(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         self.anger = True
         return True
     
-    def killed(self, victim: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def killed(self, victim: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         self.moving = True
         if self.anger:
             game_screen.number_of_attacks[self.owner] += card_settings["ASS"]["number_of_attack_increase_from_killed"]
@@ -138,7 +138,7 @@ class Apt(Card):
         
         super().__init__(owner=owner, job_and_color="APTO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def moved(self, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def moved(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         self.armor += card_settings["APT"]["armor_get_from_moving"]
         value = self.armor // 2
         if value > 0:
@@ -146,7 +146,7 @@ class Apt(Card):
             self.armor = self.armor % 2
         return True
 
-    def move_signal(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move_signal(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if target.owner == self.owner and target != self:
             target.armor += card_settings["APT"]["armor_get_from_moving"]
             self.armor += card_settings["APT"]["armor_get_from_moving"]
@@ -158,8 +158,8 @@ class Sp(Card):
         
         super().__init__(owner=owner, job_and_color="SPO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def move_signal(self, target: Card, player1_in_hand: list[str], player2_in_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move_signal(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         if target.owner == self.owner:
             for card in self.detection("farthest", filter(lambda card: card.owner != self.owner and card != self, on_board_neutral + player1_on_board + player2_on_board)):
-                card.damage_calculate(card_settings["SP"]["movement_damage"], self, player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                card.damage_calculate(card_settings["SP"]["movement_damage"], self, player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True

@@ -11,7 +11,7 @@ import card_cyan as cyan
 import card_fuchsia as fuchsia
 
 
-def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_hand: list[str], player2_in_hand: list[str], on_board: list[Card], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], discard_pile: list[str], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_hand: list[str], player2_hand: list[str], on_board: list[Card], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], discard_pile: list[str], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
     if spawn_check(board_x, board_y, board_dict):
         match card:
             case "CUBE":
@@ -82,7 +82,7 @@ def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_han
             case "APTB":
                 on_board.append(blue.Apt(owner, board_x, board_y))
             case "SPB":
-                on_board.append(blue.Sp(owner, board_x, board_y).deploy(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, discard_pile, board_dict, game_screen))
+                on_board.append(blue.Sp(owner, board_x, board_y).deploy(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, discard_pile, board_dict, game_screen))
             
             case "ADCO":
                 on_board.append(orange.Adc(owner, board_x, board_y))
@@ -127,7 +127,7 @@ def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_han
             case "HFDKG":
                 on_board.append(darkgreen.Hf(owner, board_x, board_y))
             case "LFDKG":
-                on_board.append(darkgreen.Lf(owner, board_x, board_y).deploy(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen))
+                on_board.append(darkgreen.Lf(owner, board_x, board_y).deploy(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen))
             case "ASSDKG":
                 on_board.append(darkgreen.Ass(owner, board_x, board_y))
             case "APTDKG":
@@ -196,7 +196,7 @@ def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_han
             case "ADCF":
                 on_board.append(fuchsia.Adc(owner, board_x, board_y))
             case "APF":
-                on_board.append(fuchsia.Ap(owner, board_x, board_y).deploy(player1_in_hand, player2_in_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen))
+                on_board.append(fuchsia.Ap(owner, board_x, board_y).deploy(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen))
             case "TANKF":
                 on_board.append(fuchsia.Tank(owner, board_x, board_y))
             case "HFF":
@@ -208,7 +208,7 @@ def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_in_han
             case "APTF":
                 on_board.append(fuchsia.Apt(owner, board_x, board_y))
             case "SPF":
-                on_board.append(fuchsia.Sp(owner, board_x, board_y).deploy(player1_in_hand, player2_in_hand, player1_on_board, player2_on_board, board_dict, game_screen))
+                on_board.append(fuchsia.Sp(owner, board_x, board_y).deploy(player1_hand, player2_hand, player1_on_board, player2_on_board, board_dict, game_screen))
             
             case _:
                 return False

@@ -5,8 +5,8 @@ from player import Player, GameScreen
 
 def main() -> None:
 
-    player1 = Player(name="player1", deck=[], in_hand=[], on_board=[], draw_pile=[], discard_pile=[])
-    player2 = Player(name="player2", deck=[], in_hand=[], on_board=[], draw_pile=[], discard_pile=[])
+    player1 = Player(name="player1", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
+    player2 = Player(name="player2", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
     game_screen = GameScreen()
 
     mode = start_screen.main(game_screen)
@@ -17,7 +17,7 @@ def main() -> None:
             game_screen.seed_set()
             if menu.main(game_screen, player1, player2) and game_screen.log is not None:
                 if player1.deck == [] and player2.deck == []:
-                    player1.deck = ['ASSP', 'CUBES', 'ADCW', 'ADCW', 'TANKR', 'TANKR', 'SPW', 'SPW', 'HFP', 'HFP', 'ASSO', 'MOVE']
+                    player1.deck = ['TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG']
                     player2.deck = ['LFDKG', 'LFDKG', 'ASSDKG', 'ASSDKG', 'CUBES', 'CUBES', 'CUBES', 'ASSP', 'ASSP', 'SPDKG', 'HFR', 'HFR']
 
                 game_screen.log.write(f"player1 deck {"-".join(player1.deck)}\nplayer2 deck {"-".join(player2.deck)}\n")
