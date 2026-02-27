@@ -1,14 +1,14 @@
-from card import Card, GameScreen
-from board_block import Board
-import card_white as white
-import card_red as red
-import card_green as green
-import card_blue as blue
-import card_orange as orange
-import card_purple as purple
-import card_dark_green as darkgreen
-import card_cyan as cyan
-import card_fuchsia as fuchsia
+from cards.card import Card, GameScreen
+from core.board_block import Board
+import cards.card_white as white
+import cards.card_red as red
+import cards.card_green as green
+import cards.card_blue as blue
+import cards.card_orange as orange
+import cards.card_purple as purple
+import cards.card_dark_green as darkgreen
+import cards.card_cyan as cyan
+import cards.card_fuchsia as fuchsia
 
 
 def spawn_card(board_x: int, board_y: int, card: str, owner: str, player1_hand: list[str], player2_hand: list[str], on_board: list[Card], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], discard_pile: list[str], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:

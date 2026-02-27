@@ -1,23 +1,23 @@
-from dataclasses import dataclass, field
-import os, json, pygame
-from typing import cast
+from typing import Optional
 
 #December 22nd, 2024 7:30 PM
 #Vic Yeh 到此一遊
 #學測倒數29天
 
 
-from card import Card
-import card_white as white
-import card_red as red
-import card_green as green
-import card_blue as blue
-import card_orange as orange
-import card_purple as purple
-import card_dark_green as darkgreen
-import card_cyan as cyan
-import card_fuchsia as fuchsia
-from game_screen import GameScreen, draw_text, WHITE, BLACK, CARDS_HINTS_DICTIONARY
+from cards.card import Card
+
+import cards.card_white as white
+import cards.card_red as red
+import cards.card_green as green
+import cards.card_blue as blue
+import cards.card_orange as orange
+import cards.card_purple as purple
+import cards.card_dark_green as darkgreen
+import cards.card_cyan as cyan
+import cards.card_fuchsia as fuchsia
+
+from core.game_screen import GameScreen, draw_text, WHITE, RED, GREEN, BLACK
 
 
 
@@ -41,7 +41,7 @@ def exhibit(page: int, game_screen: GameScreen):
     for card in all_exhibit_cards[-1]:
         card.display_update(game_screen)
 
-def get_card_name_in_menu(page: int, board_x: int, board_y: int) -> str:
+def get_card_name_in_menu(page: int, board_x: Optional[int], board_y: Optional[int]) -> str:
     for card in all_exhibit_cards[page]:
         if card.board_x == board_x and card.board_y == board_y:
             return card.job_and_color
@@ -58,29 +58,8 @@ def get_card_name_in_battling(all_on_board_cards: list[Card], board_x: int, boar
             return card.job_and_color
     return "None"
 
-@dataclass(kw_only=True)
-class HintBox:
-    width: int
-    height: int
-    
-    def __post_init__(self) -> None:
-        self.x = 0
-        self.y = 0
-        self.turn_on = False
-    
-    def update(self, mouse_x: int, mouse_y: int, card: str, game_screen: GameScreen) -> None:
-        self.x = mouse_x
-        self.y = mouse_y
-        if card != "None":
-            self.display(card, game_screen)
-        
-    def display(self, card: str, game_screen: GameScreen) -> None:
-        if self.turn_on:
-            if card not in CARDS_HINTS_DICTIONARY: return
-            box_height = len(CARDS_HINTS_DICTIONARY[card].split("\n"))+1 if len(CARDS_HINTS_DICTIONARY[card].split("\n"))+1 > 4 else 4
-            
-            pygame.draw.rect(game_screen.surface, WHITE, (self.x, self.y, self.width, game_screen.block_size*0.15*box_height), 2)
-            pygame.draw.rect(game_screen.surface, BLACK, (self.x+(game_screen.thickness//2), self.y+(game_screen.thickness//2), self.width-game_screen.thickness, game_screen.block_size*0.15*box_height-game_screen.thickness), 1000)
-            
-            for i, line in enumerate(CARDS_HINTS_DICTIONARY[card].split("\n")):
-                draw_text(f"{line}", game_screen.text_fontCHI, WHITE, self.x+(game_screen.block_size*0.05), self.y+(game_screen.block_size*0.15*(i+1)), game_screen.surface)
+def get_card_in_battling(all_on_board_cards: list[Card], board_x: int, board_y: int) -> Optional[Card]:
+    for card in all_on_board_cards:
+        if card.board_x == board_x and card.board_y == board_y:
+            return card
+    return None

@@ -8,10 +8,10 @@ import os, json, math
 import numpy as np
 from typing import cast
 
-from type_hint import JobDictionary
+from utils.type_hint import JobDictionary
 
 
-__FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__))
+__FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("utils", "")
 
 with open(f"{__FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
@@ -27,7 +27,7 @@ COLORS_DICT: dict[str, tuple[float, float, float]] = dict(zip(JOB_DICTIONARY["co
 
 font_file_path = __FOLDER_PATH+"/fonts/8bitOperatorPlus-Bold.ttf"
 
-output_folder = f"{__FOLDER_PATH}/output"
+output_folder = f"{__FOLDER_PATH}/imgs"
 
 
 

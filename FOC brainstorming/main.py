@@ -1,6 +1,6 @@
-import start_screen, menu, battling, end_game, playback
-import datetime
-from player import Player, GameScreen
+from screens import start_screen, menu, battling, end_game, playback
+import datetime, os
+from core.player import Player, GameScreen
 
 
 def main() -> None:
@@ -13,34 +13,41 @@ def main() -> None:
 
     match mode:
         case "start":
-            game_screen.log = open(f"{datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')}.txt", "w")
-            game_screen.seed_set()
-            if menu.main(game_screen, player1, player2) and game_screen.log is not None:
-                if player1.deck == [] and player2.deck == []:
-                    player1.deck = ['TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG']
-                    player2.deck = ['LFDKG', 'LFDKG', 'ASSDKG', 'ASSDKG', 'CUBES', 'CUBES', 'CUBES', 'ASSP', 'ASSP', 'SPDKG', 'HFR', 'HFR']
-
-                game_screen.log.write(f"player1 deck {"-".join(player1.deck)}\nplayer2 deck {"-".join(player2.deck)}\n")
-                
-                game_screen.log.write(f"timer mode {game_screen.timer_mode}\n")
-
-                winner = battling.main(game_screen, player1, player2)
-
-                game_screen.player_timer["player1"] = player1.time_minutes_and_seconds
-                game_screen.player_timer["player2"] = player2.time_minutes_and_seconds
-                
-                game_screen.log.write(f"winner {winner}\n")
-            
-                game_screen.log.write(f"player1 score {abs(game_screen.score)}\n" if game_screen.score <= 0 else "")
-                game_screen.log.write(f"player2 score {game_screen.score}\n" if game_screen.score >= 0 else "")
-                
-                game_screen.log.write(f"player1 timer {player1.time_minutes_and_seconds}\n")
-                game_screen.log.write(f"player2 timer {player2.time_minutes_and_seconds}\n")
-                
-                game_screen.log.write(f"{game_screen.data.data_dicts}\n")
-                game_screen.log.write(f"{game_screen.data.score_records}\n")
+            log_file_name = f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+            log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "battle_records", log_file_name)
+            if os.path.exists(log_file_path):
+                pass
             else:
-                winner = "quit"
+                os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+
+            with open(log_file_path, "w") as game_screen.log:
+                game_screen.seed_set()
+                if menu.main(game_screen, player1, player2) and game_screen.log is not None:
+                    if player1.deck == [] and player2.deck == []:
+                        player1.deck = ['TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG']
+                        player2.deck = ['LFDKG', 'LFDKG', 'ASSDKG', 'ASSDKG', 'CUBES', 'CUBES', 'CUBES', 'ASSP', 'ASSP', 'SPDKG', 'HFR', 'HFR']
+
+                    game_screen.log.write(f"player1 deck {"-".join(player1.deck)}\nplayer2 deck {"-".join(player2.deck)}\n")
+                    
+                    game_screen.log.write(f"timer mode {game_screen.timer_mode}\n")
+
+                    winner = battling.main(game_screen, player1, player2)
+
+                    game_screen.player_timer["player1"] = player1.time_minutes_and_seconds
+                    game_screen.player_timer["player2"] = player2.time_minutes_and_seconds
+                    
+                    game_screen.log.write(f"winner {winner}\n")
+                
+                    game_screen.log.write(f"player1 score {abs(game_screen.score)}\n" if game_screen.score <= 0 else "")
+                    game_screen.log.write(f"player2 score {game_screen.score}\n" if game_screen.score >= 0 else "")
+                    
+                    game_screen.log.write(f"player1 timer {player1.time_minutes_and_seconds}\n")
+                    game_screen.log.write(f"player2 timer {player2.time_minutes_and_seconds}\n")
+                    
+                    game_screen.log.write(f"{game_screen.data.data_dicts}\n")
+                    game_screen.log.write(f"{game_screen.data.score_records}\n")
+                else:
+                    winner = "quit"
 
             if game_screen.log is not None: game_screen.log.close()
             

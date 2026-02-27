@@ -1,8 +1,8 @@
 import pygame
 
-from game_screen import GameScreen, draw_text, WHITE
-from UI import Button
-from controls import key_pressed
+from core.game_screen import GameScreen, draw_text, WHITE
+from core.UI import Button
+from utils.controls import key_pressed
     
 
 

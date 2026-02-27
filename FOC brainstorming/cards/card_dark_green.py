@@ -1,4 +1,5 @@
-from card import Board, Card, GameScreen, DarkGreen_setting, DARKGREEN
+from cards.card import Board, Card
+from core.game_screen import GameScreen, DarkGreen_setting, DARKGREEN
 
 card_settings = DarkGreen_setting
 

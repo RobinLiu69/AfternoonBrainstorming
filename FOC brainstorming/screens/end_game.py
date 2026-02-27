@@ -3,9 +3,9 @@ from dataclasses import dataclass, field
 from typing import cast
 
 
-from game_screen import GameScreen, os, draw_text, __FOLDER_PATH, PIE_TITLE_TEXTS, KEYS_TO_CHECK, KETYS_TO_DISPLAY, BLACK, WHITE
-from chart_make import make_plot_chart, make_pie_chart, make_bar_chart
-from controls import key_pressed
+from core.game_screen import GameScreen, os, draw_text, __FOLDER_PATH, PIE_TITLE_TEXTS, KEYS_TO_CHECK, KETYS_TO_DISPLAY, BLACK, WHITE
+from utils.chart_make import make_plot_chart, make_pie_chart, make_bar_chart
+from utils.controls import key_pressed
 
 
 folder_path = __FOLDER_PATH
@@ -20,14 +20,14 @@ class Chart:
     visible: bool = field(init=False, default=False)
 
     def __post_init__(self) -> None:
-        file_path = folder_path+"/output/"+self.file_path
+        file_path = folder_path+"/imgs/"+self.file_path
         
         self.image: pygame.surface.Surface | None = None
         if os.path.exists(file_path):
             self.image = pygame.transform.scale(pygame.image.load(file_path).convert_alpha(), (self.width, self.height))
 
     def display(self, game_screen: GameScreen) -> None:
-        if self.visible == True and self.image is not None:
+        if self.visible == True and self.image:
             game_screen.surface.blit(self.image, (self.x, self.y))
 
 def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[str, dict[str, int]], player1_profession_data: dict[str, dict[str, int]], player2_profession_data: dict[str, dict[str, int]], game_screen: GameScreen) -> tuple[str, dict[str, list[str]], dict[str, list[str]]]:
@@ -194,8 +194,8 @@ def main(winner: str, game_screen: GameScreen) -> None:
         game_screen.update()
         
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        mouse_board_x = int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 else None
-        mouse_board_y = int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 else None
+        # mouse_board_x = int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 else None
+        # mouse_board_y = int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 else None
         
         
         for event in pygame.event.get():
@@ -281,9 +281,11 @@ def main(winner: str, game_screen: GameScreen) -> None:
         pygame.display.update()
         game_screen.clock.tick(60)
     
-    file_path = __FOLDER_PATH+"/output"
+    imgs_file_path = __FOLDER_PATH+"/imgs"
+    battle_records_file_path = __FOLDER_PATH+"/battle_records"
     try:
         if game_screen.file_auto_delet:
-            shutil.rmtree(file_path)
+            shutil.rmtree(imgs_file_path)
+            shutil.rmtree(battle_records_file_path)
     except FileNotFoundError:
         pass

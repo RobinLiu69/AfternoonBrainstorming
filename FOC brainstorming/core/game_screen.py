@@ -1,12 +1,12 @@
 import os, json, pygame, random
 
 from typing import cast, Sequence, TextIO
-from in_game_data import Data
+from utils.in_game_data import Data
 pygame.init()
 
-from type_hint import JobDictionary, CardSetting
+from utils.type_hint import JobDictionary, CardSetting
 
-__FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__))
+__FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("core", "")
 
 with open(f"{__FOLDER_PATH}/setting/setting.json", "r", encoding="utf-8") as file:
     SETTING: dict[str, str] = json.loads(file.read())
@@ -71,7 +71,7 @@ class GameScreen:
         self.player_timer: dict[str, str] = {"player1": "0", "player2": "0"}
         
         self.coutdown_time = int(SETTING["countdown_time"])
-        self.file_auto_delet: bool = True 
+        self.file_auto_delet: bool = False
         self.data = Data()
         
         self.log: TextIO | None = None
@@ -97,7 +97,7 @@ class GameScreen:
         if seed == None:
             seed = random.randint(-2**9, 2**9)
         random.seed(seed)
-        if self.log is not None:
+        if self.log:
             self.log.write(f"random seed {seed}\n")
 
 

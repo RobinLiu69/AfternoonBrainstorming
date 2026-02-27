@@ -1,7 +1,12 @@
-from card import Card, GameScreen, Board, Generator, pygame, cast, WHITE, RED, BOARD_SIZE
+import pygame
+from typing import Generator, cast
+from cards.card import Card
+from core.game_screen import  GameScreen, WHITE, RED, BOARD_SIZE
+from core.board_block import Board
+
 
 def attack_areas(board_x: int, board_y: int,  attack_types: str | None, other_cards: tuple[Card], board_dict: dict[str, Board]) -> Generator[tuple[int, int], None, None]:
-    if attack_types is None: return None
+    if not attack_types: return None
     board_list = tuple((board_dict.values()))
     for attack_type in attack_types.split(" "):
         match attack_type:
@@ -47,9 +52,10 @@ def attack_area_display(controller: str, board_x: int, board_y: int, on_board_ne
     if target_cards:
         target_card: Card = target_cards[0]
         other_cards: tuple[Card] = cast(tuple[Card], tuple(filter(lambda card: card.owner != target_card.owner, on_board_neutral+player1_on_board+player2_on_board)))
+        color = (0, 0, 0)
         match target_card.job_and_color:
             case "ADCF" | "HFF" | "ASSF" | "SPF":
-                if target_card.attack_types is not None:
+                if target_card.attack_types:
                     if target_card.owner == controller:
                         color = (200, 200, 200)
                     else:
@@ -62,7 +68,7 @@ def attack_area_display(controller: str, board_x: int, board_y: int, on_board_ne
                     for board_x, board_y in card_attack_blocks:
                         draw_board(color, board_x, board_y, game_screen)
             case _:
-                if target_card.attack_types is not None:
+                if target_card.attack_types:
                     if target_card.owner == controller:
                         color = (200, 200, 200)
                     else:

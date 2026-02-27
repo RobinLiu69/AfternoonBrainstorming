@@ -1,4 +1,5 @@
-from card import Board, Card, GameScreen, White_setting, WHITE
+from cards.card import Board, Card
+from core.game_screen import GameScreen, White_setting, WHITE
 
 card_settings = White_setting
 
