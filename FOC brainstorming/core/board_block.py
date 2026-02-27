@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import pygame
 
-from game_screen import GameScreen, WHITE, BOARD_SIZE
+from core.game_screen import GameScreen, WHITE, BOARD_SIZE
 
 
 def initialize_board(length: int, game_screen: GameScreen) -> dict[str, "Board"]:

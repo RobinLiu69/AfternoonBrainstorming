@@ -1,31 +1,25 @@
 from dataclasses import dataclass, field
 import random, pygame
-from typing import cast
+from typing import cast, Optional
 
-from game_screen import GameScreen, draw_text, BLACK, WHITE, RED, BLUE, GREEN, Sequence, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
-from card import Card, COLOR_TAG_LIST
+from core.game_screen import GameScreen, draw_text, BLACK, WHITE, RED, BLUE, GREEN, Sequence, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
+from cards.card import Card, COLOR_TAG_LIST
 
 
 @dataclass(kw_only=True)
 class BasicUI:
-    x: int = 0
-    y: int = 0
-    height: int = 0
-    width: int = 0
+    x: float = 0
+    y: float = 0
+    height: float = 0
+    width: float = 0
     surface : pygame.Surface | None = field(init=False, default=None)
-
-    def update(self, game_screen: GameScreen) -> None:
-        self.display(game_screen)
-    
-    def display(self, game_screen: GameScreen) -> None:
-        return
 
 
 @dataclass
 class HighLightBox(BasicUI):
-    box_color: tuple[int, int, int] | None = None
-    box_height: int = 0
-    box_width: int = 0
+    box_color: Optional[tuple[int, int, int]] = None
+    box_height: float = 0
+    box_width: float = 0
     line_width: int = 0
     border_radius: int = 0
     visable: bool = False
@@ -38,7 +32,8 @@ class HighLightBox(BasicUI):
             prefix = 7 if index < 9 else 7.5
             self.box_width = game_screen.block_size/10*(length*0.8+prefix)
             self.y = game_screen.display_height/14*(index+0.8)
-            pygame.draw.rect(game_screen.surface, self.box_color, (self.x, self.y, self.box_width, self.box_height), width=self.line_width)
+            if self.box_color:
+                pygame.draw.rect(game_screen.surface, self.box_color, (self.x, self.y, self.box_width, self.box_height), width=self.line_width)
             
 @dataclass(kw_only=True)
 class HandDisplay(BasicUI):
@@ -74,7 +69,7 @@ class Button:
         if self.has_box:
             pygame.draw.rect(self.surface, self.box_color, (0, 0, self.width, self.height), self.box_width, border_radius=self.box_width*4)
 
-        if self.font is not None:
+        if self.font:
             draw_text(self.text, self.font, self.text_color, self.text_x, self.text_y, self.surface)
         
         game_screen.surface.blit(self.surface, (self.x, self.y))
@@ -195,12 +190,13 @@ class HintBox:
         self.y = 0
         self.turn_on = False
     
-    def update(self, mouse_x: int, mouse_y: int, card, game_screen: GameScreen) -> None:
+    def update(self, mouse_x: int, mouse_y: int, card: Card | str, game_screen: GameScreen) -> None:
         self.x = mouse_x
         self.y = mouse_y
-        if card != "None":
+        if card:
             self.display(card, game_screen)
-    def get_job_and_color(self, card_type) -> str:
+
+    def get_job_and_color(self, card_type: str) -> tuple[str, tuple[int, int, int]]:
         for tag in COLOR_TAG_LIST:
             if card_type.endswith(tag):
                 color_name = JOB_DICTIONARY["colors_dict"][tag]
@@ -209,7 +205,8 @@ class HintBox:
                     return card_type[::-1].replace(tag, "", 1)[::-1], color
                 else:
                     return card_type.replace(tag, "", 1), color
-        return "None"
+        return "None", (0, 0, 0)
+
     def shaped(self, job, block_size: float) -> tuple:
         match job:
             case "ADC":
@@ -270,15 +267,21 @@ class HintBox:
                         ((block_size*0.4), (block_size*0.6)),
                         ((block_size*0.6), (block_size*0.6)),
                         ((block_size*0.6), (block_size*0.4)))
+        return (((block_size*0.45), (block_size*0.45)),
+                    ((block_size*0.45), (block_size*0.55)),
+                    ((block_size*0.55), (block_size*0.55)),
+                    ((block_size*0.55), (block_size*0.45)))
             
-    def display(self, card, game_screen: GameScreen) -> None:
-        if self.surface is None:
+    def display(self, card: Card | str, game_screen: GameScreen) -> None:
+        if not self.surface:
             self.surface = pygame.Surface((self.width, game_screen.block_size*1.5), pygame.SRCALPHA)
         if self.turn_on:
-            if type(card) == str: #判斷卡牌是否在場上
+            if isinstance(card, str): #判斷卡牌是否在場上
                 card_type = card
-            else:
+            elif isinstance(card, Card):
                 card_type = card.job_and_color
+            else:
+                return
             if card_type not in CARDS_HINTS_DICTIONARY: return
             box_height = len(CARDS_HINTS_DICTIONARY[card_type].split("\n")) if len(CARDS_HINTS_DICTIONARY[card_type].split("\n")) > 4 else 4
             pygame.draw.rect(self.surface, WHITE, (0, 0, self.width, (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)), 2)
@@ -286,7 +289,7 @@ class HintBox:
             if card_type not in ["CUBE", "CUBES", "LUCKYBLOCK", "MOVE", "MOVEO", "HEAL"]: #排除魔法牌等
                 pygame.draw.rect(self.surface, WHITE, (0+game_screen.block_size*0.05, 0+game_screen.block_size*0.05, game_screen.block_size*0.5, game_screen.block_size*0.5), 2)
                 job, color = self.get_job_and_color(card_type.split()[0])
-                if color == (0, 238, 238) and type(card) != str: #海盜特例排除
+                if color == (0, 238, 238) and isinstance(card, Card): #海盜特例排除
                     if card.upgrade:
                         card_type += " (+)"
                         draw_text("(+)", game_screen.text_font, color, (game_screen.block_size*0.213), (game_screen.block_size*0.235), self.surface)
@@ -298,9 +301,9 @@ class HintBox:
                         pygame.draw.lines(self.surface, color, True, shape, int(game_screen.thickness*1.1))
                 for i, line in enumerate(CARDS_HINTS_DICTIONARY[card_type].split("\n")):
                     if i == 0:
-                        if type(card) == str:
+                        if isinstance(card, str):
                             draw_text(f"{card_type} {line}", game_screen.text_fontCHI, WHITE, 0+(game_screen.block_size*0.6), 0+(game_screen.block_size*0.05), self.surface)
-                        else:
+                        elif isinstance(card, Card):
                             draw_text(f"{card_type}", game_screen.text_fontCHI, WHITE, 0+game_screen.block_size*0.6, 0+(game_screen.block_size*0.05), self.surface)
                             draw_text(f"{card.health}", game_screen.text_fontCHI, RED if card.health < card.max_health else WHITE, 0+game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)), 0+(game_screen.block_size*0.05), self.surface)
                             draw_text(f"/", game_screen.text_fontCHI, WHITE, 0+game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health))), 0+(game_screen.block_size*0.05), self.surface)

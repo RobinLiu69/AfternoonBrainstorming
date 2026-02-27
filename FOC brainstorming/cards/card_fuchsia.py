@@ -1,5 +1,6 @@
 from typing import Iterable
-from card import Board, Card, GameScreen, Fuchsia_setting, FUCHSIA, BOARD_SIZE, most_frequent_elements
+from cards.card import Board, Card, most_frequent_elements
+from core.game_screen import GameScreen, Fuchsia_setting, FUCHSIA, BOARD_SIZE
 
 card_settings = Fuchsia_setting
 
@@ -25,7 +26,7 @@ class Shadow(Card):
         return False
     
     def draw_shape(self, game_screen: GameScreen) -> None:
-        if self.surface is None: return
+        if not self.surface: return
         match self.linker.job:
             case "AP":
                 self.shape = tuple(map(lambda coordinate: (coordinate + game_screen.block_size*0.05), self.linker.shaped(game_screen.block_size)))
@@ -62,7 +63,7 @@ class Shadow(Card):
 
     
     def launch_attack(self, attack_types: str | None, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.numbness or attack_types is None: return False
+        if self.numbness or not attack_types: return False
         game_screen.data.data_update("hit_count", f"{self.owner}_{self.job_and_color}", 1)
         enemies: Iterable["Card"] = tuple(filter(lambda card: card.owner != self.owner and card.health > 0 and card.job_and_color != "SHADOW", on_board_neutral+player1_on_board+player2_on_board))
         target_generator = tuple(self.detection(attack_types, enemies))

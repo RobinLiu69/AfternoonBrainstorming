@@ -1,23 +1,23 @@
-from dataclasses import dataclass, field
-import os, json, pygame
-from typing import cast
+from typing import Optional
 
 #December 22nd, 2024 7:30 PM
 #Vic Yeh 到此一遊
 #學測倒數29天
 
 
-from card import Card
-import card_white as white
-import card_red as red
-import card_green as green
-import card_blue as blue
-import card_orange as orange
-import card_purple as purple
-import card_dark_green as darkgreen
-import card_cyan as cyan
-import card_fuchsia as fuchsia
-from game_screen import GameScreen, draw_text, WHITE, RED, GREEN, BLACK
+from cards.card import Card
+
+import cards.card_white as white
+import cards.card_red as red
+import cards.card_green as green
+import cards.card_blue as blue
+import cards.card_orange as orange
+import cards.card_purple as purple
+import cards.card_dark_green as darkgreen
+import cards.card_cyan as cyan
+import cards.card_fuchsia as fuchsia
+
+from core.game_screen import GameScreen, draw_text, WHITE, RED, GREEN, BLACK
 
 
 
@@ -41,7 +41,7 @@ def exhibit(page: int, game_screen: GameScreen):
     for card in all_exhibit_cards[-1]:
         card.display_update(game_screen)
 
-def get_card_name_in_menu(page: int, board_x: int, board_y: int) -> str:
+def get_card_name_in_menu(page: int, board_x: Optional[int], board_y: Optional[int]) -> str:
     for card in all_exhibit_cards[page]:
         if card.board_x == board_x and card.board_y == board_y:
             return card.job_and_color
@@ -58,8 +58,8 @@ def get_card_name_in_battling(all_on_board_cards: list[Card], board_x: int, boar
             return card.job_and_color
     return "None"
 
-def get_card_in_battling(all_on_board_cards: list[Card], board_x: int, board_y: int) -> str:
+def get_card_in_battling(all_on_board_cards: list[Card], board_x: int, board_y: int) -> Optional[Card]:
     for card in all_on_board_cards:
         if card.board_x == board_x and card.board_y == board_y:
             return card
-    return "None"
+    return None

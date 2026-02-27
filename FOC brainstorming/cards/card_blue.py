@@ -1,5 +1,6 @@
 import random
-from card import Board, Card, GameScreen, Blue_setting, BLUE
+from cards.card import Board, Card
+from core.game_screen import GameScreen, Blue_setting, BLUE
 
 card_settings = Blue_setting
 
@@ -27,7 +28,7 @@ class Adc(Card):
         
         super().__init__(owner=owner, job_and_color="ADCB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def killed(self, target: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def killed(self, victim: Card, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         game_screen.players_token[self.owner] += card_settings["ADC"]["token_gets"]
         got_token(self, player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return True

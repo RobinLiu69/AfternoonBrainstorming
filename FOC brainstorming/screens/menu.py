@@ -1,12 +1,12 @@
 import pygame
 
 
-from exhibits import exhibit, get_card_name_in_menu, all_exhibit_cards
-from UI import HintBox
-from player import Player
-from game_screen import GameScreen
-from board_block import initialize_board
-from controls import key_pressed
+from utils.exhibits import exhibit, get_card_name_in_menu, all_exhibit_cards
+from core.UI import HintBox
+from core.player import Player
+from core.game_screen import GameScreen
+from core.board_block import initialize_board
+from utils.controls import key_pressed
 
 
 def turn_page(page: int, count: int, last_page: int) -> int:
@@ -31,7 +31,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> bool:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         mouse_board_x = int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 else None
         mouse_board_y = int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 else None
-        
+
         exhibit(page, game_screen)
         
         for event in pygame.event.get():
@@ -75,7 +75,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> bool:
                     case pygame.K_y:
                         game_screen.file_auto_delet = not game_screen.file_auto_delet
                     case pygame.K_s:
-                        if mouse_board_x is not None and mouse_board_y is not None:
+                        if mouse_board_x is not None and mouse_board_y is not None :
                             match deck_editor:
                                 case "player1":
                                     player1.add_card_to_deck(get_card_name_in_menu(page, mouse_board_x, mouse_board_y))
@@ -121,7 +121,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> bool:
         for board in board_list.values():
             board.update(game_screen)
         
-        if mouse_board_x is not None and mouse_board_y is not None:
+        if mouse_board_x is not None  and mouse_board_y is not None:
             hint_box.update(mouse_x, mouse_y, get_card_name_in_menu(page, mouse_board_x, mouse_board_y), game_screen)
         
         

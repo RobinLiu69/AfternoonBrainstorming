@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 import pygame
 import random, math
-from typing import TypeVar, cast, Generator, Iterable
+from typing import TypeVar, cast, Generator, Iterable, Optional
 
-from board_block import Board
-from game_screen import *
+from core.board_block import Board
+from core.game_screen import GameScreen, draw_text, JOB_DICTIONARY, BLACK, RED
 
 
 COLOR_TAG_LIST: list[str] = sorted(JOB_DICTIONARY["colors_dict"].keys(), key=len, reverse=True)
@@ -64,7 +64,7 @@ class Card:
     been_targeted: bool = field(init=False, default=False)
     
     def __post_init__(self) -> None:
-        self.trigered_by: "Card" | None = None
+        self.trigered_by: Optional["Card"] = None
         self.shadows: list["Card"] = []
         self.hit_cards: list[Card] = []
         self.max_health: int = self.health
@@ -131,14 +131,14 @@ class Card:
         return "None"
     
     def get_attack_type(self) -> str:
-        if self.job is None: raise ValueError("Job must be string.")
+        if not self.job: raise ValueError("Job must be string.")
         return JOB_DICTIONARY["attack_type_tags"][self.job]
     
     def get_color_name(self) -> str:
         return JOB_DICTIONARY["colors_dict"][[tag for tag in COLOR_TAG_LIST if self.job_and_color.endswith(tag)][0]]
     
     def get_RGB_color(self) -> tuple[int, int, int]:
-        if self.color_name is None: raise ValueError("color_name must be string.")
+        if not self.color_name: raise ValueError("color_name must be string.")
         return cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"][self.color_name].split(", "))))
     
     def shaped(self, block_size: float) -> tuple:
@@ -319,9 +319,9 @@ class Card:
         return False
     
     def draw_basic_info(self, game_screen: GameScreen) -> None:
-        if game_screen.info_text_font is None or game_screen.small_text_font is None: raise ValueError("Text font cna't be None.")
-        if game_screen.surface is None or self.surface is None: raise ValueError("Surface cna't be None.")
-        if self.text_color is None: raise ValueError("Text color cna't be None.")
+        if not game_screen.info_text_font or not game_screen.small_text_font: raise ValueError("Text font cna't be None.")
+        if not game_screen.surface or not self.surface: raise ValueError("Surface cna't be None.")
+        if not self.text_color: raise ValueError("Text color cna't be None.")
         match self.job_and_color:
             case "MOVE":
                 draw_text("MOVE", game_screen.big_text_font, self.text_color,
@@ -366,18 +366,18 @@ class Card:
     
                 
     def draw_shape(self, game_screen: GameScreen) -> None:
-        if self.surface is None: return
+        if not self.surface: return
         self.shape = self.shaped(game_screen.block_size)
         
     def update(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         self.display_update(game_screen)
     
     def display_update(self, game_screen: GameScreen, draw_text: bool=True, draw_shape: bool=True) -> None:
-        if self.surface is None:
+        if not self.surface:
             self.surface = pygame.Surface((game_screen.block_size, game_screen.block_size), pygame.SRCALPHA)
         else:
             self.surface.fill((0, 0, 0, 0))
-        if game_screen.block_size is None: raise ValueError("Block size cna't be None.")
+        if not game_screen.block_size: raise ValueError("Block size cna't be None.")
         if draw_shape:
             self.draw_shape(game_screen)
             match self.job:
@@ -442,7 +442,7 @@ class Card:
         return False
 
     def been_attacked_signal(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.been_targeted and self.trigered_by is not None:
+        if self.been_targeted and self.trigered_by:
             self.trigered_by.trigger(self, player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
         return False
     
@@ -521,7 +521,7 @@ class Card:
         return attack_success
         
     def launch_attack(self, attack_types: str | None, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.numbness or attack_types is None: return False
+        if self.numbness or not attack_types: return False
         game_screen.data.data_update("hit_count", f"{self.owner}_{self.job_and_color}", 1)
         enemies: Iterable["Card"] = list(filter(lambda card: card.owner != self.owner and card.health > 0 and card.job_and_color != "SHADOW", on_board_neutral+player1_on_board+player2_on_board))
         target_generator = tuple(self.detection(attack_types, enemies))

@@ -1,12 +1,12 @@
 import pygame
 
 
-from exhibits import Card, get_card_in_battling, draw_text, WHITE
-from player import Player
-from board_block import GameScreen, Board, initialize_board
-from controls import key_pressed
-from attack_detection import attack_area_display
-from UI import ScoreDisplay, HintBox
+from utils.exhibits import Card, get_card_in_battling, draw_text, WHITE
+from core.player import Player
+from core.board_block import GameScreen, Board, initialize_board
+from utils.controls import key_pressed
+from utils.attack_detection import attack_area_display
+from core.UI import ScoreDisplay, HintBox
 
 def number_key(number: int, mouse_x: int, mouse_y: int, mouse_board_x: int | None, mouse_board_y: int | None, controller: str, player1: Player, player2: Player, on_board_neutral: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
     if mouse_board_x is not None and mouse_board_y is not None:
@@ -62,7 +62,7 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
 
     card_info = ["None", 0]
 
-    if game_screen.log is not None: game_screen.log.write("player1 start\n")
+    if game_screen.log: game_screen.log.write("player1 start\n")
     winner: str = "None"
     while running:
         on_board_cards = on_board_neutral + player1.on_board + player2.on_board
@@ -84,23 +84,26 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                         match controller:
                             case "player1":
                                 if player1.selected_card_index != -1:
-                                    player1.play_card(mouse_board_x, mouse_board_y, player1.selected_card_index, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                    player1.selected_card_index = -1
-                                    card_info = ()
+                                    if mouse_board_x is not None and mouse_board_y is not None:
+                                        player1.play_card(mouse_board_x, mouse_board_y, player1.selected_card_index, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                                        player1.selected_card_index = -1
+                                        card_info = []
                                 if mouse_x < game_screen.display_width/2-game_screen.block_size*2:
-                                    card_info = player1.get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen)
-                                if card_info and card_info[0] != "None":
+                                    card_info = list(player1.get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen))
+                                    print(card_info, isinstance(card_info[1], int))
+                                if card_info and card_info[0] != "None" and isinstance(card_info[1], int):
                                     player1.selecte_card_from_hand(card_info[1])
                                     if player1.selected_card_index == -1:
                                         card_info[0] = "None"
                             case "player2":
                                 if player2.selected_card_index != -1:
-                                    player2.play_card(mouse_board_x, mouse_board_y, player2.selected_card_index, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
-                                    player2.selected_card_index = -1
-                                    card_info = ()
+                                    if mouse_board_x is not None and mouse_board_y is not None:
+                                        player2.play_card(mouse_board_x, mouse_board_y, player2.selected_card_index, player1.hand, player2.hand, on_board_neutral, player1.on_board, player2.on_board, board_dict, game_screen)
+                                        player2.selected_card_index = -1
+                                        card_info = []
                                 if mouse_x > game_screen.display_width/2+game_screen.block_size*2:
-                                    card_info = player2.get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen)
-                                if card_info and card_info[0] != "None":
+                                    card_info = list(player2.get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen))
+                                if card_info and card_info[0] != "None" and isinstance(card_info[1], int):
                                     player2.selecte_card_from_hand(card_info[1])
                                     if player2.selected_card_index == -1:
                                         card_info[0] = "None"
@@ -108,8 +111,11 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                         match controller:
                             case "player1":
                                 player1.selected_card_index = -1
+                                card_info[0] = "None"
                             case "player2":
                                 player2.selected_card_index = -1
+                                card_info[0] = "None"
+
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
                 match key_pressed(keys):
@@ -225,7 +231,9 @@ def main(game_screen: GameScreen, player1: Player, player2: Player) -> str:
                 hint_box.update(mouse_x, mouse_y, player2.get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen)[0], game_screen)
         
         if mouse_board_x is not None and mouse_board_y is not None:
-            hint_box.update(mouse_x, mouse_y, get_card_in_battling(on_board_cards, mouse_board_x, mouse_board_y), game_screen)
+            card = get_card_in_battling(on_board_cards, mouse_board_x, mouse_board_y)
+            if card and card.job_and_color != "None":
+                hint_box.update(mouse_x, mouse_y, card, game_screen)
         
         
         pygame.display.update()

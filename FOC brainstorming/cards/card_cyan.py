@@ -1,5 +1,6 @@
 import random
-from card import Board, Card, GameScreen, draw_text, Cyan_setting, CYAN
+from cards.card import Board, Card
+from core.game_screen import GameScreen, draw_text, Cyan_setting, CYAN
 
 card_settings = Cyan_setting
 
@@ -23,7 +24,7 @@ class Adc(Card):
         self.upgrade = upgrade
         
     def draw_shape(self, game_screen: GameScreen) -> None:
-        if self.surface is None: return
+        if not self.surface: return
         self.shape = self.shaped(game_screen.block_size)
         if self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color, (game_screen.block_size*0.388), (game_screen.block_size*0.41), self.surface)
@@ -52,7 +53,7 @@ class Ap(Card):
         self.upgrade = upgrade
     
     def draw_shape(self, game_screen: GameScreen) -> None:
-        if self.surface is None: return
+        if not self.surface: return
         self.shape = self.shaped(game_screen.block_size)
         if self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color, (game_screen.block_size*0.388), (game_screen.block_size*0.41), self.surface)
@@ -89,7 +90,7 @@ class Tank(Card):
             self.anger = True
         
     def draw_shape(self, game_screen: GameScreen) -> None:
-        if self.surface is None: return
+        if not self.surface: return
         self.shape = self.shaped(game_screen.block_size)
         if self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color, (game_screen.block_size*0.388), (game_screen.block_size*0.41), self.surface)
@@ -115,7 +116,7 @@ class Hf(Card):
         self.upgrade = upgrade
         
     def draw_shape(self, game_screen: GameScreen) -> None:
-        if self.surface is None: return
+        if not self.surface: return
         self.shape = self.shaped(game_screen.block_size)
         if self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color, (game_screen.block_size*0.388), (game_screen.block_size*0.41), self.surface)
@@ -157,7 +158,7 @@ class Lf(Card):
         self.upgrade = upgrade
 
     def draw_shape(self, game_screen: GameScreen) -> None:
-        if self.surface is None: return
+        if not self.surface: return
         self.shape = self.shaped(game_screen.block_size)
         if self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color, (game_screen.block_size*0.388), (game_screen.block_size*0.41), self.surface)
@@ -184,7 +185,7 @@ class Ass(Card):
             self.extra_damage = card_settings["ASS"]["damage_bonus"]
     
     def draw_shape(self, game_screen: GameScreen) -> None:
-        if self.surface is None: return
+        if not self.surface: return
         self.shape = self.shaped(game_screen.block_size)
         if self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color, (game_screen.block_size*0.388), (game_screen.block_size*0.41), self.surface)
@@ -208,7 +209,7 @@ class Apt(Card):
         self.upgrade = upgrade
 
     def draw_shape(self, game_screen: GameScreen) -> None:
-        if self.surface is None: return
+        if not self.surface: return
         self.shape = self.shaped(game_screen.block_size)
         if self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color, (game_screen.block_size*0.388), (game_screen.block_size*0.41), self.surface)
@@ -230,7 +231,7 @@ class Sp(Card):
         self.upgrade = upgrade
 
     def draw_shape(self, game_screen: GameScreen) -> None:
-        if self.surface is None: return
+        if not self.surface: return
         self.shape = self.shaped(game_screen.block_size)
         if self.upgrade:
             draw_text("(+)", game_screen.mid_text_font, self.text_color, (game_screen.block_size*0.388), (game_screen.block_size*0.41), self.surface)

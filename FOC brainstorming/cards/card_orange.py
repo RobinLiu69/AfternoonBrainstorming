@@ -1,4 +1,5 @@
-from card import Board, Card, GameScreen, Orange_setting, ORANGE
+from cards.card import Board, Card
+from core.game_screen import GameScreen, Orange_setting, ORANGE
 
 card_settings = Orange_setting
 
@@ -66,7 +67,7 @@ class Hf(Card):
         else:
             return False
         
-    def moved(self, player1_hand: list[str], plaeyr2_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def moved(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list["Card"], player1_on_board: list["Card"], player2_on_board: list["Card"], board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         self.extra_damage += card_settings["HF"]["extra_damage_from_moving"]
         self.anger = True
         return True
