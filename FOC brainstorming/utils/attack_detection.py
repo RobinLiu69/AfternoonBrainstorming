@@ -25,10 +25,6 @@ def attack_areas(board_x: int, board_y: int,  attack_types: str | None, other_ca
             case "large_x":
                 pass
             case"nearest":
-                for card in other_cards:
-                    if card.been_targeted:
-                        yield card.board_x, card.board_y
-                    
                 nearby_cards: list["Card"] = sorted(other_cards, key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y))
                 if nearby_cards:
                     temp_card = nearby_cards[0]
@@ -36,10 +32,6 @@ def attack_areas(board_x: int, board_y: int,  attack_types: str | None, other_ca
                     for card in nearet_cards: yield card.board_x, card.board_y
                 
             case "farthest":
-                for card in other_cards:
-                    if card.been_targeted:
-                        yield card.board_x, card.board_y
-                    
                 faraway_cards: list["Card"] = sorted(other_cards, key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y), reverse=True)
                 if faraway_cards:
                     temp_card = faraway_cards[0]

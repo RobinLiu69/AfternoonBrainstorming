@@ -24,7 +24,7 @@ class Data:
     
     def __post_init__(self) -> None:
         self.data_dicts = {"card_use_count": self.card_use_count, "hit_count": self.hit_count, "damage_dealt": self.damage_dealt, "damage_taken_count": self.damage_taken_count, "damage_taken": self.damage_taken,
-                      "scored": self.scored, "ability_count": self.ability_count, "healing_amount": self.healing_amount, "heal_count": self.use_heal_count, "move_count": self.move_count,
+                      "scored": self.scored, "ability_count": self.ability_count, "healing_amount": self.healing_amount, "use_heal_count": self.use_heal_count, "move_count": self.move_count,
                       "move_count": self.move_count, "use_move_count": self.use_move_count, "cube_used_count": self.cube_used_count, "killed_count": self.killed_count, "death_count": self.death_count,
                       "use_token_count": self.use_token_count, "rounds_survived": self.rounds_survived}
     

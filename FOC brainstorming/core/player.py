@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import random, time
 
 from cards.card import Card
@@ -8,6 +8,9 @@ from core.spawn import spawn_card
 from core.game_screen import GameScreen, draw_text, BLUE, RED, WHITE, GREEN, DARKGREEN, CYAN
 
 from core.UI import AttackCountDisplay, TokenDisplay, HighLightBox
+
+if TYPE_CHECKING:
+    from core.neutral import Neutral
 
 MAGIC_CARDS = ["CUBES", "MOVE", "MOVEO", "HEAL"]
     
@@ -76,13 +79,16 @@ class Player:
         self.init_highlight_display(game_screen)
         self.timer_start(game_screen)
     
-    def turn_start(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def turn_start(self, other_player: "Player", neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if game_screen.log: game_screen.log.write(f"{self.name} started\n")
         self.draw_card(game_screen)
         game_screen.number_of_attacks[self.name] += 1
         for card in self.on_board:
             game_screen.data.data_update("rounds_survived", f"{card.owner}_{card.job_and_color}", 1)
-            card.start_of_the_turn(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            if self.name == "player1":
+                card.start_of_the_turn(self, other_player, neutral, board_dict, game_screen)
+            else:
+                card.start_of_the_turn(other_player, self, neutral, board_dict, game_screen)
 
 
     def turn_end(self, game_screen: GameScreen) -> None:
@@ -96,14 +102,19 @@ class Player:
         for card in self.on_board:
             card.end_of_the_turn(game_screen)
     
-    def attack(self, board_x: int, board_y: int, player1_hand: list[str], playuer2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def attack(self, board_x: int, board_y: int, other_player: "Player", neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if game_screen.number_of_attacks[self.name] > 0:
             for card in self.on_board:
                 if card.board_x == board_x and card.board_y == board_y:
                     if game_screen.log: game_screen.log.write(f"{self.name} attacked using {card.job_and_color}.{card.board_x}-{card.board_y}\n")
-                    if card.attack(player1_hand, playuer2_hand, on_board_neutral, player1_on_board ,player2_on_board, board_dict, game_screen):
-                        game_screen.number_of_attacks[self.name] -= card.attack_uses
-                        break
+                    if self.name == "player1":
+                        if card.attack(self, other_player, neutral, board_dict, game_screen):
+                            game_screen.number_of_attacks[self.name] -= card.attack_uses
+                            break
+                    else:
+                        if card.attack(other_player, self, neutral, board_dict, game_screen):
+                            game_screen.number_of_attacks[self.name] -= card.attack_uses
+                            break
 
     def draw_card(self, game_screen: GameScreen) -> None:
         if self.draw_pile:
@@ -125,7 +136,7 @@ class Player:
         if self.selected_card_index != -1:
             self.selected_highlight.visable = True
 
-    def play_card(self, board_x: int, board_y: int, index: int, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def play_card(self, board_x: int, board_y: int, index: int, other_player: "Player", neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if -len(self.hand) > index or index >= len(self.hand): return
         card = self.hand[index]
         game_screen.data.data_update("card_use_count", self.name, 1)
@@ -147,9 +158,14 @@ class Player:
                 if game_screen.log: game_screen.log.write(f"{self.name} used CUBES by playing {index}-{card}\n")
                 self.discard_pile.append(self.hand.pop(index))
             case _:
-                if spawn_card(board_x, board_y, card, self.name, player1_hand, player2_hand, self.on_board, on_board_neutral, player1_on_board, player2_on_board, self.discard_pile, board_dict, game_screen):
-                    self.hand.pop(index)
-                    if game_screen.log: game_screen.log.write(f"{self.name} played {index}-{card} at {board_x}-{board_y}\n")
+                if self.name == "player1":
+                    if spawn_card(board_x, board_y, card, self.name, self, other_player, neutral, board_dict, game_screen):
+                        self.hand.pop(index)
+                        if game_screen.log: game_screen.log.write(f"{self.name} played {index}-{card} at {board_x}-{board_y}\n")
+                else:
+                    if spawn_card(board_x, board_y, card, self.name, other_player, self, neutral, board_dict, game_screen):
+                        self.hand.pop(index)
+                        if game_screen.log: game_screen.log.write(f"{self.name} played {index}-{card} at {board_x}-{board_y}\n")
                 
     def heal_card(self, board_x: int, board_y: int, game_screen: GameScreen) -> None:
         if game_screen.log: game_screen.log.write(f"{self.name} used heal on {board_x}-{board_y}\n")
@@ -161,7 +177,7 @@ class Player:
                     card.heal(6, game_screen)
                     break
     
-    def move_card(self, board_x: int, board_y: int, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def move_card(self, board_x: int, board_y: int, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if game_screen.log: game_screen.log.write(f"{self.name} used move on {board_x}-{board_y}\n")
         moving_cards = list(filter(lambda card: card.moving, self.on_board))
         if len(moving_cards) == 0:
@@ -178,7 +194,7 @@ class Player:
                 selected_card = selected_cards[0]
                 selected_card.mouse_selected = False
                 selected_card.moving = True
-                selected_card.move(board_x, board_y, player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+                selected_card.move(board_x, board_y, player1, player2, neutral, board_dict, game_screen)
             elif len(selected_cards) == 0:
                 for card in self.on_board:
                     if card.board_x == board_x and card.board_y == board_y:
@@ -186,10 +202,10 @@ class Player:
                         break
                 
     
-    def recycle_cards(self, player1_hand: list[str], player2_hand:list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def recycle_cards(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         for i, card in enumerate(self.on_board):
-            if card.health <= 0 and card.can_be_killed(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
-                card.die(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+            if card.health <= 0 and card.can_be_killed(player1, player2, neutral, board_dict, game_screen):
+                card.die(player1, player2, neutral, board_dict, game_screen)
                 card_name = self.on_board.pop(i).job_and_color
                 match card_name:
                     case "SHADOW":
@@ -213,10 +229,10 @@ class Player:
             deck.remove(card_name)
             self.deck = deck[::-1] if from_end else deck
             
-    def spawn_cude(self, board_x: int, board_y: int, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def spawn_cude(self, board_x: int, board_y: int, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         if game_screen.log: game_screen.log.write(f"{self.name} used cube on {board_x}-{board_y}\n")
         if game_screen.number_of_cudes[self.name] > 0:
-            if spawn_card(board_x, board_y, "CUBE", "None", player1_hand, player2_hand, self.on_board, on_board_neutral, player1_on_board, player2_on_board, self.discard_pile, board_dict, game_screen):
+            if spawn_card(board_x, board_y, "CUBE", "None", player1, player2, neutral, board_dict, game_screen):
                 game_screen.number_of_cudes[self.name] -= 1
                 game_screen.data.data_update("cube_used_count", self.name, 1)
     
@@ -268,15 +284,15 @@ class Player:
                 self.elapsed_time = game_screen.coutdown_time
         self.update_timer(game_screen)
     
-    def update(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], update_timer: bool, game_screen: GameScreen) -> None:
-        self.recycle_cards(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+    def update(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], update_timer: bool, game_screen: GameScreen) -> None:
+        self.recycle_cards(player1, player2, neutral, board_dict, game_screen)
         if update_timer:
             self.update_timer(game_screen)
         else:
             self.display_timer(game_screen)
         self.display_hand(game_screen)
         self.display_seleted_card(game_screen)
-        self.display_on_board_cards(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        self.display_on_board_cards(player1, player2, neutral, board_dict, game_screen)
         self.display_deck_info(game_screen)
         self.display_luck(game_screen)
         self.display_totems(game_screen)
@@ -302,9 +318,9 @@ class Player:
             draw_text(f"coins: {game_screen.players_coin[self.name]}", game_screen.text_font, CYAN, game_screen.display_width/2-(game_screen.block_size*self.coin_offeset_x), game_screen.display_height/2+(game_screen.block_size*1.3), game_screen.surface)
     
     
-    def display_on_board_cards(self, player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def display_on_board_cards(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         for card in self.on_board:
-            card.update(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen) 
+            card.update(player1, player2, neutral, board_dict, game_screen) 
     
     def display_hand(self, game_screen: GameScreen) -> None:
         x = 0

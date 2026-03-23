@@ -36,15 +36,15 @@ def number_key(number: int, mouse_x: int, mouse_y: int, mouse_board_x: int | Non
 
 def recycle_neutral(player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
     for i, card in enumerate(on_board_neutral):
-        if card.health <= 0 and card.can_be_killed(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen):
-            card.die(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        if card.health <= 0 and card.can_be_killed(player1, player2, neutral, board_dict, game_screen):
+            card.die(player1, player2, neutral, board_dict, game_screen)
             board_dict[str(card.board_x)+"-"+str(card.board_y)].occupy = False
             on_board_neutral.pop(i)
 
 def update_neutral(player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_screen: GameScreen) -> None:
-    recycle_neutral(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+    recycle_neutral(player1, player2, neutral, board_dict, game_screen)
     for card in on_board_neutral:
-        card.update(player1_hand, player2_hand, on_board_neutral, player1_on_board, player2_on_board, board_dict, game_screen)
+        card.update(player1, player2, neutral, board_dict, game_screen)
 
 def display_controller(controller: str, game_screen: GameScreen) -> None:
     draw_text(f"Ture: {controller}", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*0.6, game_screen.display_height/2-game_screen.block_size*2.1, game_screen.surface)
