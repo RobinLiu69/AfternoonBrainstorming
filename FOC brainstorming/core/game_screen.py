@@ -61,6 +61,9 @@ class GameScreen:
     def __init__(self) -> None:
         self.display_width: int = pygame.display.get_desktop_sizes()[0][0]
         self.display_height: int = pygame.display.get_desktop_sizes()[0][1]
+        if self.display_width == 2880 and self.display_height == 1800:
+            self.display_width = 1600
+            self.display_height = 900
         print(self.display_width, self.display_height)
         self.surface, self.block_size = self.fitting_screen()
         print(self.display_width, self.display_height)
