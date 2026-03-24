@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
+import os, json, math
+import numpy as np
 from matplotlib.patches import Wedge
 from matplotlib.text import Text
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-import os, json, math
-import numpy as np
 from typing import cast
 
 from utils.type_hint import JobDictionary

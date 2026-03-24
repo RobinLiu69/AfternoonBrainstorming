@@ -1,4 +1,6 @@
-from typing import Iterable, TYPE_CHECKING
+import math
+from typing import Callable, Iterable, TYPE_CHECKING
+
 from core.neutral import Neutral
 from core.player import Player
 from cards.card import Board, Card, most_frequent_elements
@@ -276,6 +278,12 @@ class Apt(FuchsiaCard):
             shadow.update(player1, player2, neutral, board_dict, game_screen)
         self.display_update(game_screen)
     
+    def on_field_effect_trigger(self, victim: Card, value: int, attacker: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> tuple[int, int, Callable[[Card, int, Card, Player, Player, Neutral, dict[str, Board], GameScreen], None] | None] | None:
+        for shadow in self.shadows:
+            if (self.health > 0 and victim.owner == self.owner and shadow.is_same_location(victim) and victim != self):
+                self.armor += math.floor(value * 0.5)
+                return (20, math.ceil(value * 0.5), None)
+        return None
 
 
 class Sp(FuchsiaCard):

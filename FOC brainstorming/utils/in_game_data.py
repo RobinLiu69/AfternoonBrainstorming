@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 
 
-
 @dataclass(kw_only=True)
 class Data:
     card_use_count: dict[str, int] = field(default_factory=dict) #check
