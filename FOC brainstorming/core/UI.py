@@ -1,9 +1,10 @@
-from dataclasses import dataclass, field
 import random, pygame
+from dataclasses import dataclass, field
 from typing import cast, Optional
 
 from core.game_screen import GameScreen, draw_text, BLACK, WHITE, RED, BLUE, GREEN, Sequence, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
 from cards.card import Card, COLOR_TAG_LIST
+from cards.card_cyan import CyanCard
 
 
 @dataclass(kw_only=True)
@@ -289,7 +290,7 @@ class HintBox:
             if card_type not in ["CUBE", "CUBES", "LUCKYBLOCK", "MOVE", "MOVEO", "HEAL"]: #排除魔法牌等
                 pygame.draw.rect(self.surface, WHITE, (0+game_screen.block_size*0.05, 0+game_screen.block_size*0.05, game_screen.block_size*0.5, game_screen.block_size*0.5), 2)
                 job, color = self.get_job_and_color(card_type.split()[0])
-                if color == (0, 238, 238) and isinstance(card, Card): #海盜特例排除
+                if color == (0, 238, 238) and isinstance(card, CyanCard): #海盜特例排除
                     if card.upgrade:
                         card_type += " (+)"
                         draw_text("(+)", game_screen.text_font, color, (game_screen.block_size*0.213), (game_screen.block_size*0.235), self.surface)

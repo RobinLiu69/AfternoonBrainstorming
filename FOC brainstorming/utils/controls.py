@@ -1,4 +1,7 @@
-import pygame
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pygame
 
 def key_pressed(keys: pygame.key.ScancodeWrapper) -> int:
     keys_func = [

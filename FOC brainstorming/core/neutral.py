@@ -1,10 +1,12 @@
-from cards.card import Card
+
 from dataclasses import dataclass, field
 
 from core.board_block import Board
 from core.player import Player
 from core.spawn import spawn_card
-from core.game_screen import GameScreen, draw_text, BLUE, RED, WHITE, GREEN, DARKGREEN, CYAN
+from core.game_screen import GameScreen, draw_text
+from cards.card import Card
+
 
 @dataclass(kw_only=True)
 class Neutral:

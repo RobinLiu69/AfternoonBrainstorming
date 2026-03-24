@@ -2,12 +2,11 @@ from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 import random, time
 
-from cards.card import Card
 from core.board_block import Board
 from core.spawn import spawn_card
 from core.game_screen import GameScreen, draw_text, BLUE, RED, WHITE, GREEN, DARKGREEN, CYAN
-
 from core.UI import AttackCountDisplay, TokenDisplay, HighLightBox
+from cards.card import Card
 
 if TYPE_CHECKING:
     from core.neutral import Neutral

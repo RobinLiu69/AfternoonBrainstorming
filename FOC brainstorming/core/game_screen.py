@@ -1,10 +1,11 @@
 import os, json, pygame, random
-
 from typing import cast, Sequence, TextIO
+
 from utils.in_game_data import Data
+from utils.type_hint import JobDictionary, CardSetting
+
 pygame.init()
 
-from utils.type_hint import JobDictionary, CardSetting
 
 __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("core", "")
 
@@ -62,8 +63,8 @@ class GameScreen:
         self.display_width: int = pygame.display.get_desktop_sizes()[0][0]
         self.display_height: int = pygame.display.get_desktop_sizes()[0][1]
         if self.display_width == 2880 and self.display_height == 1800:
-            self.display_width = 1600
-            self.display_height = 900
+            self.display_width = 2560
+            self.display_height = 1600
         print(self.display_width, self.display_height)
         self.surface, self.block_size = self.fitting_screen()
         print(self.display_width, self.display_height)

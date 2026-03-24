@@ -1,7 +1,8 @@
 import random
+from typing import TYPE_CHECKING
+
 from cards.card import Board, Card
 from core.game_screen import GameScreen, Blue_setting, BLUE
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from core.player import Player

@@ -1,6 +1,8 @@
 import pygame
 from typing import Generator, cast
+
 from cards.card import Card
+from cards.card_fuchsia import FuchsiaCard
 from core.game_screen import  GameScreen, WHITE, RED, BOARD_SIZE
 from core.board_block import Board
 
@@ -45,29 +47,28 @@ def attack_area_display(controller: str, board_x: int, board_y: int, on_board_ne
         target_card: Card = target_cards[0]
         other_cards: tuple[Card] = cast(tuple[Card], tuple(filter(lambda card: card.owner != target_card.owner, on_board_neutral+player1_on_board+player2_on_board)))
         color = (0, 0, 0)
-        match target_card.job_and_color:
-            case "ADCF" | "HFF" | "ASSF" | "SPF":
-                if target_card.attack_types:
-                    if target_card.owner == controller:
-                        color = (200, 200, 200)
-                    else:
-                        color = (200, 0, 0)
-                    card_attack_blocks = attack_areas(target_card.board_x, target_card.board_y, target_card.attack_types, other_cards, board_dict)
-                    for board_x, board_y in card_attack_blocks:
-                        draw_board(color, board_x, board_y, game_screen)
-                for shadow in target_card.shadows:  
-                    card_attack_blocks = attack_areas(shadow.board_x, shadow.board_y, target_card.attack_types, other_cards, board_dict)
-                    for board_x, board_y in card_attack_blocks:
-                        draw_board(color, board_x, board_y, game_screen)
-            case _:
-                if target_card.attack_types:
-                    if target_card.owner == controller:
-                        color = (200, 200, 200)
-                    else:
-                        color = (200, 0, 0)
-                    card_attack_blocks = attack_areas(target_card.board_x, target_card.board_y, target_card.attack_types, other_cards, board_dict)
-                    for board_x, board_y in card_attack_blocks:
-                        draw_board(color, board_x, board_y, game_screen)
+        if isinstance(target_card, FuchsiaCard):
+            if target_card.attack_types:
+                if target_card.owner == controller:
+                    color = (200, 200, 200)
+                else:
+                    color = (200, 0, 0)
+                card_attack_blocks = attack_areas(target_card.board_x, target_card.board_y, target_card.attack_types, other_cards, board_dict)
+                for board_x, board_y in card_attack_blocks:
+                    draw_board(color, board_x, board_y, game_screen)
+            for shadow in target_card.shadows:  
+                card_attack_blocks = attack_areas(shadow.board_x, shadow.board_y, target_card.attack_types, other_cards, board_dict)
+                for board_x, board_y in card_attack_blocks:
+                    draw_board(color, board_x, board_y, game_screen)
+        else:
+            if target_card.attack_types:
+                if target_card.owner == controller:
+                    color = (200, 200, 200)
+                else:
+                    color = (200, 0, 0)
+                card_attack_blocks = attack_areas(target_card.board_x, target_card.board_y, target_card.attack_types, other_cards, board_dict)
+                for board_x, board_y in card_attack_blocks:
+                    draw_board(color, board_x, board_y, game_screen)
 
 def draw_board(color: tuple[int, int, int], board_x: int, board_y: int, game_screen: GameScreen) -> None:
     image = pygame.surface.Surface((game_screen.block_size, game_screen.block_size))

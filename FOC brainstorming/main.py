@@ -1,10 +1,10 @@
-from screens import start_screen, menu, battling, end_game, playback
 import datetime, os
+
+from screens import start_screen, menu, battling, end_game, playback
 from core.player import Player, GameScreen
 
 
 def main() -> None:
-
     player1 = Player(name="player1", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
     player2 = Player(name="player2", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
     game_screen = GameScreen()
@@ -32,7 +32,7 @@ def main() -> None:
                     game_screen.log.write(f"timer mode {game_screen.timer_mode}\n")
 
                     winner = battling.main(game_screen, player1, player2)
-
+                    
                     game_screen.player_timer["player1"] = player1.time_minutes_and_seconds
                     game_screen.player_timer["player2"] = player2.time_minutes_and_seconds
                     

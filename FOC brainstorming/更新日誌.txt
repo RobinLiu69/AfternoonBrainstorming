@@ -1188,3 +1188,21 @@ debug:
 停用:
     APTF效果
 =======================
+2026/03/24-12:34-3.9.7.2-branch Org
+編寫者 Robin
+----------------
+註解:
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+    目前已測試 white, red, purple, orange, green, fuchisa, blue
+----------------
+優化:
+    整理各檔案引入順序
+    controls.py 的 pygame 只用於 type check
+修正:
+    UI內有使用card.upgrade增加CyanCard check
+    APTF效果 ->
+新增:
+    -> 已啟用並引入新的傷害修改插口 Card special_damage_interceptor
+=======================

@@ -1,8 +1,8 @@
-from dataclasses import dataclass, field
 import pygame
 import random, math
+from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-from typing import TypeVar, cast, Generator, Iterable, Optional, TYPE_CHECKING, final
+from typing import TypeVar, cast, Generator, Iterable, Optional, Callable, TYPE_CHECKING, final
 
 from core.board_block import Board
 from core.game_screen import GameScreen, draw_text, JOB_DICTIONARY, BLACK, RED
@@ -95,6 +95,10 @@ class Card(ABC):
         
         if self.job == "ASS" and self.owner != "display":
             self.numbness = False
+    
+    @final
+    def is_same_location(self, card: Card) -> bool:
+        return self.board_x == card.board_x and self.board_y == card.board_y
     
     @final
     def get_job(self) -> str:
@@ -214,6 +218,27 @@ class Card(ABC):
     def after_movement(self, board_x: int, board_y: int, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
         pass
 
+    def special_damage_interceptor(self, value: int, attacker: "Card", player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> int:
+        all_active_cards = player1.on_board + player2.on_board + neutral.on_board
+        
+        modifiers: list[tuple[int, int, Optional[Callable[["Card", int, "Card", Player, Player, Neutral, dict[str, Board], GameScreen], None]]]] = []
+
+        for source in all_active_cards:
+            res = source.on_field_effect_trigger(self, value, attacker, player1, player2, neutral, board_dict, game_screen)
+            if res:
+                modifiers.append(res)
+
+        modifiers.sort(key=lambda x: x[0])
+
+        final_value = value
+        for priority, modified_val, feedback_function in modifiers:
+            diff = final_value - modified_val
+            final_value = modified_val
+            if feedback_function:
+                feedback_function(self, final_value, attacker, player1, player2, neutral, board_dict, game_screen)
+        
+        return final_value
+
     @final
     def damage_calculate(self, value: int, attacker: "Card", player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen, ability: bool=True) -> bool:
         game_screen.data.data_update("damage_taken_count", f"{self.owner}_{self.job_and_color}", 1)
@@ -229,8 +254,7 @@ class Card(ABC):
         
         value = self.damage_reduce(value, player1, player2, neutral, board_dict, game_screen)
         
-        if self.shadow_block(value, attacker, player1, player2, neutral, board_dict, game_screen):
-            value = math.ceil(value / 2)
+        value = self.special_damage_interceptor(value, attacker, player1, player2, neutral, board_dict, game_screen)
         
         if self.armor > 0 and self.armor >= value:
             game_screen.data.data_update("damage_dealt", f"{attacker.owner}_{attacker.job_and_color}", value)
@@ -383,24 +407,9 @@ class Card(ABC):
     
     def ability_signal(self, target: "Card", player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
-    
-    def shadow_block(self, value: int, attacker: "Card", player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        # match self.owner:
-        #     case "player1":
-        #         for card in player1.on_board:
-        #             if card.job_and_color == "APTF" and isinstance(card, CardFu):
-        #                 for shadow in card.shadows:
-        #                     if shadow.board_x == self.board_x and shadow.board_y == self.board_y:
-        #                         shadow.damage_block(value, attacker, player1, player2, neutral, board_dict, game_screen)
-        #                         return True
-        #     case "player2":
-        #         for card in player2.on_board:
-        #             if card.job_and_color == "APTF":
-        #                 for shadow in card.shadows:
-        #                     if shadow.board_x == self.board_x and shadow.board_y == self.board_y:
-        #                         shadow.damage_block(value, attacker, player1, player2, neutral, board_dict, game_screen)
-        #                         return True
-        return False
+
+    def on_field_effect_trigger(self, victim: "Card", value: int, attacker: "Card", player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> Optional[tuple[int, int, Optional[Callable[["Card", int, "Card", Player, Player, Neutral, dict[str, Board], GameScreen], None]]]]:
+        return None
     
     def after_damage_calculated(self, target: "Card", value: int, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
         return False
