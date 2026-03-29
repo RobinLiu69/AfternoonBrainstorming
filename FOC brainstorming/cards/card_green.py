@@ -1,22 +1,21 @@
 import random
 from typing import TYPE_CHECKING
 
-from cards.card import Board, Card
-from core.game_screen import GameScreen, draw_text, Green_setting, GREEN
+from core.game_state import GameState, CARD_SETTING
+from core.game_screen import draw_text
+from cards.factory import CardFactory
+from cards.base import Card
 
-if TYPE_CHECKING:
-    from core.player import Player
-    from core.neutral import Neutral
-
-card_settings = Green_setting
+card_settings = CARD_SETTING["Green"]
+color_code = "G"
 
 
 class GreenCard(Card):
     @staticmethod
-    def lucky_effects(target: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen, AP: bool=False, AP_target: bool=False, TANK: bool=False) -> None:
-        if not AP_target and random.randint(1, 100) <= game_screen.players_luck[target.owner]:
+    def lucky_effects(target: Card, game_state: GameState, AP: bool=False, AP_target: bool=False, TANK: bool=False) -> None:
+        if not AP_target and random.randint(1, 100) <= game_state.players_luck[target.owner]:
             if AP_target or TANK: return
-            game_screen.players_luck[target.owner] += 1
+            game_state.players_luck[target.owner] += 1
             print(f"{target.board_x}-{target.board_y}:{target.job_and_color} - 獲得好運效果:")
             match random.randint(1, 5):
                 case 1:
@@ -27,7 +26,7 @@ class GreenCard(Card):
                     target.damage *= 2 
                 case 3:
                     print(f"抽到再次攻擊")
-                    target.attack(player1, player2, neutral, board_dict, game_screen)
+                    target.attack(game_state)
                 case 4:
                     print(f"抽到移動效果")
                     target.moving = True
@@ -36,15 +35,15 @@ class GreenCard(Card):
                         print(f"抽到無")
                         return
                     print(f"抽到生成幸運方塊")
-                    for board in board_dict.values():
+                    for board in game_state.board_dict.values():
                         if ((board.board_x == target.board_x+1 and board.board_y == target.board_y+1) or (board.board_x == target.board_x-1 and board.board_y == target.board_y+1) or (board.board_x == target.board_x-1 and board.board_y == target.board_y-1) or (board.board_x == target.board_x+1 and board.board_y == target.board_y-1)):
                             if board.occupy: continue
-                            neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
+                            game_state.neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
                             board.occupy = True
         else:
             if AP: return
             print(f"{target.board_x}-{target.board_y}:{target.job_and_color} - 獲得壞運效果:")
-            game_screen.players_luck[target.owner] -= 1
+            game_state.players_luck[target.owner] -= 1
             match random.randint(1, 5):
                 case 1:
                     print(f"抽到破盾")
@@ -71,19 +70,18 @@ class LuckyBlock(GreenCard):
         
         super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="LUCKYBLOCK", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def draw_shape(self, game_screen: GameScreen) -> None:
+    def draw_shape(self, game_state: GameState) -> None:
         if not self.surface: return
-        self.shape = self.shaped(game_screen.block_size)
+        self.shape = self.shaped(game_state.game_screen.block_size)
         if self.text_color:
-            draw_text("?", game_screen.info_text_font, self.text_color, (game_screen.block_size*0.47), (game_screen.block_size*0.43), self.surface)
+            draw_text("?", game_state.game_screen.info_text_font, self.text_color, (game_state.game_screen.block_size*0.47), (game_state.game_screen.block_size*0.43), self.surface)
     
-    def been_killed(self, attacker: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        self.lucky_effects(attacker, player1, player2, neutral, board_dict, game_screen)
-        for card in filter(lambda card: card.owner == attacker.owner and card.job_and_color == "APTG", neutral.on_board + player1.on_board + player2.on_board):
+    def been_killed(self, attacker: Card, game_state: GameState) -> bool:
+        self.lucky_effects(attacker, game_state)
+        for card in filter(lambda card: card.job_and_color == "APTG", game_state.get_player_cards(attacker.owner)):
             card.armor += 1
         return True
 
-    
     def end_turn(self, clear_numbness: bool=True) -> int:
         if self.numbness == True and clear_numbness:
             self.numbness = False
@@ -97,11 +95,11 @@ class Adc(GreenCard):
         
         super().__init__(owner=owner, job_and_color="ADCG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        for board in board_dict.values():
+    def ability(self, target: Card, game_state: GameState) -> bool:
+        for board in game_state.board_dict.values():
             if (board.board_x == self.board_x or board.board_y == self.board_y) and not board.occupy:
                 if random.randint(1, 100) <= card_settings["ADC"]["chance_to_spawn_luckyblock"]:
-                    neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
+                    game_state.neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
                     board.occupy = True
         return True
 
@@ -111,12 +109,11 @@ class Ap(GreenCard):
         
         super().__init__(owner=owner, job_and_color="APG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
-        self.lucky_effects(target, player1, player2, neutral, board_dict, game_screen, AP_target=True)
-        self.lucky_effects(self, player1, player2, neutral, board_dict, game_screen, AP=True)
+        self.lucky_effects(target, game_state, AP_target=True)
+        self.lucky_effects(self, game_state, AP=True)
         return True
-
 
 
 class Tank(GreenCard):
@@ -124,10 +121,9 @@ class Tank(GreenCard):
         
         super().__init__(owner=owner, job_and_color="TANKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def been_attacked(self, attacker: Card, value: int, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        self.lucky_effects(attacker, player1, player2, neutral, board_dict, game_screen, TANK=True)
+    def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
+        self.lucky_effects(attacker, game_state, TANK=True)
         return True
-
 
 
 class Hf(GreenCard):
@@ -135,16 +131,15 @@ class Hf(GreenCard):
         
         super().__init__(owner=owner, job_and_color="HFG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, game_state: GameState) -> bool:
         if target.job_and_color == "LUCKYBLOCK":
-            game_screen.players_luck[self.owner] += card_settings["HF"]["luck_increase"]
-            board_list = tuple(filter(lambda board: board.occupy == False, board_dict.values()))
+            game_state.players_luck[self.owner] += card_settings["HF"]["luck_increase"]
+            board_list = tuple(filter(lambda board: board.occupy == False, game_state.board_dict.values()))
             if board_list:
                 board = board_list[random.randrange(len(board_list))]
-                neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
+                game_state.neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
                 board.occupy = True
         return True
-
 
 
 class Lf(GreenCard):
@@ -152,15 +147,14 @@ class Lf(GreenCard):
         
         super().__init__(owner=owner, job_and_color="LFG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def killed(self, victim: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def killed(self, victim: Card, game_state: GameState) -> bool:
         if victim.job_and_color == "LUCKYBLOCK":
-            for card in self.detection("nearest", filter(lambda card: card.owner != self.owner and card.health >= 0 and card != self, player1.on_board + player2.on_board)):
-                card.damage_calculate(self.damage, self, player1, player2, neutral, board_dict, game_screen, False)
+            for card in self.detection("nearest", filter(lambda card: card.health >= 0, game_state.get_opponent_cards(self.owner))):
+                card.damage_calculate(self.damage, self, game_state, False)
             
             if random.randint(1, 100) <= card_settings["LF"]["chance_to_get_attack_count_increase"]:
-                game_screen.number_of_attacks[self.owner] += card_settings["LF"]["number_of_attack_count_increase_from_killed_luckyblock"]
+                game_state.number_of_attacks[self.owner] += card_settings["LF"]["number_of_attack_count_increase_from_killed_luckyblock"]
         return True
-
 
 
 class Ass(GreenCard):
@@ -168,15 +162,14 @@ class Ass(GreenCard):
         
         super().__init__(owner=owner, job_and_color="ASSG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def killed(self, victim: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        game_screen.players_luck[self.owner] += 5
+    def killed(self, victim: Card, game_state: GameState) -> bool:
+        game_state.players_luck[self.owner] += 5
         match self.owner:
             case "player1":
-                game_screen.players_luck["player2"] -= card_settings["ASS"]["luck_increase"]
+                game_state.players_luck["player2"] -= card_settings["ASS"]["luck_increase"]
             case "player2":
-                game_screen.players_luck["player1"] -= card_settings["ASS"]["luck_decrease"]
+                game_state.players_luck["player1"] -= card_settings["ASS"]["luck_decrease"]
         return True
-
 
 
 class Apt(GreenCard):
@@ -184,13 +177,13 @@ class Apt(GreenCard):
         
         super().__init__(owner=owner, job_and_color="APTG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def attack(self, game_state: GameState) -> bool:
         return False
 
-    def start_turn(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> int:
-        for board in board_dict.values():
+    def start_turn(self, game_state: GameState) -> int:
+        for board in game_state.board_dict.values():
             if ((board.board_x == self.board_x-1 and board.board_y == self.board_y) or (board.board_x == self.board_x+1 and board.board_y == self.board_y) or (board.board_x == self.board_x and board.board_y == self.board_y-1) or (board.board_x == self.board_x and board.board_y == self.board_y+1)) and not board.occupy:
-                neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
+                game_state.neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
                 board.occupy = True
         return 0
 
@@ -200,13 +193,22 @@ class Sp(GreenCard):
         
         super().__init__(owner=owner, job_and_color="SPG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def deploy(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> Card:
-        game_screen.players_luck[self.owner] += card_settings["SP"]["luck_increase"]
-        board_list = list(filter(lambda board: board.occupy == False and board.board_x != self.board_x and board.board_y != self.board_y, board_dict.values()))
+    def deploy(self, game_state: GameState) -> None:
+        game_state.players_luck[self.owner] += card_settings["SP"]["luck_increase"]
+        board_list = list(filter(lambda board: board.occupy == False and board.board_x != self.board_x and board.board_y != self.board_y, game_state.board_dict.values()))
         if board_list:
             random.shuffle(board_list)
-            if game_screen.players_luck[self.owner] > card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"]:
-                for i in range(min((game_screen.players_luck[self.owner]-card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"])//10, len(board_list))):
-                    neutral.on_board.append(LuckyBlock("None", board_list[i].board_x, board_list[i].board_y))
+            if game_state.players_luck[self.owner] > card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"]:
+                for i in range(min((game_state.players_luck[self.owner]-card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"])//10, len(board_list))):
+                    game_state.neutral.on_board.append(LuckyBlock("None", board_list[i].board_x, board_list[i].board_y))
                     board_list[i].occupy = True
-        return self
+
+
+CardFactory.register("ADC" + color_code, Adc)
+CardFactory.register("AP" + color_code, Ap)
+CardFactory.register("TANK" + color_code, Tank)
+CardFactory.register("HF" + color_code, Hf)
+CardFactory.register("LF" + color_code, Lf)
+CardFactory.register("ASS" + color_code, Ass)
+CardFactory.register("APT" + color_code, Apt)
+CardFactory.register("SP" + color_code, Sp)

@@ -1206,3 +1206,21 @@ debug:
 新增:
     -> 已啟用並引入新的傷害修改插口 Card special_damage_interceptor
 =======================
+2026/03/?-??:??-3.9.7.3-branch Org
+編寫者 Robin
+----------------
+註解:
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+----------------
+修正:
+    搞笑了 controls.py 的 pygame 只用於 type check 顯然不行這樣喔
+新增:
+    cards/factory.py
+    core/game_state.py
+    core/game_statistics.py
+    core/board_block.py
+    utils/logger.py
+架構重構!!!!
+=======================

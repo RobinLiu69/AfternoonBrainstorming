@@ -2,7 +2,6 @@ import pygame, shutil
 from dataclasses import dataclass, field
 from typing import cast
 
-
 from core.game_screen import GameScreen, os, draw_text, __FOLDER_PATH, PIE_TITLE_TEXTS, KEYS_TO_CHECK, KETYS_TO_DISPLAY, BLACK, WHITE
 from utils.chart_make import make_plot_chart, make_pie_chart, make_bar_chart
 from utils.controls import key_pressed
