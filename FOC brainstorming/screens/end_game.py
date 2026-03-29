@@ -2,7 +2,9 @@ import pygame, shutil
 from dataclasses import dataclass, field
 from typing import cast
 
-from core.game_screen import GameScreen, os, draw_text, __FOLDER_PATH, PIE_TITLE_TEXTS, KEYS_TO_CHECK, KETYS_TO_DISPLAY, BLACK, WHITE
+
+from core.game_state import GameState, GameStatistics, BLACK, WHITE
+from core.game_screen import GameScreen, os, draw_text, __FOLDER_PATH, PIE_TITLE_TEXTS, KEYS_TO_CHECK, KETYS_TO_DISPLAY
 from utils.chart_make import make_plot_chart, make_pie_chart, make_bar_chart
 from utils.controls import key_pressed
 
@@ -29,7 +31,7 @@ class Chart:
         if self.visible == True and self.image:
             game_screen.surface.blit(self.image, (self.x, self.y))
 
-def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[str, dict[str, int]], player1_profession_data: dict[str, dict[str, int]], player2_profession_data: dict[str, dict[str, int]], game_screen: GameScreen) -> tuple[str, dict[str, list[str]], dict[str, list[str]]]:
+def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[str, dict[str, int]], player1_profession_data: dict[str, dict[str, int]], player2_profession_data: dict[str, dict[str, int]], statistics: GameStatistics) -> tuple[str, dict[str, list[str]], dict[str, list[str]]]:
     bar_title_texts = ["KDA", "Average Attack Damage", "Per Round Influence", "Survival Index"]
     
     bar_paths: dict[str, list[str]] = {"player1": [], "player2": []}
@@ -37,15 +39,21 @@ def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[s
     
     
     for title_text in bar_title_texts:
-        bar_paths["player1"].append(make_bar_chart("player1", title_text, player1_profession_data, len(game_screen.data.score_records)))
-        bar_paths["player2"].append(make_bar_chart("player2", title_text, player2_profession_data, len(game_screen.data.score_records)))
+        try:
+            bar_paths["player1"].append(make_bar_chart("player1", title_text, player1_profession_data, len(statistics.score_history)))
+            bar_paths["player2"].append(make_bar_chart("player2", title_text, player2_profession_data, len(statistics.score_history)))
+        except:
+            pass
         
     for key in PIE_TITLE_TEXTS:
-        title_text = " ".join(map(lambda string: string.capitalize(), key.split("_")))
-        pie_paths["player1"].append(make_pie_chart("player1", title_text, key, player1_datas[key]))
-        pie_paths["player2"].append(make_pie_chart("player2", title_text, key, player2_datas[key]))
-        
-    plot_path = make_plot_chart(game_screen.data.score_records)
+        try:
+            title_text = " ".join(map(lambda string: string.capitalize(), key.split("_")))
+            pie_paths["player1"].append(make_pie_chart("player1", title_text, key, player1_datas[key]))
+            pie_paths["player2"].append(make_pie_chart("player2", title_text, key, player2_datas[key]))
+        except:
+            pass
+
+    plot_path = make_plot_chart(statistics.score_history)
     
     
     return plot_path, pie_paths, bar_paths
@@ -69,9 +77,9 @@ def display_chart(pie_paths: dict[str, list[str]], bar_paths: dict[str, list[str
     
     return score_chart, charts
 
-def init_datas(game_screen: GameScreen) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]], dict[str, dict[str, int]], dict[str, dict[str, int]], list[list[int]], list[list[int]], list[str], list[str]]:
-    player1_datas: dict[str, dict[str, int]] = dict(zip(game_screen.data.data_dicts.keys(), ((cast(dict[str, int], dict((key, value) for (key, value) in datas.items() if key.startswith("player1")))) for datas in game_screen.data.data_dicts.values())))
-    player2_datas: dict[str, dict[str, int]]  = dict(zip(game_screen.data.data_dicts.keys(), ((cast(dict[str, int], dict((key, value) for (key, value) in datas.items() if key.startswith("player2")))) for datas in game_screen.data.data_dicts.values())))
+def init_datas(statistics: GameStatistics) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]], dict[str, dict[str, int]], dict[str, dict[str, int]], list[list[int]], list[list[int]], list[str], list[str]]:
+    player1_datas: dict[str, dict[str, int]] = statistics.export_player_stats("player1")
+    player2_datas: dict[str, dict[str, int]]  = statistics.export_player_stats("player2")
     
     player1_profession_data: dict[str, dict[str, int]] = {}
     player2_profession_data: dict[str, dict[str, int]] = {}
@@ -168,31 +176,31 @@ def display_raw_data(display_player1_data: list[list[int]], display_player2_data
         draw_text(display_player2_name[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*4, game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
 
 
-def display_end_game_data(winner: str, game_screen: GameScreen):
-    draw_text(f"Winner: {winner.capitalize()}!!", game_screen.title_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*1.5, game_screen.display_height/2-game_screen.block_size*2, game_screen.surface)
-    draw_text(f"Total Turns: {len(game_screen.data.score_records)}", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1, game_screen.display_height/2-game_screen.block_size*0.4, game_screen.surface)
-    draw_text("Player1 Timer: "+game_screen.player_timer["player1"]+",   Player2 Timer: "+game_screen.player_timer["player2"], game_screen.text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1, game_screen.display_height/2-game_screen.block_size*0.2, game_screen.surface)
+def display_end_game_data(winner: str, game_state: GameState):
+    draw_text(f"Winner: {winner.capitalize()}!!", game_state.game_screen.title_text_font, WHITE, game_state.game_screen.display_width/2-game_state.game_screen.block_size*1.5, game_state.game_screen.display_height/2-game_state.game_screen.block_size*2, game_state.game_screen.surface)
+    draw_text(f"Total Turns: {len(game_state.game_statistics.score_history)}", game_state.game_screen.big_text_font, WHITE, game_state.game_screen.display_width/2-game_state.game_screen.block_size*3.75/1.1, game_state.game_screen.display_height/2-game_state.game_screen.block_size*0.4, game_state.game_screen.surface)
+    draw_text("Player1 Timer: "+game_state.player_timer["player1"]+",   Player2 Timer: "+game_state.player_timer["player2"], game_state.game_screen.text_font, WHITE, game_state.game_screen.display_width/2-game_state.game_screen.block_size*3.75/1.1, game_state.game_screen.display_height/2-game_state.game_screen.block_size*0.2, game_state.game_screen.surface)
     
     
 
-def main(winner: str, game_screen: GameScreen) -> None:
-    player1_datas, player2_datas, player1_profession_data, player2_profession_data, display_player1_data, display_player2_data, display_player1_name, display_player2_name = init_datas(game_screen)
-    loading_screen(game_screen)
-    plot_path, pie_paths, bar_paths = making_image(player1_datas, player2_datas, player1_profession_data, player2_profession_data, game_screen)
+def main(winner: str, game_state: GameState) -> None:
+    player1_datas, player2_datas, player1_profession_data, player2_profession_data, display_player1_data, display_player2_data, display_player1_name, display_player2_name = init_datas(game_state.game_statistics)
+    loading_screen(game_state.game_screen)
+    plot_path, pie_paths, bar_paths = making_image(player1_datas, player2_datas, player1_profession_data, player2_profession_data, game_state.game_statistics)
     
-    score_chart, charts = display_chart(pie_paths, bar_paths, plot_path, game_screen)
+    score_chart, charts = display_chart(pie_paths, bar_paths, plot_path, game_state.game_screen)
     
     display_state: str = "mid"
     score_chart.visible = True
     
     running = True
     
-    
+    clock = pygame.time.Clock()
     
     while running:
-        game_screen.update()
+        game_state.game_screen.update()
         
-        mouse_x, mouse_y = pygame.mouse.get_pos()
+        # mouse_x, mouse_y = pygame.mouse.get_pos()
         # mouse_board_x = int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 else None
         # mouse_board_y = int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 else None
         
@@ -264,26 +272,26 @@ def main(winner: str, game_screen: GameScreen) -> None:
         for player_charts in charts.values():
             for value in player_charts.values():
                 for chart in value:
-                    chart.display(game_screen)
+                    chart.display(game_state.game_screen)
         
         if display_state == "raw":
-            display_raw_data(display_player1_data, display_player2_data, display_player1_name, display_player2_name, game_screen)
+            display_raw_data(display_player1_data, display_player2_data, display_player1_name, display_player2_name, game_state.game_screen)
         elif display_state == "mid":
-            display_end_game_data(winner, game_screen)
+            display_end_game_data(winner, game_state)
         elif display_state == "player1":
-            draw_text("Player1", game_screen.title_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.5, game_screen.display_height/2-game_screen.block_size*2.5, game_screen.surface)
+            draw_text("Player1", game_state.game_screen.title_text_font, WHITE, game_state.game_screen.display_width/2-game_state.game_screen.block_size*3.5, game_state.game_screen.display_height/2-game_state.game_screen.block_size*2.5, game_state.game_screen.surface)
         elif display_state == "player2":
-            draw_text("Player2", game_screen.title_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.5, game_screen.display_height/2-game_screen.block_size*2.5, game_screen.surface)
+            draw_text("Player2", game_state.game_screen.title_text_font, WHITE, game_state.game_screen.display_width/2-game_state.game_screen.block_size*3.5, game_state.game_screen.display_height/2-game_state.game_screen.block_size*2.5, game_state.game_screen.surface)
         
-        score_chart.display(game_screen)
+        score_chart.display(game_state.game_screen)
 
         pygame.display.update()
-        game_screen.clock.tick(60)
+        clock.tick(60)
     
     imgs_file_path = __FOLDER_PATH+"/imgs"
     battle_records_file_path = __FOLDER_PATH+"/battle_records"
     try:
-        if game_screen.file_auto_delet:
+        if game_state.file_auto_delet:
             shutil.rmtree(imgs_file_path)
             shutil.rmtree(battle_records_file_path)
     except FileNotFoundError:

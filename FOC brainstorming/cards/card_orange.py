@@ -25,10 +25,9 @@ class Adc(OrangeCard):
         else:
             return False
     
-    def moved(self, game_state: GameState) -> bool:
+    def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
         self.launch_attack(self.attack_types, game_state)
-        return True
-
+        
 
 class Ap(OrangeCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
@@ -67,10 +66,9 @@ class Hf(OrangeCard):
         else:
             return False
         
-    def moved(self, game_state: GameState) -> bool:
+    def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
         self.extra_damage += card_settings["HF"]["extra_damage_from_moving"]
         self.anger = True
-        return True
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
         return value + self.extra_damage
@@ -100,10 +98,9 @@ class Lf(OrangeCard):
         else:
             return False
         
-    def moved(self, game_state: GameState) -> bool:
+    def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
         for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_opponent_cards(self.owner))):
             card.damage_calculate(self.damage, self, game_state)
-        return True
 
 
 class Ass(OrangeCard):
@@ -111,9 +108,8 @@ class Ass(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="ASSO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def moved(self, game_state: GameState) -> bool:
+    def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
         self.anger = True
-        return True
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
         self.moving = True
@@ -138,13 +134,12 @@ class Apt(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="APTO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def moved(self, game_state: GameState) -> bool:
+    def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
         self.armor += card_settings["APT"]["armor_get_from_moving"]
         value = self.armor // 2
         if value > 0:
             self.damage += value
             self.armor = self.armor % 2
-        return True
 
     def move_broadcast(self, target: Card, game_state: GameState) -> bool:
         if target.owner == self.owner and target != self:

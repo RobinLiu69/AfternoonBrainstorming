@@ -37,19 +37,6 @@ def number_key(number: int, mouse_x: int, mouse_y: int, mouse_board_x: int | Non
     #             else:
     #                 game_state.player2.hand[i] += " (+)"
 
-
-# def recycle_neutral(player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_state.game_screen: GameScreen) -> None:
-#     for i, card in enumerate(on_board_neutral):
-#         if card.health <= 0 and card.can_be_killed(game_state):
-#             card.die(game_state)
-#             board_dict[str(card.board_x)+"-"+str(card.board_y)].occupy = False
-#             on_board_neutral.pop(i)
-
-# def update_neutral(player1_hand: list[str], player2_hand: list[str], on_board_neutral: list[Card], player1_on_board: list[Card], player2_on_board: list[Card], board_dict: dict[str, Board], game_state.game_screen: GameScreen) -> None:
-#     recycle_neutral(game_state)
-#     for card in on_board_neutral:
-#         card.update(game_state)
-
 def display_controller(controller: str, game_state: GameState) -> None:
     draw_text(f"Ture: {controller}", game_state.game_screen.big_text_font, WHITE, game_state.game_screen.display_width/2-game_state.game_screen.block_size*0.6, game_state.game_screen.display_height/2-game_state.game_screen.block_size*2.1, game_state.game_screen.surface)
     
@@ -95,10 +82,9 @@ def main(game_state: GameState) -> str:
                                     if mouse_board_x is not None and mouse_board_y is not None:
                                         game_state.player1.play_card(mouse_board_x, mouse_board_y, game_state.player1.selected_card_index, game_state)
                                         game_state.player1.selected_card_index = -1
-                                        card_info = []
+                                        card_info[0] = "None"
                                 if mouse_x < game_state.game_screen.display_width/2-game_state.game_screen.block_size*2:
                                     card_info = list(game_state.player1.get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_state.game_screen))
-                                    print(card_info, isinstance(card_info[1], int))
                                 if card_info and card_info[0] != "None" and isinstance(card_info[1], int):
                                     game_state.player1.selecte_card_from_hand(card_info[1])
                                     if game_state.player1.selected_card_index == -1:
@@ -108,7 +94,7 @@ def main(game_state: GameState) -> str:
                                     if mouse_board_x is not None and mouse_board_y is not None:
                                         game_state.player2.play_card(mouse_board_x, mouse_board_y, game_state.player2.selected_card_index, game_state)
                                         game_state.player2.selected_card_index = -1
-                                        card_info = []
+                                        card_info[0] = "None"
                                 if mouse_x > game_state.game_screen.display_width/2+game_state.game_screen.block_size*2:
                                     card_info = list(game_state.player2.get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_state.game_screen))
                                 if card_info and card_info[0] != "None" and isinstance(card_info[1], int):
