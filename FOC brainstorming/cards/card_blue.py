@@ -10,7 +10,7 @@ color_code = "B"
 
 
 class BlueCard(Card):
-    def get_token(self, game_state: GameState) -> None:
+    def got_token(self, game_state: GameState) -> None:
         cards = game_state.get_player_cards(self.owner)
         for card in cards:
             if isinstance(card, BlueCard):
@@ -41,7 +41,7 @@ class Adc(BlueCard):
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
         game_state.players_token[self.owner] += card_settings["ADC"]["token_gets"]
-        self.get_token(game_state)
+        self.got_token(game_state)
         return True
     
     def token_draw(self, game_state: GameState) -> bool:
@@ -61,7 +61,7 @@ class Ap(BlueCard):
     def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
         game_state.players_token[self.owner] += card_settings["AP"]["token_gets"]
-        for i in range(card_settings["AP"]["token_gets"]): self.get_token(game_state)
+        for i in range(card_settings["AP"]["token_gets"]): self.got_token(game_state)
         return True
 
 
@@ -72,7 +72,7 @@ class Tank(BlueCard):
     
     def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
         game_state.players_token[self.owner] += card_settings["TANK"]["token_gets"]
-        for _ in range(card_settings["TANK"]["token_gets"]): self.get_token(game_state)
+        for _ in range(card_settings["TANK"]["token_gets"]): self.got_token(game_state)
         return True
 
 
@@ -96,7 +96,7 @@ class Lf(BlueCard):
     
     def ability(self, target: Card, game_state: GameState) -> bool:
         game_state.players_token[self.owner] += card_settings["LF"]["token_gets"]
-        for _ in range(card_settings["LF"]["token_gets"]): self.get_token(game_state)
+        for _ in range(card_settings["LF"]["token_gets"]): self.got_token(game_state)
         return True
 
 
@@ -107,7 +107,7 @@ class Ass(BlueCard):
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
         game_state.players_token[self.owner] += card_settings["ASS"]["token_gets"]
-        for _ in range(card_settings["ASS"]["token_gets"]): self.get_token(game_state)
+        for _ in range(card_settings["ASS"]["token_gets"]): self.got_token(game_state)
         return True
 
 
@@ -118,7 +118,7 @@ class Apt(BlueCard):
     
     def ability(self, target: Card, game_state: GameState) -> bool:
         game_state.players_token[self.owner] += self.armor//card_settings["APT"]["token_from_armor_divisor"]
-        for _ in range(self.armor//card_settings["APT"]["token_from_armor_divisor"]): self.get_token(game_state)
+        for _ in range(self.armor//card_settings["APT"]["token_from_armor_divisor"]): self.got_token(game_state)
         return True
 
     def after_token(self, game_state: GameState) -> bool:

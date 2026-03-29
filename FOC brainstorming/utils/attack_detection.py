@@ -1,8 +1,7 @@
 import pygame
-from typing import Generator, Sequence, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from cards.base import Card
-from cards.card_fuchsia import FuchsiaCard
 
 if TYPE_CHECKING:
     from core.game_state import GameState

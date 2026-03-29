@@ -16,6 +16,7 @@ class LogLevel(Enum):
 class LogCategory(Enum):
     GAME_FLOW = "game_flow"
     CARD_ACTION = "card_action"
+    SPECIAL_ACTION = "special_action"
     COMBAT = "combat"
     SYSTEM = "system"
     DEBUG = "debug"
@@ -135,12 +136,22 @@ class GameLogger:
             target_position=target_position
         )
 
-    def log_attack(self, attacker: str, target: str, damage: int) -> None:
+    def log_launch_attack(self, attacker: str, position: tuple[int, int]) -> None:
         self.info(
-            f"{attacker} attacked {target} for {damage} damage",
+            f"{attacker} launcked attack at {position} ",
             category=LogCategory.COMBAT,
             attacker=attacker,
+            position=position
+        )
+
+    def log_attack(self, attacker: str, attacker_position: tuple[int, int], target: str, target_position: tuple[int, int], damage: int) -> None:
+        self.info(
+            f"{attacker}{attacker_position} attacked {target}{target_position} for {damage} damage",
+            category=LogCategory.COMBAT,
+            attacker=attacker,
+            attacker_position=attacker_position,
             target=target,
+            target_position=target_position,
             damage=damage
         )
 

@@ -1,6 +1,5 @@
 import math
-from typing import Callable, Generator, Iterable, TYPE_CHECKING
-from itertools import chain
+from typing import Callable, Iterable, TYPE_CHECKING
 
 from core.game_state import GameState, CARD_SETTING
 from cards.factory import CardFactory
@@ -49,7 +48,7 @@ class Shadow(FuchsiaCard):
             case _:
                 self.shape = tuple(map(lambda coordinate: (coordinate[0]+ game_state.game_screen.block_size*0.05, coordinate[1]+ game_state.game_screen.block_size*0.05), self.linker.shaped(game_state.game_screen.block_size)))
         self.color = (159, 0, 80, 100)
-    
+
     def update(self, game_state: GameState) -> None:
         self.display_update(game_state)
     
@@ -92,6 +91,11 @@ class Adc(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="ADCF", health=health, damage=damage, board_x=board_x, board_y=board_y)
+        
+    def attack_area_display(self, game_state: GameState) -> Iterable[tuple[int, int]]:
+        yield from self.attack_areas(self.board_x, self.board_y, self.attack_types, game_state)
+        for shadow in self.shadows:
+            yield from shadow.attack_areas(shadow.board_x, shadow.board_y, shadow.attack_types, game_state)
     
     def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
@@ -179,6 +183,11 @@ class Hf(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="HFF", health=health, damage=damage, board_x=board_x, board_y=board_y)
+        
+    def attack_area_display(self, game_state: GameState) -> Iterable[tuple[int, int]]:
+        yield from self.attack_areas(self.board_x, self.board_y, self.attack_types, game_state)
+        for shadow in self.shadows:
+            yield from shadow.attack_areas(shadow.board_x, shadow.board_y, shadow.attack_types, game_state)
     
     def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
@@ -241,10 +250,9 @@ class Ass(FuchsiaCard):
         super().__init__(owner=owner, job_and_color="ASSF", health=health, damage=damage, board_x=board_x, board_y=board_y)
         
     def attack_area_display(self, game_state: GameState) -> Iterable[tuple[int, int]]:
-        return self.attack_area_display(game_state)
+        yield from self.attack_areas(self.board_x, self.board_y, self.attack_types, game_state)
         for shadow in self.shadows:
-            yield from shadow.attack_area_display(game_state)
-
+            yield from shadow.attack_areas(shadow.board_x, shadow.board_y, shadow.attack_types, game_state)
 
     def killed(self, victim: Card, game_state: GameState) -> bool:
         self.spawn_shadow(self.owner, victim.board_x, victim.board_y, self.attack_types)
@@ -312,7 +320,7 @@ class Sp(FuchsiaCard):
         targets: tuple[FuchsiaCard] = tuple(filter(lambda card: card.health > 0 and isinstance(card, FuchsiaCard), game_state.get_player_cards(self.owner))) # pyright: ignore[reportAssignmentType]
         if targets:
             for card in self.detection("farthest", targets):
-                board_x, board_y = game_state.board_config.get_symmetric_pos(card.board_x, card.board_y)
+                board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
                 card.spawn_shadow(self.owner, board_x, board_y, card.attack_types, False)
 
 

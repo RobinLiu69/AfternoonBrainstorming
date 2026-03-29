@@ -3,8 +3,9 @@ from typing import TYPE_CHECKING
 
 from core.game_state import GameState, CARD_SETTING
 from core.game_screen import draw_text
-from cards.factory import CardFactory
+from cards.factory import CardFactory, spawn_card
 from cards.base import Card
+from utils.logger import LogCategory
 
 card_settings = CARD_SETTING["Green"]
 color_code = "G"
@@ -16,53 +17,57 @@ class GreenCard(Card):
         if not AP_target and random.randint(1, 100) <= game_state.players_luck[target.owner]:
             if AP_target or TANK: return
             game_state.players_luck[target.owner] += 1
-            print(f"{target.board_x}-{target.board_y}:{target.job_and_color} - 獲得好運效果:")
+            game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got lucky:", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
             match random.randint(1, 5):
                 case 1:
-                    print(f"抽到4點護盾")
                     target.armor += 4
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} added 4 armor", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 2:
-                    print(f"抽到傷害翻倍")
-                    target.damage *= 2 
+                    target.damage *= 2
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} damage multiplied by 2", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 3:
-                    print(f"抽到再次攻擊")
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} launch attack", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                     target.attack(game_state)
                 case 4:
-                    print(f"抽到移動效果")
                     target.moving = True
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got moving", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 5:
                     if AP:
-                        print(f"抽到無")
+                        game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got nothing (AP skip)", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                         return
-                    print(f"抽到生成幸運方塊")
-                    for board in game_state.board_dict.values():
-                        if ((board.board_x == target.board_x+1 and board.board_y == target.board_y+1) or (board.board_x == target.board_x-1 and board.board_y == target.board_y+1) or (board.board_x == target.board_x-1 and board.board_y == target.board_y-1) or (board.board_x == target.board_x+1 and board.board_y == target.board_y-1)):
-                            if board.occupy: continue
-                            game_state.neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
-                            board.occupy = True
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got lucky block spawn", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                    offsets = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+                    for dx, dy in offsets:
+                        nx, ny = target.board_x + dx, target.board_y + dy
+                        board = game_state.board_dict.get((nx, ny))
+                        if board:
+                            if spawn_card(nx, ny, "LUCKYBLOCK", "neutral", game_state.neutral.on_board, game_state):
+                                game_state.game_logger.info(f"lucky block spawned at ({nx}, {ny})", LogCategory.SPECIAL_ACTION, card_name="LUCKYBLOCK", position=(nx, ny))
         else:
-            if AP: return
-            print(f"{target.board_x}-{target.board_y}:{target.job_and_color} - 獲得壞運效果:")
+            if AP:
+                game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got nothing (AP skip)", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                return 
             game_state.players_luck[target.owner] -= 1
+            game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got jinx:", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
             match random.randint(1, 5):
                 case 1:
-                    print(f"抽到破盾")
                     target.armor = 0
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} armor was destroyed", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 2:
-                    print(f"抽到麻痺")
-                    target.numbness = True 
+                    target.numbness = True
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got numbness", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 3:
-                    print(f"抽到血量除2")
                     target.health //= 2
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health halved", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 4:
-                    print(f"抽到攻擊除2")
                     target.damage //= 2
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} damage halved", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 5:
                     if target.health >= 2:                
-                        print(f"抽到血量減2")
                         target.health -= 2
+                        game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health reduced by 2", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                     else:
-                        print(f"抽到無")
+                        game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health too low, no effect", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
 
 
 class LuckyBlock(GreenCard):
@@ -89,6 +94,7 @@ class LuckyBlock(GreenCard):
         else:
             return 0
 
+CardFactory.register("LUCKYBLOCK", LuckyBlock)
 
 class Adc(GreenCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:

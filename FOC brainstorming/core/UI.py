@@ -7,8 +7,7 @@ from core.game_screen import GameScreen, draw_text
 from core.game_state import GameState, BLACK, WHITE, RED, BLUE, GREEN, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
 from cards.base import Card, COLOR_TAG_LIST
 
-if TYPE_CHECKING:
-    from cards.card_cyan import CyanCard
+from cards.card_cyan import CyanCard
 
 
 @dataclass(kw_only=True)

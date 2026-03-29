@@ -110,6 +110,14 @@ class Card(ABC):
                 else:
                     return self.job_and_color.replace(tag, "", 1)
         return "None"
+
+    @final
+    def get_position(self) -> tuple[int, int]:
+        return self.board_x, self.board_y
+
+    @final
+    def get_uid(self) -> str:
+        return f"{self.owner}_{self.job_and_color}"
     
     @final
     def get_attack_type(self) -> str:
@@ -196,18 +204,21 @@ class Card(ABC):
     
     @final
     def move(self, board_x: int, board_y: int, game_state: GameState) -> bool:
+        if self.custom_move(board_x, board_y, game_state): return True
         if not self.movable: return False
         if game_state.board_dict[board_x, board_y].occupy == False:
             if (((abs(self.board_y-board_y) == 1 and (abs(self.board_x-board_x) == 1 or abs(self.board_x-board_x) == 0)) or (abs(self.board_y-board_y) == 0 and abs(self.board_x-board_x) == 1)) and (self.board_y != board_y or self.board_x != board_x) and self.moving == True) == False:
                 self.moving = False
                 return False
-            game_state.game_statistics.increment(StatType.MOVE, f"{self.owner}_{self.job_and_color}", 1)
+            game_state.game_logger.log_card_moved(self.owner, self.job_and_color, self.get_position(), (board_x, board_y))
+            game_state.game_statistics.increment(StatType.MOVE, self.get_uid(), 1)
             game_state.board_dict[self.board_x, self.board_y].occupy = False
             self.board_x = board_x
             self.board_y = board_y
             game_state.board_dict[board_x, board_y].occupy = True
             self.moving = False
-            self.moved(game_state)
+
+            self.after_movement(board_x, board_y, game_state)
             
             for card in game_state.get_all_cards():
                 card.move_broadcast(self, game_state)
@@ -216,6 +227,9 @@ class Card(ABC):
         self.moving = False
         return False
 
+    def custom_move(self, board_x: int, board_y: int, game_state: GameState) -> bool:
+        return False
+    
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
         pass
 
@@ -239,13 +253,13 @@ class Card(ABC):
 
     @final
     def damage_calculate(self, value: int, attacker: "Card", game_state: GameState, ability: bool=True) -> bool:
-        game_state.game_statistics.increment(StatType.DAMAGE_TAKEN_COUNT, f"{self.owner}_{self.job_and_color}", 1)
+        game_state.game_statistics.increment(StatType.DAMAGE_TAKEN_COUNT, self.get_uid(), 1)
         attacker.hit_cards.append(self)
         if self.damage_block(value, attacker, game_state): return False
         
         if ability:
             if attacker.ability(self, game_state):
-                game_state.game_statistics.increment(StatType.ABILITY, f"{attacker.owner}_{attacker.job_and_color}", 1)
+                game_state.game_statistics.increment(StatType.ABILITY, attacker.get_uid(), 1)
                 attacker.ability_signal(self, game_state)
         
         value = attacker.damage_bonus(value, self, game_state)
@@ -255,18 +269,18 @@ class Card(ABC):
         value = self.special_damage_interceptor(value, attacker, game_state)
         
         if self.armor > 0 and self.armor >= value:
-            game_state.game_statistics.add_damage_dealt(f"{attacker.owner}_{attacker.job_and_color}", value)
-            game_state.game_statistics.add_damage_taken(f"{self.owner}_{self.job_and_color}", value)
-            game_state.game_logger.log_attack(f"{attacker.owner}_{attacker.job_and_color}", f"{self.owner}_{self.job_and_color}", value)
+            game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
+            game_state.game_statistics.add_damage_taken(self.get_uid(), value)
+            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(), self.get_uid(), self.get_position(), value)
             self.armor -= value
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
             attacker.after_damage_calculated(self, value, game_state)
             return True
         elif self.armor > 0 and self.armor < value:
-            game_state.game_statistics.add_damage_dealt(f"{attacker.owner}_{attacker.job_and_color}", value)
-            game_state.game_statistics.add_damage_taken(f"{self.owner}_{self.job_and_color}", value)
-            game_state.game_logger.log_attack(f"{attacker.owner}_{attacker.job_and_color}", f"{self.owner}_{self.job_and_color}", value)
+            game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
+            game_state.game_statistics.add_damage_taken(self.get_uid(), value)
+            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(), self.get_uid(), self.get_position(), value)
             if self.health >= value-self.armor:
                 pass
             if self.health < value-self.armor:
@@ -291,16 +305,16 @@ class Card(ABC):
                 pass
             if self.health < value:
                 value = self.health
-            game_state.game_statistics.add_damage_dealt(f"{attacker.owner}_{attacker.job_and_color}", value)
-            game_state.game_statistics.add_damage_taken(f"{self.owner}_{self.job_and_color}", value)
-            game_state.game_logger.log_attack(f"{attacker.owner}_{attacker.job_and_color}", f"{self.owner}_{self.job_and_color}", value)
+            game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
+            game_state.game_statistics.add_damage_taken(self.get_uid(), value)
+            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(), self.get_uid(), self.get_position(), value)
             self.health -= value
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
             attacker.after_damage_calculated(self, value, game_state)
             if self.health == 0:
-                game_state.game_statistics.add_kill(f"{attacker.owner}_{attacker.job_and_color}")
-                game_state.game_statistics.add_death(f"{self.owner}_{self.job_and_color}")
+                game_state.game_statistics.add_kill(attacker.get_uid())
+                game_state.game_statistics.add_death(self.get_uid())
                 attacker.killed(self, game_state)
                 attacker.killed_signal(self, game_state)
                 self.been_killed(attacker, game_state)
@@ -417,9 +431,6 @@ class Card(ABC):
 
     def killed_signal(self, victim: "Card", game_state: GameState) -> bool:
         return False
-    
-    def moved(self, game_state: GameState) -> bool:
-        return False
 
     def move_broadcast(self, target: "Card", game_state: GameState) -> bool:
         return False
@@ -502,13 +513,13 @@ class Card(ABC):
                 case "large_x":
                     pass
                 case"nearest":
-                    nearby_cards: list["Card"] = sorted(game_state.get_all_cards(), key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y))
+                    nearby_cards: list["Card"] = sorted(game_state.get_side_cards(self.owner, True), key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y))
                     if nearby_cards:
                         temp_card = nearby_cards[0]
                         nearet_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y) == abs(temp_card.board_x-board_x)+abs(temp_card.board_y-board_y), nearby_cards))
                         for card in nearet_cards: yield card.board_x, card.board_y
                 case "farthest":
-                    faraway_cards: list["Card"] = sorted(game_state.get_all_cards(), key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y), reverse=True)
+                    faraway_cards: list["Card"] = sorted(game_state.get_side_cards(self.owner, True), key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y), reverse=True)
                     if faraway_cards:
                         temp_card = faraway_cards[0]
                         farthest_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y) == abs(temp_card.board_x-board_x)+abs(temp_card.board_y-board_y), faraway_cards))
@@ -534,8 +545,9 @@ class Card(ABC):
         target_tuple = tuple(self.detection(attack_types, enemies)) if not custom_target_tuple else custom_target_tuple
         
         if target_tuple:
-            game_state.game_statistics.add_hit(f"{self.owner}_{self.job_and_color}", 1)
+            game_state.game_statistics.add_hit(self.get_uid(), 1)
             for target in target_tuple:
+                game_state.game_logger.log_launch_attack(self.get_uid(), self.get_position())
                 # for card in player1.on_board + player2.on_board:
                 #     card.before_attack_broadcast(self, target, game_state)
                 target.damage_calculate(self.damage, self, game_state)
@@ -551,7 +563,7 @@ class Card(ABC):
     
     def end_of_the_turn(self, game_state: GameState) -> None:
         self.moving = False
-        game_state.game_statistics.increment(StatType.SCORED, f"{self.owner}_{self.job_and_color}", self.end_turn(False))
+        game_state.game_statistics.increment(StatType.SCORED, self.get_uid(), self.end_turn(False))
         match self.owner:
             case "player1":
                 game_state.score -= self.end_turn(True)
