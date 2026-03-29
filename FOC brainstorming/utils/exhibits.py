@@ -1,7 +1,7 @@
 #December 22nd, 2024 7:30 PM
 #Vic Yeh 到此一遊
 #學測倒數29天
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import cards.card_white as white
 import cards.card_red as red
@@ -12,9 +12,10 @@ import cards.card_purple as purple
 import cards.card_dark_green as darkgreen
 import cards.card_cyan as cyan
 import cards.card_fuchsia as fuchsia
-from cards.card import Card
-from core.game_screen import GameScreen, draw_text, WHITE, RED, GREEN, BLACK
+from cards.base import Card
 
+if TYPE_CHECKING:
+    from core.game_state import GameState
 
 all_exhibit_cards: list[list[Card]] = [[white.Adc("display", 0, 0), white.Ap("display", 1, 0), white.Tank("display", 2, 0), white.Hf("display", 3, 0), white.Lf("display", 0, 1), white.Ass("display", 1, 1), white.Apt("display", 2, 1), white.Sp("display", 3, 1)],
                                        [red.Adc("display", 0, 0), red.Ap("display", 1, 0), red.Tank("display", 2, 0), red.Hf("display", 3, 0), red.Lf("display", 0, 1), red.Ass("display", 1, 1), red.Apt("display", 2, 1), red.Sp("display", 3, 1)],
@@ -29,11 +30,11 @@ all_exhibit_cards: list[list[Card]] = [[white.Adc("display", 0, 0), white.Ap("di
                                        [white.Cube("display", 0, 2), white.Heal("display", 1, 2), white.Move("display", 2, 2)]]
 
 
-def exhibit(page: int, game_screen: GameScreen):
+def exhibit(page: int, game_state: GameState):
     for card in all_exhibit_cards[page]:
-        card.display_update(game_screen)
+        card.display_update(game_state)
     for card in all_exhibit_cards[-1]:
-        card.display_update(game_screen)
+        card.display_update(game_state)
 
 def get_card_name_in_menu(page: int, board_x: Optional[int], board_y: Optional[int]) -> str:
     for card in all_exhibit_cards[page]:

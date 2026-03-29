@@ -1,13 +1,11 @@
 from typing import TYPE_CHECKING
 
-from cards.card import Board, Card
-from core.game_screen import GameScreen, Orange_setting, ORANGE
+from core.game_state import GameState, CARD_SETTING
+from cards.factory import CardFactory
+from cards.base import Card
 
-if TYPE_CHECKING:
-    from core.player import Player
-    from core.neutral import Neutral
-
-card_settings = Orange_setting
+card_settings = CARD_SETTING["Orange"]
+color_code = "O"
 
 
 class OrangeCard(Card):
@@ -19,16 +17,16 @@ class Adc(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="ADCO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def attack(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.launch_attack(self.attack_types, player1, player2, neutral, board_dict, game_screen):
+    def attack(self, game_state: GameState) -> bool:
+        if self.launch_attack(self.attack_types, game_state):
             self.moving = True
             self.hit_cards.clear()
             return True
         else:
             return False
     
-    def moved(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        self.launch_attack(self.attack_types, player1, player2, neutral, board_dict, game_screen)
+    def moved(self, game_state: GameState) -> bool:
+        self.launch_attack(self.attack_types, game_state)
         return True
 
 
@@ -37,16 +35,12 @@ class Ap(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="APO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
         return True
     
-    def start_turn(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> int:
-        match self.owner:
-            case "player1":
-                player1.hand.append("MOVEO")
-            case "player2":
-                player2.hand.append("MOVEO")
+    def start_turn(self, game_state: GameState) -> int:
+        game_state.get_player(self.owner).hand.append("MOVEO")
         return 0
 
 
@@ -55,12 +49,8 @@ class Tank(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="TANKO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def been_attacked(self, attacker: Card, value: int, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        match self.owner:
-            case "player1":
-                player1.hand.append("MOVEO")
-            case "player2":
-                player2.hand.append("MOVEO")
+    def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
+        game_state.get_player(self.owner).hand.append("MOVEO")
         return True
 
 
@@ -69,20 +59,20 @@ class Hf(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="HFO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.launch_attack(self.attack_types, player1, player2, neutral, board_dict, game_screen):
+    def attack(self, game_state: GameState) -> bool:
+        if self.launch_attack(self.attack_types, game_state):
             self.moving = True
             self.hit_cards.clear()
             return True
         else:
             return False
         
-    def moved(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def moved(self, game_state: GameState) -> bool:
         self.extra_damage += card_settings["HF"]["extra_damage_from_moving"]
         self.anger = True
         return True
     
-    def damage_bonus(self, value: int, victim: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> int:
+    def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
         return value + self.extra_damage
     
     def end_turn(self, clear_numbness: bool=True) -> int:
@@ -95,7 +85,6 @@ class Hf(OrangeCard):
             return 0
         else:
             return 1
-    
 
 
 class Lf(OrangeCard):
@@ -103,17 +92,17 @@ class Lf(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="LFO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.launch_attack(self.attack_types, player1, player2, neutral, board_dict, game_screen):
+    def attack(self, game_state: GameState) -> bool:
+        if self.launch_attack(self.attack_types, game_state):
             self.moving = True
             self.hit_cards.clear()
             return True
         else:
             return False
         
-    def moved(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        for card in self.detection("nearest", filter(lambda card: card.owner != self.owner and card != self, neutral.on_board + player1.on_board + player2.on_board)):
-            card.damage_calculate(self.damage, self, player1, player2, neutral, board_dict, game_screen)
+    def moved(self, game_state: GameState) -> bool:
+        for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_opponent_cards(self.owner))):
+            card.damage_calculate(self.damage, self, game_state)
         return True
 
 
@@ -122,14 +111,14 @@ class Ass(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="ASSO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def moved(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def moved(self, game_state: GameState) -> bool:
         self.anger = True
         return True
     
-    def killed(self, victim: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def killed(self, victim: Card, game_state: GameState) -> bool:
         self.moving = True
         if self.anger:
-            game_screen.number_of_attacks[self.owner] += card_settings["ASS"]["number_of_attack_increase_from_killed"]
+            game_state.number_of_attacks[self.owner] += card_settings["ASS"]["number_of_attack_increase_from_killed"]
             self.anger = False
         return True
     
@@ -149,7 +138,7 @@ class Apt(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="APTO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def moved(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def moved(self, game_state: GameState) -> bool:
         self.armor += card_settings["APT"]["armor_get_from_moving"]
         value = self.armor // 2
         if value > 0:
@@ -157,7 +146,7 @@ class Apt(OrangeCard):
             self.armor = self.armor % 2
         return True
 
-    def move_broadcast(self, target: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move_broadcast(self, target: Card, game_state: GameState) -> bool:
         if target.owner == self.owner and target != self:
             target.armor += card_settings["APT"]["armor_get_from_moving"]
             self.armor += card_settings["APT"]["armor_get_from_moving"]
@@ -169,8 +158,18 @@ class Sp(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="SPO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def move_broadcast(self, target: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def move_broadcast(self, target: Card, game_state: GameState) -> bool:
         if target.owner == self.owner:
-            for card in self.detection("farthest", filter(lambda card: card.owner != self.owner and card != self, neutral.on_board + player1.on_board + player2.on_board)):
-                card.damage_calculate(card_settings["SP"]["movement_damage"], self, player1, player2, neutral, board_dict, game_screen)
+            for card in self.detection("farthest", game_state.get_side_cards(self.owner, True)):
+                card.damage_calculate(card_settings["SP"]["movement_damage"], self, game_state)
         return True
+
+
+CardFactory.register("ADC" + color_code, Adc)
+CardFactory.register("AP" + color_code, Ap)
+CardFactory.register("TANK" + color_code, Tank)
+CardFactory.register("HF" + color_code, Hf)
+CardFactory.register("LF" + color_code, Lf)
+CardFactory.register("ASS" + color_code, Ass)
+CardFactory.register("APT" + color_code, Apt)
+CardFactory.register("SP" + color_code, Sp)

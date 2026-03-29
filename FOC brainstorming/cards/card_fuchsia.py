@@ -1,16 +1,16 @@
 import math
-from typing import Callable, Iterable, TYPE_CHECKING
+from typing import Callable, Generator, Iterable, TYPE_CHECKING
+from itertools import chain
 
-from core.neutral import Neutral
-from core.player import Player
-from cards.card import Board, Card, most_frequent_elements
-from core.game_screen import GameScreen, Fuchsia_setting, FUCHSIA, BOARD_SIZE
+from core.game_state import GameState, CARD_SETTING
+from cards.factory import CardFactory
+from cards.base import Card, most_frequent_elements
 
 if TYPE_CHECKING:
-    from core.player import Player
-    from core.neutral import Neutral
+    from core.game_state import GameState
 
-card_settings = Fuchsia_setting
+card_settings = CARD_SETTING["Fuchsia"]
+color_code = "F"
 
 
 class FuchsiaCard(Card):
@@ -20,15 +20,13 @@ class FuchsiaCard(Card):
 
         self.shadows: list[Shadow] = []
     
-    def after_movement(self, board_x: int, board_y: int, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
         for shadow in self.shadows:
-            if shadow.anger:
-                shadow.board_x = BOARD_SIZE[0] - 1 - board_x
-                shadow.board_y = BOARD_SIZE[1] - 1 - board_y
+            if shadow.movable:
+                shadow.board_x, shadow.board_y = game_state.board_config.get_symmetric_pos(board_x, board_y)
 
-    def spawn_shadow(self, owner: str, self_board_x: int, self_board_y: int, attack_types: str, movable: bool=True) -> None:
-        self.shadows.append(Shadow(owner, BOARD_SIZE[0]-1-self_board_x, BOARD_SIZE[1]-1-self_board_y, self, attack_types, movable))
-
+    def spawn_shadow(self, owner: str, board_x: int, board_y: int, attack_types: str, movable: bool=True) -> None:
+        self.shadows.append(Shadow(owner, board_x, board_y, self, attack_types, movable))
 
 
 class Shadow(FuchsiaCard):
@@ -40,48 +38,48 @@ class Shadow(FuchsiaCard):
         self.linker = linker
         self.job = self.linker.job
 
-    def heal(self, value: int, game_screen: GameScreen) -> bool:
+    def heal(self, value: int, game_state: GameState) -> bool:
         return False
     
-    def draw_shape(self, game_screen: GameScreen) -> None:
+    def draw_shape(self, game_state: GameState) -> None:
         if not self.surface: return
         match self.linker.job:
             case "AP":
-                self.shape = tuple(map(lambda coordinate: (coordinate + game_screen.block_size*0.05), self.linker.shaped(game_screen.block_size)))
+                self.shape = tuple(map(lambda coordinate: (coordinate + game_state.game_screen.block_size*0.05), self.linker.shaped(game_state.game_screen.block_size)))
             case _:
-                self.shape = tuple(map(lambda coordinate: (coordinate[0]+game_screen.block_size*0.05, coordinate[1]+game_screen.block_size*0.05), self.linker.shaped(game_screen.block_size)))
+                self.shape = tuple(map(lambda coordinate: (coordinate[0]+ game_state.game_screen.block_size*0.05, coordinate[1]+ game_state.game_screen.block_size*0.05), self.linker.shaped(game_state.game_screen.block_size)))
         self.color = (159, 0, 80, 100)
     
-    def update(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
-        self.display_update(game_screen)
+    def update(self, game_state: GameState) -> None:
+        self.display_update(game_state)
     
-    def ability(self, target: "Card", player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: "Card", game_state: GameState) -> bool:
         self.linker.hit_cards.append(target)
         return False
 
-    def damage_block(self, value: int, attacker: "Card", player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def damage_block(self, value: int, attacker: "Card", game_state: GameState) -> bool:
         if self.linker.job_and_color == "APTF":
             self.linker.armor += value//2
         return False
     
-    def killed(self, victim: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def killed(self, victim: Card, game_state: GameState) -> bool:
         match self.linker.job_and_color:
             case "ASSF":
-                self.linker.spawn_shadow(self.owner, BOARD_SIZE[1]-1-victim.board_x, BOARD_SIZE[1]-1-victim.board_y, self.attack_types)
+                self.linker.spawn_shadow(self.owner, victim.board_x, victim.board_y, self.attack_types)
                 return False
             case _:
                 return False
     
-    def die(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        cards = tuple(filter(lambda card: card.health > 0 and self.board_x == card.board_x and self.board_y == card.board_y, neutral.on_board + player1.on_board + player2.on_board))
+    def die(self, game_state: GameState) -> bool:
+        cards = tuple(filter(lambda card: card.health > 0 and self.board_x == card.board_x and self.board_y == card.board_y, game_state.get_all_cards()))
         if not cards:
-            board_dict[str(self.board_x)+"-"+str(self.board_y)].occupy = False
+            game_state.board_dict[self.board_x, self.board_y].occupy = False
         return False
 
     
-    def attack(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        enemies: Iterable["Card"] = list(filter(lambda card: card.owner != self.owner and card.health > 0 and card.job_and_color != "SHADOW", neutral.on_board + player1.on_board + player2.on_board))
-        if self.linker.launch_attack(self.attack_types, player1, player2, neutral, board_dict, game_screen, tuple(self.detection(self.attack_types, enemies))):
+    def attack(self, game_state: GameState) -> bool:
+        enemies: Iterable["Card"] = list(filter(lambda card: card.health > 0 and card.job_and_color != "SHADOW", game_state.get_side_cards(self.owner, True)))
+        if self.linker.launch_attack(self.attack_types, game_state, tuple(self.detection(self.attack_types, enemies))):
             return True
         else:
             return False
@@ -94,59 +92,62 @@ class Adc(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="ADCF", health=health, damage=damage, board_x=board_x, board_y=board_y)
-        
+    
+    def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
-            self.spawn_shadow(owner, board_x, board_y, self.attack_types)
+            board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
+            self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
         
-    def attack(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.launch_attack(self.attack_types, player1, player2, neutral, board_dict, game_screen):
+    def attack(self, game_state: GameState) -> bool:
+        if self.launch_attack(self.attack_types, game_state):
             for shadow in self.shadows:
-                shadow.attack(player1, player2, neutral, board_dict, game_screen)
+                shadow.attack(game_state)
             self.hit_cards.clear()
             return True
         else:
-            if self.numbness == False:
+            if not self.numbness:
                 count = 0
                 for shadow in self.shadows:
-                    if shadow.attack(player1, player2, neutral, board_dict, game_screen):
+                    if shadow.attack(game_state):
                         count += 1
                 self.hit_cards.clear()
                 if count:
                     return True
             return False
     
-    def update(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
-            shadow.update(player1, player2, neutral, board_dict, game_screen)
-        self.display_update(game_screen)
+            shadow.update(game_state)
+        self.display_update(game_state)
     
 
 class Ap(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="APF", health=health, damage=damage, board_x=board_x, board_y=board_y)
-        if self.owner != "display":
-            self.spawn_shadow(owner, board_x, board_y, self.attack_types)
 
-    def deploy(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> Card:
+    def deploy(self, game_state: GameState) -> None:
+        if self.owner != "display":
+            board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
+            self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
+        
         for shadow in self.shadows:
-            enemies = tuple(filter(lambda card: card.owner != self.owner and card.health > 0 and shadow.board_x == card.board_x and shadow.board_y == card.board_y, neutral.on_board + player1.on_board + player2.on_board))
+            enemies = tuple(filter(lambda card: card.health > 0 and shadow.is_same_location(card), game_state.get_side_cards(self.owner, True)))
             for enemy in enemies:
                 enemy.numbness = True
-        return self
         
-    def ability(self, target: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
         return True
 
-    def update(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
-            shadow.update(player1, player2, neutral, board_dict, game_screen)
-        self.display_update(game_screen)
+            shadow.update(game_state)
+        self.display_update(game_state)
 
-    def start_turn(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> int:
+    def start_turn(self, game_state: GameState) -> int:
         for shadow in self.shadows:
-            enemies = tuple(filter(lambda card: card.owner != self.owner and card.health > 0 and shadow.board_x == card.board_x and shadow.board_y == card.board_y, neutral.on_board + player1.on_board + player2.on_board))
+            enemies = tuple(filter(lambda card: card.health > 0 and shadow.is_same_location(card), game_state.get_side_cards(self.owner, True)))
             for enemy in enemies:
                 enemy.numbness = True
         return 0
@@ -156,75 +157,82 @@ class Tank(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="TANKF", health=health, damage=damage, board_x=board_x, board_y=board_y)
-        if self.owner != "display":
-            self.spawn_shadow(owner, board_x, board_y, self.attack_types)
-            
-    def update(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
-        for shadow in self.shadows:
-            board_dict[str(shadow.board_x)+"-"+str(shadow.board_y)].occupy = True
-            shadow.update(player1, player2, neutral, board_dict, game_screen)
-        self.display_update(game_screen)
     
-    def die(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def deploy(self, game_state: GameState) -> None:
+        if self.owner != "display":
+            board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
+            self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
+            
+    def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
-            shadow.die(player1, player2, neutral, board_dict, game_screen)
+            game_state.board_dict[shadow.board_x, shadow.board_y].occupy = True
+            shadow.update(game_state)
+        self.display_update(game_state)
+    
+    def die(self, game_state: GameState) -> bool:
+        for shadow in self.shadows:
+            shadow.die(game_state)
         return False
 
     
-
 class Hf(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="HFF", health=health, damage=damage, board_x=board_x, board_y=board_y)
+    
+    def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
-            self.spawn_shadow(owner, board_x, board_y, self.attack_types)
+            board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
+            self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
 
-    def attack(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.launch_attack(self.attack_types, player1, player2, neutral, board_dict, game_screen):
+    def attack(self, game_state: GameState) -> bool:
+        if self.launch_attack(self.attack_types, game_state):
             for shadow in self.shadows:
-                shadow.attack(player1, player2, neutral, board_dict, game_screen)
+                shadow.attack(game_state)
             self.hit_cards.clear()
             return True
         else:
             if self.numbness == False:
                 count = 0
                 for shadow in self.shadows:
-                    if shadow.attack(player1, player2, neutral, board_dict, game_screen):
+                    if shadow.attack(game_state):
                         count += 1
                 self.hit_cards.clear()
                 if count:
                     return True
             return False
     
-    def update(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
-            shadow.update(player1, player2, neutral, board_dict, game_screen)
-        self.display_update(game_screen)
-
+            shadow.update(game_state)
+        self.display_update(game_state)
     
 
 class Lf(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="LFF", health=health, damage=damage, board_x=board_x, board_y=board_y)
-        if self.owner != "display":
-            self.spawn_shadow(owner, board_x, board_y, "nearest")
 
-    def attack(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        if self.launch_attack(self.attack_types, player1, player2, neutral, board_dict, game_screen):
+    def deploy(self, game_state: GameState) -> None:
+        if self.owner != "display":
+            board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
+            self.spawn_shadow(self.owner, board_x, board_y, "nearest")
+
+    def attack(self, game_state: GameState) -> bool:
+        if self.launch_attack(self.attack_types, game_state):
             for shadow in self.shadows:
-                shadow.attack(player1, player2, neutral, board_dict, game_screen)
+                shadow.attack(game_state)
             
             for target in (most_frequent_elements(self.hit_cards, 1)):
-                target.damage_calculate(self.damage, self, player1, player2, neutral, board_dict, game_screen)
+                target.damage_calculate(self.damage, self, game_state)
             self.hit_cards.clear()
             return True
         return False
     
-    def update(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
-            shadow.update(player1, player2, neutral, board_dict, game_screen)
-        self.display_update(game_screen)
+            shadow.update(game_state)
+        self.display_update(game_state)
 
 
 class Ass(FuchsiaCard):
@@ -232,27 +240,33 @@ class Ass(FuchsiaCard):
         
         super().__init__(owner=owner, job_and_color="ASSF", health=health, damage=damage, board_x=board_x, board_y=board_y)
         
-    def killed(self, victim: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        self.spawn_shadow(self.owner, BOARD_SIZE[1]-1-victim.board_x, BOARD_SIZE[1]-1-victim.board_y, self.attack_types)
-        return False
-    
-    def die(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def attack_area_display(self, game_state: GameState) -> Iterable[tuple[int, int]]:
+        return self.attack_area_display(game_state)
         for shadow in self.shadows:
-            shadow.die(player1, player2, neutral, board_dict, game_screen)
+            yield from shadow.attack_area_display(game_state)
+
+
+    def killed(self, victim: Card, game_state: GameState) -> bool:
+        self.spawn_shadow(self.owner, victim.board_x, victim.board_y, self.attack_types)
         return False
     
-    def attack(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def die(self, game_state: GameState) -> bool:
+        for shadow in self.shadows:
+            shadow.die(game_state)
+        return False
+    
+    def attack(self, game_state: GameState) -> bool:
         temp_shadow_list = self.shadows.copy()
-        if self.launch_attack(self.attack_types, player1, player2, neutral, board_dict, game_screen):
+        if self.launch_attack(self.attack_types, game_state):
             for shadow in temp_shadow_list:
-                shadow.attack(player1, player2, neutral, board_dict, game_screen)
+                shadow.attack(game_state)
             self.hit_cards.clear()
             return True
         else:
             if self.numbness == False:
                 count = 0
                 for shadow in temp_shadow_list:
-                    if shadow.attack(player1, player2, neutral, board_dict, game_screen):
+                    if shadow.attack(game_state):
                         count += 1
                 self.hit_cards.clear()
                 if count:
@@ -260,25 +274,28 @@ class Ass(FuchsiaCard):
             del temp_shadow_list
             return False
     
-    def update(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
-            shadow.update(player1, player2, neutral, board_dict, game_screen)
-        self.display_update(game_screen)
+            shadow.update(game_state)
+        self.display_update(game_state)
 
 
 class Apt(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
 
         super().__init__(owner=owner, job_and_color="APTF", health=health, damage=damage, board_x=board_x, board_y=board_y)
+
+    def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
-            self.spawn_shadow(owner, board_x, board_y, self.attack_types)
+            board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
+            self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
     
-    def update(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> None:
+    def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
-            shadow.update(player1, player2, neutral, board_dict, game_screen)
-        self.display_update(game_screen)
-    
-    def on_field_effect_trigger(self, victim: Card, value: int, attacker: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> tuple[int, int, Callable[[Card, int, Card, Player, Player, Neutral, dict[str, Board], GameScreen], None] | None] | None:
+            shadow.update(game_state)
+        self.display_update(game_state)
+
+    def on_field_effect_trigger(self, victim: Card, value: int, attacker: Card, game_state: GameState) -> tuple[int, int, Callable[[Card, int, Card, GameState], None] | None] | None:
         for shadow in self.shadows:
             if (self.health > 0 and victim.owner == self.owner and shadow.is_same_location(victim) and victim != self):
                 self.armor += math.floor(value * 0.5)
@@ -291,9 +308,19 @@ class Sp(FuchsiaCard):
 
         super().__init__(owner=owner, job_and_color="SPF", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def deploy(self, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> Card:
-        targets: tuple[FuchsiaCard] = tuple(filter(lambda card: card.owner == self.owner and card.health > 0 and isinstance(card, FuchsiaCard), neutral.on_board + player1.on_board + player2.on_board)) # pyright: ignore[reportAssignmentType]
+    def deploy(self, game_state: GameState) -> None:
+        targets: tuple[FuchsiaCard] = tuple(filter(lambda card: card.health > 0 and isinstance(card, FuchsiaCard), game_state.get_player_cards(self.owner))) # pyright: ignore[reportAssignmentType]
         if targets:
             for card in self.detection("farthest", targets):
-                    card.spawn_shadow(self.owner, self.board_x, self.board_y, card.attack_types, True)
-        return self
+                board_x, board_y = game_state.board_config.get_symmetric_pos(card.board_x, card.board_y)
+                card.spawn_shadow(self.owner, board_x, board_y, card.attack_types, False)
+
+
+CardFactory.register("ADC" + color_code, Adc)
+CardFactory.register("AP" + color_code, Ap)
+CardFactory.register("TANK" + color_code, Tank)
+CardFactory.register("HF" + color_code, Hf)
+CardFactory.register("LF" + color_code, Lf)
+CardFactory.register("ASS" + color_code, Ass)
+CardFactory.register("APT" + color_code, Apt)
+CardFactory.register("SP" + color_code, Sp)

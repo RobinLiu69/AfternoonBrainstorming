@@ -1,13 +1,11 @@
 from typing import TYPE_CHECKING
 
-from cards.card import Board, Card
-from core.game_screen import GameScreen, White_setting, WHITE
+from core.game_state import GameState, CARD_SETTING
+from cards.factory import CardFactory
+from cards.base import Card
 
-if TYPE_CHECKING:
-    from core.player import Player
-    from core.neutral import Neutral
-
-card_settings = White_setting
+card_settings = CARD_SETTING["White"]
+color_code = "W"
 
 
 class Cube(Card):
@@ -35,6 +33,11 @@ class Move(Card):
         super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="MOVE", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
 
+CardFactory.register("CUBE", Cube)
+CardFactory.register("HEAL", Heal)
+CardFactory.register("MOVE", Move)
+
+
 class WhiteCard(Card):
     pass
 
@@ -48,10 +51,9 @@ class Adc(WhiteCard):
 class Ap(WhiteCard):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
 
-
         super().__init__(owner=owner, job_and_color="APW", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
+    def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
         return True
 
@@ -85,8 +87,8 @@ class Apt(WhiteCard):
         
         super().__init__(owner=owner, job_and_color="APTW", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, player1: Player, player2: Player, neutral: Neutral, board_dict: dict[str, Board], game_screen: GameScreen) -> bool:
-        for card in self.detection("nearest", filter(lambda card: card.owner == self.owner and card != self, neutral.on_board+player1.on_board+player2.on_board)):
+    def ability(self, target: Card, game_state: GameState) -> bool:
+        for card in self.detection("nearest", filter(lambda card: card.owner == self.owner and card != self, game_state.get_player(self.owner).on_board)):
             card.armor += self.damage
         self.armor += self.damage
         return True
@@ -104,3 +106,13 @@ class Sp(WhiteCard):
             return 0
         else:
             return 1 + card_settings["SP"]["extra_score"]
+
+
+CardFactory.register("ADC" + color_code, Adc)
+CardFactory.register("AP" + color_code, Ap)
+CardFactory.register("TANK" + color_code, Tank)
+CardFactory.register("HF" + color_code, Hf)
+CardFactory.register("LF" + color_code, Lf)
+CardFactory.register("ASS" + color_code, Ass)
+CardFactory.register("APT" + color_code, Apt)
+CardFactory.register("SP" + color_code, Sp)

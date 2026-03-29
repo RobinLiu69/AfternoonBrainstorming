@@ -1,10 +1,14 @@
 import random, pygame
 from dataclasses import dataclass, field
-from typing import cast, Optional
+from typing import Optional, Sequence, cast, TYPE_CHECKING
 
-from core.game_screen import GameScreen, draw_text, BLACK, WHITE, RED, BLUE, GREEN, Sequence, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
-from cards.card import Card, COLOR_TAG_LIST
-from cards.card_cyan import CyanCard
+from core.game_screen import GameScreen, draw_text
+
+from core.game_state import GameState, BLACK, WHITE, RED, BLUE, GREEN, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
+from cards.base import Card, COLOR_TAG_LIST
+
+if TYPE_CHECKING:
+    from cards.card_cyan import CyanCard
 
 
 @dataclass(kw_only=True)
@@ -119,38 +123,28 @@ class ScoreDisplay:
     width: int
     height: int
        
-    def display(self, controller: str, score: int, on_board_cards: list[Card],  game_screen: GameScreen) -> None:
-        score_list: list[int] = [score]
-        self.x, self.y = game_screen.display_width/2-self.width/2, game_screen.display_height/10
-        match controller:
-            case "player1":
-                score = 0
-                for card in filter(lambda card: card.owner == "player1", on_board_cards):
-                    score -= card.end_turn(False)
-                score_list.append(score_list[-1]+score)
-                score = 0
-                for card in filter(lambda card: card.owner == "player2", on_board_cards):
-                    score += card.end_turn(False)
-                score_list.append(score_list[-1]+score)
-            case "player2":
-                score = 0
-                for card in filter(lambda card: card.owner == "player2", on_board_cards):
-                    score += card.end_turn(False)
-                score_list.append(score_list[-1]+score)
-                score = 0
-                for card in filter(lambda card: card.owner == "player1", on_board_cards):
-                    score -= card.end_turn(False)
-                score_list.append(score_list[-1]+score)
+    def display(self, controller: str, game_state: GameState) -> None:
+        score_list: list[int] = [game_state.score]
+        self.x, self.y = game_state.game_screen.display_width/2-self.width/2, game_state.game_screen.display_height/10
+
+        score = 0
+        for card in game_state.get_player_cards(controller):
+            score -= card.end_turn(False)
+        score_list.append(score_list[-1]+score)
+        score = 0
+        for card in game_state.get_opponent_cards(controller):
+            score += card.end_turn(False)
+        score_list.append(score_list[-1]+score)
         
         for i in range(-10, 11):
             if i == score_list[0]:
-                pygame.draw.rect(game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
+                pygame.draw.rect(game_state.game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
             else:
-                pygame.draw.rect(game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
+                pygame.draw.rect(game_state.game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_state.game_screen.thickness/1.5))
             if i == score_list[1]:
-                pygame.draw.rect(game_screen.surface, BLUE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
+                pygame.draw.rect(game_state.game_screen.surface, BLUE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
             if i == score_list[2]:
-                pygame.draw.rect(game_screen.surface, RED, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
+                pygame.draw.rect(game_state.game_screen.surface, RED, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_state.game_screen.thickness/1.5))
 
 
 @dataclass(kw_only=True)

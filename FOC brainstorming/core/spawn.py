@@ -159,46 +159,46 @@ def spawn_card(board_x: int, board_y: int, card_name: str, owner: str, player1: 
             case "SPC":
                 on_board.append(cyan.Sp(owner, board_x, board_y).deploy(player1, player2, neutral, board_dict, game_screen))
             
-            case "ADCC (+)":
-                if cyan.Adc.price_check(owner, "ADC", player1.on_board, player2.on_board, game_screen):
-                    on_board.append(cyan.Adc(owner, board_x, board_y, True))
-                else:
-                    return False
-            case "APC (+)":
-                if cyan.Ap.price_check(owner, "AP", player1.on_board, player2.on_board, game_screen):
-                    on_board.append(cyan.Ap(owner, board_x, board_y, True).deploy(player1, player2, neutral, board_dict, game_screen))
-                else:
-                    return False
-            case "TANKC (+)":
-                if cyan.Tank.price_check(owner, "TANK", player1.on_board, player2.on_board, game_screen):
-                    on_board.append(cyan.Tank(owner, board_x, board_y, True))
-                else:
-                    return False
-            case "HFC (+)":
-                if cyan.Hf.price_check(owner, "HF", player1.on_board, player2.on_board, game_screen):
-                    on_board.append(cyan.Hf(owner, board_x, board_y, True))
-                else:
-                    return False
-            case "LFC (+)":
-                if cyan.Lf.price_check(owner, "LF", player1.on_board, player2.on_board, game_screen):
-                    on_board.append(cyan.Lf(owner, board_x, board_y, True))
-                else:
-                    return False
-            case "ASSC (+)":
-                if cyan.Ass.price_check(owner, "ASS", player1.on_board, player2.on_board, game_screen):
-                    on_board.append(cyan.Ass(owner, board_x, board_y, True))
-                else:
-                    return False
-            case "APTC (+)":
-                if cyan.Apt.price_check(owner, "APT", player1.on_board, player2.on_board, game_screen):
-                    on_board.append(cyan.Apt(owner, board_x, board_y, True))
-                else:
-                    return False
-            case "SPC (+)":
-                if cyan.Sp.price_check(owner, "SP", player1.on_board, player2.on_board, game_screen):
-                    on_board.append(cyan.Sp(owner, board_x, board_y, True).deploy(player1, player2, neutral, board_dict, game_screen))
-                else:
-                    return False
+            # case "ADCC (+)":
+            #     if cyan.Adc.price_check(owner, "ADC", player1.on_board, player2.on_board, game_screen):
+            #         on_board.append(cyan.Adc(owner, board_x, board_y, True))
+            #     else:
+            #         return False
+            # case "APC (+)":
+            #     if cyan.Ap.price_check(owner, "AP", player1.on_board, player2.on_board, game_screen):
+            #         on_board.append(cyan.Ap(owner, board_x, board_y, True).deploy(player1, player2, neutral, board_dict, game_screen))
+            #     else:
+            #         return False
+            # case "TANKC (+)":
+            #     if cyan.Tank.price_check(owner, "TANK", player1.on_board, player2.on_board, game_screen):
+            #         on_board.append(cyan.Tank(owner, board_x, board_y, True))
+            #     else:
+            #         return False
+            # case "HFC (+)":
+            #     if cyan.Hf.price_check(owner, "HF", player1.on_board, player2.on_board, game_screen):
+            #         on_board.append(cyan.Hf(owner, board_x, board_y, True))
+            #     else:
+            #         return False
+            # case "LFC (+)":
+            #     if cyan.Lf.price_check(owner, "LF", player1.on_board, player2.on_board, game_screen):
+            #         on_board.append(cyan.Lf(owner, board_x, board_y, True))
+            #     else:
+            #         return False
+            # case "ASSC (+)":
+            #     if cyan.Ass.price_check(owner, "ASS", player1.on_board, player2.on_board, game_screen):
+            #         on_board.append(cyan.Ass(owner, board_x, board_y, True))
+            #     else:
+            #         return False
+            # case "APTC (+)":
+            #     if cyan.Apt.price_check(owner, "APT", player1.on_board, player2.on_board, game_screen):
+            #         on_board.append(cyan.Apt(owner, board_x, board_y, True))
+            #     else:
+            #         return False
+            # case "SPC (+)":
+            #     if cyan.Sp.price_check(owner, "SP", player1.on_board, player2.on_board, game_screen):
+            #         on_board.append(cyan.Sp(owner, board_x, board_y, True).deploy(player1, player2, neutral, board_dict, game_screen))
+            #     else:
+            #         return False
             
             case "ADCF":
                 on_board.append(fuchsia.Adc(owner, board_x, board_y))
