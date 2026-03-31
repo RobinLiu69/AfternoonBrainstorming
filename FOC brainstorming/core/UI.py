@@ -122,28 +122,28 @@ class ScoreDisplay:
     width: int
     height: int
        
-    def display(self, controller: str, game_state: GameState) -> None:
+    def display(self, controller: str, game_state: GameState, game_screen: GameScreen) -> None:
         score_list: list[int] = [game_state.score]
-        self.x, self.y = game_state.game_screen.display_width/2-self.width/2, game_state.game_screen.display_height/10
+        self.x, self.y = game_screen.display_width/2-self.width/2, game_screen.display_height/10
 
         score = 0
         for card in game_state.get_player_cards(controller):
-            score -= card.end_turn(False)
+            score -= card.end_turn(False) if controller == "player1" else -card.end_turn(False)
         score_list.append(score_list[-1]+score)
         score = 0
         for card in game_state.get_opponent_cards(controller):
-            score += card.end_turn(False)
+            score -= card.end_turn(False) if controller == "player2" else -card.end_turn(False)
         score_list.append(score_list[-1]+score)
         
         for i in range(-10, 11):
             if i == score_list[0]:
-                pygame.draw.rect(game_state.game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
+                pygame.draw.rect(game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
             else:
-                pygame.draw.rect(game_state.game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_state.game_screen.thickness/1.5))
+                pygame.draw.rect(game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
             if i == score_list[1]:
-                pygame.draw.rect(game_state.game_screen.surface, BLUE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
+                pygame.draw.rect(game_screen.surface, BLUE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
             if i == score_list[2]:
-                pygame.draw.rect(game_state.game_screen.surface, RED, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_state.game_screen.thickness/1.5))
+                pygame.draw.rect(game_screen.surface, RED, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
 
 
 @dataclass(kw_only=True)
@@ -280,15 +280,15 @@ class HintBox:
             box_height = len(CARDS_HINTS_DICTIONARY[card_type].split("\n")) if len(CARDS_HINTS_DICTIONARY[card_type].split("\n")) > 4 else 4
             pygame.draw.rect(self.surface, WHITE, (0, 0, self.width, (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)), 2)
             pygame.draw.rect(self.surface, BLACK, (0+(game_screen.thickness//2), 0+(game_screen.thickness//2), self.width-game_screen.thickness, (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)-game_screen.thickness), 1000)
-            if card_type not in ["CUBE", "CUBES", "LUCKYBLOCK", "MOVE", "MOVEO", "HEAL"]: #排除魔法牌等
+            if card_type not in ["CUBE", "CUBES", "LUCKYBLOCK", "MOVE", "MOVEO", "HEAL"]:
                 pygame.draw.rect(self.surface, WHITE, (0+game_screen.block_size*0.05, 0+game_screen.block_size*0.05, game_screen.block_size*0.5, game_screen.block_size*0.5), 2)
                 job, color = self.get_job_and_color(card_type.split()[0])
-                if color == (0, 238, 238) and isinstance(card, CyanCard): #海盜特例排除
+                if color == (0, 238, 238) and isinstance(card, CyanCard):
                     if card.upgrade:
                         card_type += " (+)"
                         draw_text("(+)", game_screen.text_font, color, (game_screen.block_size*0.213), (game_screen.block_size*0.235), self.surface)
                 shape = self.shaped(job, game_screen.block_size*0.7)
-                match job: #繪製
+                match job:
                     case "AP":
                         pygame.draw.circle(self.surface, color, shape, game_screen.block_size*0.15, int(game_screen.thickness/1.1))
                     case _:

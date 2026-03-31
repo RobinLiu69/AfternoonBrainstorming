@@ -21,7 +21,6 @@ class Adc(DarkGreenCard):
 
     def update(self, game_state: GameState) -> None:
         self.extra_damage = (game_state.players_totem[self.owner]//card_settings["ADC"]["damage_divisor"])
-        self.display_update(game_state)
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
         return value + self.extra_damage
@@ -97,7 +96,6 @@ class Apt(DarkGreenCard):
     
     def update(self, game_state: GameState) -> None:
         self.extra_damage = game_state.players_totem[self.owner]//2
-        self.display_update(game_state)
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
         self.engraved_totem(self.armor//2, game_state)

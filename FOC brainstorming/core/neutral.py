@@ -22,7 +22,5 @@ class Neutral:
                 game_state.board_dict[card.board_x, card.board_y].occupy = False
                 self.on_board.pop(i)
 
-    def update(self, game_state: GameState) -> None:
+    def update(self, game_state: GameState, game_screen: GameScreen) -> None:
         self.recycle_cards(game_state)
-        for card in self.on_board:
-            card.update(game_state)

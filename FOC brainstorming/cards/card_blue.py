@@ -1,6 +1,5 @@
 import random
 from typing import TYPE_CHECKING
-
 from core.game_state import GameState, StatType, CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
@@ -83,7 +82,6 @@ class Hf(BlueCard):
     
     def update(self, game_state: GameState) -> None:
         self.extra_damage = game_state.players_token[self.owner]
-        self.display_update(game_state)
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
         return value + self.extra_damage
