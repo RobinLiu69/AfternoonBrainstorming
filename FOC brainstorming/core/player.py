@@ -11,6 +11,7 @@ from cards.factory import spawn_card
 if TYPE_CHECKING:
     from core.neutral import Neutral
     from core.board_block import Board
+    from rendering.card_renderer import CardRenderer
 
 MAGIC_CARDS = ["CUBES", "MOVE", "MOVEO", "HEAL"]
 
@@ -57,7 +58,7 @@ class Player:
             self.luck_offeset_x = -1.3
             self.coin_offeset_x = -3.75
     
-    def init_cards(self, game_state: GameState) -> None:
+    def _init_cards(self, game_state: GameState) -> None:
         match self.name:
             case "player1":
                 self.discard_pile = self.deck.copy()
@@ -67,17 +68,16 @@ class Player:
                 self.discard_pile = self.deck.copy()
                 for i in range(3): self.draw_card(game_state)
     
-    def init_highlight_display(self, game_state: GameState) -> None:
-        game_screen = game_state.game_screen
+    def _init_highlight_display(self, game_screen: GameScreen) -> None:
         x = game_screen.display_width/2-(game_screen.block_size*3.3) if self.name == "player1" else game_screen.display_width/2+(game_screen.block_size*2.025)
         self.selected_highlight = HighLightBox(x=x, y=0, box_color=BLUE if self.name=="player1" else RED,
         box_height=int(game_screen.block_size/3), box_width=int(game_screen.block_size), line_width=int(game_screen.block_size//50))
     
-    def initialize(self, game_state: GameState) -> None:
-        self.attack_count_display = AttackCountDisplay(player_name=self.name, width=int(game_state.game_screen.block_size*0.1), height=int(game_state.game_screen.block_size*0.1))
-        self.token_count_display = TokenDisplay(player_name=self.name, radius=int(game_state.game_screen.block_size*0.1))
-        self.init_cards(game_state)
-        self.init_highlight_display(game_state)
+    def initialize(self, game_state: GameState, game_screen: GameScreen) -> None:
+        self.attack_count_display = AttackCountDisplay(player_name=self.name, width=int(game_screen.block_size*0.1), height=int(game_screen.block_size*0.1))
+        self.token_count_display = TokenDisplay(player_name=self.name, radius=int(game_screen.block_size*0.1))
+        self._init_cards(game_state)
+        self._init_highlight_display(game_screen)
         self.timer_start(game_state)
     
     def turn_start(self, game_state: GameState) -> None:
@@ -171,7 +171,6 @@ class Player:
                     break
     
     def move_card(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        game_state.game_logger.log_card_played(self.name, "MOVE", (board_x, board_y))
         moving_cards = list(filter(lambda card: card.moving, self.on_board))
         if len(moving_cards) == 0:
             for card in self.on_board:
@@ -219,26 +218,24 @@ class Player:
             self.deck = deck[::-1] if from_end else deck
             
     def spawn_cude(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        game_state.game_logger.log_card_played(self.name, "CUBE", (board_x, board_y))
         if game_state.number_of_cudes[self.name] > 0:
             if spawn_card(board_x, board_y, "CUBE", "neutral", game_state.neutral.on_board, game_state):
+                game_state.game_logger.log_card_played(self.name, "CUBE", (board_x, board_y))
                 game_state.number_of_cudes[self.name] -= 1
                 game_state.game_statistics.increment(StatType.CUBE_USE, self.name, 1)
             pass
 
-    def menu_display_timer_state(self, game_state: GameState) -> None:
-        game_screen = game_state.game_screen
+    def menu_display_timer_state(self, timer_mode: str, game_screen: GameScreen) -> None:
         match self.name:
             case "player1":
-                draw_text(f"Timer Mode: {game_state.timer_mode}", game_screen.text_font, WHITE, game_screen.display_width/5, game_screen.display_height/1.4+(game_screen.block_size*0.2), game_screen.surface)
+                draw_text(f"Timer Mode: {timer_mode}", game_screen.text_font, WHITE, game_screen.display_width/5, game_screen.display_height/1.4+(game_screen.block_size*0.2), game_screen.surface)
             case _:
                 pass
     
-    def menu_file_auto_delet_state(self, game_state: GameState) -> None:
-        game_screen = game_state.game_screen
+    def menu_file_auto_delet_state(self, file_auto_delet: bool, game_screen: GameScreen) -> None:
         match self.name:
             case "player1":
-                draw_text("File Mode: Save" if not game_state.file_auto_delet else "File Mode: Delet", game_screen.text_font, WHITE, game_screen.display_width/5+game_screen.block_size*1.5, game_screen.display_height/1.4+(game_screen.block_size*0.2), game_screen.surface)
+                draw_text("File Mode: Save" if not file_auto_delet else "File Mode: Delet", game_screen.text_font, WHITE, game_screen.display_width/5+game_screen.block_size*1.5, game_screen.display_height/1.4+(game_screen.block_size*0.2), game_screen.surface)
             case _:
                 pass
     
@@ -274,58 +271,22 @@ class Player:
         match game_state.timer_mode:
             case "countdown":
                 self.elapsed_time = game_state.coutdown_time
-        self.update_timer(game_state)
+        self._update_timer_logic(game_state.timer_mode)
     
-    def update(self, game_state: GameState, update_timer: bool) -> None:
+    def logic_update(self, game_state: GameState, update_timer: bool) -> None:
         self.recycle_cards(game_state)
-        if update_timer:
-            self.update_timer(game_state)
-        else:
-            self.display_timer(game_state.game_screen)
-        self.display_hand(game_state.game_screen)
-        self.display_seleted_card(game_state.game_screen)
-        self.display_on_board_cards(game_state)
-        self.display_deck_info(game_state.game_screen)
-        self.display_luck(game_state)
-        self.display_totems(game_state)
-        self.display_coins(game_state)
-        self.attack_count_display.display(game_state.number_of_attacks[self.name], game_state.game_screen)
-        self.token_count_display.display(game_state.players_token[self.name], game_state.game_screen)
-        
         if game_state.card_to_draw[self.name] > 0:
             game_state.card_to_draw[self.name] -= 1
             self.draw_card(game_state)
-    
-    def display_seleted_card(self, game_screen: GameScreen) -> None:
-        if not self.selected_highlight: return
-        if self.selected_card_index == -1 or len(self.hand) <= self.selected_card_index: return
-        self.selected_highlight.update(self.selected_card_index, len(self.hand[self.selected_card_index]), game_screen)
 
-    def display_totems(self, game_state: GameState) -> None:
-        game_screen = game_state.game_screen
-        if game_state.players_totem[self.name]:
-            draw_text(f"totems: {game_state.players_totem[self.name]}", game_screen.text_font, DARKGREEN, game_screen.display_width/2-(game_screen.block_size*self.totem_offeset_x), game_screen.display_height-(game_screen.block_size*0.4), game_screen.surface)
-    
-    def display_coins(self, game_state: GameState) -> None:
-        game_screen = game_state.game_screen
-        if game_state.players_coin[self.name]:
-            draw_text(f"coins: {game_state.players_coin[self.name]}", game_screen.text_font, CYAN, game_screen.display_width/2-(game_screen.block_size*self.coin_offeset_x), game_screen.display_height/2+(game_screen.block_size*1.3), game_screen.surface)
-    
-    
-    def display_on_board_cards(self, game_state: GameState) -> None:
-        for card in self.on_board:
-            card.update(game_state) 
-    
-    def display_hand(self, game_screen: GameScreen) -> None:
-        x = 0
-        match self.name:
-            case "player1":
-                x = game_screen.display_width/2-(game_screen.block_size*3.2)
-            case "player2":
-                x = game_screen.display_width/2+(game_screen.block_size*2.1)
-        for i, card in enumerate(self.hand):
-            draw_text(f"{self.short_name}hand " + str(i+1) + ": "+card, game_screen.text_font, WHITE, x, game_screen.display_height/14*(i+1), game_screen.surface)
-    
+        if update_timer:
+            self._update_timer_logic(game_state.timer_mode)
+
+    # def _display_seleted_card(self, game_screen: GameScreen) -> None:
+    #     if not self.selected_highlight: return
+    #     if self.selected_card_index == -1 or len(self.hand) <= self.selected_card_index: return
+    #     self.selected_highlight.update(self.selected_card_index, len(self.hand[self.selected_card_index]), game_screen)
+
     def get_hand_name_by_mouse_pos(self, mouse_x: int, mouse_y: int, game_screen: GameScreen) -> tuple[str, int]:
         if (mouse_x < game_screen.display_width/2-game_screen.block_size*2.1 and mouse_x > game_screen.display_width/2-game_screen.block_size*3.3) or\
            (mouse_x > game_screen.display_width/2+game_screen.block_size*2.1 and mouse_x < game_screen.display_width/2+game_screen.block_size*3.3):
@@ -333,17 +294,9 @@ class Player:
             if -1 < i < len(self.hand):
                 return self.hand[i], i
         return "None", 0
-    
-    def display_deck_info(self, game_screen: GameScreen) -> None:
-        draw_text(f"{self.short_name}DrawDeck: {len(self.draw_pile)} cards", game_screen.text_font, WHITE, game_screen.display_width/2-(game_screen.block_size*self.deck_info_offeset_x), game_screen.display_height-(game_screen.block_size*0.5), game_screen.surface)
-        draw_text(f"{self.short_name}DiscardPile: {len(self.discard_pile)} cards", game_screen.text_font, WHITE, game_screen.display_width/2-(game_screen.block_size*self.deck_info_offeset_x), game_screen.display_height-(game_screen.block_size*0.4), game_screen.surface)
-    
-    def display_luck(self, game_state: GameState) -> None:
-        game_screen = game_state.game_screen
-        draw_text(f"{self.short_name}Luck: {game_state.players_luck[self.name]}%", game_screen.text_font, GREEN, game_screen.display_width/2-(game_screen.block_size*self.luck_offeset_x), (game_screen.block_size*1.1), game_screen.surface)
-        
-    def update_timer(self, game_state: GameState) -> None:
-        match game_state.timer_mode:
+
+    def _update_timer_logic(self, timer_mode: str) -> None:
+        match timer_mode:
             case "countdown":
                 if self.start_time == -1:
                     self.start_time = time.time()
@@ -366,8 +319,3 @@ class Player:
                 time_minutes = str(int(self.elapsed_time//60)) if len(str(int(self.elapsed_time//60))) > 1 else "0"+str(int(self.elapsed_time//60))
                 time_seconds = str(int(self.elapsed_time%60)) if len(str(int(self.elapsed_time%60))) > 1 else "0"+str(int(self.elapsed_time%60))
                 self.time_minutes_and_seconds = time_minutes+":"+time_seconds
-        self.display_timer(game_state.game_screen)
-
-        
-    def display_timer(self, game_screen: GameScreen) -> None:
-        draw_text(f"{self.short_name}Clock: "+self.time_minutes_and_seconds, game_screen.text_font, WHITE, game_screen.display_width/2-(game_screen.display_width/6)*self.clock_offset_x, game_screen.display_height/6.4, game_screen.surface)

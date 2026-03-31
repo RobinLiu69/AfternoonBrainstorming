@@ -1246,3 +1246,29 @@ debug:
     custom_move 用於自定義移動方法
     luckyblock spawn 改為使用 factory.spawn_card
 =======================
+2026/03/31-20:10-3.9.7.5-branch Org
+編寫者 Robin
+----------------
+註解:
+    此版本用於目標將卡牌渲染從卡排邏輯獨立出來 用於之後LAN發展
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+----------------
+修正:
+    menu renamed to draft
+新增:
+    目前已將部份渲染邏輯獨立出來 board, card, ui, battling, draft
+    cards.base Card 內引入 get_render_data 用於調取 CardRenderData
+    同時卡牌支援圖片顯示
+    引入action的概念 每個場景操作時 會回傳action後用於dispatch並resolve
+    好處在於若連機時 可以只傳動作 而不是無腦鏡像數據
+    而不同場景擁有不同action 各存於該場景資料夾下
+    core/colors.py 用於讀取顏色資料 原game_state.py下
+    新增core/draft_state.py 用於 draft場景下之數據紀錄
+    刪除utils/exhibit.py utils/attack_detection.py 目前以整合至相關渲染script 
+待處理:
+    screens/draft/draft.py下操作還有待測試 如可以選擇紫色牌組
+    core/player.py 目前還保留顯示相關功能 現階段已不需要 但還未刪除
+    cards/card_fuchisa.py 的影子若更改透明度所有CardRenderer上的都會一起改源於共用同個surface
+=======================

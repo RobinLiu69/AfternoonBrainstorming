@@ -43,27 +43,11 @@ class Board:
     def get_position_index(self, board_width: int) -> int:
         return self.board_x + (self.board_y * board_width)
 
-    # def display(self, game_screen: GameScreen, config: BoardConfig) -> None:
-    #     board_pixel_width = config.width * game_screen.block_size
-    #     board_pixel_height = (config.height+0.5) * game_screen.block_size
-        
-    #     start_x = (game_screen.display_width - board_pixel_width) / 2
-    #     start_y = (game_screen.display_height - board_pixel_height) / 2
-        
-    #     x = start_x + self.board_x * game_screen.block_size
-    #     y = start_y + self.board_y * game_screen.block_size
-        
-    #     pygame.draw.rect(
-    #         game_screen.surface,
-    #         self.color,
-    #         (x, y, self.width, self.height),
-    #         game_screen.thickness
-    #     )
     
-    def display(self, game_screen: GameScreen) -> None:
-        pygame.draw.rect(game_screen.surface, self.color, (((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0),
-                    (game_screen.display_height/2)-(game_screen.block_size*1.675)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0), self.width, self.height), game_screen.thickness)
+    # def display(self, game_screen: GameScreen) -> None:
+    #     pygame.draw.rect(game_screen.surface, self.color, (((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0),
+    #                 (game_screen.display_height/2)-(game_screen.block_size*1.675)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0), self.width, self.height), game_screen.thickness)
 
-    def update(self, game_screen: GameScreen, config: BoardConfig) -> None:
-        # self.display(game_screen, config)
-        self.display(game_screen)
+    # def update(self, game_screen: GameScreen, config: BoardConfig) -> None:
+    #     # self.display(game_screen, config)
+    #     self.display(game_screen)

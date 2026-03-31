@@ -1,6 +1,7 @@
 import math
 from typing import Callable, Iterable, TYPE_CHECKING
 
+from .base import CardRenderData
 from core.game_state import GameState, CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card, most_frequent_elements
@@ -27,6 +28,12 @@ class FuchsiaCard(Card):
     def spawn_shadow(self, owner: str, board_x: int, board_y: int, attack_types: str, movable: bool=True) -> None:
         self.shadows.append(Shadow(owner, board_x, board_y, self, attack_types, movable))
 
+    def get_render_data(self) -> list[CardRenderData]:
+        render_objects: list[CardRenderData] = super().get_render_data()
+        for shadow in self.shadows:
+            render_objects += shadow.get_render_data()
+        return render_objects
+    
 
 class Shadow(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int, linker: FuchsiaCard, attack_types: str, movable: bool) -> None:
@@ -36,22 +43,10 @@ class Shadow(FuchsiaCard):
         self.movable = movable
         self.linker = linker
         self.job = self.linker.job
-
+        
     def heal(self, value: int, game_state: GameState) -> bool:
         return False
-    
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        match self.linker.job:
-            case "AP":
-                self.shape = tuple(map(lambda coordinate: (coordinate + game_state.game_screen.block_size*0.05), self.linker.shaped(game_state.game_screen.block_size)))
-            case _:
-                self.shape = tuple(map(lambda coordinate: (coordinate[0]+ game_state.game_screen.block_size*0.05, coordinate[1]+ game_state.game_screen.block_size*0.05), self.linker.shaped(game_state.game_screen.block_size)))
-        self.color = (159, 0, 80, 100)
 
-    def update(self, game_state: GameState) -> None:
-        self.display_update(game_state)
-    
     def ability(self, target: "Card", game_state: GameState) -> bool:
         self.linker.hit_cards.append(target)
         return False
@@ -74,7 +69,34 @@ class Shadow(FuchsiaCard):
         if not cards:
             game_state.board_dict[self.board_x, self.board_y].occupy = False
         return False
-
+    
+    def get_render_data(self) -> list[CardRenderData]:
+        shape_points = tuple((x*1.1, y*1.1) for x, y in self._compute_shape_points())
+        return [CardRenderData(
+                job_and_color=self.job_and_color,
+                job=self.job,
+                color=self.color,
+                board_x=self.board_x,
+                board_y=self.board_y,
+                health=self.health,
+                max_health=self.max_health,
+                damage=self.damage,
+                original_damage=self.original_damage,
+                armor=self.armor,
+                extra_damage=self.extra_damage,
+                numbness=self.numbness,
+                moving=self.moving,
+                mouse_selected=self.mouse_selected,
+                anger=self.anger,
+                owner=self.owner,
+                shape_type="circle" if self.job == "AP" else "polygon",
+                shape_points=shape_points,
+                use_sprite=False,
+                sprite_key=self.job_and_color,
+                sprite_alpha=255,
+                render_shape=True if self.job != "CUBES" else False,
+                show_stats=False
+        )]
     
     def attack(self, game_state: GameState) -> bool:
         enemies: Iterable["Card"] = list(filter(lambda card: card.health > 0 and card.job_and_color != "SHADOW", game_state.get_side_cards(self.owner, True)))
@@ -122,7 +144,6 @@ class Adc(FuchsiaCard):
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
-        self.display_update(game_state)
     
 
 class Ap(FuchsiaCard):
@@ -147,7 +168,6 @@ class Ap(FuchsiaCard):
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
-        self.display_update(game_state)
 
     def start_turn(self, game_state: GameState) -> int:
         for shadow in self.shadows:
@@ -171,7 +191,6 @@ class Tank(FuchsiaCard):
         for shadow in self.shadows:
             game_state.board_dict[shadow.board_x, shadow.board_y].occupy = True
             shadow.update(game_state)
-        self.display_update(game_state)
     
     def die(self, game_state: GameState) -> bool:
         for shadow in self.shadows:
@@ -214,7 +233,6 @@ class Hf(FuchsiaCard):
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
-        self.display_update(game_state)
     
 
 class Lf(FuchsiaCard):
@@ -241,7 +259,6 @@ class Lf(FuchsiaCard):
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
-        self.display_update(game_state)
 
 
 class Ass(FuchsiaCard):
@@ -285,7 +302,6 @@ class Ass(FuchsiaCard):
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
-        self.display_update(game_state)
 
 
 class Apt(FuchsiaCard):
@@ -301,7 +317,6 @@ class Apt(FuchsiaCard):
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
-        self.display_update(game_state)
 
     def on_field_effect_trigger(self, victim: Card, value: int, attacker: Card, game_state: GameState) -> tuple[int, int, Callable[[Card, int, Card, GameState], None] | None] | None:
         for shadow in self.shadows:

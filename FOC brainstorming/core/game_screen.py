@@ -67,5 +67,5 @@ class GameScreen:
         self.text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, self.text_font_size)
 
 
-    def update(self) -> None:
+    def render(self) -> None:
         self.surface.fill(pygame.Color((0, 0, 0)))

@@ -3,8 +3,7 @@ import random, math
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from typing import TypeVar, cast, Generator, Iterable, Optional, Sequence, Callable, TYPE_CHECKING, final
-
-from core.game_screen import draw_text
+from core.game_screen import GameScreen, draw_text
 from core.game_state import GameState, StatType, JOB_DICTIONARY
 
 COLOR_TAG_LIST: list[str] = sorted(JOB_DICTIONARY["colors_dict"].keys(), key=len, reverse=True)
@@ -35,6 +34,34 @@ def most_frequent_elements(lst: list[Elements], min_count: int=0) -> list[Elemen
     return most_frequent
 
 
+@dataclass
+class CardRenderData:
+    job_and_color: str
+    job: str
+    color: tuple[int, int, int]
+    board_x: int
+    board_y: int
+    health: int
+    max_health: int
+    damage: int
+    original_damage: int
+    armor: int
+    extra_damage: int
+    numbness: bool
+    moving: bool
+    mouse_selected: bool
+    anger: bool
+    owner: str
+    shape_type: str
+    shape_points: tuple
+    
+    use_sprite: bool = True
+    sprite_key: str = ""
+    sprite_alpha: int = 255
+    render_shape: bool = True
+    show_stats: bool = True
+
+
 @dataclass(kw_only=True)
 class Card(ABC):
     owner: str
@@ -44,10 +71,10 @@ class Card(ABC):
     board_x: int
     board_y: int
     
-    job: str | None = field(init=False, default=None)
-    color_name: str | None = field(init=False, default=None)
-    color: tuple[int, ...] = field(init=False, default=(0, 0, 0))
-    text_color: tuple[int, ...] = field(init=False, default=(0, 0, 0))
+    job: str = field(init=False, default="")
+    color_name: str = field(init=False, default="")
+    color: tuple[int, int, int] = field(init=False, default=(0, 0, 0))
+    text_color: tuple[int, int, int] = field(init=False, default=(0, 0, 0))
     attack_types: str = field(init=False, default="")
     
     numbness: bool = field(init=False, default=True)
@@ -91,7 +118,7 @@ class Card(ABC):
 
         if self.color_name:
             rgb_str = JOB_DICTIONARY["RGB_colors"][self.color_name]
-            self.color = tuple(map(int, rgb_str.split(", ")))
+            self.color = cast(tuple[int, int, int], tuple(map(int, rgb_str.split(", "))))
             self.text_color = self.color
         
         if self.job == "ASS" and self.owner != "display":
@@ -121,7 +148,6 @@ class Card(ABC):
     
     @final
     def get_attack_type(self) -> str:
-        if not self.job: raise ValueError("Job must be string.")
         return JOB_DICTIONARY["attack_type_tags"][self.job]
     
     @final
@@ -133,66 +159,30 @@ class Card(ABC):
         if not self.color_name: raise ValueError("color_name must be string.")
         return cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"][self.color_name].split(", "))))
     
-    def shaped(self, block_size: float) -> tuple:
+    def _compute_shape_points(self) -> tuple[tuple[float, float], ...]:
         match self.job:
             case "ADC":
-                return (((block_size*0.5), (block_size*0.3)),
-                        ((block_size*0.25), (block_size*0.7)),
-                        ((block_size*0.75), (block_size*0.7)))
+                return ((0.5, 0.3), (0.25, 0.7), (0.75, 0.7))
             case "AP":
-                return ((block_size*0.5), (block_size*0.5))
+                return ((0.5, 0.5),)
             case "HF":
-                return (((block_size*0.4), (block_size*0.4)),
-                        ((block_size*0.6), (block_size*0.4)),
-                        ((block_size*0.75), (block_size*0.65)),
-                        ((block_size*0.25), (block_size*0.65)))
+                return ((0.4, 0.4), (0.6, 0.4), (0.75, 0.65), (0.25, 0.65))
             case "LF":
-                return (((block_size*0.5), (block_size*0.3)),
-                        ((block_size*0.36), (block_size*0.42)),
-                        ((block_size*0.4775), (block_size*0.55)),
-                        ((block_size*0.36), (block_size*0.68)),
-                        ((block_size*0.5), (block_size*0.8)),
-                        ((block_size*0.64), (block_size*0.68)),
-                        ((block_size*0.5225), (block_size*0.55)),
-                        ((block_size*0.64), (block_size*0.42)))
+                return ((0.5, 0.3), (0.36, 0.42), (0.4775, 0.55), (0.36, 0.68), (0.5, 0.8), (0.64, 0.68), (0.5225, 0.55), (0.64, 0.42))
             case "ASS":
-                return (((block_size*0.5), (block_size*0.4)),
-                        ((block_size*0.2), (block_size*0.65)),
-                        ((block_size*0.5), (block_size*0.5)),
-                        ((block_size*0.8), (block_size*0.65)))
+                return ((0.5, 0.4), (0.2, 0.65), (0.5, 0.5), (0.8, 0.65))
             case "APT":
-                return (((block_size*0.4), (block_size*0.3)),
-                        ((block_size*0.25), (block_size*0.5)),
-                        ((block_size*0.4), (block_size*0.7)), 
-                        ((block_size*0.6), (block_size*0.7)),
-                        ((block_size*0.75), (block_size*0.5)),
-                        ((block_size*0.6), (block_size*0.3)))
+                return ((0.4, 0.3), (0.25, 0.5), (0.4, 0.7), (0.6, 0.7), (0.75, 0.5), (0.6, 0.3))
             case "SP":
-                return (((block_size*0.375), (block_size*0.3)),
-                        ((block_size*0.25), (block_size*0.45)),
-                        ((block_size*0.5), (block_size*0.75)),
-                        ((block_size*0.75), (block_size*0.45)),
-                        ((block_size*0.625), (block_size*0.3)))
+                return ((0.375, 0.3), (0.25, 0.45), (0.5, 0.75), (0.75, 0.45), (0.625, 0.3))
             case "TANK":
-                return (((block_size*0.25), (block_size*0.25)),
-                        ((block_size*0.25), (block_size*0.75)),
-                        ((block_size*0.75), (block_size*0.75)),
-                        ((block_size*0.75), (block_size*0.25)))
+                return ((0.25, 0.25), (0.25, 0.75), (0.75, 0.75), (0.75, 0.25))
             case "CUBE":
-                return (((block_size*0.45), (block_size*0.45)),
-                        ((block_size*0.45), (block_size*0.55)),
-                        ((block_size*0.55), (block_size*0.55)),
-                        ((block_size*0.55), (block_size*0.45)))
-            case "CUBES":
-                return (((block_size*0.45), (block_size*0.45)),
-                        ((block_size*0.45), (block_size*0.55)),
-                        ((block_size*0.55), (block_size*0.55)),
-                        ((block_size*0.55), (block_size*0.45))) 
+                return ((0.45, 0.45), (0.45, 0.55), (0.55, 0.55), (0.55, 0.45))
+            case "CUBE":
+                return ((0.45, 0.45), (0.45, 0.55), (0.55, 0.55), (0.55, 0.45)) 
             case "LUCKYBLOCK":
-                return (((block_size*0.4), (block_size*0.4)),
-                        ((block_size*0.4), (block_size*0.6)),
-                        ((block_size*0.6), (block_size*0.6)),
-                        ((block_size*0.6), (block_size*0.4))) 
+                return ((0.4, 0.4), (0.4, 0.6), (0.6, 0.6), (0.6, 0.4)) 
             case "MOVE":
                 return ((-10, -10), (-10, -10))
             case "HEAL":
@@ -200,7 +190,7 @@ class Card(ABC):
             case _:
                 if self.shape == None:
                     raise AttributeError("Dosen't have valid shape.")
-                return (0,)
+                return ((0, 0),)
     
     @final
     def move(self, board_x: int, board_y: int, game_state: GameState) -> bool:
@@ -340,74 +330,36 @@ class Card(ABC):
         #     self.canATK = True
         #     return True
         return False
-    
-    def draw_basic_info(self, game_state: GameState) -> None:
-        if not game_state.game_screen.info_text_font or not game_state.game_screen.small_text_font: raise ValueError("Text font cna't be None.")
-        if not game_state.game_screen.surface or not self.surface: raise ValueError("Surface cna't be None.")
-        if not self.text_color: raise ValueError("Text color cna't be None.")
-        match self.job_and_color:
-            case "MOVE":
-                draw_text("MOVE", game_state.game_screen.big_text_font, self.text_color,
-                         (game_state.game_screen.block_size*0.2725), (game_state.game_screen.block_size*0.3725), self.surface)
-            case "HEAL":
-                draw_text("HEAL", game_state.game_screen.big_text_font, self.text_color,
-                         (game_state.game_screen.block_size*0.2725), (game_state.game_screen.block_size*0.3725), self.surface)
-            case "SHADOW":
-                return
-            case _:
-                draw_text(f"HP:{self.health}" if self.job_and_color != "SPG" else "HP: ?", game_state.game_screen.info_text_font, self.text_color,
-                         (game_state.game_screen.block_size*0.1), (game_state.game_screen.block_size*0.03), self.surface)
-                if not self.extra_damage:
-                    draw_text(f"ATK:{self.damage}" if self.job_and_color != "SPG" else "ATK: ?", game_state.game_screen.info_text_font, self.text_color,
-                             (game_state.game_screen.block_size*0.6), (game_state.game_screen.block_size*0.03), self.surface)
-                else:
-                    draw_text(f"ATK:{self.damage}+{self.extra_damage}", game_state.game_screen.info_text_font, self.text_color,
-                             (game_state.game_screen.block_size*0.5), (game_state.game_screen.block_size*0.03), self.surface)
-                if self.owner != "display":
-                    draw_text(self.owner, game_state.game_screen.info_text_font, self.text_color,
-                             (game_state.game_screen.block_size*0.1), (game_state.game_screen.block_size*0.8), self.surface)
-                else:
-                    draw_text(self.job_and_color, game_state.game_screen.info_text_font, self.text_color,
-                             (game_state.game_screen.block_size*0.1), (game_state.game_screen.block_size*0.8), self.surface)
-                if self.numbness:
-                    draw_text("numbness", game_state.game_screen.small_text_font, self.text_color,
-                             (game_state.game_screen.block_size*0.6), (game_state.game_screen.block_size*0.85), self.surface)
-                if self.armor > 0:
-                    draw_text(f"arm:{self.armor}" if self.job_and_color != "SPG" else "arm: ?", game_state.game_screen.small_text_font, self.text_color,
-                             (game_state.game_screen.block_size*0.1), (game_state.game_screen.block_size*0.12), self.surface)
-                if self.moving:
-                    draw_text("Moving" if not self.mouse_selected else "Selected", game_state.game_screen.small_text_font, self.text_color,
-                             (game_state.game_screen.block_size*0.6), (game_state.game_screen.block_size*0.12), self.surface)
-                if self.anger:
-                    draw_text("Anger", game_state.game_screen.small_text_font, self.text_color,
-                             (game_state.game_screen.block_size*0.6), (game_state.game_screen.block_size*0.7725), self.surface)
 
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        self.shape = self.shaped(game_state.game_screen.block_size)
+    def get_render_data(self) -> list[CardRenderData]:
+        return [CardRenderData(
+                job_and_color=self.job_and_color,
+                job=self.job,
+                color=self.color,
+                board_x=self.board_x,
+                board_y=self.board_y,
+                health=self.health,
+                max_health=self.max_health,
+                damage=self.damage,
+                original_damage=self.original_damage,
+                armor=self.armor,
+                extra_damage=self.extra_damage,
+                numbness=self.numbness,
+                moving=self.moving,
+                mouse_selected=self.mouse_selected,
+                anger=self.anger,
+                owner=self.owner,
+                shape_type="circle" if self.job == "AP" else "polygon",
+                shape_points=self._compute_shape_points(),
+                use_sprite=False,
+                sprite_key=self.job_and_color,
+                sprite_alpha=255,
+                render_shape=True if self.job != "CUBES" else False
+        )]
 
     def update(self, game_state: GameState) -> None:
-        self.display_update(game_state)
-
-    @final
-    def display_update(self, game_state: GameState, draw_text: bool=True, draw_shape: bool=True) -> None:
-        if not self.surface:
-            self.surface = pygame.Surface((game_state.game_screen.block_size, game_state.game_screen.block_size), pygame.SRCALPHA)
-        else:
-            self.surface.fill((0, 0, 0, 0))
-        if not game_state.game_screen.block_size: raise ValueError("Block size cna't be None.")
-        if draw_shape:
-            self.draw_shape(game_state)
-            match self.job:
-                case "AP":
-                    pygame.draw.circle(self.surface, self.color, self.shape, game_state.game_screen.block_size*0.2, int(game_state.game_screen.thickness/1.1))
-                case _:
-                    pygame.draw.lines(self.surface, self.color, True, self.shape, int(game_state.game_screen.thickness/1.1))
-        if draw_text:
-            self.draw_basic_info(game_state)
+        return
         
-        game_state.game_screen.surface.blit(self.surface, ((game_state.game_screen.display_width/2-game_state.game_screen.block_size*2)+(self.board_x*game_state.game_screen.block_size), (game_state.game_screen.display_height/2-game_state.game_screen.block_size*1.65)+(self.board_y*game_state.game_screen.block_size)))
-
     def deploy(self, game_state: GameState) -> None:
         return
 

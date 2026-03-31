@@ -75,11 +75,11 @@ class LuckyBlock(GreenCard):
         
         super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="LUCKYBLOCK", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        self.shape = self.shaped(game_state.game_screen.block_size)
-        if self.text_color:
-            draw_text("?", game_state.game_screen.info_text_font, self.text_color, (game_state.game_screen.block_size*0.47), (game_state.game_screen.block_size*0.43), self.surface)
+    # def draw_shape(self, game_state: GameState) -> None:
+    #     if not self.surface: return
+    #     self.shape = self.shaped(game_state.game_screen.block_size)
+    #     if self.text_color:
+    #         draw_text("?", game_state.game_screen.info_text_font, self.text_color, (game_state.game_screen.block_size*0.47), (game_state.game_screen.block_size*0.43), self.surface)
     
     def been_killed(self, attacker: Card, game_state: GameState) -> bool:
         self.lucky_effects(attacker, game_state)

@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from .base import CardRenderData
 from core.game_state import GameState, CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
@@ -11,7 +12,7 @@ color_code = "W"
 class Cube(Card):
     def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["CUBE"]["health"], damage:int=card_settings["CUBE"]["damage"]) -> None:
         
-        super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="CUBES" if owner == "display" else "CUBE", health=health, damage=damage, board_x=board_x, board_y=board_y)
+        super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="CUBE" if owner == "display" else "CUBE", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     def end_turn(self, clear_numbness: bool=True) -> int:
         if self.numbness == True and clear_numbness:
@@ -19,6 +20,11 @@ class Cube(Card):
             return 0
         else:
             return 0
+
+class Cubes(Card):
+    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["CUBE"]["health"], damage:int=card_settings["CUBE"]["damage"]) -> None:
+        
+        super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="CUBES" if owner == "display" else "CUBE", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
 
 class Heal(Card):
@@ -34,6 +40,7 @@ class Move(Card):
 
 
 CardFactory.register("CUBE", Cube)
+CardFactory.register("CUBES", Cubes)
 CardFactory.register("HEAL", Heal)
 CardFactory.register("MOVE", Move)
 

@@ -1,6 +1,5 @@
 import random
 from typing import TYPE_CHECKING, Optional
-
 from core.game_state import GameState, CARD_SETTING
 from core.game_screen import draw_text
 from cards.factory import CardFactory
@@ -36,11 +35,11 @@ class Adc(CyanCard):
         super().__init__(owner=owner, job_and_color="ADCC", health=health if not upgrade else card_settings["ADC"]["upgrade_health"], damage=damage if not upgrade else card_settings["ADC"]["upgrade_damage"], board_x=board_x, board_y=board_y)
         self.upgrade = upgrade
         
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        self.shape = self.shaped(game_state.game_screen.block_size)
-        if self.upgrade:
-            draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
+    # def draw_shape(self, game_state: GameState) -> None:
+    #     if not self.surface: return
+    #     self.shape = self.shaped(game_state.game_screen.block_size)
+    #     if self.upgrade:
+    #         draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
     
     def attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
@@ -64,11 +63,11 @@ class Ap(CyanCard):
         self.upgrade = upgrade
         self.target: Optional[Card] = None
     
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        self.shape = self.shaped(game_state.game_screen.block_size)
-        if self.upgrade:
-            draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
+    # def draw_shape(self, game_state: GameState) -> None:
+    #     if not self.surface: return
+    #     self.shape = self.shaped(game_state.game_screen.block_size)
+    #     if self.upgrade:
+    #         draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
     
     def deploy(self, game_state: GameState) -> None:
         for target in self.detection("nearest", game_state.get_opponent_cards(self.owner)):
@@ -97,11 +96,11 @@ class Tank(CyanCard):
         if upgrade:
             self.anger = True
         
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        self.shape = self.shaped(game_state.game_screen.block_size)
-        if self.upgrade:
-            draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
+    # def draw_shape(self, game_state: GameState) -> None:
+    #     if not self.surface: return
+    #     self.shape = self.shaped(game_state.game_screen.block_size)
+    #     if self.upgrade:
+    #         draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
 
     def damage_block(self, value: int, attacker: Card, game_state: GameState) -> bool:
         if self.anger:
@@ -123,11 +122,11 @@ class Hf(CyanCard):
         
         self.upgrade = upgrade
         
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        self.shape = self.shaped(game_state.game_screen.block_size)
-        if self.upgrade:
-            draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
+    # def draw_shape(self, game_state: GameState) -> None:
+    #     if not self.surface: return
+    #     self.shape = self.shaped(game_state.game_screen.block_size)
+    #     if self.upgrade:
+    #         draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
 
     def ability(self, target: Card, game_state: GameState) -> bool:
         self.get_coins(card_settings["HF"]["coin_gets"], game_state)
@@ -165,11 +164,11 @@ class Lf(CyanCard):
         
         self.upgrade = upgrade
 
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        self.shape = self.shaped(game_state.game_screen.block_size)
-        if self.upgrade:
-            draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
+    # def draw_shape(self, game_state: GameState) -> None:
+    #     if not self.surface: return
+    #     self.shape = self.shaped(game_state.game_screen.block_size)
+    #     if self.upgrade:
+    #         draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
 
     def ability(self, target: Card, game_state: GameState) -> bool:
         self.get_coins(card_settings["LF"]["coin_gets"], game_state)
@@ -192,11 +191,11 @@ class Ass(CyanCard):
             self.anger = True
             self.extra_damage = card_settings["ASS"]["damage_bonus"]
     
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        self.shape = self.shaped(game_state.game_screen.block_size)
-        if self.upgrade:
-            draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
+    # def draw_shape(self, game_state: GameState) -> None:
+    #     if not self.surface: return
+    #     self.shape = self.shaped(game_state.game_screen.block_size)
+    #     if self.upgrade:
+    #         draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
 
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
         self.anger = False
@@ -216,11 +215,11 @@ class Apt(CyanCard):
         
         self.upgrade = upgrade
 
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        self.shape = self.shaped(game_state.game_screen.block_size)
-        if self.upgrade:
-            draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
+    # def draw_shape(self, game_state: GameState) -> None:
+    #     if not self.surface: return
+    #     self.shape = self.shaped(game_state.game_screen.block_size)
+    #     if self.upgrade:
+    #         draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
 
     def damage_reduce(self, value: int, game_state: GameState) -> int:
         value -= game_state.players_coin[self.owner]//card_settings["APT"]["coin_per_damage_resistance"] if game_state.players_coin[self.owner]//card_settings["APT"]["coin_per_damage_resistance"] <= card_settings["APT"]["maximum_damage_resistance"] else card_settings["APT"]["maximum_damage_resistance"]
@@ -238,11 +237,11 @@ class Sp(CyanCard):
         
         self.upgrade = upgrade
 
-    def draw_shape(self, game_state: GameState) -> None:
-        if not self.surface: return
-        self.shape = self.shaped(game_state.game_screen.block_size)
-        if self.upgrade:
-            draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
+    # def draw_shape(self, game_state: GameState) -> None:
+    #     if not self.surface: return
+    #     self.shape = self.shaped(game_state.game_screen.block_size)
+    #     if self.upgrade:
+    #         draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
         
     def deploy(self, game_state: GameState) -> None:
         self.get_coins(card_settings["SP"]["coin_gets"], game_state)
