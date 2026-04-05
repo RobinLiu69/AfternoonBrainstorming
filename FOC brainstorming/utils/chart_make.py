@@ -1,15 +1,17 @@
-import os, json, math
+import os
+import json
+import math
+from typing import cast
+
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
-import numpy as np
 from matplotlib.patches import Wedge
 from matplotlib.text import Text
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from typing import cast
+import numpy as np
 
 from utils.type_hint import JobDictionary
-
 
 __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("utils", "")
 
@@ -29,11 +31,11 @@ font_file_path = __FOLDER_PATH+"/fonts/8bitOperatorPlus-Bold.ttf"
 
 output_folder = f"{__FOLDER_PATH}/imgs"
 
-
-
 custom_font_prop = font_manager.FontProperties(fname=font_file_path)
 
-def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict[str, int], fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
+
+def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict[str, int],
+                   fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
     if len(data) > 0:
         labels: list[str] = list(map(lambda key: key.split("_")[-1], data.keys()))
         sorted_tags = sorted(COLORS_DICT.keys(), key=len, reverse=True)
@@ -58,14 +60,25 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
     
         plt.figure(figsize=figsize, dpi=120)
         
-        _, texts, _ = cast(tuple[list[Wedge], list[Text], list[Text]], plt.pie(x, labels=labels, colors=colors, autopct="%1.1f%%", startangle=140, labeldistance=1.1, textprops={"color": "black", "fontproperties": custom_font_prop, "fontsize": fontsize*6}, wedgeprops={"linewidth": 5, "edgecolor": "gray"}))
+        _, texts, _ = cast(tuple[list[Wedge], list[Text], list[Text]],
+                           plt.pie(x, labels=labels, colors=colors, autopct="%1.1f%%",
+                                   startangle=140, labeldistance=1.1,
+                                   textprops={
+                                       "color": "black",
+                                       "fontproperties": custom_font_prop,
+                                       "fontsize": fontsize*6
+                                    },
+                                    wedgeprops={"linewidth": 5, "edgecolor": "gray"}
+                                )
+                            )
         
         plt.axis("equal")
         for text in texts:
             text.set_color("white")
             text.set_fontsize(fontsize*7)
             
-        plt.title(title_text, fontweight="bold", fontproperties=custom_font_prop, fontsize = fontsize*13, color = "white", loc="center", pad=30)
+        plt.title(title_text, fontweight="bold", fontproperties=custom_font_prop,
+                  fontsize = fontsize*13, color = "white", loc="center", pad=30)
         plt.tight_layout()
         
         os.makedirs(output_folder, exist_ok=True)
@@ -73,7 +86,8 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
         plt.savefig(os.path.join(output_folder, player_name+"_pie_chart_"+title_text+".png"), transparent=True)
     return player_name+"_pie_chart_"+title_text+".png"
 
-def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str, int]], turns: int, fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
+def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str, int]],
+                   turns: int, fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
     '''
     title_text:
         1: 'KDA',
@@ -118,7 +132,7 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
             case "Per Round Influence":
                 width =  [datas[key]["damage_dealt"]*datas[key]["damage_taken"]/max(1, datas[key]["rounds_survived"]) for key in datas.keys()]
             case "Survival Index":
-                width =  [((datas[key]["scored"]*5)+(datas[key]["damage_dealt"]/max(1, datas[key]["hit_count"])*2)+(datas[key]["damage_taken"]/max(1, datas[key]["damage_taken_count"])*2))/max(1, datas[key]["rounds_survived"]) for key in datas.keys()]
+                width =  [(datas[key]["scored"]*5 + (datas[key]["damage_dealt"] / max(1, datas[key]["hit_count"])*2) + (datas[key]["damage_taken"]/max(1, datas[key]["damage_taken_count"])*2)) / max(1, datas[key]["rounds_survived"]) for key in datas.keys()]
 
         for i in range(len(width)-1, -1, -1):
             if width[i] <= 0:

@@ -1,8 +1,9 @@
-# screens/draft/draft_action.py
+from __future__ import annotations
 import json
-import pygame
 from dataclasses import dataclass
 from typing import Literal, Optional, TYPE_CHECKING
+
+import pygame
 
 from utils.controls import key_pressed
 
@@ -45,11 +46,11 @@ class DraftResult:
     quit: bool = False
 
 
-def collect_draft_actions(current_editor: str, page: int, registry: ExhibitRegistry, mouse_board_x: Optional[int], mouse_board_y: Optional[int]) -> list[DraftAction]:
+def collect_draft_actions(current_editor: str, page: int, registry: ExhibitRegistry,
+                          mouse_board_x: Optional[int], mouse_board_y: Optional[int]) -> list[DraftAction]:
     actions: list[DraftAction] = []
 
     for event in pygame.event.get():
-
         if event.type == pygame.QUIT:
             actions.append(DraftAction(current_editor, "quit"))
             continue

@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from core.board_block import Board
 from core.game_screen import GameScreen
-from cards.card import Card
+from cards.base import Card
 import cards.card_white as white
 import cards.card_red as red
 import cards.card_green as green

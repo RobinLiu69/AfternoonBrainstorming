@@ -1,31 +1,41 @@
 import pygame
+
 from cards.base import CardRenderData
 from rendering.sprite_registry import SpriteRegistry
 from core.game_screen import GameScreen, draw_text
 
+
 class CardRenderer:
     def __init__(self, game_screen: GameScreen):
         self.game_screen = game_screen
-        self._surface_cache: dict[str, pygame.Surface] = {}
+        self._surfaces: dict[str, pygame.Surface] = {}
+
+    def _get_card_surface(self, uid: str) -> pygame.Surface:
+        if uid not in self._surfaces:
+            bs = int(self.game_screen.block_size)
+            self._surfaces[uid] = pygame.Surface((bs, bs), pygame.SRCALPHA)
+        return self._surfaces[uid]
     
+    def release(self, uid: str) -> None:
+        self._surfaces.pop(uid, None)
+
     def render(self, data: CardRenderData) -> None:
-        surface = self._get_surface()
+        surface = self._get_card_surface(data.uid)
         surface.fill((0, 0, 0, 0))
-        
-        sprite = (SpriteRegistry.get_instance().get(data.sprite_key) if data.use_sprite else None)
-        
+
+        sprite = (
+            SpriteRegistry.get_instance().get(data.sprite_key)
+            if data.use_sprite else None
+        )
+
         if sprite:
             self._render_with_sprite(surface, data, sprite)
         else:
-            if data.render_shape:
-                self._render_with_shape(surface, data)
-        
-        if data.sprite_alpha < 255:
-            surface.set_alpha(data.sprite_alpha)
-        
+            self._render_with_shape(surface, data)
+
         if data.show_stats:
             self._draw_stats(surface, data)
-        
+
         self._blit(surface, data)
     
     def _render_with_sprite(self, surface: pygame.Surface, data: CardRenderData, sprite: pygame.Surface) -> None:
@@ -34,10 +44,10 @@ class CardRenderer:
     def _render_with_shape(self, surface: pygame.Surface, data: CardRenderData) -> None:
         bs = self.game_screen.block_size
         if data.shape_type == "circle":
-            pygame.draw.circle(surface, data.color, (int(bs * 0.5), int(bs * 0.5)), int(bs * 0.2), int(self.game_screen.thickness / 1.1))
+            pygame.draw.circle(surface, data.color, (int(bs*0.5), int(bs*0.5)), int(bs*0.2), int(self.game_screen.thickness/1.1))
         else:
             points = [(int(x * bs), int(y * bs)) for x, y in data.shape_points]
-            pygame.draw.lines(surface, data.color, True, points, int(self.game_screen.thickness / 1.1))
+            pygame.draw.lines(surface, data.color, True, points, int(self.game_screen.thickness/1.1))
     
     def _draw_stats(self, surface: pygame.Surface, data: CardRenderData) -> None:
         bs = self.game_screen.block_size
@@ -70,18 +80,10 @@ class CardRenderer:
                     draw_text(data.job_and_color, self.game_screen.text_font, text_color, bs * 0.1, bs * 0.8, surface)
                 else:
                     draw_text(data.owner, self.game_screen.text_font, text_color, bs * 0.1, bs * 0.8, surface)
-
-    def _get_surface(self) -> pygame.Surface:
-        key = "card_surface"
-        if key not in self._surface_cache:
-            bs = int(self.game_screen.block_size)
-            self._surface_cache[key] = pygame.Surface(
-                (bs, bs), pygame.SRCALPHA
-            )
-        return self._surface_cache[key]
     
     def _blit(self, surface: pygame.Surface, data: CardRenderData) -> None:
         game_screen = self.game_screen
         x = (game_screen.display_width / 2 - game_screen.block_size * 2) + data.board_x * game_screen.block_size
         y = (game_screen.display_height / 2 - game_screen.block_size * 1.65) + data.board_y * game_screen.block_size
+
         game_screen.surface.blit(surface, (x, y))

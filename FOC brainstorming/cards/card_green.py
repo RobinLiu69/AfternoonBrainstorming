@@ -1,7 +1,8 @@
 import random
 from typing import TYPE_CHECKING
 
-from core.game_state import GameState, CARD_SETTING
+from core.game_state import GameState
+from core.setting import CARD_SETTING
 from core.game_screen import draw_text
 from cards.factory import CardFactory, spawn_card
 from cards.base import Card
@@ -17,63 +18,91 @@ class GreenCard(Card):
         if not AP_target and random.randint(1, 100) <= game_state.players_luck[target.owner]:
             if AP_target or TANK: return
             game_state.players_luck[target.owner] += 1
-            game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got lucky:", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+            game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got lucky:",
+                                        LogCategory.SPECIAL_ACTION, target=target.get_uid(),
+                                        target_position=target.get_position())
             match random.randint(1, 5):
                 case 1:
                     target.armor += 4
-                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} added 4 armor", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} added 4 armor",
+                                                LogCategory.SPECIAL_ACTION, target=target.get_uid(),
+                                                target_position=target.get_position())
                 case 2:
                     target.damage *= 2
-                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} damage multiplied by 2", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} damage multiplied by 2",
+                                                LogCategory.SPECIAL_ACTION, target=target.get_uid(),
+                                                target_position=target.get_position())
                 case 3:
-                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} launch attack", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} launch attack",
+                                                LogCategory.SPECIAL_ACTION, target=target.get_uid(),
+                                                target_position=target.get_position())
                     target.attack(game_state)
                 case 4:
                     target.moving = True
-                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got moving", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got moving",
+                                                LogCategory.SPECIAL_ACTION, target=target.get_uid(),
+                                                target_position=target.get_position())
                 case 5:
                     if AP:
-                        game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got nothing (AP skip)", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                        game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got nothing (AP skip)",
+                                                    LogCategory.SPECIAL_ACTION, target=target.get_uid(),
+                                                    target_position=target.get_position())
                         return
-                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got lucky block spawn", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got lucky block spawn",
+                                                LogCategory.SPECIAL_ACTION, target=target.get_uid(),
+                                                target_position=target.get_position())
                     offsets = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
                     for dx, dy in offsets:
                         nx, ny = target.board_x + dx, target.board_y + dy
                         board = game_state.board_dict.get((nx, ny))
                         if board:
-                            if spawn_card(nx, ny, "LUCKYBLOCK", "neutral", game_state.neutral.on_board, game_state):
-                                game_state.game_logger.info(f"lucky block spawned at ({nx}, {ny})", LogCategory.SPECIAL_ACTION, card_name="LUCKYBLOCK", position=(nx, ny))
+                            if spawn_card(nx, ny, "LUCKYBLOCK", "neutral",
+                                          game_state.neutral.on_board, game_state):
+                                game_state.game_logger.info(f"lucky block spawned at ({nx}, {ny})",
+                                                            LogCategory.SPECIAL_ACTION, card_name="LUCKYBLOCK", position=(nx, ny))
         else:
             if AP:
-                game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got nothing (AP skip)", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got nothing (AP skip)",
+                                            LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 return 
             game_state.players_luck[target.owner] -= 1
-            game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got jinx:", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+            game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got jinx:",
+                                        LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
             match random.randint(1, 5):
                 case 1:
                     target.armor = 0
-                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} armor was destroyed", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} armor was destroyed",
+                                                LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 2:
                     target.numbness = True
-                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got numbness", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got numbness",
+                                                LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 3:
                     target.health //= 2
-                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health halved", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health halved",
+                                                LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 4:
                     target.damage //= 2
-                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} damage halved", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                    game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} damage halved",
+                                                LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 5:
                     if target.health >= 2:                
                         target.health -= 2
-                        game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health reduced by 2", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                        game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health reduced by 2",
+                                                    LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                     else:
-                        game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health too low, no effect", LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
+                        game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health too low, no effect",
+                                                    LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
 
 
 class LuckyBlock(GreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LUCKYBLOCK"]["health"], damage:int=card_settings["LUCKYBLOCK"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["LUCKYBLOCK"]["health"],
+                 damage: int = card_settings["LUCKYBLOCK"]["damage"]) -> None:
         
-        super().__init__(owner=owner if owner == "display" else "neutral", job_and_color="LUCKYBLOCK", health=health, damage=damage, board_x=board_x, board_y=board_y)
+        super().__init__(owner=owner if owner == "display" else "neutral",
+                         job_and_color="LUCKYBLOCK", health=health, damage=damage,
+                         board_x=board_x, board_y=board_y)
     
     # def draw_shape(self, game_state: GameState) -> None:
     #     if not self.surface: return
@@ -97,7 +126,9 @@ class LuckyBlock(GreenCard):
 CardFactory.register("LUCKYBLOCK", LuckyBlock)
 
 class Adc(GreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["ADC"]["health"],
+                 damage: int = card_settings["ADC"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="ADCG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -111,7 +142,9 @@ class Adc(GreenCard):
 
 
 class Ap(GreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["AP"]["health"],
+                 damage: int = card_settings["AP"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="APG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -123,7 +156,9 @@ class Ap(GreenCard):
 
 
 class Tank(GreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["TANK"]["health"],
+                 damage: int = card_settings["TANK"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="TANKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -133,7 +168,9 @@ class Tank(GreenCard):
 
 
 class Hf(GreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["HF"]["health"],
+                 damage: int = card_settings["HF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="HFG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -149,7 +186,9 @@ class Hf(GreenCard):
 
 
 class Lf(GreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["LF"]["health"],
+                 damage: int = card_settings["LF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="LFG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -164,7 +203,9 @@ class Lf(GreenCard):
 
 
 class Ass(GreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["ASS"]["health"],
+                 damage: int = card_settings["ASS"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="ASSG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -179,7 +220,9 @@ class Ass(GreenCard):
 
 
 class Apt(GreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["APT"]["health"],
+                 damage:int = card_settings["APT"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="APTG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -188,24 +231,42 @@ class Apt(GreenCard):
 
     def start_turn(self, game_state: GameState) -> int:
         for board in game_state.board_dict.values():
-            if ((board.board_x == self.board_x-1 and board.board_y == self.board_y) or (board.board_x == self.board_x+1 and board.board_y == self.board_y) or (board.board_x == self.board_x and board.board_y == self.board_y-1) or (board.board_x == self.board_x and board.board_y == self.board_y+1)) and not board.occupy:
+            if ((board.board_x == self.board_x-1 and board.board_y == self.board_y) or
+                (board.board_x == self.board_x+1 and board.board_y == self.board_y) or
+                (board.board_x == self.board_x and board.board_y == self.board_y-1) or
+                (board.board_x == self.board_x and board.board_y == self.board_y+1)) and not board.occupy:
                 game_state.neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
                 board.occupy = True
         return 0
 
 
 class Sp(GreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["SP"]["health"],
+                 damage: int = card_settings["SP"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="SPG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def deploy(self, game_state: GameState) -> None:
         game_state.players_luck[self.owner] += card_settings["SP"]["luck_increase"]
-        board_list = list(filter(lambda board: board.occupy == False and board.board_x != self.board_x and board.board_y != self.board_y, game_state.board_dict.values()))
+        board_list = list(
+            filter(
+                lambda board:
+                board.occupy == False and
+                board.board_x != self.board_x and
+                board.board_y != self.board_y,
+                game_state.board_dict.values()
+            )
+        )
         if board_list:
             random.shuffle(board_list)
             if game_state.players_luck[self.owner] > card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"]:
-                for i in range(min((game_state.players_luck[self.owner]-card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"])//10, len(board_list))):
+                for i in range(
+                    min(
+                        (game_state.players_luck[self.owner]-card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"]) // 10,
+                        len(board_list)
+                    )
+                ):
                     game_state.neutral.on_board.append(LuckyBlock("None", board_list[i].board_x, board_list[i].board_y))
                     board_list[i].occupy = True
 

@@ -1272,3 +1272,22 @@ debug:
     core/player.py 目前還保留顯示相關功能 現階段已不需要 但還未刪除
     cards/card_fuchisa.py 的影子若更改透明度所有CardRenderer上的都會一起改源於共用同個surface
 =======================
+2026/04/04-22:38-3.9.7.6-branch Org
+編寫者 Robin
+----------------
+註解:
+    此版本用於目標將卡牌渲染從卡排邏輯獨立出來 用於之後LAN發展
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+----------------
+修正:
+    cards/card_fuchisa.py 的影子若更改透明度所有CardRenderer上的都會一起改源於共用同個surface
+    core/player.py 目前還保留顯示相關功能 現階段已不需要 但還未刪除
+    screens/draft/draft.py下操作還有待測試 如可以選擇紫色牌組
+    core/game_screen 下 draw_text
+新增:
+    setting.py 用於抓取數據 如顏色 卡牌資訊等等
+待處理:
+    Network
+=======================

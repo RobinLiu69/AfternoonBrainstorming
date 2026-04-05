@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
-
-from core.game_state import GameState, CARD_SETTING
+from core.game_state import GameState
+from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
 
@@ -13,7 +13,9 @@ class OrangeCard(Card):
 
 
 class Adc(OrangeCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["ADC"]["health"],
+                 damage: int = card_settings["ADC"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="ADCO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
@@ -30,7 +32,9 @@ class Adc(OrangeCard):
         
 
 class Ap(OrangeCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["AP"]["health"],
+                 damage: int = card_settings["AP"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="APO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -44,7 +48,9 @@ class Ap(OrangeCard):
 
 
 class Tank(OrangeCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["TANK"]["health"],
+                 damage: int = card_settings["TANK"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="TANKO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -54,7 +60,9 @@ class Tank(OrangeCard):
 
 
 class Hf(OrangeCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["HF"]["health"],
+                 damage: int = card_settings["HF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="HFO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -86,7 +94,9 @@ class Hf(OrangeCard):
 
 
 class Lf(OrangeCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["LF"]["health"],
+                 damage: int = card_settings["LF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="LFO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -104,7 +114,9 @@ class Lf(OrangeCard):
 
 
 class Ass(OrangeCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["ASS"]["health"],
+                 damage: int = card_settings["ASS"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="ASSO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -130,7 +142,9 @@ class Ass(OrangeCard):
 
 
 class Apt(OrangeCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int=card_settings["APT"]["health"],
+                 damage:int=card_settings["APT"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="APTO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 

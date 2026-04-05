@@ -1,7 +1,7 @@
-# rendering/sprite_registry.py
-import pygame
 import os
 from typing import Optional
+
+import pygame
 
 
 class SpriteRegistry:

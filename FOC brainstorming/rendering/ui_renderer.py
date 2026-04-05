@@ -1,9 +1,11 @@
-import pygame
+from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from core.game_state import GameState, WHITE, BLACK, BLUE, RED, GREEN, DARKGREEN, CYAN
+import pygame
+
+from core.game_state import GameState
+from core.setting import WHITE, BLACK, BLUE, RED, GREEN, DARKGREEN, CYAN
 from core.game_screen import GameScreen, draw_text
-                             
 from core.UI import ScoreDisplay, AttackCountDisplay, TokenDisplay, HintBox
 from cards.base import Card
 
@@ -16,29 +18,29 @@ class UIRenderer:
         self.game_screen = game_screen
 
         self._score_display = ScoreDisplay(
-            width=int(game_screen.block_size * 0.15),
-            height=int(game_screen.block_size * 0.15)
+            width=int(game_screen.block_size*0.15),
+            height=int(game_screen.block_size*0.15)
         )
         self._p1_attack_display = AttackCountDisplay(
             player_name="player1",
-            width=int(game_screen.block_size * 0.1),
-            height=int(game_screen.block_size * 0.1)
+            width=int(game_screen.block_size*0.1),
+            height=int(game_screen.block_size*0.1)
         )
         self._p2_attack_display = AttackCountDisplay(
             player_name="player2",
-            width=int(game_screen.block_size * 0.1),
-            height=int(game_screen.block_size * 0.1)
+            width=int(game_screen.block_size*0.1),
+            height=int(game_screen.block_size*0.1)
         )
         self._p1_token_display = TokenDisplay(
             player_name="player1",
-            radius=int(game_screen.block_size * 0.1)
+            radius=int(game_screen.block_size*0.1)
         )
         self._p2_token_display = TokenDisplay(
             player_name="player2",
-            radius=int(game_screen.block_size * 0.1)
+            radius=int(game_screen.block_size*0.1)
         )
         self._hint_box = HintBox(
-            width=int(game_screen.block_size * 2),
+            width=int(game_screen.block_size*2),
             height=int(game_screen.block_size)
         )
 
@@ -49,8 +51,8 @@ class UIRenderer:
         draw_text(
             f"Turn: {controller}",
             self.game_screen.big_text_font, WHITE,
-            self.game_screen.display_width / 2 - self.game_screen.block_size * 0.6,
-            self.game_screen.display_height / 2 - self.game_screen.block_size * 2.1,
+            self.game_screen.display_width/2 - self.game_screen.block_size*0.6,
+            self.game_screen.display_height/2 - self.game_screen.block_size*2.1,
             self.game_screen.surface
         )
 
@@ -61,9 +63,9 @@ class UIRenderer:
     def _render_one_hand(self, player: Player, game_state: GameState) -> None:
         match player.name:
             case "player1":
-                x = self.game_screen.display_width / 2 - self.game_screen.block_size * 3.2
+                x = self.game_screen.display_width/2 - self.game_screen.block_size*3.2
             case "player2":
-                x = self.game_screen.display_width / 2 + self.game_screen.block_size * 2.1
+                x = self.game_screen.display_width/2 + self.game_screen.block_size*2.1
             case _:
                 x = 0
 
@@ -72,7 +74,7 @@ class UIRenderer:
                 f"{player.short_name}hand {i + 1}: {card_name}",
                 self.game_screen.text_font, WHITE,
                 x,
-                self.game_screen.display_height / 14 * (i + 1),
+                self.game_screen.display_height / 14 * (i+1),
                 self.game_screen.surface
             )
 
@@ -106,7 +108,7 @@ class UIRenderer:
             draw_text(
                 f"{player.short_name}Luck: {game_state.players_luck[player.name]}%",
                 self.game_screen.text_font, GREEN,
-                self.game_screen.display_width / 2 - self.game_screen.block_size * player.luck_offeset_x,
+                self.game_screen.display_width/2 - self.game_screen.block_size*player.luck_offeset_x,
                 self.game_screen.block_size * 1.1,
                 self.game_screen.surface
             )
@@ -117,8 +119,8 @@ class UIRenderer:
                 draw_text(
                     f"totems: {game_state.players_totem[player.name]}",
                     self.game_screen.text_font, DARKGREEN,
-                    self.game_screen.display_width / 2 - self.game_screen.block_size * player.totem_offeset_x,
-                    self.game_screen.display_height - self.game_screen.block_size * 0.4,
+                    self.game_screen.display_width/2 - self.game_screen.block_size*player.totem_offeset_x,
+                    self.game_screen.display_height - self.game_screen.block_size*0.4,
                     self.game_screen.surface
                 )
 
@@ -128,8 +130,8 @@ class UIRenderer:
                 draw_text(
                     f"coins: {game_state.players_coin[player.name]}",
                     self.game_screen.text_font, CYAN,
-                    self.game_screen.display_width / 2 - self.game_screen.block_size * player.coin_offeset_x,
-                    self.game_screen.display_height / 2 + self.game_screen.block_size * 1.3,
+                    self.game_screen.display_width/2 - self.game_screen.block_size*player.coin_offeset_x,
+                    self.game_screen.display_height/2 + self.game_screen.block_size*1.3,
                     self.game_screen.surface
                 )
 
@@ -138,15 +140,15 @@ class UIRenderer:
             draw_text(
                 f"{player.short_name}DrawDeck: {len(player.draw_pile)} cards",
                 self.game_screen.text_font, WHITE,
-                self.game_screen.display_width / 2 - self.game_screen.block_size * player.deck_info_offeset_x,
-                self.game_screen.display_height - self.game_screen.block_size * 0.5,
+                self.game_screen.display_width/2 - self.game_screen.block_size*player.deck_info_offeset_x,
+                self.game_screen.display_height - self.game_screen.block_size*0.5,
                 self.game_screen.surface
             )
             draw_text(
                 f"{player.short_name}DiscardPile: {len(player.discard_pile)} cards",
                 self.game_screen.text_font, WHITE,
-                self.game_screen.display_width / 2 - self.game_screen.block_size * player.deck_info_offeset_x,
-                self.game_screen.display_height - self.game_screen.block_size * 0.4,
+                self.game_screen.display_width/2 - self.game_screen.block_size*player.deck_info_offeset_x,
+                self.game_screen.display_height - self.game_screen.block_size*0.4,
                 self.game_screen.surface
             )
 
@@ -155,7 +157,7 @@ class UIRenderer:
             draw_text(
                 f"{player.short_name}Clock: {player.time_minutes_and_seconds}",
                 self.game_screen.text_font, WHITE,
-                self.game_screen.display_width / 2 - (self.game_screen.display_width / 6) * player.clock_offset_x,
+                self.game_screen.display_width/2 - (self.game_screen.display_width/6)*player.clock_offset_x,
                 self.game_screen.display_height / 6.4,
                 self.game_screen.surface
             )

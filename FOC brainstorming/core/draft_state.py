@@ -6,6 +6,7 @@ from core.board_block import Board
 
 BPPhase = Literal["p1_first6", "p2_pick12", "p1_last6", "done"]
 
+
 @dataclass
 class DraftState:
     player1_deck: list[str] = field(default_factory=list)
@@ -51,17 +52,28 @@ class DraftState:
             case "p2_pick12": self.phase = "p1_last6"
             case "p1_last6": self.phase = "done"
 
-    def to_json(self) -> str:
-        import json
-        return json.dumps({
+    def to_dict(self) -> dict:
+        return {
             "player1_deck": self.player1_deck,
             "player2_deck": self.player2_deck,
             "phase": self.phase,
             "timer_mode": self.timer_mode,
             "file_auto_delete": self.file_auto_delete,
-        })
+        }
 
     @classmethod
-    def from_json(cls, s: str) -> "DraftState":
-        import json
-        return cls(**json.loads(s))
+    def from_json(cls, data: dict) -> "DraftState":
+        return cls(
+            player1_deck=data["player1_deck"],
+            player2_deck=data["player2_deck"],
+            phase=data["phase"],
+            timer_mode=data["timer_mode"],
+            file_auto_delete=data["file_auto_delete"]
+            )
+    
+    def _update_handler(self, data: dict) -> None:
+        self.player1_deck = data["player1_deck"]
+        self.player2_deck = data["player2_deck"]
+        self.phase=data["phase"]
+        self.timer_mode=data["timer_mode"]
+        self.file_auto_delete=data["file_auto_delete"]

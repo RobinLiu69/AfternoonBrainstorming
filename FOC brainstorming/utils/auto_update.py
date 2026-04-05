@@ -6,9 +6,7 @@ from typing import cast
 
 from type_hint import AutoUpdateSetting
 
-
 FOLDER_PATH = os.path.realpath(os.path.dirname(__file__))
-
 
 with open(f"{FOLDER_PATH}/setting/auto_update_setting.json", "r") as file:
     SETTING: AutoUpdateSetting = json.loads(file.read())

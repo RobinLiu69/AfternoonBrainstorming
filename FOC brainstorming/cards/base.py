@@ -1,21 +1,22 @@
-import pygame
-import random, math
+from __future__ import annotations
+import random
+from abc import ABC
 from dataclasses import dataclass, field
-from abc import ABC, abstractmethod
-from typing import TypeVar, cast, Generator, Iterable, Optional, Sequence, Callable, TYPE_CHECKING, final
-from core.game_screen import GameScreen, draw_text
-from core.game_state import GameState, StatType, JOB_DICTIONARY
+from typing import TypeVar, cast, Generator, Iterable, Optional, Callable, TYPE_CHECKING, final
+
+from core.game_statistics import StatType
+from core.setting import JOB_DICTIONARY
+from cards.factory import spawn_card
+
+if TYPE_CHECKING:
+    from core.game_state import GameState
 
 COLOR_TAG_LIST: list[str] = sorted(JOB_DICTIONARY["colors_dict"].keys(), key=len, reverse=True)
 
 Elements = TypeVar("Elements")
 CardType = TypeVar("CardType", bound="Card")
 
-if TYPE_CHECKING:
-    from core.board_block import Board
-
-
-def most_frequent_elements(lst: list[Elements], min_count: int=0) -> list[Elements]:
+def most_frequent_elements(lst: list[Elements], min_count: int = 0) -> list[Elements]:
     unique_elements: list[Elements] = []
     counts: list[int] = []
     
@@ -36,6 +37,7 @@ def most_frequent_elements(lst: list[Elements], min_count: int=0) -> list[Elemen
 
 @dataclass
 class CardRenderData:
+    uid: str
     job_and_color: str
     job: str
     color: tuple[int, int, int]
@@ -92,7 +94,6 @@ class Card(ABC):
     original_damage: int = field(init=False)
     hit_cards: list["Card"] = field(init=False, default_factory=list)
     
-    surface: pygame.Surface | None = field(init=False, default=None)
     shape: tuple = field(init=False, default=())
     recursion_limit: int = field(init=False, default=20)
 
@@ -188,16 +189,19 @@ class Card(ABC):
             case "HEAL":
                 return ((-10, -10), (-10, -10))
             case _:
-                if self.shape == None:
-                    raise AttributeError("Dosen't have valid shape.")
-                return ((0, 0),)
+                return ((0, 0), (0, 0))
     
     @final
     def move(self, board_x: int, board_y: int, game_state: GameState) -> bool:
         if self.custom_move(board_x, board_y, game_state): return True
         if not self.movable: return False
         if game_state.board_dict[board_x, board_y].occupy == False:
-            if (((abs(self.board_y-board_y) == 1 and (abs(self.board_x-board_x) == 1 or abs(self.board_x-board_x) == 0)) or (abs(self.board_y-board_y) == 0 and abs(self.board_x-board_x) == 1)) and (self.board_y != board_y or self.board_x != board_x) and self.moving == True) == False:
+            if not (((abs(self.board_y-board_y) == 1 and
+                  (abs(self.board_x-board_x) == 1 or
+                   abs(self.board_x-board_x) == 0)) or
+                   (abs(self.board_y-board_y) == 0 and
+                    abs(self.board_x-board_x) == 1)) and
+                    (self.board_y != board_y or self.board_x != board_x) and self.moving == True):
                 self.moving = False
                 return False
             game_state.game_logger.log_card_moved(self.owner, self.job_and_color, self.get_position(), (board_x, board_y))
@@ -242,7 +246,7 @@ class Card(ABC):
         return final_value
 
     @final
-    def damage_calculate(self, value: int, attacker: "Card", game_state: GameState, ability: bool=True) -> bool:
+    def damage_calculate(self, value: int, attacker: "Card", game_state: GameState, ability: bool = True) -> bool:
         game_state.game_statistics.increment(StatType.DAMAGE_TAKEN_COUNT, self.get_uid(), 1)
         attacker.hit_cards.append(self)
         if self.damage_block(value, attacker, game_state): return False
@@ -261,7 +265,8 @@ class Card(ABC):
         if self.armor > 0 and self.armor >= value:
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
-            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(), self.get_uid(), self.get_position(), value)
+            game_state.game_logger.log_attack(attacker.get_uid(),attacker.get_position(),
+                                              self.get_uid(), self.get_position(), value)
             self.armor -= value
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
@@ -270,7 +275,8 @@ class Card(ABC):
         elif self.armor > 0 and self.armor < value:
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
-            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(), self.get_uid(), self.get_position(), value)
+            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
+                                              self.get_uid(), self.get_position(), value)
             if self.health >= value-self.armor:
                 pass
             if self.health < value-self.armor:
@@ -297,7 +303,8 @@ class Card(ABC):
                 value = self.health
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
-            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(), self.get_uid(), self.get_position(), value)
+            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
+                                              self.get_uid(), self.get_position(), value)
             self.health -= value
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
@@ -323,7 +330,7 @@ class Card(ABC):
             # if self.canATK == False:
             #     self.canATK = True
             self.health += value
-            self.armor += (self.health - self.max_health)//2
+            self.armor += (self.health-self.max_health) // 2
             self.health = self.max_health
             return True
         # elif self.canATK == False:
@@ -333,28 +340,29 @@ class Card(ABC):
 
     def get_render_data(self) -> list[CardRenderData]:
         return [CardRenderData(
-                job_and_color=self.job_and_color,
-                job=self.job,
-                color=self.color,
-                board_x=self.board_x,
-                board_y=self.board_y,
-                health=self.health,
-                max_health=self.max_health,
-                damage=self.damage,
-                original_damage=self.original_damage,
-                armor=self.armor,
-                extra_damage=self.extra_damage,
-                numbness=self.numbness,
-                moving=self.moving,
-                mouse_selected=self.mouse_selected,
-                anger=self.anger,
-                owner=self.owner,
-                shape_type="circle" if self.job == "AP" else "polygon",
-                shape_points=self._compute_shape_points(),
-                use_sprite=False,
-                sprite_key=self.job_and_color,
-                sprite_alpha=255,
-                render_shape=True if self.job != "CUBES" else False
+            uid=self.get_uid(), 
+            job_and_color=self.job_and_color,
+            job=self.job,
+            color=self.color,
+            board_x=self.board_x,
+            board_y=self.board_y,
+            health=self.health,
+            max_health=self.max_health,
+            damage=self.damage,
+            original_damage=self.original_damage,
+            armor=self.armor,
+            extra_damage=self.extra_damage,
+            numbness=self.numbness,
+            moving=self.moving,
+            mouse_selected=self.mouse_selected,
+            anger=self.anger,
+            owner=self.owner,
+            shape_type="circle" if self.job == "AP" else "polygon",
+            shape_points=self._compute_shape_points(),
+            use_sprite=False,
+            sprite_key=self.job_and_color,
+            sprite_alpha=255,
+            render_shape=True if self.job != "CUBES" else False
         )]
 
     def update(self, game_state: GameState) -> None:
@@ -418,29 +426,52 @@ class Card(ABC):
             match attack_type:
                 case "small_cross":
                     for card in target_card_list:
-                        if ((card.board_x == self.board_x-1 and card.board_y == self.board_y) or (card.board_x == self.board_x+1 and card.board_y == self.board_y) or (card.board_x == self.board_x and card.board_y == self.board_y-1) or (card.board_x == self.board_x and card.board_y == self.board_y+1)):
+                        if ((card.board_x == self.board_x - 1 and card.board_y == self.board_y) or
+                            (card.board_x == self.board_x + 1 and card.board_y == self.board_y) or
+                            (card.board_x == self.board_x and card.board_y == self.board_y - 1) or
+                            (card.board_x == self.board_x and card.board_y == self.board_y + 1)):
                             yield card
                 case "large_cross":
                     for card in target_card_list:
-                        if (card.board_x == self.board_x or card.board_y == self.board_y) and not (card.board_x == self.board_x and card.board_y == self.board_y):
+                        if ((card.board_x == self.board_x or card.board_y == self.board_y) and
+                        not (card.board_x == self.board_x and card.board_y == self.board_y)):
                             yield card
                 case "small_x":
                     for card in target_card_list:
-                        if ((card.board_x == self.board_x+1 and card.board_y == self.board_y+1) or (card.board_x == self.board_x-1 and card.board_y == self.board_y+1) or (card.board_x == self.board_x-1 and card.board_y == self.board_y-1) or (card.board_x == self.board_x+1 and card.board_y == self.board_y-1)):
+                        if ((card.board_x == self.board_x + 1 and card.board_y == self.board_y + 1) or
+                            (card.board_x == self.board_x - 1 and card.board_y == self.board_y + 1) or
+                            (card.board_x == self.board_x - 1 and card.board_y == self.board_y - 1) or
+                            (card.board_x == self.board_x + 1 and card.board_y == self.board_y - 1)):
                             yield card
                 case "large_x":
                     pass
                 case"nearest":
-                    nearby_cards: list[CardType] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y))
+                    nearby_cards: list[CardType] = sorted(
+                        target_card_list,
+                        key=lambda card: abs(card.board_x - self.board_x) + abs(card.board_y - self.board_y)
+                    )
                     if nearby_cards:
                         temp_card = nearby_cards[0]
-                        nearet_cards: list[CardType] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), nearby_cards))
+                        nearet_cards: list[CardType] = list(
+                            filter(
+                                lambda card: abs(card.board_x-self.board_x) + abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x) + abs(temp_card.board_y-self.board_y)
+                                , nearby_cards
+                            )
+                        )
                         yield random.choice(nearet_cards)
                 case "farthest":
-                    faraway_cards: list[CardType] = sorted(target_card_list, key=lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y), reverse=True)
+                    faraway_cards: list[CardType] = sorted(target_card_list, 
+                        key=lambda card: abs(card.board_x-self.board_x) + abs(card.board_y-self.board_y),
+                        reverse=True
+                    )
                     if faraway_cards:
                         temp_card = faraway_cards[0]
-                        farthest_cards: list[CardType] = list(filter(lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x)+abs(temp_card.board_y-self.board_y), faraway_cards))
+                        farthest_cards: list[CardType] = list(
+                            filter(
+                                lambda card: abs(card.board_x-self.board_x)+abs(card.board_y-self.board_y) == abs(temp_card.board_x-self.board_x) + abs(temp_card.board_y-self.board_y),
+                                faraway_cards
+                            )
+                        )
                         yield random.choice(farthest_cards)
         return None
     
@@ -452,15 +483,22 @@ class Card(ABC):
             match attack_type:
                 case "small_cross":
                     for board in board_list:
-                        if ((board.board_x == board_x-1 and board.board_y == board_y) or (board.board_x == board_x+1 and board.board_y == board_y) or (board.board_x == board_x and board.board_y == board_y-1) or (board.board_x == board_x and board.board_y == board_y+1)):
+                        if ((board.board_x == board_x-1 and board.board_y == board_y) or
+                            (board.board_x == board_x+1 and board.board_y == board_y) or
+                            (board.board_x == board_x and board.board_y == board_y-1) or
+                            (board.board_x == board_x and board.board_y == board_y+1)):
                             yield board.board_x, board.board_y
                 case "large_cross":
                     for board in board_list:
-                        if ((board.board_x == board_x or board.board_y == board_y) and not (board.board_x == board_x and board.board_y == board_y)):
+                        if ((board.board_x == board_x or board.board_y == board_y) and
+                            not (board.board_x == board_x and board.board_y == board_y)):
                             yield board.board_x, board.board_y
                 case "small_x":
                     for board in board_list:
-                        if ((board.board_x == board_x+1 and board.board_y == board_y+1) or (board.board_x == board_x-1 and board.board_y == board_y+1) or (board.board_x == board_x-1 and board.board_y == board_y-1) or (board.board_x == board_x+1 and board.board_y == board_y-1)):
+                        if ((board.board_x == board_x+1 and board.board_y == board_y+1) or
+                            (board.board_x == board_x-1 and board.board_y == board_y+1) or
+                            (board.board_x == board_x-1 and board.board_y == board_y-1) or
+                            (board.board_x == board_x+1 and board.board_y == board_y-1)):
                             yield board.board_x, board.board_y
                 case "large_x":
                     pass
@@ -532,3 +570,45 @@ class Card(ABC):
             return 0
         else:
             return 1
+    
+    def to_dict(self) -> dict:
+        return {
+                "owner": self.owner,
+                "job_and_color": self.job_and_color,
+                "health": self.health,
+                "damage": self.damage,
+                "board_x": self.board_x,
+                "board_y": self.board_x,
+                # "job": self.job,
+                # "color_name": self.color_name,
+                # "color": self.color,
+                # "text_color": self.text_color,
+                # "attack_types": self.attack_types,
+                "numbness": self.numbness,
+                "moving": self.moving,
+                "mouse_selected": self.mouse_selected,
+                "been_targeted": self.been_targeted,
+                "armor": self.armor,
+                "attack_uses": self.attack_uses,
+                "extra_damage": self.extra_damage,
+                "movable": self.movable,
+                "anger": self.anger,
+                "max_health": self.max_health,
+                "original_damage": self.original_damage,
+            }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> Card:
+        card = cls(owner=data["owner"], job_and_color=data["job_and_color"], health=data["health"], damage=data["damage"], board_x=data["board_x"], board_y=data["board_y"])
+        card.numbness = data["numbness"]
+        card.moving = data["moving"]
+        card.mouse_selected = data["mouse_selected"]
+        card.been_targeted = data["been_targeted"]
+        card.armor = data["armor"]
+        card.attack_uses = data["attack_uses"]
+        card.extra_damage = data["extra_damage"]
+        card.movable = data["movable"]
+        card.anger = data["anger"]
+        card.max_health = data["max_health"]
+        card.original_damage = data["original_damage"]
+        return card

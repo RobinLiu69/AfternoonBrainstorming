@@ -4,10 +4,15 @@ from typing import Optional, Sequence, cast, TYPE_CHECKING
 
 from core.game_screen import GameScreen, draw_text
 
-from core.game_state import GameState, BLACK, WHITE, RED, BLUE, GREEN, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
+from core.setting import BLACK, WHITE, RED, BLUE, GREEN, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
+
 from cards.base import Card, COLOR_TAG_LIST
 
 from cards.card_cyan import CyanCard
+
+if TYPE_CHECKING:
+    from core.game_state import GameState
+
 
 
 @dataclass(kw_only=True)
@@ -46,7 +51,9 @@ class HandDisplay(BasicUI):
         return
 
 class Button:
-    def __init__(self, width: float, height: float, x: float, y: float, text_x: float, text_y: float, has_box: bool=True, box_color: Sequence[int]=WHITE, box_width: int=0, text_color: Sequence[int]=WHITE, text: str="", font: pygame.font.Font|None=None):
+    def __init__(self, width: float, height: float, x: float, y: float, text_x: float, text_y: float,
+                 has_box: bool=True, box_color: Sequence[int]=WHITE, box_width: int=0, text_color: Sequence[int]=WHITE,
+                 text: str="", font: pygame.font.Font|None=None):
         self.height = height
         self.width = width
         self.has_box = has_box
@@ -104,17 +111,25 @@ class AttackCountDisplay:
                 elif attack_cout < 30:
                     if attack_cout%10 >= i:
                         color = (255, 100, 100)
-                        pygame.draw.rect(game_screen.surface, color, (self.x+random.randint(0, round(self.width*0.1*(attack_cout*0.05)))*random.random(), self.y-self.height*i*1.25+random.randint(0, round(self.height*0.1*(attack_cout*0.05)))*random.random(), self.width, self.height), round(self.width))
+                        pygame.draw.rect(game_screen.surface, color,
+                                         (self.x+random.randint(0, round(self.width*0.1*(attack_cout*0.05)))*random.random(),
+                                          self.y-self.height*i*1.25+random.randint(0, round(self.height*0.1*(attack_cout*0.05)))*random.random(),
+                                          self.width, self.height), round(self.width))
                     else:
                         color = (100, 255, 255)
                         pygame.draw.rect(game_screen.surface, color, (self.x, self.y-self.height*i*1.25, self.width, self.height), round(self.width))
                 else:
                     color = (255, 100, 100)
-                    pygame.draw.rect(game_screen.surface, color, (self.x+random.randint(0, round(self.width*0.1*(attack_cout*0.1)))*random.random(), self.y-self.height*i*1.25+random.randint(0, round(self.height*0.1*(attack_cout*0.1)))*random.random(), self.width, self.height), round(self.width))
+                    pygame.draw.rect(game_screen.surface, color,
+                                     (self.x+random.randint(0, round(self.width*0.1*(attack_cout*0.1)))*random.random(),
+                                      self.y-self.height*i*1.25+random.randint(0, round(self.height*0.1*(attack_cout*0.1)))*random.random(),
+                                      self.width, self.height), round(self.width))
             elif i <= attack_cout:
-                pygame.draw.rect(game_screen.surface, color, (self.x, self.y-self.height*i*1.25, self.width, self.height), round(self.width))
+                pygame.draw.rect(game_screen.surface, color,
+                                 (self.x, self.y-self.height*i*1.25, self.width, self.height), round(self.width))
             else:
-                pygame.draw.rect(game_screen.surface, color, (self.x, self.y-self.height*i*1.25, self.width, self.height), round(self.width/10))
+                pygame.draw.rect(game_screen.surface, color,
+                                 (self.x, self.y-self.height*i*1.25, self.width, self.height), round(self.width/10))
                 
                 
 @dataclass(kw_only=True)
@@ -170,7 +185,9 @@ class TokenDisplay:
                 case "player2":
                     offset_y = 1
             for i in range(0, token_count):
-                pygame.draw.circle(game_screen.surface, (int(60*min(1, self.time/30)), int(100*min(1, self.time/30)), int(225*min(1, self.time/30))), (game_screen.display_width/2+(game_screen.block_size*2.5*offset_y), game_screen.display_height-(game_screen.block_size*0.5)-(self.radius*i*2.2)), self.radius)
+                pygame.draw.circle(game_screen.surface, (int(60*min(1, self.time/30)), int(100*min(1, self.time/30)), int(225*min(1, self.time/30))),
+                                   (game_screen.display_width/2+(game_screen.block_size*2.5*offset_y),
+                                    game_screen.display_height-(game_screen.block_size*0.5)-(self.radius*i*2.2)), self.radius)
 
 
 @dataclass(kw_only=True)
@@ -279,9 +296,11 @@ class HintBox:
             if card_type not in CARDS_HINTS_DICTIONARY: return
             box_height = len(CARDS_HINTS_DICTIONARY[card_type].split("\n")) if len(CARDS_HINTS_DICTIONARY[card_type].split("\n")) > 4 else 4
             pygame.draw.rect(self.surface, WHITE, (0, 0, self.width, (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)), 2)
-            pygame.draw.rect(self.surface, BLACK, (0+(game_screen.thickness//2), 0+(game_screen.thickness//2), self.width-game_screen.thickness, (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)-game_screen.thickness), 1000)
+            pygame.draw.rect(self.surface, BLACK, ((game_screen.thickness//2), (game_screen.thickness//2), self.width-game_screen.thickness,
+                                                   (game_screen.block_size*0.05) + (game_screen.block_size*0.15*box_height) - game_screen.thickness), 1000)
             if card_type not in ["CUBE", "CUBES", "LUCKYBLOCK", "MOVE", "MOVEO", "HEAL"]:
-                pygame.draw.rect(self.surface, WHITE, (0+game_screen.block_size*0.05, 0+game_screen.block_size*0.05, game_screen.block_size*0.5, game_screen.block_size*0.5), 2)
+                pygame.draw.rect(self.surface, WHITE, (game_screen.block_size*0.05, game_screen.block_size*0.05,
+                                                       game_screen.block_size*0.5, game_screen.block_size*0.5), 2)
                 job, color = self.get_job_and_color(card_type.split()[0])
                 if color == (0, 238, 238) and isinstance(card, CyanCard):
                     if card.upgrade:
@@ -296,20 +315,33 @@ class HintBox:
                 for i, line in enumerate(CARDS_HINTS_DICTIONARY[card_type].split("\n")):
                     if i == 0:
                         if isinstance(card, str):
-                            draw_text(f"{card_type} {line}", game_screen.text_fontCHI, WHITE, 0+(game_screen.block_size*0.6), 0+(game_screen.block_size*0.05), self.surface)
+                            draw_text(f"{card_type} {line}", game_screen.text_fontCHI, WHITE,
+                                      (game_screen.block_size*0.6), (game_screen.block_size*0.05), self.surface)
                         elif isinstance(card, Card):
-                            draw_text(f"{card_type}", game_screen.text_fontCHI, WHITE, 0+game_screen.block_size*0.6, 0+(game_screen.block_size*0.05), self.surface)
-                            draw_text(f"{card.health}", game_screen.text_fontCHI, RED if card.health < card.max_health else WHITE, 0+game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)), 0+(game_screen.block_size*0.05), self.surface)
-                            draw_text(f"/", game_screen.text_fontCHI, WHITE, 0+game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health))), 0+(game_screen.block_size*0.05), self.surface)
-                            draw_text(f"{card.damage}", game_screen.text_fontCHI, RED if card.damage < card.original_damage else GREEN if card.damage > card.original_damage else WHITE, 0+game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health))+1), 0+(game_screen.block_size*0.05), self.surface)
+                            draw_text(f"{card_type}", game_screen.text_fontCHI, WHITE, game_screen.block_size*0.6,
+                                      (game_screen.block_size*0.05), self.surface)
+                            draw_text(f"{card.health}", game_screen.text_fontCHI, RED if card.health < card.max_health else WHITE,
+                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)), (game_screen.block_size*0.05), self.surface)
+                            draw_text(f"/", game_screen.text_fontCHI, WHITE,
+                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health))),
+                                      (game_screen.block_size*0.05), self.surface)
+                            draw_text(f"{card.damage}", game_screen.text_fontCHI,
+                                      RED if card.damage < card.original_damage else GREEN if card.damage > card.original_damage else WHITE,
+                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health))+1),
+                                      (game_screen.block_size*0.05), self.surface)
                             atk_type = line.split("-")
-                            draw_text(f"-{atk_type[1]}", game_screen.text_fontCHI, WHITE, 0+game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health))+len(str(card.damage))+1), 0+(game_screen.block_size*0.05), self.surface)         
+                            draw_text(f"-{atk_type[1]}", game_screen.text_fontCHI, WHITE,
+                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health))+len(str(card.damage))+1),
+                                      (game_screen.block_size*0.05), self.surface)         
                     elif i < 4:
-                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE, 0+(game_screen.block_size*0.6), (game_screen.block_size*0.05)+(game_screen.block_size*0.15*i), self.surface)
+                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE, (game_screen.block_size*0.6),
+                                  (game_screen.block_size*0.05)+(game_screen.block_size*0.15*i), self.surface)
                     else:
-                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE, 0+(game_screen.block_size*0.05), (game_screen.block_size*0.05)+(game_screen.block_size*0.15*i), self.surface)
+                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE, (game_screen.block_size*0.05),
+                                  (game_screen.block_size*0.05)+(game_screen.block_size*0.15*i), self.surface)
             else:
                 for i, line in enumerate(CARDS_HINTS_DICTIONARY[card_type].split("\n")):
-                    draw_text(f"{line}", game_screen.text_fontCHI, WHITE, 0+(game_screen.block_size*0.05), (game_screen.block_size*0.05)+(game_screen.block_size*0.15*i), self.surface)
+                    draw_text(f"{line}", game_screen.text_fontCHI, WHITE, (game_screen.block_size*0.05),
+                              (game_screen.block_size*0.05)+(game_screen.block_size*0.15*i), self.surface)
             game_screen.surface.blit(self.surface, (self.x, self.y))
         self.surface.fill((0, 0, 0, 0))

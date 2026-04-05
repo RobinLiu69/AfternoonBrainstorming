@@ -1,8 +1,9 @@
 import math
 from typing import Callable, Iterable, TYPE_CHECKING
 
-from .base import CardRenderData
-from core.game_state import GameState, CARD_SETTING
+from cards.base import CardRenderData
+from core.game_state import GameState
+from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card, most_frequent_elements
 
@@ -65,7 +66,9 @@ class Shadow(FuchsiaCard):
                 return False
     
     def die(self, game_state: GameState) -> bool:
-        cards = tuple(filter(lambda card: card.health > 0 and self.board_x == card.board_x and self.board_y == card.board_y, game_state.get_all_cards()))
+        cards = tuple(filter(lambda card: card.health > 0 and
+                             self.board_x == card.board_x and
+                             self.board_y == card.board_y, game_state.get_all_cards()))
         if not cards:
             game_state.board_dict[self.board_x, self.board_y].occupy = False
         return False
@@ -73,6 +76,7 @@ class Shadow(FuchsiaCard):
     def get_render_data(self) -> list[CardRenderData]:
         shape_points = tuple((x*1.1, y*1.1) for x, y in self._compute_shape_points())
         return [CardRenderData(
+                uid=self.get_uid(),
                 job_and_color=self.job_and_color,
                 job=self.job,
                 color=self.color,
@@ -99,8 +103,11 @@ class Shadow(FuchsiaCard):
         )]
     
     def attack(self, game_state: GameState) -> bool:
-        enemies: Iterable["Card"] = list(filter(lambda card: card.health > 0 and card.job_and_color != "SHADOW", game_state.get_side_cards(self.owner, True)))
-        if self.linker.launch_attack(self.attack_types, game_state, tuple(self.detection(self.attack_types, enemies))):
+        enemies: Iterable["Card"] = list(filter(lambda card: card.health > 0 and
+                                                card.job_and_color != "SHADOW",
+                                                game_state.get_side_cards(self.owner, True)))
+        if self.linker.launch_attack(self.attack_types, game_state,
+                                     tuple(self.detection(self.attack_types, enemies))):
             return True
         else:
             return False
@@ -110,7 +117,9 @@ class Shadow(FuchsiaCard):
         
         
 class Adc(FuchsiaCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["ADC"]["health"],
+                 damage: int = card_settings["ADC"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="ADCF", health=health, damage=damage, board_x=board_x, board_y=board_y)
         
@@ -147,7 +156,9 @@ class Adc(FuchsiaCard):
     
 
 class Ap(FuchsiaCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["AP"]["health"],
+                 damage:int=card_settings["AP"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="APF", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
@@ -171,14 +182,18 @@ class Ap(FuchsiaCard):
 
     def start_turn(self, game_state: GameState) -> int:
         for shadow in self.shadows:
-            enemies = tuple(filter(lambda card: card.health > 0 and shadow.is_same_location(card), game_state.get_side_cards(self.owner, True)))
+            enemies = tuple(filter(lambda card: card.health > 0 and
+                                   shadow.is_same_location(card),
+                                   game_state.get_side_cards(self.owner, True)))
             for enemy in enemies:
                 enemy.numbness = True
         return 0
     
 
 class Tank(FuchsiaCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["TANK"]["health"],
+                 damage: int = card_settings["TANK"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="TANKF", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -199,7 +214,9 @@ class Tank(FuchsiaCard):
 
     
 class Hf(FuchsiaCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["HF"]["health"],
+                 damage: int = card_settings["HF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="HFF", health=health, damage=damage, board_x=board_x, board_y=board_y)
         
@@ -236,7 +253,9 @@ class Hf(FuchsiaCard):
     
 
 class Lf(FuchsiaCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["LF"]["health"],
+                 damage: int = card_settings["LF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="LFF", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
@@ -262,7 +281,9 @@ class Lf(FuchsiaCard):
 
 
 class Ass(FuchsiaCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["ASS"]["health"],
+                 damage: int = card_settings["ASS"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="ASSF", health=health, damage=damage, board_x=board_x, board_y=board_y)
         
@@ -305,7 +326,9 @@ class Ass(FuchsiaCard):
 
 
 class Apt(FuchsiaCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["APT"]["health"],
+                 damage: int = card_settings["APT"]["damage"]) -> None:
 
         super().__init__(owner=owner, job_and_color="APTF", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
@@ -327,12 +350,19 @@ class Apt(FuchsiaCard):
 
 
 class Sp(FuchsiaCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["SP"]["health"],
+                 damage: int = card_settings["SP"]["damage"]) -> None:
 
         super().__init__(owner=owner, job_and_color="SPF", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def deploy(self, game_state: GameState) -> None:
-        targets: tuple[FuchsiaCard] = tuple(filter(lambda card: card.health > 0 and isinstance(card, FuchsiaCard), game_state.get_player_cards(self.owner))) # pyright: ignore[reportAssignmentType]
+        targets: tuple[FuchsiaCard] = tuple(
+            filter(
+                lambda card: card.health > 0 and
+                isinstance(card, FuchsiaCard), game_state.get_player_cards(self.owner)
+            )
+        ) # pyright: ignore[reportAssignmentType]
         if targets:
             for card in self.detection("farthest", targets):
                 board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)

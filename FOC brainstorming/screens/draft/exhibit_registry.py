@@ -1,7 +1,8 @@
 from typing import Optional
+
+from core.setting import JOB_DICTIONARY, CARD_SETTING
 from cards.base import Card
 from cards.factory import CardFactory
-from core.game_state import JOB_DICTIONARY, CARD_SETTING
 
 _JOB_ORDER = ["ADC", "AP", "TANK", "HF", "LF", "ASS", "APT", "SP"]
 _POSITIONS  = [(0,0),(1,0),(2,0),(3,0),(0,1),(1,1),(2,1),(3,1)]
@@ -30,7 +31,6 @@ class ExhibitRegistry:
                     pass
             if page:
                 pages.append(page)
-            print(pages)
         return pages
 
     def _build_magic(self) -> list[Card]:
