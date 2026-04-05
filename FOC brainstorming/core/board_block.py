@@ -1,8 +1,8 @@
-import pygame
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from core.game_state import WHITE
+from core.setting import WHITE
 
 if TYPE_CHECKING:
     from core.game_screen import GameScreen

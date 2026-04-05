@@ -1,8 +1,11 @@
 from typing import TYPE_CHECKING
 
-from core.game_state import GameState, CARD_SETTING
+from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
+
+if TYPE_CHECKING:
+    from core.game_state import GameState
 
 card_settings = CARD_SETTING["DarkGreen"]
 color_code = "DKG"
@@ -11,23 +14,27 @@ color_code = "DKG"
 class DarkGreenCard(Card):
     def engraved_totem(self, times: int, game_state: GameState) -> None:
         for i in range(times):
-            game_state.players_totem[self.owner] += (1*(card_settings["SP"]["engraved_totem_coefficient"]**len(tuple(filter(lambda card: card.job_and_color == "SPDKG", game_state.get_player_cards(self.owner))))))
+            game_state.players_totem[self.owner] += 1 * (card_settings["SP"]["engraved_totem_coefficient"]**len(tuple(filter(lambda card: card.job_and_color == "SPDKG", game_state.get_player_cards(self.owner)))))
 
 
 class Adc(DarkGreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["ADC"]["health"],
+                 damage: int = card_settings["ADC"]["damage"]) -> None:
 
         super().__init__(owner=owner, job_and_color="ADCDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     def update(self, game_state: GameState) -> None:
-        self.extra_damage = (game_state.players_totem[self.owner]//card_settings["ADC"]["damage_divisor"])
+        self.extra_damage = game_state.players_totem[self.owner] // card_settings["ADC"]["damage_divisor"]
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
         return value + self.extra_damage
 
 
 class Ap(DarkGreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["AP"]["health"],
+                 damage: int = card_settings["AP"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="APDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -38,7 +45,9 @@ class Ap(DarkGreenCard):
 
 
 class Tank(DarkGreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["TANK"]["health"],
+                 damage: int = card_settings["TANK"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="TANKDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -48,7 +57,9 @@ class Tank(DarkGreenCard):
 
 
 class Hf(DarkGreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["HF"]["health"],
+                 damage: int = card_settings["HF"]["damage"]) -> None:
 
         self.extra_damage = 0
         
@@ -65,7 +76,9 @@ class Hf(DarkGreenCard):
 
 
 class Lf(DarkGreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["LF"]["health"],
+                 damage: int = card_settings["LF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="LFDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -79,7 +92,9 @@ class Lf(DarkGreenCard):
     
 
 class Ass(DarkGreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["ASS"]["health"],
+                 damage: int = card_settings["ASS"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="ASSDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -90,12 +105,14 @@ class Ass(DarkGreenCard):
 
 
 class Apt(DarkGreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["APT"]["health"],
+                 damage: int = card_settings["APT"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="APTDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def update(self, game_state: GameState) -> None:
-        self.extra_damage = game_state.players_totem[self.owner]//2
+        self.extra_damage = game_state.players_totem[self.owner] // 2
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
         self.engraved_totem(self.armor//2, game_state)
@@ -107,7 +124,9 @@ class Apt(DarkGreenCard):
     
 
 class Sp(DarkGreenCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["SP"]["health"],
+                 damage: int = card_settings["SP"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="SPDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
 

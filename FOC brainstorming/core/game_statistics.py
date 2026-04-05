@@ -64,7 +64,6 @@ class GameStatistics:
     def add_score_record(self, score: int):
         self.score_history.append(score)
     
-
     def get_kda(self, card_id: str) -> float:
         kills = self.get(StatType.KILLED, card_id)
         deaths = max(1, self.get(StatType.DEATH, card_id))

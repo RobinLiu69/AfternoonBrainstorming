@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
-from core.game_state import GameState, CARD_SETTING
+from core.game_state import GameState
+from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
 
@@ -13,7 +14,9 @@ class RedCard(Card):
 
 
 class Adc(RedCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["ADC"]["health"], damage: int=card_settings["ADC"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["ADC"]["health"],
+                 damage: int = card_settings["ADC"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="ADCR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
@@ -26,13 +29,15 @@ class Adc(RedCard):
 
 
 class Ap(RedCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["AP"]["health"], damage: int=card_settings["AP"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["AP"]["health"],
+                 damage: int = card_settings["AP"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="APR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
-        value = int(target.damage*(card_settings["AP"]["attack_steal_rate"]/100))
+        value = int(target.damage * (card_settings["AP"]["attack_steal_rate"]/100))
         self.damage += value
         target.damage -= value
         
@@ -42,12 +47,18 @@ class Ap(RedCard):
 
 
 class Tank(RedCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["TANK"]["health"], damage: int=card_settings["TANK"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["TANK"]["health"],
+                 damage: int = card_settings["TANK"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="TANKR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
-        for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_player_cards(self.owner))):
+        for card in self.detection(
+            "nearest", filter(
+                lambda card: card != self, game_state.get_player_cards(self.owner)
+            )
+        ):
             card.armor += card_settings["TANK"]["armor_increase"]
         
         for card in filter(lambda card: card.job_and_color == "SPR", game_state.get_player(self.owner).on_board):
@@ -56,7 +67,9 @@ class Tank(RedCard):
 
 
 class Hf(RedCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, health: int=card_settings["HF"]["health"], damage: int=card_settings["HF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int,
+                 health: int = card_settings["HF"]["health"],
+                 damage: int = card_settings["HF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="HFR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     

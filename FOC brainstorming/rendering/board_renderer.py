@@ -1,7 +1,9 @@
 import pygame
+
 from core.board_block import Board
 from core.game_screen import GameScreen
-from core.game_state import GameState, WHITE
+from core.game_state import GameState
+from core.setting import WHITE
 
 
 class BoardRenderer:
@@ -9,8 +11,8 @@ class BoardRenderer:
         self.game_screen = game_screen
 
     def _board_to_pixel(self, board_x: int, board_y: int) -> tuple[float, float]:
-        x = (self.game_screen.display_width / 2 - self.game_screen.block_size * 2) + board_x * self.game_screen.block_size
-        y = (self.game_screen.display_height / 2 - self.game_screen.block_size * 1.675) + board_y * self.game_screen.block_size
+        x = (self.game_screen.display_width/2 - self.game_screen.block_size*2) + board_x*self.game_screen.block_size
+        y = (self.game_screen.display_height/2 - self.game_screen.block_size*1.675) + board_y*self.game_screen.block_size
         return x, y
 
     def render(self, board: Board) -> None:

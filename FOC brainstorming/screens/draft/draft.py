@@ -1,14 +1,14 @@
-# screens/draft/draft.py
-import pygame
 from typing import Optional
+
+import pygame
 
 from core.draft_state import DraftState
 from core.draft_dispatcher import DraftDispatcher
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from core.game_screen import GameScreen
-
-from screens.draft.draft_action import DraftAction, collect_draft_actions
+from core.network_layer import LANClient, LANServer
+from screens.draft.draft_action import collect_draft_actions
 from screens.draft.exhibit_registry import ExhibitRegistry
 from rendering.draft_renderer import DraftRenderer
 
@@ -20,14 +20,12 @@ def _to_board_x(mouse_x: int, gs: GameScreen) -> Optional[int]:
         return int((mouse_x - left) / gs.block_size)
     return None
 
-
 def _to_board_y(mouse_y: int, gs: GameScreen) -> Optional[int]:
     top    = gs.display_height / 2 - gs.block_size * 1.65
     bottom = gs.display_height / 2 + gs.block_size * 1.35
     if top < mouse_y < bottom:
         return int((mouse_y - top) / gs.block_size)
     return None
-
 
 def _turn_page(page: int, direction: int, total: int) -> int:
     return (page + direction) % total
@@ -36,12 +34,25 @@ def _turn_page(page: int, direction: int, total: int) -> int:
 def main(game_screen: GameScreen) -> Optional[DraftState]:
     registry = ExhibitRegistry()
     draft_state = DraftState()
-    dispatcher = DraftDispatcher(mode="local")
+
+    match "server":
+        case "server":
+            server = LANServer()
+            dispatcher = DraftDispatcher(draft_state, mode="lan_server")
+            dispatcher.attach_server(server)
+            server.start()
+        case _:
+            client = LANClient("0.0.0.0")
+            dispatcher = DraftDispatcher(draft_state, mode="lan_client")
+            dispatcher.attach_client(client)
+            client.on_state_update = draft_state._update_handler   # optional push handler
+            client.connect()
+        
+
     renderer = DraftRenderer(game_screen, registry)
 
     draft_state.board_config = BoardConfig(4, 3)
     draft_state.board_dict = initialize_board(game_screen, draft_state.board_config)
-
 
     page = 0
     hint_on = False
@@ -49,7 +60,6 @@ def main(game_screen: GameScreen) -> Optional[DraftState]:
     clock = pygame.time.Clock()
 
     while True:
-
         mouse_x, mouse_y = pygame.mouse.get_pos()
         mouse_board_x = _to_board_x(mouse_x, game_screen)
         mouse_board_y = _to_board_y(mouse_y, game_screen)
@@ -66,9 +76,7 @@ def main(game_screen: GameScreen) -> Optional[DraftState]:
                 continue
 
             if action.action_type == "page_next":
-                print("next page", page)
                 page = _turn_page(page, 1, registry.page_count())
-                print(page)
                 continue
 
             if action.action_type == "page_prev":
@@ -81,7 +89,7 @@ def main(game_screen: GameScreen) -> Optional[DraftState]:
                 #     if confirm_count >= 2:
                 draft_state.advance_phase()
                 return draft_state
-                continue
+                # continue
 
             result = dispatcher.dispatch(action, draft_state)
 
@@ -90,7 +98,6 @@ def main(game_screen: GameScreen) -> Optional[DraftState]:
 
             if result.phase_advanced:
                 page = 0
-                confirm_count = 0
 
         renderer.render_frame(page, mouse_board_x, mouse_board_y, draft_state)
 

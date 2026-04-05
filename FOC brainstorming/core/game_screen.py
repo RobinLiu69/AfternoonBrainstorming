@@ -1,7 +1,8 @@
-import os, json, pygame, random
+import os
+import json
 from typing import cast, Sequence, TextIO
 
-pygame.init()
+import pygame
 
 __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("core", "")
 
@@ -16,19 +17,27 @@ KEYS_TO_CHECK = SETTING["keys_to_check"]
 PIE_TITLE_TEXTS = SETTING["pie_title_texts"]
 BOARD_SIZE: tuple[int, int] = cast(tuple[int, int], tuple(map(int, SETTING["board_size"])))
 
-
 def draw_text(text: str, font: pygame.font.Font, text_color: Sequence[int], x: float, y: float, surface: pygame.surface.Surface) -> None:
-    rendered_text = font.render(text, True, text_color)
-    surface.blit(rendered_text, (x, y))
+    rendered = font.render(text, True, text_color)
+    
+    w, h = rendered.get_size()
+    transparent = pygame.Surface((w, h), pygame.SRCALPHA)
+    transparent.fill((0, 0, 0, 0))
+    transparent.blit(rendered, (0, 0))
+    rendered.set_colorkey((0, 0, 0))
+    transparent.blit(rendered, (0, 0))
+    
+    surface.blit(transparent, (x, y))
 
 
 class GameScreen:
     def __init__(self) -> None:
+        pygame.init()
         self.display_width: int = pygame.display.get_desktop_sizes()[0][0]
         self.display_height: int = pygame.display.get_desktop_sizes()[0][1]
         if self.display_width == 2880 and self.display_height == 1800:
-            self.display_width = 2560
-            self.display_height = 1600
+            self.display_width = 1744
+            self.display_height = 981
         print(self.display_width, self.display_height)
         self.surface, self.block_size = self.fitting_screen()
         print(self.display_width, self.display_height)
@@ -39,7 +48,7 @@ class GameScreen:
     def fitting_screen(self) -> tuple[pygame.surface.Surface, float]:
         if self.display_width/self.display_height == 1.6:
             surface = pygame.display.set_mode((self.display_width, self.display_height))
-            block_size = (self.display_width/8)/1.2
+            block_size = (self.display_width/8) / 1.2
         else:
             maxvalue = [0, 0]
             for H in range(self.display_height, 0, -1):
@@ -52,7 +61,7 @@ class GameScreen:
             self.display_width = maxvalue[0]
             self.display_height = maxvalue[1]
             surface = pygame.display.set_mode((self.display_width, self.display_height))
-            block_size = (self.display_width/8)/1.2
+            block_size = (self.display_width/8) / 1.2
         return surface, block_size
 
     def font_init(self) -> None:

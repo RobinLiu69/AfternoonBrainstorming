@@ -1,15 +1,18 @@
 import pygame
 
-from core.game_state import GameState, WHITE
+from core.setting import WHITE
+from core.game_state import GameState
 from core.game_screen import GameScreen, draw_text
-from core.battling_dispatcher import BattlingdDispatcher
+from core.battling_dispatcher import BattlingDispatcher
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from rendering.game_renderer import GameRenderer
 from screens.battling.battling_action import collect_actions
 
 
-def number_key(number: int, mouse_x: int, mouse_y: int, mouse_board_x: int | None, mouse_board_y: int | None, controller: str, game_state: GameState) -> None:
+def number_key(number: int, mouse_x: int, mouse_y: int,
+               mouse_board_x: int | None, mouse_board_y: int | None,
+               controller: str, game_state: GameState) -> None:
     if mouse_board_x is not None and mouse_board_y is not None:
         match controller:
             case "player1":
@@ -34,15 +37,20 @@ def number_key(number: int, mouse_x: int, mouse_y: int, mouse_board_x: int | Non
     #             else:
     #                 game_state.player2.hand[i] += " (+)"
 
-
 def display_controller(controller: str, game_screen: GameScreen) -> None:
-    draw_text(f"Ture: {controller}", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*0.6, game_screen.display_height/2-game_screen.block_size*2.1, game_screen.surface)
+    draw_text(f"Ture: {controller}", game_screen.big_text_font,
+              WHITE, game_screen.display_width/2 - game_screen.block_size*0.6,
+              game_screen.display_height/2 - game_screen.block_size*2.1, game_screen.surface)
 
 def to_board_x(mouse_x: int, game_screen: GameScreen) -> int | None:
-    return int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 and mouse_x < game_screen.display_width/2+game_screen.block_size*2 else None
+    return (int((mouse_x - (game_screen.display_width/2 - game_screen.block_size*2)) / game_screen.block_size)
+        if mouse_x > game_screen.display_width/2 - game_screen.block_size*2 and
+        mouse_x < game_screen.display_width/2 + game_screen.block_size*2 else None)
 
 def to_board_y(mouse_y: int, game_screen: GameScreen) -> int | None:
-    return int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 and mouse_y < game_screen.display_height/2+game_screen.block_size*2.35 else None
+    return (int((mouse_y - (game_screen.display_height/2 - game_screen.block_size*1.65)) / game_screen.block_size)
+        if mouse_y > game_screen.display_height/2 - game_screen.block_size*1.65 and
+        mouse_y < game_screen.display_height/2 + game_screen.block_size*2.35 else None)
 
 def main(game_state: GameState, game_screen: GameScreen) -> str:
     running: bool = True
@@ -59,7 +67,7 @@ def main(game_state: GameState, game_screen: GameScreen) -> str:
 
     card_info = ["None", 0]
 
-    dispatcher = BattlingdDispatcher(mode="local")
+    dispatcher = BattlingDispatcher(mode="local")
 
     game_state.game_logger.log_turn_start("player1", game_state.turn_number)
     
@@ -85,8 +93,9 @@ def main(game_state: GameState, game_screen: GameScreen) -> str:
                 print("quit")
 
 
-        game_state.get_player(controller).logic_update(game_state, True)
-        game_state.get_opponent(controller).logic_update(game_state, False)
+        game_state.get_player(controller).logic_update(game_state, game_renderer, True)
+        game_state.get_opponent(controller).logic_update(game_state, game_renderer, False)
+        game_state.neutral.update(game_state, game_renderer)
         
         game_renderer.render_frame(controller, mouse_x, mouse_y, board_x, board_y, game_state)
         game_state.update()

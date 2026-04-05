@@ -1,18 +1,23 @@
 import random
 from typing import TYPE_CHECKING, Optional
-from core.game_state import GameState, CARD_SETTING
-from core.game_screen import draw_text
+
+from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
+
+if TYPE_CHECKING:
+    from core.game_state import GameState
 
 card_settings = CARD_SETTING["Cyan"]
 color_code = "C"
 
 
 class CyanCard(Card):
-    def __init__(self, owner: str, board_x: int, board_y: int, job_and_color: str, health: int, damage:int) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int, job_and_color: str,
+                 health: int, damage:int) -> None:
         
-        super().__init__(owner=owner, job_and_color=job_and_color, health=health, damage=damage, board_x=board_x, board_y=board_y)
+        super().__init__(owner=owner, job_and_color=job_and_color,
+                         health=health, damage=damage, board_x=board_x, board_y=board_y)
         self.upgrade: bool = False
         
     def get_coins(self, value: int, game_state: GameState) -> None:
@@ -21,7 +26,7 @@ class CyanCard(Card):
     @staticmethod
     def price_check(owner: str, job: str, game_state: GameState) -> bool:
         cyan_cards: filter[CyanCard] = filter(lambda card: isinstance(card, CyanCard), game_state.get_both_player_cards()) # pyright: ignore[reportAssignmentType]
-        price = card_settings[job]["cost"] - (card_settings["SP"]["coin_reduced"]*len(tuple(filter(lambda card: card.job_and_color == "SPC" and card.upgrade and card.owner == owner, cyan_cards))))
+        price = card_settings[job]["cost"]- (card_settings["SP"]["coin_reduced"]*len(tuple(filter(lambda card: card.job_and_color == "SPC" and card.upgrade and card.owner == owner, cyan_cards))))
         if game_state.players_coin[owner] >= price:
             game_state.players_coin[owner] -= price
             return True
@@ -30,9 +35,14 @@ class CyanCard(Card):
 
 
 class Adc(CyanCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["ADC"]["health"], damage:int=card_settings["ADC"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False,
+                 health: int = card_settings["ADC"]["health"],
+                 damage: int = card_settings["ADC"]["damage"]) -> None:
         
-        super().__init__(owner=owner, job_and_color="ADCC", health=health if not upgrade else card_settings["ADC"]["upgrade_health"], damage=damage if not upgrade else card_settings["ADC"]["upgrade_damage"], board_x=board_x, board_y=board_y)
+        super().__init__(owner=owner, job_and_color="ADCC",
+                         health=health if not upgrade else card_settings["ADC"]["upgrade_health"],
+                         damage=damage if not upgrade else card_settings["ADC"]["upgrade_damage"],
+                         board_x=board_x, board_y=board_y)
         self.upgrade = upgrade
         
     # def draw_shape(self, game_state: GameState) -> None:
@@ -56,9 +66,14 @@ class Adc(CyanCard):
 
 
 class Ap(CyanCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["AP"]["health"], damage:int=card_settings["AP"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False,
+                 health: int = card_settings["AP"]["health"],
+                 damage: int = card_settings["AP"]["damage"]) -> None:
     
-        super().__init__(owner=owner, job_and_color="APC", health=health if not upgrade else card_settings["AP"]["upgrade_health"], damage=damage if not upgrade else card_settings["AP"]["upgrade_damage"], board_x=board_x, board_y=board_y)
+        super().__init__(owner=owner, job_and_color="APC",
+                         health=health if not upgrade else card_settings["AP"]["upgrade_health"],
+                         damage=damage if not upgrade else card_settings["AP"]["upgrade_damage"],
+                         board_x=board_x, board_y=board_y)
 
         self.upgrade = upgrade
         self.target: Optional[Card] = None
@@ -87,9 +102,14 @@ class Ap(CyanCard):
 
 
 class Tank(CyanCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["TANK"]["health"], damage:int=card_settings["TANK"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False,
+                 health: int = card_settings["TANK"]["health"],
+                 damage: int = card_settings["TANK"]["damage"]) -> None:
         
-        super().__init__(owner=owner, job_and_color="TANKC", health=health if not upgrade else card_settings["TANK"]["upgrade_health"], damage=damage if not upgrade else card_settings["TANK"]["upgrade_damage"], board_x=board_x, board_y=board_y)
+        super().__init__(owner=owner, job_and_color="TANKC",
+                         health=health if not upgrade else card_settings["TANK"]["upgrade_health"],
+                         damage=damage if not upgrade else card_settings["TANK"]["upgrade_damage"],
+                         board_x=board_x, board_y=board_y)
         
         self.upgrade = upgrade
 
@@ -115,10 +135,15 @@ class Tank(CyanCard):
 
 
 class Hf(CyanCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["HF"]["health"], damage:int=card_settings["HF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False,
+                 health: int = card_settings["HF"]["health"],
+                 damage: int = card_settings["HF"]["damage"]) -> None:
 
         self.count = 1        
-        super().__init__(owner=owner, job_and_color="HFC", health=health if not upgrade else card_settings["HF"]["upgrade_health"], damage=damage if not upgrade else card_settings["HF"]["upgrade_damage"], board_x=board_x, board_y=board_y)
+        super().__init__(owner=owner, job_and_color="HFC",
+                         health=health if not upgrade else card_settings["HF"]["upgrade_health"],
+                         damage=damage if not upgrade else card_settings["HF"]["upgrade_damage"],
+                         board_x=board_x, board_y=board_y)
         
         self.upgrade = upgrade
         
@@ -158,9 +183,14 @@ class Hf(CyanCard):
 
 
 class Lf(CyanCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["LF"]["health"], damage:int=card_settings["LF"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False,
+                 health: int=card_settings["LF"]["health"],
+                 damage:int=card_settings["LF"]["damage"]) -> None:
         
-        super().__init__(owner=owner, job_and_color="LFC", health=health if not upgrade else card_settings["LF"]["upgrade_health"], damage=damage if not upgrade else card_settings["LF"]["upgrade_damage"], board_x=board_x, board_y=board_y)
+        super().__init__(owner=owner, job_and_color="LFC",
+                         health=health if not upgrade else card_settings["LF"]["upgrade_health"],
+                         damage=damage if not upgrade else card_settings["LF"]["upgrade_damage"],
+                         board_x=board_x, board_y=board_y)
         
         self.upgrade = upgrade
 
@@ -181,9 +211,14 @@ class Lf(CyanCard):
 
 
 class Ass(CyanCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["ASS"]["health"], damage:int=card_settings["ASS"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False,
+                 health: int=card_settings["ASS"]["health"],
+                 damage:int=card_settings["ASS"]["damage"]) -> None:
  
-        super().__init__(owner=owner, job_and_color="ASSC", health=health if not upgrade else card_settings["ASS"]["upgrade_health"], damage=damage if not upgrade else card_settings["ASS"]["upgrade_damage"], board_x=board_x, board_y=board_y)
+        super().__init__(owner=owner, job_and_color="ASSC",
+                         health=health if not upgrade else card_settings["ASS"]["upgrade_health"],
+                         damage=damage if not upgrade else card_settings["ASS"]["upgrade_damage"],
+                         board_x=board_x, board_y=board_y)
         
         self.upgrade = upgrade
 
@@ -209,7 +244,9 @@ class Ass(CyanCard):
 
 
 class Apt(CyanCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["APT"]["health"], damage:int=card_settings["APT"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False,
+                 health: int = card_settings["APT"]["health"],
+                 damage: int = card_settings["APT"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="APTC", health=health if not upgrade else card_settings["APT"]["upgrade_health"], damage=damage if not upgrade else card_settings["APT"]["upgrade_damage"], board_x=board_x, board_y=board_y)
         
@@ -231,9 +268,14 @@ class Apt(CyanCard):
 
 
 class Sp(CyanCard):
-    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False, health: int=card_settings["SP"]["health"], damage:int=card_settings["SP"]["damage"]) -> None:
+    def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False,
+                 health: int=card_settings["SP"]["health"],
+                 damage:int=card_settings["SP"]["damage"]) -> None:
 
-        super().__init__(owner=owner, job_and_color="SPC", health=health if not upgrade else card_settings["SP"]["upgrade_health"], damage=damage if not upgrade else card_settings["SP"]["upgrade_damage"], board_x=board_x, board_y=board_y)
+        super().__init__(owner=owner, job_and_color="SPC",
+                         health=health if not upgrade else card_settings["SP"]["upgrade_health"],
+                         damage=damage if not upgrade else card_settings["SP"]["upgrade_damage"],
+                         board_x=board_x, board_y=board_y)
         
         self.upgrade = upgrade
 

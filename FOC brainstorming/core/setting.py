@@ -1,13 +1,20 @@
-import os, json
+import os
+import json
 from typing import cast, TYPE_CHECKING
 
-from utils.type_hint import JobDictionary
-
+if TYPE_CHECKING:
+    from utils.type_hint import JobDictionary, CardSetting
 
 __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("core", "")
 
 with open(f"{__FOLDER_PATH}/setting/setting.json", "r", encoding="utf-8") as file:
     SETTING: dict[str, str] = json.loads(file.read())
+
+with open(f"{__FOLDER_PATH}/setting/card_setting.json", "r", encoding="utf-8") as file:
+    CARD_SETTING: CardSetting = json.loads(file.read())
+
+with open(f"{__FOLDER_PATH}/setting/card_hints.json", "r", encoding="utf-8") as file:
+    CARDS_HINTS_DICTIONARY: dict[str, str] = json.loads(file.read())
 
 with open(f"{__FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())

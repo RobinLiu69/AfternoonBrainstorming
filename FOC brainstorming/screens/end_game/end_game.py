@@ -1,15 +1,17 @@
-import pygame, shutil
+import shutil
 from dataclasses import dataclass, field
 from typing import cast
 
+import pygame
 
-from core.game_state import GameState, GameStatistics, BLACK, WHITE
+from core.setting import BLACK, WHITE
+from core.game_state import GameState, GameStatistics
 from core.game_screen import GameScreen, os, draw_text, __FOLDER_PATH, PIE_TITLE_TEXTS, KEYS_TO_CHECK, KETYS_TO_DISPLAY
 from utils.chart_make import make_plot_chart, make_pie_chart, make_bar_chart
 from utils.controls import key_pressed
 
-
 folder_path = __FOLDER_PATH
+
 
 @dataclass(kw_only=True)
 class Chart:
@@ -31,7 +33,9 @@ class Chart:
         if self.visible == True and self.image:
             game_screen.surface.blit(self.image, (self.x, self.y))
 
-def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[str, dict[str, int]], player1_profession_data: dict[str, dict[str, int]], player2_profession_data: dict[str, dict[str, int]], statistics: GameStatistics) -> tuple[str, dict[str, list[str]], dict[str, list[str]]]:
+def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[str, dict[str, int]],
+                 player1_profession_data: dict[str, dict[str, int]], player2_profession_data: dict[str, dict[str, int]],
+                 statistics: GameStatistics) -> tuple[str, dict[str, list[str]], dict[str, list[str]]]:
     bar_title_texts = ["KDA", "Average Attack Damage", "Per Round Influence", "Survival Index"]
     
     bar_paths: dict[str, list[str]] = {"player1": [], "player2": []}
@@ -58,22 +62,38 @@ def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[s
     
     return plot_path, pie_paths, bar_paths
 
-def display_chart(pie_paths: dict[str, list[str]], bar_paths: dict[str, list[str]], plot_path: str, game_screen: GameScreen) -> tuple[Chart, dict[str, dict[str, list[Chart]]]]:
+def display_chart(pie_paths: dict[str, list[str]], bar_paths: dict[str, list[str]],
+                  plot_path: str, game_screen: GameScreen) -> tuple[Chart, dict[str, dict[str, list[Chart]]]]:
     charts: dict[str, dict[str, list[Chart]]] = {"player1": {"pie": [], "bar": []}, "player2": {"pie": [], "bar": []}}
 
     for i, path in enumerate(pie_paths["player1"]):
-        charts["player1"]["pie"].append(Chart(file_path=path, x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(pie_paths["player1"])/2+i*2.2))), y=int(game_screen.display_height/2-(game_screen.block_size*1.7)), width=int(game_screen.block_size*2), height=int(game_screen.block_size*2)))
+        charts["player1"]["pie"].append(Chart(file_path=path,
+                                              x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(pie_paths["player1"])/2+i*2.2))),
+                                              y=int(game_screen.display_height/2-(game_screen.block_size*1.7)), width=int(game_screen.block_size*2),
+                                              height=int(game_screen.block_size*2)))
 
     for i, path in enumerate(pie_paths["player2"]):
-        charts["player2"]["pie"].append(Chart(file_path=path, x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(pie_paths["player2"])/2+i*2.2))), y=int(game_screen.display_height/2-(game_screen.block_size*1.7)), width=int(game_screen.block_size*2), height=int(game_screen.block_size*2)))
+        charts["player2"]["pie"].append(Chart(file_path=path,
+                                              x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(pie_paths["player2"])/2+i*2.2))),
+                                              y=int(game_screen.display_height/2-(game_screen.block_size*1.7)), width=int(game_screen.block_size*2),
+                                              height=int(game_screen.block_size*2)))
     
     for i, path in enumerate(bar_paths["player1"]):
-        charts["player1"]["bar"].append(Chart(file_path=path, x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(bar_paths["player1"])/2+i*2.2))), y=int(game_screen.display_height/2+(game_screen.block_size*0.7)), width=int(game_screen.block_size*2), height=int(game_screen.block_size*2)))
+        charts["player1"]["bar"].append(Chart(file_path=path,
+                                              x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(bar_paths["player1"])/2+i*2.2))),
+                                              y=int(game_screen.display_height/2+(game_screen.block_size*0.7)), width=int(game_screen.block_size*2),
+                                              height=int(game_screen.block_size*2)))
     
     for i, path in enumerate(bar_paths["player2"]):
-        charts["player2"]["bar"].append(Chart(file_path=path, x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(bar_paths["player2"])/2+i*2.2))), y=int(game_screen.display_height/2+(game_screen.block_size*0.7)), width=int(game_screen.block_size*2), height=int(game_screen.block_size*2)))
+        charts["player2"]["bar"].append(Chart(file_path=path,
+                                              x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(bar_paths["player2"])/2+i*2.2))),
+                                              y=int(game_screen.display_height/2+(game_screen.block_size*0.7)), width=int(game_screen.block_size*2),
+                                              height=int(game_screen.block_size*2)))
     
-    score_chart = Chart(file_path=plot_path, x=int(game_screen.display_width/2-(game_screen.block_size*3.75/1.1)), y=int(game_screen.display_height/2+(game_screen.block_size*0.1)), width=int(game_screen.block_size*7.5/1.1), height=int(game_screen.block_size*3/1.1))
+    score_chart = Chart(file_path=plot_path,
+                        x=int(game_screen.display_width/2-(game_screen.block_size*3.75/1.1)),
+                        y=int(game_screen.display_height/2+(game_screen.block_size*0.1)),
+                        width=int(game_screen.block_size*7.5/1.1), height=int(game_screen.block_size*3/1.1))
     
     return score_chart, charts
 
@@ -140,7 +160,8 @@ def init_datas(statistics: GameStatistics) -> tuple[dict[str, dict[str, int]], d
 
     
     
-    return player1_datas, player2_datas, player1_profession_data, player2_profession_data, display_player1_data, display_player2_data, display_player1_name, display_player2_name
+    return (player1_datas, player2_datas, player1_profession_data, player2_profession_data,
+            display_player1_data, display_player2_data, display_player1_name, display_player2_name)
 
 def set_all_invisible(score_chart: Chart, charts: dict[str, dict[str, list[Chart]]]) -> None:
     score_chart.visible = False
@@ -151,42 +172,67 @@ def set_all_invisible(score_chart: Chart, charts: dict[str, dict[str, list[Chart
 
 def loading_screen(game_screen: GameScreen) -> None:
     game_screen.surface.fill(BLACK)
-    draw_text("Loading...", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*0.425, game_screen.display_height/2-game_screen.block_size*0.3, game_screen.surface)
+    draw_text("Loading...", game_screen.big_text_font, WHITE,
+              game_screen.display_width/2-game_screen.block_size*0.425,
+              game_screen.display_height/2-game_screen.block_size*0.3, game_screen.surface)
     pygame.display.update()
 
-def display_raw_data(display_player1_data: list[list[int]], display_player2_data: list[list[int]], display_player1_name: list[str], display_player2_name: list[str], game_screen: GameScreen) -> None:
+def display_raw_data(display_player1_data: list[list[int]], display_player2_data: list[list[int]],
+                     display_player1_name: list[str], display_player2_name: list[str], game_screen: GameScreen) -> None:
 
     for i in range(len(KEYS_TO_CHECK)):
-        draw_text(KETYS_TO_DISPLAY[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-3.3+0.75*i), game_screen.display_height/2+game_screen.block_size*(-2.25), game_screen.surface)
+        draw_text(KETYS_TO_DISPLAY[i], game_screen.mid_text_font, WHITE,
+                  game_screen.display_width/2+game_screen.block_size*(-3.3+0.75*i),
+                  game_screen.display_height/2+game_screen.block_size*(-2.25), game_screen.surface)
     
-    draw_text("Player1:", game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-4.7), game_screen.display_height/2+game_screen.block_size*(-2.1+0.2*len(display_player1_data)/2), game_screen.surface)
+    draw_text("Player1:", game_screen.mid_text_font, WHITE,
+              game_screen.display_width/2+game_screen.block_size*(-4.7),
+              game_screen.display_height/2+game_screen.block_size*(-2.1+0.2*len(display_player1_data)/2), game_screen.surface)
     
     for i in range(len(display_player1_data)):
         for j in range(len(display_player1_data[i])):
-            draw_text(str(display_player1_data[i][j]), game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-3.2+0.75*j), game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
+            draw_text(str(display_player1_data[i][j]), game_screen.mid_text_font, WHITE,
+                      game_screen.display_width/2+game_screen.block_size*(-3.2+0.75*j),
+                      game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
     
-        draw_text(display_player1_name[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*4, game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
+        draw_text(display_player1_name[i], game_screen.mid_text_font, WHITE,
+                  game_screen.display_width/2-game_screen.block_size*4,
+                  game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
     
-    draw_text("Player2:", game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-4.7), game_screen.display_height/2+game_screen.block_size*(0.15+0.2*len(display_player2_data)/2), game_screen.surface)
+    draw_text("Player2:", game_screen.mid_text_font, WHITE,
+              game_screen.display_width/2+game_screen.block_size*(-4.7),
+              game_screen.display_height/2+game_screen.block_size*(0.15+0.2*len(display_player2_data)/2), game_screen.surface)
     
     for i in range(len(display_player2_data)):
         for j in range(len(display_player2_data[i])):
-            draw_text(str(display_player2_data[i][j]), game_screen.mid_text_font, WHITE, game_screen.display_width/2+game_screen.block_size*(-3.3+0.75*j), game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
+            draw_text(str(display_player2_data[i][j]), game_screen.mid_text_font, WHITE,
+                      game_screen.display_width/2+game_screen.block_size*(-3.3+0.75*j), 
+                      game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
     
-        draw_text(display_player2_name[i], game_screen.mid_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*4, game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
+        draw_text(display_player2_name[i], game_screen.mid_text_font, WHITE,
+                  game_screen.display_width/2-game_screen.block_size*4,
+                  game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
 
 
 def display_end_game_data(winner: str, game_state: GameState, game_screen: GameScreen):
-    draw_text(f"Winner: {winner.capitalize()}!!", game_screen.title_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*1.5, game_screen.display_height/2-game_screen.block_size*2, game_screen.surface)
-    draw_text(f"Total Turns: {len(game_state.game_statistics.score_history)}", game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1, game_screen.display_height/2-game_screen.block_size*0.4, game_screen.surface)
-    draw_text("Player1 Timer: "+game_state.player_timer["player1"]+",   Player2 Timer: "+game_state.player_timer["player2"], game_screen.text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1, game_screen.display_height/2-game_screen.block_size*0.2, game_screen.surface)
+    draw_text(f"Winner: {winner.capitalize()}!!", game_screen.title_text_font,
+              WHITE, game_screen.display_width/2-game_screen.block_size*1.5,
+              game_screen.display_height/2-game_screen.block_size*2, game_screen.surface)
+    draw_text(f"Total Turns: {len(game_state.game_statistics.score_history)}",
+              game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1,
+              game_screen.display_height/2-game_screen.block_size*0.4, game_screen.surface)
+    draw_text("Player1 Timer: "+game_state.player_timer["player1"]+",   Player2 Timer: "+game_state.player_timer["player2"],
+              game_screen.text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1,
+              game_screen.display_height/2-game_screen.block_size*0.2, game_screen.surface)
     
     
 
 def main(winner: str, game_state: GameState, game_screen: GameScreen) -> None:
     player1_datas, player2_datas, player1_profession_data, player2_profession_data, display_player1_data, display_player2_data, display_player1_name, display_player2_name = init_datas(game_state.game_statistics)
     loading_screen(game_screen)
-    plot_path, pie_paths, bar_paths = making_image(player1_datas, player2_datas, player1_profession_data, player2_profession_data, game_state.game_statistics)
+    
+    plot_path, pie_paths, bar_paths = making_image(player1_datas, player2_datas, player1_profession_data,
+                                                   player2_profession_data, game_state.game_statistics)
     
     score_chart, charts = display_chart(pie_paths, bar_paths, plot_path, game_screen)
     
@@ -279,9 +325,11 @@ def main(winner: str, game_state: GameState, game_screen: GameScreen) -> None:
         elif display_state == "mid":
             display_end_game_data(winner, game_state, game_screen)
         elif display_state == "player1":
-            draw_text("Player1", game_screen.title_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.5, game_screen.display_height/2-game_screen.block_size*2.5, game_screen.surface)
+            draw_text("Player1", game_screen.title_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.5,
+                      game_screen.display_height/2-game_screen.block_size*2.5, game_screen.surface)
         elif display_state == "player2":
-            draw_text("Player2", game_screen.title_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.5, game_screen.display_height/2-game_screen.block_size*2.5, game_screen.surface)
+            draw_text("Player2", game_screen.title_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.5,
+                      game_screen.display_height/2-game_screen.block_size*2.5, game_screen.surface)
         
         score_chart.display(game_screen)
 

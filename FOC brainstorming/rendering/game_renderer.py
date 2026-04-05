@@ -13,14 +13,9 @@ class GameRenderer:
         self.board_renderer = BoardRenderer(game_screen)
         self.ui_renderer = UIRenderer(game_screen)
     
-    def render_frame(self, controller: str, mouse_x: int, mouse_y: int, mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState) -> None:
+    def render_frame(self, controller: str, mouse_x: int, mouse_y: int,
+                     mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState) -> None:
         self.game_screen.render()
-        self.board_renderer.render_all(game_state)
-
-        if mouse_board_x is not None and mouse_board_y is not None:
-            self.board_renderer.render_attack_highlight(
-                mouse_board_x, mouse_board_y, controller, game_state
-            )
 
         for card in game_state.neutral.on_board:
             for render_object in card.get_render_data():
@@ -31,6 +26,13 @@ class GameRenderer:
         for card in game_state.player2.on_board:
             for render_object in card.get_render_data():
                 self.card_renderer.render(render_object)
+    
+        self.board_renderer.render_all(game_state)
+
+        if mouse_board_x is not None and mouse_board_y is not None:
+            self.board_renderer.render_attack_highlight(
+                mouse_board_x, mouse_board_y, controller, game_state
+            )
 
         self.ui_renderer.render_score(controller, game_state)
         self.ui_renderer.render_controller_label(controller)
@@ -45,7 +47,8 @@ class GameRenderer:
 
         self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state)
 
-    def _render_hint(self, mouse_x: int, mouse_y: int, mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState) -> None:
+    def _render_hint(self, mouse_x: int, mouse_y: int,
+                     mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState) -> None:
         if mouse_x < self.game_screen.display_width / 2 - self.game_screen.block_size * 2:
             name, _ = game_state.player1.get_hand_name_by_mouse_pos(mouse_x, mouse_y, self.game_screen)
             if name != "None":

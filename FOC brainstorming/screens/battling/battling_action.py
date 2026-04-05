@@ -6,10 +6,14 @@ from core.game_action import GameAction
 from utils.controls import key_pressed
 
 def to_board_x(mouse_x: int, game_screen: GameScreen) -> int | None:
-    return int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 and mouse_x < game_screen.display_width/2+game_screen.block_size*2 else None
+    return (int((mouse_x - (game_screen.display_width/2 - game_screen.block_size*2)) / game_screen.block_size)
+        if mouse_x > game_screen.display_width/2 - game_screen.block_size*2 and
+        mouse_x < game_screen.display_width/2 + game_screen.block_size*2 else None)
 
 def to_board_y(mouse_y: int, game_screen: GameScreen) -> int | None:
-    return int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 and mouse_y < game_screen.display_height/2+game_screen.block_size*2.35 else None
+    return (int((mouse_y - (game_screen.display_height/2 - game_screen.block_size*1.65)) / game_screen.block_size)
+        if mouse_y > game_screen.display_height/2 - game_screen.block_size*1.65 and
+        mouse_y < game_screen.display_height/2 + game_screen.block_size*2.35 else None)
 
 
 def collect_actions(controller: str, card_info: list, game_state: GameState, game_screen: GameScreen) -> list[GameAction]:
@@ -34,7 +38,7 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             ))
                             game_state.get_player(controller).selected_card_index = -1
                             card_info = []
-                    if (mouse_x < game_screen.display_width/2-game_screen.block_size*2) if controller == "player1" else (mouse_x > game_screen.display_width/2+game_screen.block_size*2):
+                    if (mouse_x < game_screen.display_width/2 - game_screen.block_size*2) if controller == "player1" else (mouse_x > game_screen.display_width/2+game_screen.block_size*2):
                         card_info = list(game_state.get_player(controller).get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen))
                         print(card_info, isinstance(card_info[1], int))
                     if card_info and card_info[0] != "None" and isinstance(card_info[1], int):

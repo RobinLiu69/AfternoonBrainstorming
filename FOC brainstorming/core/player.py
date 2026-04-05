@@ -1,17 +1,18 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Optional, TYPE_CHECKING
-import random, time
+import random
+import time
 
 from core.game_screen import GameScreen, draw_text
 from core.UI import AttackCountDisplay, TokenDisplay, HighLightBox
-from core.game_state import GameState, StatType, WHITE, BLUE, RED, CYAN, DARKGREEN, GREEN
+from core.setting import WHITE, BLUE, RED
+from core.game_statistics import StatType
 from cards.base import Card
 from cards.factory import spawn_card
 
 if TYPE_CHECKING:
-    from core.neutral import Neutral
-    from core.board_block import Board
-    from rendering.card_renderer import CardRenderer
+    from rendering.game_renderer import GameRenderer
+    from core.game_state import GameState
 
 MAGIC_CARDS = ["CUBES", "MOVE", "MOVEO", "HEAL"]
 
@@ -27,7 +28,6 @@ class Player:
 
     def __post_init__(self) -> None:
         self.short_name: str = self.name[0].upper()+self.name[-1]
-        self.time: str = "0:00"
         self.start_time: float = 0
         self.elapsed_time: int = 0
         self.time_out: bool = False
@@ -194,17 +194,19 @@ class Player:
                         break
                 
     
-    def recycle_cards(self, game_state: GameState) -> None:
+    def recycle_cards(self, game_state: GameState, game_renderer: GameRenderer) -> None:
         for i, card in enumerate(self.on_board):
             if card.health <= 0 and card.can_be_killed(game_state):
                 card.die(game_state)
+                game_renderer.card_renderer.release(card.get_uid())
                 card_name = self.on_board.pop(i).job_and_color
                 self.discard_pile.append(card_name)
                 game_state.board_dict[card.board_x, card.board_y].occupy = False
                 game_state.game_logger.log_card_recycled(self.name, card_name, (card.board_x, card.board_y))
     
     def add_card_to_deck(self, card: str) -> None:
-        if card != "None" and len(self.deck) < 12 and ((self.deck.count(card) < 2 and card not in MAGIC_CARDS) or (self.deck.count(card) < 3 and card in MAGIC_CARDS)):
+        if (card != "None" and len(self.deck) < 12 and
+        ((self.deck.count(card) < 2 and card not in MAGIC_CARDS) or (self.deck.count(card) < 3 and card in MAGIC_CARDS))):
             self.deck.append(card)
     
     def pop_card_from_deck(self) -> None:
@@ -217,55 +219,14 @@ class Player:
             deck.remove(card_name)
             self.deck = deck[::-1] if from_end else deck
             
-    def spawn_cude(self, board_x: int, board_y: int, game_state: GameState) -> None:
+    def spawn_cube(self, board_x: int, board_y: int, game_state: GameState) -> None:
         if game_state.number_of_cudes[self.name] > 0:
             if spawn_card(board_x, board_y, "CUBE", "neutral", game_state.neutral.on_board, game_state):
                 game_state.game_logger.log_card_played(self.name, "CUBE", (board_x, board_y))
                 game_state.number_of_cudes[self.name] -= 1
                 game_state.game_statistics.increment(StatType.CUBE_USE, self.name, 1)
             pass
-
-    def menu_display_timer_state(self, timer_mode: str, game_screen: GameScreen) -> None:
-        match self.name:
-            case "player1":
-                draw_text(f"Timer Mode: {timer_mode}", game_screen.text_font, WHITE, game_screen.display_width/5, game_screen.display_height/1.4+(game_screen.block_size*0.2), game_screen.surface)
-            case _:
-                pass
     
-    def menu_file_auto_delet_state(self, file_auto_delet: bool, game_screen: GameScreen) -> None:
-        match self.name:
-            case "player1":
-                draw_text("File Mode: Save" if not file_auto_delet else "File Mode: Delet", game_screen.text_font, WHITE, game_screen.display_width/5+game_screen.block_size*1.5, game_screen.display_height/1.4+(game_screen.block_size*0.2), game_screen.surface)
-            case _:
-                pass
-    
-    def menu_deck_display(self, menu_state: str, game_screen: GameScreen) -> None:
-        draw_text(f"{self.short_name}Deck:", game_screen.text_font, WHITE, game_screen.display_width//16*2, game_screen.display_height-(game_screen.display_height//5/self.menu_deck_offset_y), game_screen.surface)
-        match menu_state:
-            case "player1":
-                match self.name:
-                    case "player1":
-                        for i, card in enumerate(self.deck):
-                            draw_text(card, game_screen.text_font, WHITE,game_screen.display_width/16*(i+3), game_screen.display_height-(game_screen.display_height/5/self.menu_deck_offset_y), game_screen.surface)
-                        if len(self.deck) < 12:
-                            draw_text("<--", game_screen.text_font, WHITE,game_screen.display_width/16*(len(self.deck)+3), game_screen.display_height-(game_screen.display_height/5/self.menu_deck_offset_y), game_screen.surface)
-                    case "player2":
-                        for i, card in enumerate(self.deck):
-                            draw_text("??" if i > 5 else card, game_screen.text_font, WHITE,game_screen.display_width/16*(i+3), game_screen.display_height-(game_screen.display_height/5/self.menu_deck_offset_y), game_screen.surface)
-            case "player2":
-                match self.name:
-                    case "player1":
-                        for i, card in enumerate(self.deck):
-                            draw_text("??" if i > 5 else card, game_screen.text_font, WHITE,game_screen.display_width/16*(i+3), game_screen.display_height-(game_screen.display_height/5/self.menu_deck_offset_y), game_screen.surface)
-                    case "player2":
-                        for i, card in enumerate(self.deck):
-                            draw_text(card, game_screen.text_font, WHITE,game_screen.display_width/16*(i+3), game_screen.display_height-(game_screen.display_height/5/self.menu_deck_offset_y), game_screen.surface)
-                        if len(self.deck) < 12:
-                            draw_text("<--", game_screen.text_font, WHITE,game_screen.display_width/16*(len(self.deck)+3), game_screen.display_height-(game_screen.display_height/5/self.menu_deck_offset_y), game_screen.surface)
-            case _:
-                for i, card in enumerate(self.deck):
-                    draw_text("??", game_screen.text_font, WHITE,game_screen.display_width/16*(i+3), game_screen.display_height-(game_screen.display_height/5/self.menu_deck_offset_y), game_screen.surface)
-
     def timer_start(self, game_state: GameState) -> None:
         self.start_time = time.time()
         match game_state.timer_mode:
@@ -273,8 +234,8 @@ class Player:
                 self.elapsed_time = game_state.coutdown_time
         self._update_timer_logic(game_state.timer_mode)
     
-    def logic_update(self, game_state: GameState, update_timer: bool) -> None:
-        self.recycle_cards(game_state)
+    def logic_update(self, game_state: GameState, game_renderer: GameRenderer, update_timer: bool) -> None:
+        self.recycle_cards(game_state, game_renderer)
         if game_state.card_to_draw[self.name] > 0:
             game_state.card_to_draw[self.name] -= 1
             self.draw_card(game_state)
@@ -282,14 +243,9 @@ class Player:
         if update_timer:
             self._update_timer_logic(game_state.timer_mode)
 
-    # def _display_seleted_card(self, game_screen: GameScreen) -> None:
-    #     if not self.selected_highlight: return
-    #     if self.selected_card_index == -1 or len(self.hand) <= self.selected_card_index: return
-    #     self.selected_highlight.update(self.selected_card_index, len(self.hand[self.selected_card_index]), game_screen)
-
     def get_hand_name_by_mouse_pos(self, mouse_x: int, mouse_y: int, game_screen: GameScreen) -> tuple[str, int]:
-        if (mouse_x < game_screen.display_width/2-game_screen.block_size*2.1 and mouse_x > game_screen.display_width/2-game_screen.block_size*3.3) or\
-           (mouse_x > game_screen.display_width/2+game_screen.block_size*2.1 and mouse_x < game_screen.display_width/2+game_screen.block_size*3.3):
+        if ((mouse_x < game_screen.display_width/2-game_screen.block_size*2.1 and mouse_x > game_screen.display_width/2-game_screen.block_size*3.3) or
+           (mouse_x > game_screen.display_width/2+game_screen.block_size*2.1 and mouse_x < game_screen.display_width/2+game_screen.block_size*3.3)):
             i = int(mouse_y*14/game_screen.display_height+0.5)-1
             if -1 < i < len(self.hand):
                 return self.hand[i], i
@@ -319,3 +275,30 @@ class Player:
                 time_minutes = str(int(self.elapsed_time//60)) if len(str(int(self.elapsed_time//60))) > 1 else "0"+str(int(self.elapsed_time//60))
                 time_seconds = str(int(self.elapsed_time%60)) if len(str(int(self.elapsed_time%60))) > 1 else "0"+str(int(self.elapsed_time%60))
                 self.time_minutes_and_seconds = time_minutes+":"+time_seconds
+
+    def to_dict(self) -> dict:
+        return {
+                "name": self.name,
+                "deck": self.deck,
+                "hand": self.hand,
+                "on_board": self.on_board,
+                "draw_pile": self.draw_pile,
+                "discard_pile": self.discard_pile,
+                "start_time": self.start_time,
+                "elapsed_time": self.elapsed_time
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> Player:
+        player = cls(
+            name=data["name"],
+            deck=data["deck"],
+            hand=data["hand"],
+            on_board=data["on_board"],
+            draw_pile=data["draw_pile"],
+            discard_pile=data["discard_pile"]
+        )
+
+        player.start_time = data["start_time"]
+        player.elapsed_time = data["elapsed_time"]
+        return player
