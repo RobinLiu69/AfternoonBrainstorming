@@ -87,6 +87,7 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
         plt.savefig(os.path.join(output_folder, player_name+"_pie_chart_"+title_text+".png"), transparent=True)
     return player_name+"_pie_chart_"+title_text+".png"
 
+
 def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str, int]],
                    turns: int, fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
     if len(datas):
