@@ -7,8 +7,10 @@ import pygame
 
 from utils.controls import key_pressed
 
+
 if TYPE_CHECKING:
     from screens.draft.exhibit_registry import ExhibitRegistry
+
 
 DraftActionType = Literal[
     "add_card",
@@ -98,5 +100,4 @@ def collect_draft_actions(current_editor: str, page: int, registry: ExhibitRegis
                     actions.append(DraftAction(current_editor, "toggle_file_save"))
                 case pygame.K_f:
                     actions.append(DraftAction(current_editor, "toggle_hint"))
-
     return actions

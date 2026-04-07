@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass
 from typing import Literal, Optional
 
+
 ActionType = Literal[
     "attack", "play_card", "move_select", "move_to",
     "heal", "spawn_cube", "end_turn", "quit"

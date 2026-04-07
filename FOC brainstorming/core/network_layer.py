@@ -1,23 +1,11 @@
-"""
-----------------
-Thin TCP transport for LAN draft sessions.
-
-Wire format (both directions):
-    [4 bytes big-endian length][UTF-8 JSON payload]
-
-Server  → Client : full DraftState dict after every action
-Client  → Server : DraftAction dict
-"""
 import json
 import socket
-import zlib
 import struct
 import threading
 from typing import Callable, Optional
 
 
 def _recv_exactly(sock: socket.socket, n: int) -> Optional[bytes]:
-    """Read exactly n bytes, or return None on disconnect."""
     buf = b""
     while len(buf) < n:
         chunk = sock.recv(n - len(buf))
@@ -28,15 +16,11 @@ def _recv_exactly(sock: socket.socket, n: int) -> Optional[bytes]:
 
 
 def _send_msg(sock: socket.socket, payload: dict) -> None:
-    """Send a length-prefixed JSON message."""
     data = json.dumps(payload).encode()
-    
-    print(data)
     sock.sendall(struct.pack(">I", len(data)) + data)
- 
- 
+
+
 def _recv_msg(sock: socket.socket) -> Optional[dict]:
-    """Receive a length-prefixed JSON message. Returns None on disconnect."""
     raw_len = _recv_exactly(sock, 4)
     if raw_len is None:
         return None
@@ -44,54 +28,62 @@ def _recv_msg(sock: socket.socket) -> Optional[dict]:
     raw_data = _recv_exactly(sock, length)
     if raw_data is None:
         return None
-    
-    print(json.loads(raw_data.decode()))
     return json.loads(raw_data.decode())
 
 
 class LANServer:
-    """
-    Run on the host machine (lan_server mode).
-
-    Usage:
-        server = LANServer()
-        dispatcher.attach_server(server)
-        server.start()          # non-blocking; accepts clients in background
-        ...
-        server.stop()
-    """
-
     def __init__(self, host: str = "0.0.0.0", port: int = 5555):
         self.host = host
         self.port = port
-        # Called with a dict whenever a client sends an action.
+
         self.on_action: Optional[Callable[[dict], None]] = None
+        self.on_client_connect: Optional[Callable[[], tuple[str, dict]]] = None
 
         self._clients: list[socket.socket] = []
         self._lock = threading.Lock()
         self._server_sock: Optional[socket.socket] = None
+        self._running = False
+
+    @property
+    def is_running(self) -> bool:
+        return self._running
 
     def start(self) -> None:
+        if self._running:
+            return
         self._server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._server_sock.bind((self.host, self.port))
         self._server_sock.listen(2)
+        self._running = True
         threading.Thread(target=self._accept_loop, daemon=True).start()
         print(f"[LANServer] Listening on {self.host}:{self.port}")
 
     def _accept_loop(self) -> None:
-        if not self._server_sock: return
-        while True:
+        if not self._server_sock:
+            return
+        while self._running:
             try:
                 conn, addr = self._server_sock.accept()
-                print(f"[LANServer] Client connected: {addr}")
-                with self._lock:
-                    self._clients.append(conn)
-                threading.Thread(
-                    target=self._client_loop, args=(conn, addr), daemon=True
-                ).start()
             except OSError:
                 break
+            print(f"[LANServer] Client connected: {addr}")
+
+            if self.on_client_connect is not None:
+                role, state = self.on_client_connect()
+            else:
+                role, state = "player2", {}
+            try:
+                _send_msg(conn, {"type": "welcome", "role": role, "state": state})
+            except OSError:
+                conn.close()
+                continue
+
+            with self._lock:
+                self._clients.append(conn)
+            threading.Thread(
+                target=self._client_loop, args=(conn, addr), daemon=True
+            ).start()
 
     def _client_loop(self, conn: socket.socket, addr) -> None:
         while True:
@@ -101,69 +93,163 @@ class LANServer:
                 with self._lock:
                     if conn in self._clients:
                         self._clients.remove(conn)
+                try:
+                    conn.close()
+                except OSError:
+                    pass
                 break
-            if self.on_action:
+            if msg.get("type") == "action" and self.on_action is not None:
                 self.on_action(msg)
 
-    def broadcast(self, state_dict: dict) -> None:
-        """Push updated DraftState to all connected clients."""
+    def _broadcast_envelope(self, envelope: dict) -> None:
         with self._lock:
-            dead = []
+            dead: list[socket.socket] = []
             for conn in self._clients:
                 try:
-                    _send_msg(conn, state_dict)
+                    _send_msg(conn, envelope)
                 except OSError:
                     dead.append(conn)
             for conn in dead:
                 self._clients.remove(conn)
 
+    def broadcast_state(self, state_dict: dict) -> None:
+        self._broadcast_envelope({"type": "state", "state": state_dict})
+
+    def broadcast_scene(self, scene: str, state_dict: dict) -> None:
+        self._broadcast_envelope({
+            "type": "scene",
+            "scene": scene,
+            "state": state_dict,
+        })
+
+    def broadcast_game_over(self, winner: str, statistics: dict) -> None:
+        self._broadcast_envelope({
+            "type": "game_over",
+            "winner": winner,
+            "statistics": statistics,
+        })
+
     def stop(self) -> None:
+        if not self._running:
+            return
+        self._running = False
+        with self._lock:
+            for conn in self._clients:
+                try:
+                    conn.close()
+                except OSError:
+                    pass
+            self._clients.clear()
         if self._server_sock:
-            self._server_sock.close()
+            try:
+                self._server_sock.close()
+            except OSError:
+                pass
+            self._server_sock = None
 
 
 class LANClient:
-    """
-    Run on the guest machine (lan_client mode).
-
-    Usage:
-        client = LANClient("192.168.x.x")
-        dispatcher.attach_client(client)
-        client.on_state_update = my_render_callback   # optional push handler
-        client.connect()
-        ...
-        client.disconnect()
-    """
-
     def __init__(self, host: str, port: int = 5555):
         self.host = host
         self.port = port
-        # Called with a state dict whenever the server pushes an update.
         self.on_state_update: Optional[Callable[[dict], None]] = None
 
         self._sock: Optional[socket.socket] = None
+        self.role: str = ""
+        self.initial_state: dict = {}
 
-    def connect(self) -> None:
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._sock.connect((self.host, self.port))
+        self.pending_scene: Optional[str]  = None
+        self.pending_scene_state: Optional[dict] = None
+        self.pending_winner: Optional[str]  = None
+        self.pending_statistics: Optional[dict] = None
+
+    @property
+    def is_connected(self) -> bool:
+        return self._sock is not None
+
+    def connect(self, timeout: float = 5.0) -> tuple[str, dict]:
+        if self._sock is not None:
+            return self.role, self.initial_state
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((self.host, self.port))
+        sock.settimeout(None)
+
+        welcome = _recv_msg(sock)
+        if not welcome or welcome.get("type") != "welcome":
+            sock.close()
+            raise RuntimeError(f"Handshake failed: expected welcome, got {welcome!r}")
+
+        self._sock = sock
+        self.role = welcome["role"]
+        self.initial_state = welcome.get("state", {})
+
         threading.Thread(target=self._recv_loop, daemon=True).start()
-        print(f"[LANClient] Connected to {self.host}:{self.port}")
+        print(f"[LANClient] Connected to {self.host}:{self.port} as {self.role}")
+        return self.role, self.initial_state
 
     def _recv_loop(self) -> None:
-        if not self._sock: return
-        """Background thread: receive pushed state updates from the server."""
-        while True:
-            msg = _recv_msg(self._sock)
-            if msg is None:
-                print("[LANClient] Disconnected from server.")
-                break
-            if self.on_state_update:
-                self.on_state_update(msg)
+        sock = self._sock
+        if sock is None:
+            return
+        try:
+            while True:
+                try:
+                    msg = _recv_msg(sock)
+                except (OSError, ValueError):
+                    break
+                if msg is None:
+                    break
+
+                mtype = msg.get("type")
+                if mtype == "state":
+                    print(f"[LANClient] received state envelope")
+                    if self.on_state_update is not None:
+                        self.on_state_update(msg["state"])
+                elif mtype == "scene":
+                    self.pending_scene = msg["scene"]
+                    self.pending_scene_state = msg.get("state", {})
+                elif mtype == "game_over":
+                    self.pending_winner = msg["winner"]
+                    self.pending_statistics = msg.get("statistics", {})
+        except Exception:
+            import traceback, sys
+            try:
+                sys.stderr.write("=== LANClient._recv_loop crashed ===\n")
+                sys.stderr.write(traceback.format_exc())
+                sys.stderr.write("=====================================\n")
+                sys.stderr.flush()
+            except Exception:
+                pass
+
+    def consume_pending_scene(self) -> Optional[tuple[str, dict]]:
+        if self.pending_scene is None:
+            return None
+        scene = self.pending_scene
+        state = self.pending_scene_state or {}
+        self.pending_scene = None
+        self.pending_scene_state = None
+        return scene, state
+
+    def consume_pending_game_over(self) -> Optional[tuple[str, dict]]:
+        if self.pending_winner is None:
+            return None
+        winner = self.pending_winner
+        stats  = self.pending_statistics or {}
+        self.pending_winner = None
+        self.pending_statistics = None
+        return winner, stats
 
     def send_action(self, action_dict: dict) -> None:
-        if self._sock:
-            _send_msg(self._sock, action_dict)
+        if self._sock is None:
+            return
+        _send_msg(self._sock, {"type": "action", **action_dict})
 
     def disconnect(self) -> None:
-        if self._sock:
-            self._sock.close()
+        if self._sock is not None:
+            try:
+                self._sock.close()
+            except OSError:
+                pass
+            self._sock = None

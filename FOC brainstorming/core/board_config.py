@@ -37,3 +37,7 @@ class BoardConfig:
             "width": self.width,
             "height": self.height
         }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> BoardConfig:
+        return cls(width=data["width"], height=data["height"])

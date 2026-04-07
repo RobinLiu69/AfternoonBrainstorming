@@ -4,6 +4,7 @@ from core.setting import JOB_DICTIONARY, CARD_SETTING
 from cards.base import Card
 from cards.factory import CardFactory
 
+
 _JOB_ORDER = ["ADC", "AP", "TANK", "HF", "LF", "ASS", "APT", "SP"]
 _POSITIONS  = [(0,0),(1,0),(2,0),(3,0),(0,1),(1,1),(2,1),(3,1)]
 _MAGIC_DEFS = [("CUBES", 0, 2), ("HEAL", 1, 2), ("MOVE", 2, 2)]
@@ -51,12 +52,7 @@ class ExhibitRegistry:
     def get_magic_row(self) -> list[Card]:
         return self._magic_row
 
-    def card_name_at(
-        self,
-        page: int,
-        board_x: Optional[int],
-        board_y: Optional[int]
-    ) -> str:
+    def card_name_at(self, page: int, board_x: Optional[int], board_y: Optional[int]) -> str:
         if board_x is None or board_y is None:
             return "None"
         for card in self.get_page(page):

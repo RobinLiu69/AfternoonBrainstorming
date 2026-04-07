@@ -1,5 +1,5 @@
 import math
-from typing import Callable, Iterable, TYPE_CHECKING
+from typing import Callable, Iterable, Optional, TYPE_CHECKING
 
 from cards.base import CardRenderData
 from core.game_state import GameState
@@ -7,8 +7,10 @@ from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card, most_frequent_elements
 
+
 if TYPE_CHECKING:
     from core.game_state import GameState
+
 
 card_settings = CARD_SETTING["Fuchsia"]
 color_code = "F"
@@ -18,8 +20,8 @@ class FuchsiaCard(Card):
     def __init__(self, owner: str, job_and_color: str, health: int, damage: int, board_x: int, board_y: int) -> None:
 
         super().__init__(owner=owner, job_and_color=job_and_color, health=health, damage=damage, board_x=board_x, board_y=board_y)
-
         self.shadows: list[Shadow] = []
+        self._pending_shadow_iids: Optional[str] = None
     
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
         for shadow in self.shadows:
@@ -35,6 +37,33 @@ class FuchsiaCard(Card):
             render_objects += shadow.get_render_data()
         return render_objects
     
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+        data["shadows"] = [s.to_dict() for s in self.shadows]
+        return data
+ 
+    def apply_dict(self, data: dict) -> None:
+        super().apply_dict(data)
+        self._reconcile_shadows(data.get("shadows", []))
+ 
+    def _reconcile_shadows(self, shadow_dicts: list) -> None:
+        from cards.factory import CardFactory
+ 
+        old_by_iid = {s.instance_id: s for s in self.shadows}
+        new_shadows = []
+        for sdata in shadow_dicts:
+            iid = sdata["instance_id"]
+            existing = old_by_iid.get(iid)
+            if existing is not None:
+                existing.apply_dict(sdata)
+                existing.linker = self
+                new_shadows.append(existing)
+            else:
+                fresh = CardFactory.from_dict(sdata)
+                fresh.linker = self  # type: ignore[attr-defined]
+                new_shadows.append(fresh)
+        self.shadows = new_shadows
+
 
 class Shadow(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int, linker: FuchsiaCard, attack_types: str, movable: bool) -> None:
@@ -76,7 +105,7 @@ class Shadow(FuchsiaCard):
     def get_render_data(self) -> list[CardRenderData]:
         shape_points = tuple((x*1.1, y*1.1) for x, y in self._compute_shape_points())
         return [CardRenderData(
-                uid=self.get_uid(),
+                instance_id=self.instance_id,
                 job_and_color=self.job_and_color,
                 job=self.job,
                 color=self.color,
@@ -114,8 +143,19 @@ class Shadow(FuchsiaCard):
     
     def end_turn(self, clear_numbness: bool=True) -> int:
         return 0
-        
-        
+
+    def to_dict(self) -> dict:
+        data = Card.to_dict(self)
+        data["attack_types"] = self.attack_types
+        data["movable"] = self.movable
+        return data
+ 
+    def apply_dict(self, data: dict) -> None:
+        Card.apply_dict(self, data)
+        self.attack_types = data["attack_types"]
+        self.movable = data["movable"]
+
+
 class Adc(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int,
                  health: int = card_settings["ADC"]["health"],
@@ -153,7 +193,7 @@ class Adc(FuchsiaCard):
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
-    
+
 
 class Ap(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int,
@@ -377,3 +417,4 @@ CardFactory.register("LF" + color_code, Lf)
 CardFactory.register("ASS" + color_code, Ass)
 CardFactory.register("APT" + color_code, Apt)
 CardFactory.register("SP" + color_code, Sp)
+CardFactory.register("SHADOW", Shadow)

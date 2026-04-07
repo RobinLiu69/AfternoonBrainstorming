@@ -6,12 +6,15 @@ from core.setting import SETTING
 from core.game_statistics import GameStatistics, StatType
 from utils.logger import GameLogger
 
-# if TYPE_CHECKING:
 from core.player import Player
 from core.neutral import Neutral
 from core.board_block import Board
 from core.board_config import BoardConfig
 from cards.base import Card
+
+
+if TYPE_CHECKING:
+    from rendering.game_renderer import GameRenderer
 
 
 @dataclass
@@ -87,14 +90,10 @@ class GameState:
             "player2": self.player2.to_dict(),
             "neutral": self.neutral.to_dict(),
             "board_config": self.board_config.to_dict(),
-            "game_logger": self.game_logger.to_dict(),
-            "game_statistics": self.game_statistics.to_dict(),
-
             "board_dict": {
                 f"{x},{y}": board.to_dict()
                 for (x, y), board in self.board_dict.items()
             },
-
             "player_timer": self.player_timer,
             "timer_mode": self.timer_mode,
             "countdown_time": self.coutdown_time,
@@ -111,35 +110,47 @@ class GameState:
             "number_of_cudes": self.number_of_cudes,
             "number_of_heals": self.number_of_heals
         }
-    
-    @classmethod
-    def from_dict(cls, data: dict) -> "GameState":
-        state = cls(
-            player1= Player.from_dict(data["player1"]),
-            player2= Player.from_dict(data["player2"]),
-            neutral= Neutral.from_dict(data["neutral"]),
-            board_config=BoardConfig.from_dict(data["board_config"]),
-        )
-        # restore board_dict — "x,y" strings back to (x, y) tuple keys
-        state.board_dict = {
-            tuple(int(v) for v in key.split(",")): Board.from_dict(val)
-            for key, val in data["board_dict"].items()
-        }
-        state.game_logger = GameLogger.from_dict(data["game_logger"])
-        state.game_statistics = GameStatistics.from_dict(data["game_statistics"])
 
-        state.player_timer = data["player_timer"]
-        state.timer_mode = data["timer_mode"]
-        state.file_auto_delete = data["file_auto_delete"]
-        state.score = data["score"]
-        state.turn_number = data["turn_number"]
-        state.players_luck = data["players_luck"]
-        state.players_token = data["players_token"]
-        state.players_totem = data["players_totem"]
-        state.players_coin = data["players_coin"]
-        state.card_to_draw = data["card_to_draw"]
-        state.number_of_attacks = data["number_of_attacks"]
-        state.number_of_movings = data["number_of_movings"]
-        state.number_of_cudes = data["number_of_cudes"]
-        state.number_of_heals = data["number_of_heals"]
-        return state
+    def apply_dict(self, data: dict, game_renderer: GameRenderer) -> None:
+        from cards.card_fuchsia import FuchsiaCard
+        self.player_timer = data["player_timer"]
+        self.timer_mode = data["timer_mode"]
+        self.file_auto_delete = data["file_auto_delete"]
+        self.score = data["score"]
+        self.turn_number = data["turn_number"]
+        self.players_luck = data["players_luck"]
+        self.players_token = data["players_token"]
+        self.players_totem = data["players_totem"]
+        self.players_coin = data["players_coin"]
+        self.card_to_draw = data["card_to_draw"]
+        self.number_of_attacks = data["number_of_attacks"]
+        self.number_of_movings = data["number_of_movings"]
+        self.number_of_cudes = data["number_of_cudes"]
+        self.number_of_heals = data["number_of_heals"]
+
+        old_by_iid: dict = {}
+        for c in self.player1.on_board: old_by_iid[c.instance_id] = c
+        for c in self.player2.on_board: old_by_iid[c.instance_id] = c
+        for c in self.neutral.on_board: old_by_iid[c.instance_id] = c
+        for c in list(old_by_iid.values()):
+            if isinstance(c, FuchsiaCard):
+                for shadow in c.shadows:
+                    old_by_iid[shadow.instance_id] = shadow
+ 
+        all_cards_by_iid: dict = {}
+        self.player1.apply_dict(data["player1"], old_by_iid, all_cards_by_iid, game_renderer)
+        self.player2.apply_dict(data["player2"], old_by_iid, all_cards_by_iid, game_renderer)
+        self.neutral.apply_dict(data["neutral"], old_by_iid, all_cards_by_iid, game_renderer)
+
+        for card in list(all_cards_by_iid.values()):
+            if isinstance(card, FuchsiaCard):
+                for shadow in card.shadows:
+                    all_cards_by_iid[shadow.instance_id] = shadow
+
+        for key, board_data in data["board_dict"].items():
+            x, y = (int(v) for v in key.split(","))
+            if (x, y) in self.board_dict:
+                self.board_dict[x, y].apply_dict(board_data)
+
+        for orphan_iid in old_by_iid.keys() - all_cards_by_iid.keys():
+            game_renderer.card_renderer.release(orphan_iid)

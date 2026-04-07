@@ -36,7 +36,6 @@ class DraftRenderer:
             for render_object in card.get_render_data():
                 self.card_renderer.render(render_object)
 
-
     def _render_boards(self, draft_state: DraftState) -> None:
         for board in draft_state.board_dict.values():
             self.board_renderer.render(board)
@@ -69,7 +68,6 @@ class DraftRenderer:
     def _render_deck_displays(self, draft_state: DraftState) -> None:
         self._render_player_deck("player1", draft_state)
         self._render_player_deck("player2", draft_state)
-
 
     def _render_status_labels(self, draft_state: DraftState) -> None:
         draw_text(

@@ -9,6 +9,7 @@ from core.game_screen import GameScreen, draw_text
 from core.UI import ScoreDisplay, AttackCountDisplay, TokenDisplay, HintBox
 from cards.base import Card
 
+
 if TYPE_CHECKING:
     from core.player import Player
 
@@ -72,8 +73,7 @@ class UIRenderer:
         for i, card_name in enumerate(player.hand):
             draw_text(
                 f"{player.short_name}hand {i + 1}: {card_name}",
-                self.game_screen.text_font, WHITE,
-                x,
+                self.game_screen.text_font, WHITE, x,
                 self.game_screen.display_height / 14 * (i+1),
                 self.game_screen.surface
             )

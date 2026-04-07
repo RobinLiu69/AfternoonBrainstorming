@@ -1,5 +1,5 @@
-# core/advanced_logger.py
-import logging, os
+import logging
+import os
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Callable, List
@@ -12,6 +12,7 @@ class LogLevel(Enum):
     INFO = logging.INFO
     WARNING = logging.WARNING
     ERROR = logging.ERROR
+
 
 class LogCategory(Enum):
     GAME_FLOW = "game_flow"

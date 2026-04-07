@@ -5,8 +5,10 @@ from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
 
+
 if TYPE_CHECKING:
     from core.game_state import GameState
+
 
 card_settings = CARD_SETTING["Cyan"]
 color_code = "C"
@@ -32,6 +34,15 @@ class CyanCard(Card):
             return True
         else:
             return False
+        
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+        data["upgrade"] = self.upgrade
+        return data
+ 
+    def apply_dict(self, data: dict) -> None:
+        super().apply_dict(data)
+        self.upgrade = data["upgrade"]
 
 
 class Adc(CyanCard):

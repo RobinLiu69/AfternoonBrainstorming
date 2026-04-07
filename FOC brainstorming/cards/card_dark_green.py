@@ -4,8 +4,10 @@ from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
 
+
 if TYPE_CHECKING:
     from core.game_state import GameState
+
 
 card_settings = CARD_SETTING["DarkGreen"]
 color_code = "DKG"

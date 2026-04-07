@@ -10,6 +10,7 @@ from core.game_screen import GameScreen, os, draw_text, __FOLDER_PATH, PIE_TITLE
 from utils.chart_make import make_plot_chart, make_pie_chart, make_bar_chart
 from utils.controls import key_pressed
 
+
 folder_path = __FOLDER_PATH
 
 
@@ -21,7 +22,7 @@ class Chart:
     width: int
     height: int
     visible: bool = field(init=False, default=False)
-
+    
     def __post_init__(self) -> None:
         file_path = folder_path+"/imgs/"+self.file_path
         
@@ -32,6 +33,7 @@ class Chart:
     def display(self, game_screen: GameScreen) -> None:
         if self.visible == True and self.image:
             game_screen.surface.blit(self.image, (self.x, self.y))
+
 
 def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[str, dict[str, int]],
                  player1_profession_data: dict[str, dict[str, int]], player2_profession_data: dict[str, dict[str, int]],
@@ -48,7 +50,7 @@ def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[s
             bar_paths["player2"].append(make_bar_chart("player2", title_text, player2_profession_data, len(statistics.score_history)))
         except:
             pass
-        
+    
     for key in PIE_TITLE_TEXTS:
         try:
             title_text = " ".join(map(lambda string: string.capitalize(), key.split("_")))
@@ -56,16 +58,16 @@ def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[s
             pie_paths["player2"].append(make_pie_chart("player2", title_text, key, player2_datas[key]))
         except:
             pass
-
+    
     plot_path = make_plot_chart(statistics.score_history)
     
     
     return plot_path, pie_paths, bar_paths
 
+
 def display_chart(pie_paths: dict[str, list[str]], bar_paths: dict[str, list[str]],
                   plot_path: str, game_screen: GameScreen) -> tuple[Chart, dict[str, dict[str, list[Chart]]]]:
     charts: dict[str, dict[str, list[Chart]]] = {"player1": {"pie": [], "bar": []}, "player2": {"pie": [], "bar": []}}
-
     for i, path in enumerate(pie_paths["player1"]):
         charts["player1"]["pie"].append(Chart(file_path=path,
                                               x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(pie_paths["player1"])/2+i*2.2))),
@@ -97,6 +99,7 @@ def display_chart(pie_paths: dict[str, list[str]], bar_paths: dict[str, list[str
     
     return score_chart, charts
 
+
 def init_datas(statistics: GameStatistics) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]], dict[str, dict[str, int]], dict[str, dict[str, int]], list[list[int]], list[list[int]], list[str], list[str]]:
     player1_datas: dict[str, dict[str, int]] = statistics.export_player_stats("player1")
     player2_datas: dict[str, dict[str, int]]  = statistics.export_player_stats("player2")
@@ -111,7 +114,7 @@ def init_datas(statistics: GameStatistics) -> tuple[dict[str, dict[str, int]], d
                 
                 if profession not in player1_profession_data:
                     player1_profession_data[profession] = {}
-            
+
                 player1_profession_data[profession][key] = player_value
     
 
@@ -128,7 +131,7 @@ def init_datas(statistics: GameStatistics) -> tuple[dict[str, dict[str, int]], d
                 
                 if profession not in player2_profession_data:
                     player2_profession_data[profession] = {}
-        
+
                 player2_profession_data[profession][key] = player_value
     
     
@@ -163,6 +166,7 @@ def init_datas(statistics: GameStatistics) -> tuple[dict[str, dict[str, int]], d
     return (player1_datas, player2_datas, player1_profession_data, player2_profession_data,
             display_player1_data, display_player2_data, display_player1_name, display_player2_name)
 
+
 def set_all_invisible(score_chart: Chart, charts: dict[str, dict[str, list[Chart]]]) -> None:
     score_chart.visible = False
     for player in charts:
@@ -170,12 +174,14 @@ def set_all_invisible(score_chart: Chart, charts: dict[str, dict[str, list[Chart
             for chart in charts[player][chart_type]:
                 chart.visible = False
 
+
 def loading_screen(game_screen: GameScreen) -> None:
     game_screen.surface.fill(BLACK)
     draw_text("Loading...", game_screen.big_text_font, WHITE,
               game_screen.display_width/2-game_screen.block_size*0.425,
               game_screen.display_height/2-game_screen.block_size*0.3, game_screen.surface)
     pygame.display.update()
+
 
 def display_raw_data(display_player1_data: list[list[int]], display_player2_data: list[list[int]],
                      display_player1_name: list[str], display_player2_name: list[str], game_screen: GameScreen) -> None:
@@ -224,8 +230,7 @@ def display_end_game_data(winner: str, game_state: GameState, game_screen: GameS
     draw_text("Player1 Timer: "+game_state.player_timer["player1"]+",   Player2 Timer: "+game_state.player_timer["player2"],
               game_screen.text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1,
               game_screen.display_height/2-game_screen.block_size*0.2, game_screen.surface)
-    
-    
+
 
 def main(winner: str, game_state: GameState, game_screen: GameScreen) -> None:
     player1_datas, player2_datas, player1_profession_data, player2_profession_data, display_player1_data, display_player2_data, display_player1_name, display_player2_name = init_datas(game_state.game_statistics)
@@ -245,11 +250,6 @@ def main(winner: str, game_state: GameState, game_screen: GameScreen) -> None:
     
     while running:
         game_screen.render()
-        
-        # mouse_x, mouse_y = pygame.mouse.get_pos()
-        # mouse_board_x = int((mouse_x-(game_screen.display_width/2-game_screen.block_size*2))/game_screen.block_size) if mouse_x > game_screen.display_width/2-game_screen.block_size*2 else None
-        # mouse_board_y = int((mouse_y-(game_screen.display_height/2-game_screen.block_size*1.65))/game_screen.block_size) if mouse_y > game_screen.display_height/2-game_screen.block_size*1.65 else None
-        
         
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:

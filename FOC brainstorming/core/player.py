@@ -10,9 +10,11 @@ from core.game_statistics import StatType
 from cards.base import Card
 from cards.factory import spawn_card
 
+
 if TYPE_CHECKING:
     from rendering.game_renderer import GameRenderer
     from core.game_state import GameState
+
 
 MAGIC_CARDS = ["CUBES", "MOVE", "MOVEO", "HEAL"]
 
@@ -77,6 +79,8 @@ class Player:
         self.attack_count_display = AttackCountDisplay(player_name=self.name, width=int(game_screen.block_size*0.1), height=int(game_screen.block_size*0.1))
         self.token_count_display = TokenDisplay(player_name=self.name, radius=int(game_screen.block_size*0.1))
         self._init_cards(game_state)
+    
+    def initialize_display(self, game_state: GameState, game_screen: GameScreen) -> None:
         self._init_highlight_display(game_screen)
         self.timer_start(game_state)
     
@@ -192,13 +196,12 @@ class Player:
                     if card.board_x == board_x and card.board_y == board_y:
                         card.mouse_selected = True
                         break
-                
     
     def recycle_cards(self, game_state: GameState, game_renderer: GameRenderer) -> None:
         for i, card in enumerate(self.on_board):
             if card.health <= 0 and card.can_be_killed(game_state):
                 card.die(game_state)
-                game_renderer.card_renderer.release(card.get_uid())
+                game_renderer.card_renderer.release(card.instance_id)
                 card_name = self.on_board.pop(i).job_and_color
                 self.discard_pile.append(card_name)
                 game_state.board_dict[card.board_x, card.board_y].occupy = False
@@ -218,7 +221,7 @@ class Player:
             deck = self.deck[::-1] if from_end else self.deck
             deck.remove(card_name)
             self.deck = deck[::-1] if from_end else deck
-            
+    
     def spawn_cube(self, board_x: int, board_y: int, game_state: GameState) -> None:
         if game_state.number_of_cudes[self.name] > 0:
             if spawn_card(board_x, board_y, "CUBE", "neutral", game_state.neutral.on_board, game_state):
@@ -278,27 +281,39 @@ class Player:
 
     def to_dict(self) -> dict:
         return {
-                "name": self.name,
-                "deck": self.deck,
-                "hand": self.hand,
-                "on_board": self.on_board,
-                "draw_pile": self.draw_pile,
-                "discard_pile": self.discard_pile,
-                "start_time": self.start_time,
-                "elapsed_time": self.elapsed_time
+            "name": self.name,
+            "deck": self.deck,
+            "hand": self.hand,
+            "on_board": [c.to_dict() for c in self.on_board],
+            "draw_pile": self.draw_pile,
+            "discard_pile": self.discard_pile,
+            "start_time": self.start_time,
+            "elapsed_time": self.elapsed_time,
+            "time_out": self.time_out
         }
-    
-    @classmethod
-    def from_dict(cls, data: dict) -> Player:
-        player = cls(
-            name=data["name"],
-            deck=data["deck"],
-            hand=data["hand"],
-            on_board=data["on_board"],
-            draw_pile=data["draw_pile"],
-            discard_pile=data["discard_pile"]
-        )
 
-        player.start_time = data["start_time"]
-        player.elapsed_time = data["elapsed_time"]
-        return player
+    def apply_dict(self, data: dict, old_by_iid: dict, all_cards_by_iid: dict, game_renderer: GameRenderer) -> None:
+        from cards.factory import CardFactory
+        self.name = data["name"]
+        self.deck = data["deck"]
+        self.hand = data["hand"]
+        self.draw_pile = data["draw_pile"]
+        self.discard_pile = data["discard_pile"]
+        self.start_time = data["start_time"]
+        self.elapsed_time = data["elapsed_time"]
+        self.time_out = data["time_out"]
+
+        new_on_board = []
+        for card_data in data["on_board"]:
+            iid = card_data["instance_id"]
+            existing = old_by_iid.get(iid)
+            if existing is not None:
+                existing.apply_dict(card_data)
+                new_on_board.append(existing)
+                all_cards_by_iid[iid] = existing
+            else:
+                fresh = CardFactory.from_dict(card_data)
+                new_on_board.append(fresh)
+                all_cards_by_iid[iid] = fresh
+ 
+        self.on_board = new_on_board
