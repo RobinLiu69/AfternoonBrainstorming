@@ -40,7 +40,6 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             card_info = []
                     if (mouse_x < game_screen.display_width/2 - game_screen.block_size*2) if controller == "player1" else (mouse_x > game_screen.display_width/2+game_screen.block_size*2):
                         card_info = list(game_state.get_player(controller).get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen))
-                        print(card_info, isinstance(card_info[1], int))
                     if card_info and card_info[0] != "None" and isinstance(card_info[1], int):
                         game_state.get_player(controller).selecte_card_from_hand(card_info[1])
                         if game_state.get_player(controller).selected_card_index == -1:

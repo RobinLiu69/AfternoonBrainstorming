@@ -8,13 +8,30 @@ from core.game_statistics import StatType
 from core.setting import JOB_DICTIONARY
 from cards.factory import spawn_card
 
+
 if TYPE_CHECKING:
     from core.game_state import GameState
 
+
 COLOR_TAG_LIST: list[str] = sorted(JOB_DICTIONARY["colors_dict"].keys(), key=len, reverse=True)
+
+_instance_counter: int = 0
+
+ 
+def _next_instance_id() -> str:
+    global _instance_counter
+    _instance_counter += 1
+    return f"c{_instance_counter}"
+ 
+ 
+def reset_instance_counter() -> None:
+    global _instance_counter
+    _instance_counter = 0
+
 
 Elements = TypeVar("Elements")
 CardType = TypeVar("CardType", bound="Card")
+
 
 def most_frequent_elements(lst: list[Elements], min_count: int = 0) -> list[Elements]:
     unique_elements: list[Elements] = []
@@ -37,7 +54,7 @@ def most_frequent_elements(lst: list[Elements], min_count: int = 0) -> list[Elem
 
 @dataclass
 class CardRenderData:
-    uid: str
+    instance_id: str
     job_and_color: str
     job: str
     color: tuple[int, int, int]
@@ -72,7 +89,8 @@ class Card(ABC):
     damage: int
     board_x: int
     board_y: int
-    
+
+    instance_id: str = field(init=False, default="")
     job: str = field(init=False, default="")
     color_name: str = field(init=False, default="")
     color: tuple[int, int, int] = field(init=False, default=(0, 0, 0))
@@ -124,6 +142,9 @@ class Card(ABC):
         
         if self.job == "ASS" and self.owner != "display":
             self.numbness = False
+        
+        if not self.instance_id:
+            self.instance_id = _next_instance_id()
     
     @final
     def is_same_location(self, card: Card) -> bool:
@@ -340,7 +361,7 @@ class Card(ABC):
 
     def get_render_data(self) -> list[CardRenderData]:
         return [CardRenderData(
-            uid=self.get_uid(), 
+            instance_id=self.instance_id, 
             job_and_color=self.job_and_color,
             job=self.job,
             color=self.color,
@@ -573,42 +594,45 @@ class Card(ABC):
     
     def to_dict(self) -> dict:
         return {
-                "owner": self.owner,
-                "job_and_color": self.job_and_color,
-                "health": self.health,
-                "damage": self.damage,
-                "board_x": self.board_x,
-                "board_y": self.board_x,
-                # "job": self.job,
-                # "color_name": self.color_name,
-                # "color": self.color,
-                # "text_color": self.text_color,
-                # "attack_types": self.attack_types,
-                "numbness": self.numbness,
-                "moving": self.moving,
-                "mouse_selected": self.mouse_selected,
-                "been_targeted": self.been_targeted,
-                "armor": self.armor,
-                "attack_uses": self.attack_uses,
-                "extra_damage": self.extra_damage,
-                "movable": self.movable,
-                "anger": self.anger,
-                "max_health": self.max_health,
-                "original_damage": self.original_damage,
-            }
+            "instance_id": self.instance_id,
+            "owner": self.owner,
+            "job_and_color": self.job_and_color,
+            "health": self.health,
+            "damage": self.damage,
+            "board_x": self.board_x,
+            "board_y": self.board_y,
+            "attack_types": self.attack_types,
+            "numbness": self.numbness,
+            "moving": self.moving,
+            "mouse_selected": self.mouse_selected,
+            "been_targeted": self.been_targeted,
+            "armor": self.armor,
+            "attack_uses": self.attack_uses,
+            "extra_damage": self.extra_damage,
+            "movable": self.movable,
+            "anger": self.anger,
+            "max_health": self.max_health,
+            "original_damage": self.original_damage
+        }
+ 
     
-    @classmethod
-    def from_dict(cls, data: dict) -> Card:
-        card = cls(owner=data["owner"], job_and_color=data["job_and_color"], health=data["health"], damage=data["damage"], board_x=data["board_x"], board_y=data["board_y"])
-        card.numbness = data["numbness"]
-        card.moving = data["moving"]
-        card.mouse_selected = data["mouse_selected"]
-        card.been_targeted = data["been_targeted"]
-        card.armor = data["armor"]
-        card.attack_uses = data["attack_uses"]
-        card.extra_damage = data["extra_damage"]
-        card.movable = data["movable"]
-        card.anger = data["anger"]
-        card.max_health = data["max_health"]
-        card.original_damage = data["original_damage"]
-        return card
+    def apply_dict(self, data: dict) -> None:
+        self.owner = data["owner"]
+        self.job_and_color = data["job_and_color"]
+        self.health = data["health"]
+        self.damage = data["damage"]
+        self.board_x = data["board_x"]
+        self.board_y = data["board_y"]
+        self.attack_types = data["attack_types"]
+        self.numbness = data["numbness"]
+        self.moving = data["moving"]
+        self.mouse_selected = data["mouse_selected"]
+        self.been_targeted = data["been_targeted"]
+        self.armor = data["armor"]
+        self.attack_uses = data["attack_uses"]
+        self.extra_damage = data["extra_damage"]
+        self.movable = data["movable"]
+        self.anger = data["anger"]
+        self.max_health = data["max_health"]
+        self.original_damage = data["original_damage"]
+ 

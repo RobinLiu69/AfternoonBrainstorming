@@ -4,6 +4,7 @@ from typing import cast, Sequence, TextIO
 
 import pygame
 
+
 __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("core", "")
 
 with open(f"{__FOLDER_PATH}/setting/setting.json", "r", encoding="utf-8") as file:
@@ -16,6 +17,7 @@ KETYS_TO_DISPLAY = SETTING["keys_to_display"]
 KEYS_TO_CHECK = SETTING["keys_to_check"]
 PIE_TITLE_TEXTS = SETTING["pie_title_texts"]
 BOARD_SIZE: tuple[int, int] = cast(tuple[int, int], tuple(map(int, SETTING["board_size"])))
+
 
 def draw_text(text: str, font: pygame.font.Font, text_color: Sequence[int], x: float, y: float, surface: pygame.surface.Surface) -> None:
     rendered = font.render(text, True, text_color)

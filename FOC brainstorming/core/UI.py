@@ -1,18 +1,17 @@
-import random, pygame
+import random
 from dataclasses import dataclass, field
 from typing import Optional, Sequence, cast, TYPE_CHECKING
 
+import pygame
+
 from core.game_screen import GameScreen, draw_text
-
 from core.setting import BLACK, WHITE, RED, BLUE, GREEN, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
-
 from cards.base import Card, COLOR_TAG_LIST
-
 from cards.card_cyan import CyanCard
+
 
 if TYPE_CHECKING:
     from core.game_state import GameState
-
 
 
 @dataclass(kw_only=True)
@@ -43,12 +42,14 @@ class HighLightBox(BasicUI):
             self.y = game_screen.display_height/14*(index+0.8)
             if self.box_color:
                 pygame.draw.rect(game_screen.surface, self.box_color, (self.x, self.y, self.box_width, self.box_height), width=self.line_width)
-            
+
+
 @dataclass(kw_only=True)
 class HandDisplay(BasicUI):
     def display(self, game_screen: GameScreen) -> None:
         ### 之後會需要更新這部份的東西
         return
+
 
 class Button:
     def __init__(self, width: float, height: float, x: float, y: float, text_x: float, text_y: float,
@@ -130,8 +131,8 @@ class AttackCountDisplay:
             else:
                 pygame.draw.rect(game_screen.surface, color,
                                  (self.x, self.y-self.height*i*1.25, self.width, self.height), round(self.width/10))
-                
-                
+
+
 @dataclass(kw_only=True)
 class ScoreDisplay:
     width: int
@@ -287,7 +288,7 @@ class HintBox:
         if not self.surface:
             self.surface = pygame.Surface((self.width, game_screen.block_size*1.5), pygame.SRCALPHA)
         if self.turn_on:
-            if isinstance(card, str): #判斷卡牌是否在場上
+            if isinstance(card, str):
                 card_type = card
             elif isinstance(card, Card):
                 card_type = card.job_and_color

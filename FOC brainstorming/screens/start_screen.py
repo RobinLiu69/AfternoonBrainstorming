@@ -44,7 +44,6 @@ def main(game_screen: GameScreen) -> str:
 
             if event.type == pygame.QUIT:
                 running = False
-        
 
 
         draw_text("Afternoon Brainstorming", game_screen.title_text_font, WHITE,

@@ -81,7 +81,7 @@ class GameStatistics:
         hit_taken = max(1, self.get(StatType.DAMAGE_TAKEN_COUNT, card_id))
         rounds = max(1, self.get(StatType.ROUNDS_SURVIVED, card_id))
         
-        return ((scored * 5) + (avg_dmg * 2) + (damage_taken / hit_taken * 2)) / rounds
+        return ((scored*5) + (avg_dmg*2) + (damage_taken / hit_taken * 2)) / rounds
     
     def export_for_charts(self) -> Dict[str, Dict[str, int]]:
         return {

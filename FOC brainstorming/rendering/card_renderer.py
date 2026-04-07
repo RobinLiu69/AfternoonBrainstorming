@@ -10,23 +10,20 @@ class CardRenderer:
         self.game_screen = game_screen
         self._surfaces: dict[str, pygame.Surface] = {}
 
-    def _get_card_surface(self, uid: str) -> pygame.Surface:
-        if uid not in self._surfaces:
+    def _get_card_surface(self, instance_id: str) -> pygame.Surface:
+        if instance_id not in self._surfaces:
             bs = int(self.game_screen.block_size)
-            self._surfaces[uid] = pygame.Surface((bs, bs), pygame.SRCALPHA)
-        return self._surfaces[uid]
+            self._surfaces[instance_id] = pygame.Surface((bs, bs), pygame.SRCALPHA)
+        return self._surfaces[instance_id]
     
-    def release(self, uid: str) -> None:
-        self._surfaces.pop(uid, None)
+    def release(self, instance_id: str) -> None:
+        self._surfaces.pop(instance_id, None)
 
     def render(self, data: CardRenderData) -> None:
-        surface = self._get_card_surface(data.uid)
+        surface = self._get_card_surface(data.instance_id)
         surface.fill((0, 0, 0, 0))
 
-        sprite = (
-            SpriteRegistry.get_instance().get(data.sprite_key)
-            if data.use_sprite else None
-        )
+        sprite = (SpriteRegistry.get_instance().get(data.sprite_key) if data.use_sprite else None)
 
         if sprite:
             self._render_with_sprite(surface, data, sprite)

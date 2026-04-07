@@ -5,6 +5,7 @@ from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card, CardRenderData
 
+
 card_settings = CARD_SETTING["White"]
 color_code = "W"
 
@@ -24,6 +25,7 @@ class Cube(Card):
             return 0
         else:
             return 0
+
 
 class Cubes(Card):
     def __init__(self, owner: str, board_x: int, board_y: int,

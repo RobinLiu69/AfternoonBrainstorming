@@ -13,6 +13,7 @@ import numpy as np
 
 from utils.type_hint import JobDictionary
 
+
 __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("utils", "")
 
 with open(f"{__FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8") as file:
@@ -41,15 +42,15 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
         sorted_tags = sorted(COLORS_DICT.keys(), key=len, reverse=True)
         
         x: list[int] = list(data.values())
-    
+
         colors: list[tuple[float, float, float] | str] = []
         for name in labels:
             for tag in sorted_tags:
                 if name.endswith(tag):
                     colors.append(COLORS_DICT[tag])
                     break
-
-
+        
+        
         if not any(data.values()):
             title_text = "No Data"
             labels = ["No Data"]
@@ -57,7 +58,7 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
             x = [1]
         
         
-    
+
         plt.figure(figsize=figsize, dpi=120)
         
         _, texts, _ = cast(tuple[list[Wedge], list[Text], list[Text]],
@@ -76,7 +77,7 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
         for text in texts:
             text.set_color("white")
             text.set_fontsize(fontsize*7)
-            
+        
         plt.title(title_text, fontweight="bold", fontproperties=custom_font_prop,
                   fontsize = fontsize*13, color = "white", loc="center", pad=30)
         plt.tight_layout()
@@ -88,25 +89,6 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
 
 def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str, int]],
                    turns: int, fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
-    '''
-    title_text:
-        1: 'KDA',
-        2: 'Average Attack Damage',
-        3: 'Attack Efficiency Index',
-        4: 'Per Round Influence',
-        5: 'Survival Index'
-    
-    'hit_count'
-    'damage_dealt'
-    'damage_taken_count'
-    'damage_taken'
-    'scored'
-    'ability_count'
-    'move_count'
-    'killed_count'
-    'death_count'
-    'rounds_survived'
-    '''
     if len(datas):
         labels: list[str] = list(datas.keys())
         
@@ -118,7 +100,6 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
                 if name.endswith(tag):
                     colors.append(COLORS_DICT[tag])
                     break
-
         
         width: list[float] = [0]
         
@@ -139,6 +120,7 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
                 width.pop(i)
                 colors.pop(i)
                 labels.pop(i)
+        
         if not datas or not width:
             title_text = "No Data"
             labels = ["No Data"]
@@ -161,14 +143,14 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
             label.set_fontproperties(custom_font_prop)  
             label.set_color("white")
             label.set_fontsize(fontsize*8)
-            
+        
         plt.gca().spines['top'].set_visible(False)
         plt.gca().spines['right'].set_visible(False)
         plt.gca().spines['bottom'].set_visible(False)
         plt.gca().spines['left'].set_visible(False)
 
         categories = categories[::max(1, 2*(len(categories)//10))]
-        
+
 
         ax.set_xticks(categories)
         ax.set_xticklabels([str(cat) for cat in categories])

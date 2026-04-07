@@ -6,6 +6,7 @@ from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
 
+
 card_settings = CARD_SETTING["Blue"]
 color_code = "B"
 

@@ -8,6 +8,7 @@ from cards.factory import CardFactory, spawn_card
 from cards.base import Card
 from utils.logger import LogCategory
 
+
 card_settings = CARD_SETTING["Green"]
 color_code = "G"
 
@@ -123,7 +124,6 @@ class LuckyBlock(GreenCard):
         else:
             return 0
 
-CardFactory.register("LUCKYBLOCK", LuckyBlock)
 
 class Adc(GreenCard):
     def __init__(self, owner: str, board_x: int, board_y: int,
@@ -279,3 +279,4 @@ CardFactory.register("LF" + color_code, Lf)
 CardFactory.register("ASS" + color_code, Ass)
 CardFactory.register("APT" + color_code, Apt)
 CardFactory.register("SP" + color_code, Sp)
+CardFactory.register("LUCKYBLOCK", LuckyBlock)
