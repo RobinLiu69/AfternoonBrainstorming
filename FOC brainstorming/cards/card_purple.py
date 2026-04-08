@@ -38,7 +38,7 @@ class Ap(PurpleCard):
                     card.health > 0, 
                     game_state.get_opponent_cards(self.owner)
                 )
-            )
+            ), game_state
         ):
             target.armor = 0
             target.damage = target.original_damage
@@ -73,7 +73,7 @@ class Hf(PurpleCard):
     
     def start_turn(self, game_state: GameState) -> int:
         if self.attack_types:
-            count = len(tuple(self.detection(self.attack_types, game_state.get_opponent_cards(self.owner))))
+            count = len(tuple(self.detection(self.attack_types, game_state.get_opponent_cards(self.owner), game_state)))
             game_state.number_of_attacks[self.owner] += count // 3
         return 0
 

@@ -17,9 +17,7 @@ class ReplaySource:
         self._load()
         self._extract_metadata()
     
-    
     def _load(self) -> None:
-        """Read every non-empty line as JSON. Skip malformed lines silently."""
         if not self.jsonl_path.exists():
             raise FileNotFoundError(f"Replay file not found: {self.jsonl_path}")
         
@@ -55,7 +53,6 @@ class ReplaySource:
             
             if msg.startswith('timer mode '):
                 self.metadata['timer_mode'] = msg[len('timer mode '):].strip()
-    
     
     def next_action(self) -> Optional[GameAction]:
         if self._cursor >= len(self._action_indices):
@@ -102,7 +99,6 @@ class ReplaySource:
         return self._cursor
     
     def get_all_entries(self) -> list[dict[str, Any]]:
-        """Raw access for debugging or extended inspection."""
         return list(self._entries)
     
     @staticmethod
