@@ -85,7 +85,7 @@ class Lf(DarkGreenCard):
         super().__init__(owner=owner, job_and_color="LFDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def deploy(self, game_state: GameState) -> None:
-        for target in self.detection("small_cross", tuple(filter(lambda card: card.health > 0, game_state.get_side_cards(self.owner, True)))):
+        for target in self.detection("small_cross", tuple(filter(lambda card: card.health > 0, game_state.get_side_cards(self.owner, True))), game_state):
             target.damage_calculate(game_state.players_totem[self.owner]//4, self, game_state)
     
     def ability(self, target: Card, game_state: GameState) -> bool:

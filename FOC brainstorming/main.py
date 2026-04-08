@@ -113,7 +113,7 @@ def main() -> None:
             case "playback":
                 replay_path = replay_select.main(game_screen)
                 if replay_path is None:
-                    return  # user backed out
+                    return
                 battling_replay.main(game_screen, replay_path)
                 return
             case "quit" | _:
