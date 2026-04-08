@@ -1,26 +1,26 @@
 {
     "colors_dict": {
-        "B": "Blue",
+        "W": "White",
         "R": "Red",
         "G": "Green",
-        "W": "White",
+        "B": "Blue",
         "O": "Orange",
-        "P": "Purple",
         "DKG": "DarkGreen",
         "C": "Cyan",
-        "F": "Fuchsia"
+        "F": "Fuchsia",
+        "P": "Purple"
     },
 
     "RGB_colors": {
-      "Blue": "60, 100, 225",
+      "White": "255, 255, 255",
       "Red": "255, 0, 0",
       "Green": "51, 255, 51",
-      "White": "255, 255, 255",
+      "Blue": "60, 100, 225",
       "Orange": "255, 69, 0",
-      "Purple": "128, 0, 255",
       "DarkGreen": "85, 107, 47",
       "Cyan": "0, 238, 238",
       "Fuchsia": "159, 0, 80",
+      "Purple": "128, 0, 255",
       "Black": "0, 0, 0"
     },
 

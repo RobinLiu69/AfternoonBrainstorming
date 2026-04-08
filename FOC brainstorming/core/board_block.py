@@ -1,11 +1,32 @@
+from __future__ import annotations
 from dataclasses import dataclass
-import pygame
+from typing import TYPE_CHECKING
 
-from core.game_screen import GameScreen, WHITE, BOARD_SIZE
+from core.setting import WHITE
 
 
-def initialize_board(length: int, game_screen: GameScreen) -> dict[str, "Board"]:
-    return dict(zip(((str(i%BOARD_SIZE[0])+"-"+str(i//BOARD_SIZE[1])) for i in range(length)), (Board(width=int(game_screen.block_size), height=int(game_screen.block_size), occupy=False, color=WHITE, board_x=i % BOARD_SIZE[0], board_y=i // BOARD_SIZE[1]) for i in range(length))))
+if TYPE_CHECKING:
+    from core.game_screen import GameScreen
+    from core.board_config import BoardConfig
+
+
+def initialize_board(game_screen: GameScreen, config: BoardConfig) -> dict[tuple[int, int], "Board"]:
+    board_dict = {}
+    
+    for y in range(config.height):
+        for x in range(config.width):
+            board = Board(
+                width=int(game_screen.block_size),
+                height=int(game_screen.block_size),
+                occupy=False,
+                color=WHITE,
+                board_x=x,
+                board_y=y
+            )
+            board_dict[x, y] = board
+    
+    return board_dict
+
 
 @dataclass(kw_only=True)
 class Board:
@@ -20,12 +41,16 @@ class Board:
 
     def __post_init__(self) -> None:
         self.size = self.width
-        self.board_position = self.board_x + (self.board_y * 4)
         
+    def get_position_index(self, board_width: int) -> int:
+        return self.board_x + (self.board_y * board_width)
 
-    def display(self, game_screen: GameScreen) -> None:
-        pygame.draw.rect(game_screen.surface, self.color, (((game_screen.display_width/2)-(game_screen.block_size*2))+(self.board_x*game_screen.block_size)+(game_screen.block_size*0),
-                    (game_screen.display_height/2)-(game_screen.block_size*1.675)+(self.board_y*game_screen.block_size)+(game_screen.block_size*0), self.width, self.height), game_screen.thickness)
-    
-    def update(self, game_screen: GameScreen) -> None:
-        self.display(game_screen)
+    def to_dict(self) -> dict:
+        return {
+            "board_x": self.board_x,
+            "board_y": self.board_y,
+            "occupy":  self.occupy,
+        }
+ 
+    def apply_dict(self, data: dict) -> None:
+        self.occupy = data["occupy"]

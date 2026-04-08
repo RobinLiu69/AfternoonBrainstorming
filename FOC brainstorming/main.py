@@ -1,89 +1,129 @@
-from screens import start_screen, menu, battling, end_game, playback
-import datetime, os
-from core.player import Player, GameScreen
+from typing import Optional
+
+from core.game_state import GameState
+from core.draft_state import DraftState
+from core.game_screen import GameScreen
+from core.game_statistics import StatType
+from core.network_layer import LANClient, LANServer
+from core.board_config import BoardConfig
+from core.player import Player
+from core.neutral import Neutral
+from core.scene_exit import DraftExitReason
+
+from screens import start_screen, join_screen, replay_select
+from screens.draft import draft
+from screens.end_game import end_game
+from screens.battling import battling, battling_replay
+
+from cards import (
+    base, card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
+    card_green, card_orange, card_purple, card_white,
+)
+
+
+DEFAULT_PORT = 5555
+
+
+def _build_game_state_from_draft(draft_state: DraftState) -> GameState:
+    player1 = Player(name="player1", deck=draft_state.player1_deck.copy(), hand=[], on_board=[], draw_pile=[], discard_pile=[])
+    player2 = Player(name="player2", deck=draft_state.player2_deck.copy(), hand=[], on_board=[], draw_pile=[], discard_pile=[])
+    neutral = Neutral()
+
+    game_state = GameState(player1, player2, neutral, BoardConfig())
+    game_state.timer_mode = draft_state.timer_mode
+    game_state.file_auto_delete = draft_state.file_auto_delete
+
+    game_state.game_logger.info(f"player1 deck {'-'.join(player1.deck)}")
+    game_state.game_logger.info(f"player2 deck {'-'.join(player2.deck)}")
+    game_state.game_logger.info(f"timer mode {game_state.timer_mode}")
+    game_state.game_logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
+    return game_state
+
+
+def _build_game_state_for_client() -> GameState:
+    player1 = Player(name="player1", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
+    player2 = Player(name="player2", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
+    neutral = Neutral()
+    return GameState(player1, player2, neutral, BoardConfig())
+
+
+def _finalize_battle(game_state: GameState, game_screen: GameScreen, winner: str) -> None:
+    game_state.player_timer["player1"] = game_state.player1.time_minutes_and_seconds
+    game_state.player_timer["player2"] = game_state.player2.time_minutes_and_seconds
+
+    game_state.game_logger.info(f"winner {winner}")
+    game_state.game_logger.info(f"player1 timer {game_state.player1.time_minutes_and_seconds}")
+    game_state.game_logger.info(f"player2 timer {game_state.player2.time_minutes_and_seconds}")
+    game_state.game_logger.info(f"{game_state.game_statistics.export_for_charts()}")
+    game_state.game_logger.info(f"{game_state.game_statistics.score_history}")
+
+    end_game.main(winner, game_state, game_screen)
 
 
 def main() -> None:
-
-    player1 = Player(name="player1", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
-    player2 = Player(name="player2", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
     game_screen = GameScreen()
-
     mode = start_screen.main(game_screen)
 
-    match mode:
-        case "start":
-            log_file_name = f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
-            log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "battle_records", log_file_name)
-            if os.path.exists(log_file_path):
-                pass
-            else:
-                os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+    server: Optional[LANServer] = None
+    client: Optional[LANClient] = None
+    try:
+        match mode:
+            case "local":
+                exit_reason: DraftExitReason = draft.main(game_screen, mode="local")
+                if exit_reason.kind != "finished" or exit_reason.draft_state is None:
+                    return
+                game_state = _build_game_state_from_draft(exit_reason.draft_state)
+                winner = battling.main(game_state, game_screen, mode="local")
 
-            with open(log_file_path, "w") as game_screen.log:
-                game_screen.seed_set()
-                if menu.main(game_screen, player1, player2) and game_screen.log is not None:
-                    if player1.deck == [] and player2.deck == []:
-                        player1.deck = ['TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG', 'TANKDKG']
-                        player2.deck = ['LFDKG', 'LFDKG', 'ASSDKG', 'ASSDKG', 'CUBES', 'CUBES', 'CUBES', 'ASSP', 'ASSP', 'SPDKG', 'HFR', 'HFR']
-
-                    game_screen.log.write(f"player1 deck {"-".join(player1.deck)}\nplayer2 deck {"-".join(player2.deck)}\n")
-                    
-                    game_screen.log.write(f"timer mode {game_screen.timer_mode}\n")
-
-                    winner = battling.main(game_screen, player1, player2)
-
-                    game_screen.player_timer["player1"] = player1.time_minutes_and_seconds
-                    game_screen.player_timer["player2"] = player2.time_minutes_and_seconds
-                    
-                    game_screen.log.write(f"winner {winner}\n")
+                # for testing
+                # game_state.game_statistics._stats = {StatType.CARD_USE: {'player1': 6, 'player2': 7}, StatType.HIT: {'player1_ASSW': 2, 'player2_ADCW': 1, 'player1_ADCW': 1, 'player2_HFW': 1, 'player2_ASSW': 1}, StatType.DAMAGE_DEALT: {'player1_ASSW': 7, 'player2_ADCW': 7, 'player1_ADCW': 1, 'player2_HFW': 4, 'player2_ASSW': 10}, StatType.DAMAGE_TAKEN: {'player2_LFW': 7, 'player1_SPW': 1, 'player1_ASSW': 4, 'player1_TANKW': 11, 'player2_SPW': 1, 'player1_ADCW': 5}, StatType.DAMAGE_TAKEN_COUNT: {'player2_LFW': 4, 'player1_SPW': 2, 'player1_ASSW': 4, 'player1_TANKW': 6, 'player2_SPW': 2, 'player1_ADCW': 2}, StatType.SCORED: {'player1_SPW': 2, 'player2_ADCW': 6, 'player2_LFW': 0, 'player2_APTW': 6, 'player1_ASSW': 4, 'player1_TANKW': 8, 'player2_HFW': 5, 'player2_SPW': 2, 'player1_ADCW': 1, 'player2_ASSW': 4, 'player2_APW': 3}, StatType.ABILITY: {}, StatType.HEALING: {}, StatType.HEAL_USE: {}, StatType.MOVE: {}, StatType.MOVE_USE: {}, StatType.CUBE_USE: {}, StatType.KILLED: {'player1_ASSW': 1, 'player2_ADCW': 2, 'player1_ADCW': 1, 'player2_HFW': 1, 'player2_ASSW': 1}, StatType.DEATH: {'player2_LFW': 1, 'player1_SPW': 1, 'player1_ASSW': 2, 'player2_SPW': 1, 'player1_ADCW': 1}, StatType.TOKEN_USE: {}, StatType.ROUNDS_SURVIVED: {'player1_SPW': 1, 'player2_ADCW': 6, 'player2_APTW': 6, 'player1_ASSW': 2, 'player1_TANKW': 8, 'player2_HFW': 5, 'player2_SPW': 1, 'player1_ADCW': 1, 'player2_ASSW': 3, 'player2_APW': 3}}
                 
-                    game_screen.log.write(f"player1 score {abs(game_screen.score)}\n" if game_screen.score <= 0 else "")
-                    game_screen.log.write(f"player2 score {game_screen.score}\n" if game_screen.score >= 0 else "")
-                    
-                    game_screen.log.write(f"player1 timer {player1.time_minutes_and_seconds}\n")
-                    game_screen.log.write(f"player2 timer {player2.time_minutes_and_seconds}\n")
-                    
-                    game_screen.log.write(f"{game_screen.data.data_dicts}\n")
-                    game_screen.log.write(f"{game_screen.data.score_records}\n")
-                else:
-                    winner = "quit"
-
-            if game_screen.log is not None: game_screen.log.close()
-            
-            
-            if winner == "None":
-                winner = "player1"
-                game_screen.score = 10
-                
-                game_screen.player_timer["player1"] = "05:33"
-                game_screen.player_timer["player2"] = "03:38"
-                
-                game_screen.data.data_dicts = {'card_use_count': {'player1': 15, 'player2': 13}, 'hit_count': {'player1_APF': 1, 'player2_ADCO': 6, 'player2_ASSW': 4, 'player1_TANKG': 4, 'player2_ASSF': 2, 'player2_SHADOW': 3, 'player1_APB': 5}, 'damage_dealt': {'player1_APF': 1, 'player2_ADCO': 37, 'player2_ASSW': 38, 'player1_TANKG': 4, 'player2_ASSF': 13, 'player1_APB': 10}, 'damage_taken_count': {'player2_ADCO': 2, 'player1_APF': 7, 'player1_TANKB': 8, 'player1_TANKR': 6, 'player1_TANKG': 4, 'player2_APTF': 3, 'player2_ASSF': 1, 'player1_APB': 1, 'player2_TANKR': 1, 'player2_TANKG': 1, 'player1_TANKF': 7, 'player2_ASSW': 2}, 'damage_taken': {'player2_ADCO': 3, 'player1_APF': 14, 'player1_TANKB': 24, 'player1_TANKR': 15, 'player1_TANKG': 12, 'player2_APTF': 4, 'player2_ASSF': 2, 'player1_APB': 4, 'player2_TANKR': 2, 'player2_TANKG': 2, 'player1_TANKF': 19, 'player2_ASSW': 2}, 'scored': {'player1_TANKR': 11, 'player1_TANKB': 11, 'player1_APF': 5, 'player2_ADCO': 8, 'player2_APTF': 3, 'player2_TANKR': 13, 'player1_TANKG': 4, 'player1_TANKF': 9, 'player2_ASSF': 2, 'player1_APB': 5, 'player2_ASSW': 3, 'player2_TANKG': 6, 'player2_HFR': 0}, 'ability_count': {'player1_APF': 1, 'player1_APB': 5}, 'healing_amount': {}, 'heal_count': {}, 'move_count': {'player2_ADCO': 2}, 'use_move_count': {}, 'cube_used_count': {}, 'killed_count': {'player2_ADCO': 3, 'player1_TANKG': 2, 'player2_ASSF': 3, 'player1_APB': 2, 'player2_ASSW': 2}, 'death_count': {'player1_APF': 3, 'player2_APTF': 2, 'player1_TANKR': 1, 'player1_TANKG': 1, 'player2_ASSF': 1, 'player1_APB': 1, 'player1_TANKB': 1, 'player2_ASSW': 1, 'player1_TANKF': 1}, 'use_token_count': {'player1': 6}, 'rounds_survived': {'player1_TANKR': 11, 'player1_TANKB': 11, 'player1_APF': 5, 'player2_ADCO': 12, 'player2_APTF': 4, 'player2_TANKR': 17, 'player1_TANKG': 4, 'player1_TANKF': 9, 'player2_ASSF': 1, 'player1_APB': 6, 'player2_ASSW': 2, 'player2_TANKG': 9, 'player2_HFR': 3}}
-                game_screen.data.score_records = [0, 0, -3, -2, -5, -2, -6, -3, -5, 0, -3, 1, -3, 1, -4, 1, -6, -1, -8, -3, -10]
-            
-            if winner != "quit":
-                end_game.main(winner, game_screen)
-
-        case "playback":
-            try:
-                game_screen.playback = open("playback.txt", "r")
-            except FileNotFoundError:
+                if winner not in ("None", ""):
+                    _finalize_battle(game_state, game_screen, winner)
+            case "host":
+                server = LANServer(port=DEFAULT_PORT)
+                exit_reason = draft.main(game_screen, mode="lan_server", server=server)
+                if exit_reason.kind != "finished" or exit_reason.draft_state is None:
+                    return
+                game_state = _build_game_state_from_draft(exit_reason.draft_state)
+                winner = battling.main(
+                    game_state, game_screen,
+                    mode="lan_server", server=server,
+                )
+                if winner not in ("None", ""):
+                    _finalize_battle(game_state, game_screen, winner)
+            case "join":
+                host_ip = join_screen.main(game_screen)
+                if not host_ip:
+                    return
+                client = LANClient(host_ip, port=DEFAULT_PORT)
+                try:
+                    exit_reason = draft.main(game_screen, mode="lan_client", client=client)
+                except (ConnectionRefusedError, RuntimeError, OSError) as e:
+                    print(f"[main] Failed to join {host_ip}: {e}")
+                    return
+                if exit_reason.kind == "scene_handoff":
+                    game_state = _build_game_state_for_client()
+                    winner = battling.main(
+                        game_state, game_screen,
+                        mode="lan_client", client=client, initial_state_dict=exit_reason.next_scene_state
+                    )
+                    if winner not in ("None", ""):
+                        _finalize_battle(game_state, game_screen, winner)
+            case "playback":
+                replay_path = replay_select.main(game_screen)
+                if replay_path is None:
+                    return  # user backed out
+                battling_replay.main(game_screen, replay_path)
                 return
-            
-            seed = int(game_screen.playback.readline().split()[-1])
-            player1.deck = game_screen.playback.readline().split()[-1].split("-")
-            player2.deck = game_screen.playback.readline().split()[-1].split("-")
-            game_screen.seed_set(seed)
-            game_screen.timer_mode = game_screen.playback.readline().split()[-1]
-            winner = playback.main(game_screen, player1, player2)
+            case "quit" | _:
+                return
+    finally:
+        if server is not None:
+            server.stop()
+        if client is not None:
+            client.disconnect()
 
-            game_screen.playback.close()
 
-            if winner != "quit":
-                end_game.main(winner, game_screen)
-        case "quit":
-            pass
-    
 if __name__ == "__main__":
     main()

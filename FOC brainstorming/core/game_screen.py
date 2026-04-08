@@ -1,110 +1,56 @@
-import os, json, pygame, random
-
+import os
+import json
 from typing import cast, Sequence, TextIO
-from utils.in_game_data import Data
-pygame.init()
 
-from utils.type_hint import JobDictionary, CardSetting
+import pygame
 
-__FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("core", "")
+from core.setting import FOLDER_PATH
 
-with open(f"{__FOLDER_PATH}/setting/setting.json", "r", encoding="utf-8") as file:
+
+with open(f"{FOLDER_PATH}/setting/setting.json", "r", encoding="utf-8") as file:
     SETTING: dict[str, str] = json.loads(file.read())
 
-with open(f"{__FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8") as file:
-    JOB_DICTIONARY: JobDictionary = json.loads(file.read())
-
-with open(f"{__FOLDER_PATH}/setting/card_setting.json", "r", encoding="utf-8") as file:
-    CARD_SETTING: CardSetting = json.loads(file.read())
-
-with open(f"{__FOLDER_PATH}/setting/card_hints.json", "r", encoding="utf-8") as file:
-    CARDS_HINTS_DICTIONARY: dict[str, str] = json.loads(file.read())
-
-BASIC_FONT = __FOLDER_PATH+SETTING["basic_font"]
-CHINESE_FONT = __FOLDER_PATH+SETTING["chinese_font"]
-
-        
-BLACK: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Black"].split(", "))))
-WHITE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["White"].split(", "))))
-BLUE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Blue"].split(", "))))
-RED: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Red"].split(", "))))
-GREEN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Green"].split(", "))))
-ORANGE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Orange"].split(", "))))
-PURPLE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Purple"].split(", "))))
-DARKGREEN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["DarkGreen"].split(", "))))
-CYAN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Cyan"].split(", "))))
-FUCHSIA: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Fuchsia"].split(", "))))
-
-
-White_setting = CARD_SETTING["White"]
-Red_setting = CARD_SETTING["Red"]
-Green_setting = CARD_SETTING["Green"]
-Blue_setting = CARD_SETTING["Blue"]
-Orange_setting = CARD_SETTING["Orange"]
-DarkGreen_setting = CARD_SETTING["DarkGreen"]
-Cyan_setting = CARD_SETTING["Cyan"]
-Fuchsia_setting = CARD_SETTING["Fuchsia"]
-Purple_setting = CARD_SETTING["Purple"]
-
+BASIC_FONT = FOLDER_PATH+SETTING["basic_font"]
+CHINESE_FONT = FOLDER_PATH+SETTING["chinese_font"]
 
 KETYS_TO_DISPLAY = SETTING["keys_to_display"]
 KEYS_TO_CHECK = SETTING["keys_to_check"]
 PIE_TITLE_TEXTS = SETTING["pie_title_texts"]
 BOARD_SIZE: tuple[int, int] = cast(tuple[int, int], tuple(map(int, SETTING["board_size"])))
 
+
 def draw_text(text: str, font: pygame.font.Font, text_color: Sequence[int], x: float, y: float, surface: pygame.surface.Surface) -> None:
-    rendered_text = font.render(text, True, text_color)
-    surface.blit(rendered_text, (x, y))
+    rendered = font.render(text, True, text_color)
+    
+    w, h = rendered.get_size()
+    transparent = pygame.Surface((w, h), pygame.SRCALPHA)
+    transparent.fill((0, 0, 0, 0))
+    transparent.blit(rendered, (0, 0))
+    rendered.set_colorkey((0, 0, 0))
+    transparent.blit(rendered, (0, 0))
+    
+    surface.blit(transparent, (x, y))
 
 
 class GameScreen:
     def __init__(self) -> None:
+        pygame.init()
         self.display_width: int = pygame.display.get_desktop_sizes()[0][0]
         self.display_height: int = pygame.display.get_desktop_sizes()[0][1]
+        if self.display_width == 2880 and self.display_height == 1800:
+            self.display_width = 1744
+            self.display_height = 981
         print(self.display_width, self.display_height)
         self.surface, self.block_size = self.fitting_screen()
         print(self.display_width, self.display_height)
         self.thickness = self.display_width // 400
         self.font_init()
-        self.clock = pygame.time.Clock()
-        self.timer_mode: str = "timer"
-        self.player_timer: dict[str, str] = {"player1": "0", "player2": "0"}
-        
-        self.coutdown_time = int(SETTING["countdown_time"])
-        self.file_auto_delet: bool = False
-        self.data = Data()
-        
-        self.log: TextIO | None = None
         self.playback: TextIO | None = None
-        
-        
-        
-        self.score: int = 0
-        self.players_luck: dict[str, int] = {"player1": 50, "player2": 50, "neutral": 50}
-        self.how_many_token_to_draw_a_card: int = int(SETTING["how_many_token_to_draw_a_card"])
-        self.players_token: dict[str, int] = {"player1": 0, "player2": 0, "neutral": 0}
-        self.players_totem: dict[str, int] = {"player1": 0, "player2": 0, "neutral": 0}
-        self.players_coin: dict[str, int] = {"player1": 0, "player2": 0}
-        self.card_to_draw: dict[str, int] = {"player1": 0, "player2": 0}
-        
-        
-        self.number_of_attacks: dict[str, int] = {"player1": 0, "player2": 0}
-        self.number_of_movings: dict[str, int] = {"player1": 0, "player2": 0}
-        self.number_of_cudes: dict[str, int] = {"player1": 0, "player2": 0}
-        self.number_of_heals: dict[str, int] = {"player1": 0, "player2": 0}
-    
-    def seed_set(self, seed: int | None=None):
-        if seed == None:
-            seed = random.randint(-2**9, 2**9)
-        random.seed(seed)
-        if self.log:
-            self.log.write(f"random seed {seed}\n")
-
 
     def fitting_screen(self) -> tuple[pygame.surface.Surface, float]:
         if self.display_width/self.display_height == 1.6:
             surface = pygame.display.set_mode((self.display_width, self.display_height))
-            block_size = (self.display_width/8)/1.2
+            block_size = (self.display_width/8) / 1.2
         else:
             maxvalue = [0, 0]
             for H in range(self.display_height, 0, -1):
@@ -117,7 +63,7 @@ class GameScreen:
             self.display_width = maxvalue[0]
             self.display_height = maxvalue[1]
             surface = pygame.display.set_mode((self.display_width, self.display_height))
-            block_size = (self.display_width/8)/1.2
+            block_size = (self.display_width/8) / 1.2
         return surface, block_size
 
     def font_init(self) -> None:
@@ -132,5 +78,5 @@ class GameScreen:
         self.text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, self.text_font_size)
 
 
-    def update(self) -> None:
-        self.surface.fill(pygame.Color(BLACK))
+    def render(self) -> None:
+        self.surface.fill(pygame.Color((0, 0, 0)))

@@ -1,12 +1,15 @@
+import os
+import json
+import math
+from typing import cast
+
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 from matplotlib.patches import Wedge
 from matplotlib.text import Text
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-import os, json, math
 import numpy as np
-from typing import cast
 
 from utils.type_hint import JobDictionary
 
@@ -29,25 +32,25 @@ font_file_path = __FOLDER_PATH+"/fonts/8bitOperatorPlus-Bold.ttf"
 
 output_folder = f"{__FOLDER_PATH}/imgs"
 
-
-
 custom_font_prop = font_manager.FontProperties(fname=font_file_path)
 
-def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict[str, int], fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
+
+def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict[str, int],
+                   fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
     if len(data) > 0:
         labels: list[str] = list(map(lambda key: key.split("_")[-1], data.keys()))
         sorted_tags = sorted(COLORS_DICT.keys(), key=len, reverse=True)
         
         x: list[int] = list(data.values())
-    
+
         colors: list[tuple[float, float, float] | str] = []
         for name in labels:
             for tag in sorted_tags:
                 if name.endswith(tag):
                     colors.append(COLORS_DICT[tag])
                     break
-
-
+        
+        
         if not any(data.values()):
             title_text = "No Data"
             labels = ["No Data"]
@@ -55,17 +58,28 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
             x = [1]
         
         
-    
+
         plt.figure(figsize=figsize, dpi=120)
         
-        _, texts, _ = cast(tuple[list[Wedge], list[Text], list[Text]], plt.pie(x, labels=labels, colors=colors, autopct="%1.1f%%", startangle=140, labeldistance=1.1, textprops={"color": "black", "fontproperties": custom_font_prop, "fontsize": fontsize*6}, wedgeprops={"linewidth": 5, "edgecolor": "gray"}))
+        _, texts, _ = cast(tuple[list[Wedge], list[Text], list[Text]],
+                           plt.pie(x, labels=labels, colors=colors, autopct="%1.1f%%",
+                                   startangle=140, labeldistance=1.1,
+                                   textprops={
+                                       "color": "black",
+                                       "fontproperties": custom_font_prop,
+                                       "fontsize": fontsize*6
+                                    },
+                                    wedgeprops={"linewidth": 5, "edgecolor": "gray"}
+                                )
+                            )
         
         plt.axis("equal")
         for text in texts:
             text.set_color("white")
             text.set_fontsize(fontsize*7)
-            
-        plt.title(title_text, fontweight="bold", fontproperties=custom_font_prop, fontsize = fontsize*13, color = "white", loc="center", pad=30)
+        
+        plt.title(title_text, fontweight="bold", fontproperties=custom_font_prop,
+                  fontsize = fontsize*13, color = "white", loc="center", pad=30)
         plt.tight_layout()
         
         os.makedirs(output_folder, exist_ok=True)
@@ -73,26 +87,9 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
         plt.savefig(os.path.join(output_folder, player_name+"_pie_chart_"+title_text+".png"), transparent=True)
     return player_name+"_pie_chart_"+title_text+".png"
 
-def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str, int]], turns: int, fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
-    '''
-    title_text:
-        1: 'KDA',
-        2: 'Average Attack Damage',
-        3: 'Attack Efficiency Index',
-        4: 'Per Round Influence',
-        5: 'Survival Index'
-    
-    'hit_count'
-    'damage_dealt'
-    'damage_taken_count'
-    'damage_taken'
-    'scored'
-    'ability_count'
-    'move_count'
-    'killed_count'
-    'death_count'
-    'rounds_survived'
-    '''
+
+def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str, int]],
+                   turns: int, fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
     if len(datas):
         labels: list[str] = list(datas.keys())
         
@@ -104,7 +101,6 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
                 if name.endswith(tag):
                     colors.append(COLORS_DICT[tag])
                     break
-
         
         width: list[float] = [0]
         
@@ -118,13 +114,14 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
             case "Per Round Influence":
                 width =  [datas[key]["damage_dealt"]*datas[key]["damage_taken"]/max(1, datas[key]["rounds_survived"]) for key in datas.keys()]
             case "Survival Index":
-                width =  [((datas[key]["scored"]*5)+(datas[key]["damage_dealt"]/max(1, datas[key]["hit_count"])*2)+(datas[key]["damage_taken"]/max(1, datas[key]["damage_taken_count"])*2))/max(1, datas[key]["rounds_survived"]) for key in datas.keys()]
+                width =  [(datas[key]["scored"]*5 + (datas[key]["damage_dealt"] / max(1, datas[key]["hit_count"])*2) + (datas[key]["damage_taken"]/max(1, datas[key]["damage_taken_count"])*2)) / max(1, datas[key]["rounds_survived"]) for key in datas.keys()]
 
         for i in range(len(width)-1, -1, -1):
             if width[i] <= 0:
                 width.pop(i)
                 colors.pop(i)
                 labels.pop(i)
+        
         if not datas or not width:
             title_text = "No Data"
             labels = ["No Data"]
@@ -147,14 +144,14 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
             label.set_fontproperties(custom_font_prop)  
             label.set_color("white")
             label.set_fontsize(fontsize*8)
-            
+        
         plt.gca().spines['top'].set_visible(False)
         plt.gca().spines['right'].set_visible(False)
         plt.gca().spines['bottom'].set_visible(False)
         plt.gca().spines['left'].set_visible(False)
 
         categories = categories[::max(1, 2*(len(categories)//10))]
-        
+
 
         ax.set_xticks(categories)
         ax.set_xticklabels([str(cat) for cat in categories])

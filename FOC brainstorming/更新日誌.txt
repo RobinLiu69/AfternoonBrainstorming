@@ -1165,4 +1165,196 @@ debug:
 新增:
     battling時 若用滑鼠選擇後則無法透過選擇新卡來更改目前選擇 所以新增選牌後可以覆蓋掉原選擇之卡(可能原本可以 但我最新這個不行所以對 還是先寫進來)
 =======================
-
+2026/03/23-21:05-3.9.7.1-branch Org
+編寫者 Robin
+----------------
+註解:
+    目前致力於保留Card完整性與擴充性 考慮引入鉤子用於載入傷害相關修飾器
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+    目前測試至綠色完 後續繼續測試
+----------------
+修改:
+    過往傳玩家和中立單位的訊息時，都是分開傳單獨的list，現在統一傳 player1, player2, nuetral
+修正:
+    SPF放置後會複製最近的 應為最遠的
+    LFF攻擊必定造成雙倍傷害 改為規則說明之效果
+    use_heal_count in data無法被紀錄\
+    LF(G/B/DKG/C/F)若開啟抬頭顯示器會無法放置 LF(G/B/DKG/C/F)說明文字格式不一致導致
+    破壞幸運方塊時APTG不會獲得護盾
+新增:
+    為每種派系分別創立單獨的class統一管理派系類的資料 BlueCard...
+停用:
+    APTF效果
+=======================
+2026/03/24-12:34-3.9.7.2-branch Org
+編寫者 Robin
+----------------
+註解:
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+    目前已測試 white, red, purple, orange, green, fuchisa, blue
+----------------
+優化:
+    整理各檔案引入順序
+    controls.py 的 pygame 只用於 type check
+修正:
+    UI內有使用card.upgrade增加CyanCard check
+    APTF效果 ->
+新增:
+    -> 已啟用並引入新的傷害修改插口 Card special_damage_interceptor
+=======================
+2026/03/29-18:16-3.9.7.3-branch Org
+編寫者 Robin
+----------------
+註解:
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+----------------
+修正:
+    搞笑了 controls.py 的 pygame 只用於 type check 顯然不行這樣喔
+新增:
+    cards/factory.py 用於取代舊版之 spawn.py 使擴充更容易
+    core/game_state.py 用於當作遊戲參數傳入大部分函式中
+    core/game_statistics.py 從之前的 game_screen.data 分離中來並統一管控
+    core/board_block.py 用於統一管理board之設定與常用功能
+    utils/logger.py 從之前的 game_screen.log 分離中來並統一管控
+    attack_area_display 下放至 Card 變得可以自定義
+架構重構!!!!
+=======================
+2026/03/30-06:20-3.9.7.4-branch Org
+編寫者 Robin
+----------------
+註解:
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+    新版簡單測試過 white, red, green, blue
+    目前大部分東西皆已穩定 考慮往LAN發展
+----------------
+修正:
+    詳細上個更新日誌內容
+    attack_detection 會把友方也算進去 + 修復 fuchisa 顯示
+    end_game.py 目前可以用了 還未完全優化
+    fuchisa shadows 不會移動
+    luckyblock效果為在自身位置X格放置幸運方塊 更改 README.md
+新增:
+    log 紀錄 launch attack, attack position, luckyblock spawn 和 move
+    custom_move 用於自定義移動方法
+    luckyblock spawn 改為使用 factory.spawn_card
+=======================
+2026/03/31-20:10-3.9.7.5-branch Org
+編寫者 Robin
+----------------
+註解:
+    此版本用於目標將卡牌渲染從卡排邏輯獨立出來 用於之後LAN發展
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+----------------
+修正:
+    menu renamed to draft
+新增:
+    目前已將部份渲染邏輯獨立出來 board, card, ui, battling, draft
+    cards.base Card 內引入 get_render_data 用於調取 CardRenderData
+    同時卡牌支援圖片顯示
+    引入action的概念 每個場景操作時 會回傳action後用於dispatch並resolve
+    好處在於若連機時 可以只傳動作 而不是無腦鏡像數據
+    而不同場景擁有不同action 各存於該場景資料夾下
+    core/colors.py 用於讀取顏色資料 原game_state.py下
+    新增core/draft_state.py 用於 draft場景下之數據紀錄
+    刪除utils/exhibit.py utils/attack_detection.py 目前以整合至相關渲染script 
+待處理:
+    screens/draft/draft.py下操作還有待測試 如可以選擇紫色牌組
+    core/player.py 目前還保留顯示相關功能 現階段已不需要 但還未刪除
+    cards/card_fuchisa.py 的影子若更改透明度所有CardRenderer上的都會一起改源於共用同個surface
+=======================
+2026/04/04-22:38-3.9.7.6-branch Org
+編寫者 Robin
+----------------
+註解:
+    此版本用於目標將卡牌渲染從卡排邏輯獨立出來 用於之後LAN發展
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+----------------
+修正:
+    cards/card_fuchisa.py 的影子若更改透明度所有CardRenderer上的都會一起改源於共用同個surface
+    core/player.py 目前還保留顯示相關功能 現階段已不需要 但還未刪除
+    screens/draft/draft.py下操作還有待測試 如可以選擇紫色牌組
+    core/game_screen 下 draw_text
+新增:
+    setting.py 用於抓取數據 如顏色 卡牌資訊等等
+待處理:
+    Network
+=======================
+2026/04/08-01:09-3.9.7.7-branch Org
+編寫者 Robin
+----------------
+註解:
+    playback.py 無法使用
+    因目前依舊還在開完且許多功能都未進行測試
+    此版本不建議用於遊玩
+----------------
+移除:
+    core/spawn.py
+    utils/auto_update.py
+新增:
+    連線模式
+待處理:
+    現在只能連線模式
+    海盜派系無法升級
+=======================
+2026/04/08-11:00-3.9.7.8-branch Org
+編寫者 Robin
+----------------
+修復:
+    timer 顯示
+    卡牌抬頭顯示器輔助(f)
+    end_game 職責拆分
+    end_game loading畫面 更新
+新增:
+    本地遊玩按鈕
+待處理:
+    海盜派系無法升級
+=======================
+2026/04/08-22:53-3.9.7.9-branch Org
+編寫者 Robin
+----------------
+修復:
+    依影派系無法於線上模式遊玩
+    用籃球抽牌客戶端不會即時同步
+    HFR在客戶端若血量低於0會直接死掉
+    HFR若進入狂暴狀態 依舊會得分
+    SPF會複製其他SPF影子
+    海盜派系無法升級
+待處理:
+    HFC 目前會不同步
+=======================
+2026/04/08-23:22-3.9.8.0-branch Org
+編寫者 Robin
+----------------
+註解:
+    上個版本非常補穩定
+    所以這版本用於打上個版本的補丁
+    此版本應為線上最終版前之最後版本
+    若無大問題則下次將推出最終可穩定遊玩版
+----------------
+修復:
+    角色數值不同步
+    HFC 不同步(同上問題)
+新增:
+    若客戶端收到訊息有錯誤 則直接無視 增加穩定性
+=======================
+2026/04/09-03:15-4.0.0.0-branch Org
+編寫者 Robin
+----------------
+新增:
+    把所有 random.X 呼叫 都統一使用 game_state.rng.X
+    GameLogger 現在多記一個 jsonl file 用於回放
+    在 battling_dispatcher 增加紀錄 action 的 log
+    replay
+=======================
