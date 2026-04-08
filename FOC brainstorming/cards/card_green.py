@@ -118,7 +118,7 @@ class LuckyBlock(GreenCard):
         return True
 
     def end_turn(self, clear_numbness: bool=True) -> int:
-        if self.numbness == True and clear_numbness:
+        if self.numbness and clear_numbness:
             self.numbness = False
             return 0
         else:

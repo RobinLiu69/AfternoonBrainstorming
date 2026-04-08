@@ -159,7 +159,21 @@ class Player:
                 game_state.number_of_cudes[self.name] += 2
                 self.discard_pile.append(self.hand.pop(index))
             case _:
-                if spawn_card(board_x, board_y, card_name, self.name, self.on_board, game_state):
+                upgrade = False
+                real_name = card_name
+                if card_name.endswith(" (+)"):
+                    real_name = card_name[:-4]
+                    upgrade = True
+                    from cards.card_cyan import CyanCard
+                    job = real_name[:-1]
+                    if not CyanCard.price_check(self.name, job, game_state):
+                        return
+                    if spawn_card(board_x, board_y, real_name, self.name,
+                                self.on_board, game_state, upgrade=upgrade):
+                        self.hand.pop(index)
+                        game_state.game_logger.log_card_played(self.name, card_name, (board_x, board_y))
+                elif spawn_card(board_x, board_y, real_name, self.name,
+                            self.on_board, game_state, ):
                     self.hand.pop(index)
                     game_state.game_logger.log_card_played(self.name, card_name, (board_x, board_y))
                 pass

@@ -25,6 +25,17 @@ class CyanCard(Card):
     def get_coins(self, value: int, game_state: GameState) -> None:
         game_state.players_coin[self.owner] = game_state.players_coin[self.owner] + value if game_state.players_coin[self.owner] + value <= 50 else 50
 
+    @classmethod
+    def init_args_from_dict(cls, data: dict) -> dict:
+        return {
+            "owner": data["owner"],
+            "board_x": data["board_x"],
+            "board_y": data["board_y"],
+            "health": data["health"],
+            "damage": data["damage"],
+            "upgrade": data.get("upgrade", False),
+        }
+
     @staticmethod
     def price_check(owner: str, job: str, game_state: GameState) -> bool:
         cyan_cards: filter[CyanCard] = filter(lambda card: isinstance(card, CyanCard), game_state.get_both_player_cards()) # pyright: ignore[reportAssignmentType]
@@ -80,7 +91,7 @@ class Ap(CyanCard):
     def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False,
                  health: int = card_settings["AP"]["health"],
                  damage: int = card_settings["AP"]["damage"]) -> None:
-    
+
         super().__init__(owner=owner, job_and_color="APC",
                          health=health if not upgrade else card_settings["AP"]["upgrade_health"],
                          damage=damage if not upgrade else card_settings["AP"]["upgrade_damage"],
@@ -88,28 +99,56 @@ class Ap(CyanCard):
 
         self.upgrade = upgrade
         self.target: Optional[Card] = None
-    
-    # def draw_shape(self, game_state: GameState) -> None:
-    #     if not self.surface: return
-    #     self.shape = self.shaped(game_state.game_screen.block_size)
-    #     if self.upgrade:
-    #         draw_text("(+)", game_state.game_screen.mid_text_font, self.text_color, (game_state.game_screen.block_size*0.388), (game_state.game_screen.block_size*0.41), self.surface)
-    
+        self._pending_target_iid: Optional[str] = None
+
     def deploy(self, game_state: GameState) -> None:
         for target in self.detection("nearest", game_state.get_opponent_cards(self.owner)):
             self.target = target
+            target.been_targeted = True
 
     def after_attack_broadcast(self, attacker: "Card", target: "Card", game_state: GameState) -> bool:
+        if self.target and self.target.health <= 0:
+            self.target.been_targeted = False
+            self.target = None
+
+        if self.target is None:
+            return False
+
         if attacker.attack_types and attacker.owner == self.owner:
             if any(item in attacker.attack_types for item in ["nearest", "farthest"]):
-                if self.target:
-                    if self.target.damage_calculate(attacker.damage, attacker, game_state):
-                        if self.upgrade: self.get_coins(card_settings["AP"]["coin_gets"], game_state)
+                if self.target.damage_calculate(attacker.damage, attacker, game_state):
+                    if self.upgrade:
+                        self.get_coins(card_settings["AP"]["coin_gets"], game_state)
         return False
-    
+
     def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
         return True
+
+    def die(self, game_state: GameState) -> bool:
+        if self.target:
+            self.target.been_targeted = False
+            self.target = None
+        return False
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+        data["target_iid"] = self.target.instance_id if self.target else None
+        return data
+
+    def apply_dict(self, data: dict) -> None:
+        super().apply_dict(data)
+        self.collect_pending_refs(data)
+
+    def collect_pending_refs(self, data: dict) -> None:
+        self._pending_target_iid = data.get("target_iid")
+
+    def resolve_references(self, all_cards_by_iid: dict) -> None:
+        if self._pending_target_iid:
+            self.target = all_cards_by_iid.get(self._pending_target_iid)
+        else:
+            self.target = None
+        self._pending_target_iid = None
 
 
 class Tank(CyanCard):
@@ -150,7 +189,7 @@ class Hf(CyanCard):
                  health: int = card_settings["HF"]["health"],
                  damage: int = card_settings["HF"]["damage"]) -> None:
 
-        self.count = 1        
+        self.count = 1
         super().__init__(owner=owner, job_and_color="HFC",
                          health=health if not upgrade else card_settings["HF"]["upgrade_health"],
                          damage=damage if not upgrade else card_settings["HF"]["upgrade_damage"],
@@ -184,13 +223,22 @@ class Hf(CyanCard):
         if clear_numbness:
             if self.anger:
                 self.count -= 1
-        if self.numbness == True or self.count == 0:
+        if self.numbness or self.count == 0:
             if clear_numbness:
                 self.anger = False
                 self.numbness = False
             return 0
         else:
             return 1
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+        data["count"] = self.count
+        return data
+
+    def apply_dict(self, data: dict) -> None:
+        super().apply_dict(data)
+        self.count = data.get("count", 1)
 
 
 class Lf(CyanCard):
@@ -213,7 +261,7 @@ class Lf(CyanCard):
 
     def ability(self, target: Card, game_state: GameState) -> bool:
         self.get_coins(card_settings["LF"]["coin_gets"], game_state)
-        return False
+        return True
 
     def start_turn(self, game_state: GameState) -> int:
         if self.upgrade:
@@ -274,7 +322,8 @@ class Apt(CyanCard):
         return value if value > 0 else 0
     
     def start_turn(self, game_state: GameState) -> int:
-        self.get_coins(card_settings["APT"]["coin_gets"], game_state)
+        if self.upgrade:
+            self.get_coins(card_settings["APT"]["coin_gets"], game_state)
         return 0
 
 

@@ -1,5 +1,6 @@
 import pygame
 
+from core.setting import RED
 from cards.base import CardRenderData
 from rendering.sprite_registry import SpriteRegistry
 from core.game_screen import GameScreen, draw_text
@@ -72,6 +73,9 @@ class CardRenderer:
                 if data.moving:
                     draw_text("moving" if not data.mouse_selected else "Selected", self.game_screen.small_text_font, text_color,
                               bs*0.6, bs*0.12, surface)
+                if data.been_targeted:
+                    draw_text("Target", self.game_screen.small_text_font, (200, 0, 0),
+                            bs * 0.1, bs * 0.75, surface)
 
                 if data.owner == "display":
                     draw_text(data.job_and_color, self.game_screen.text_font, text_color, bs * 0.1, bs * 0.8, surface)

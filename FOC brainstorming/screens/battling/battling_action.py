@@ -98,6 +98,10 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             board_y=board_y,
                             hand_index=0
                         ))
+                    else:
+                        actions.append(GameAction(
+                            player=controller, action_type="toggle_upgrade",
+                            hand_index=0))
                 case pygame.K_2:
                     if board_x is not None and board_y is not None:
                         actions.append(GameAction(
@@ -107,6 +111,10 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             board_y=board_y,
                             hand_index=1
                         ))
+                    else:
+                        actions.append(GameAction(
+                            player=controller, action_type="toggle_upgrade",
+                            hand_index=1))
                 case pygame.K_3:
                     if board_x is not None and board_y is not None:
                         actions.append(GameAction(
@@ -116,6 +124,10 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             board_y=board_y,
                             hand_index=2
                         ))
+                    else:
+                        actions.append(GameAction(
+                            player=controller, action_type="toggle_upgrade",
+                            hand_index=2))
                 case pygame.K_4:
                     if board_x is not None and board_y is not None:
                         actions.append(GameAction(
@@ -125,6 +137,10 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             board_y=board_y,
                             hand_index=3
                         ))
+                    else:
+                        actions.append(GameAction(
+                            player=controller, action_type="toggle_upgrade",
+                            hand_index=3))
                 case pygame.K_5:
                     if board_x is not None and board_y is not None:
                         actions.append(GameAction(
@@ -134,6 +150,10 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             board_y=board_y,
                             hand_index=4
                         ))
+                    else:
+                        actions.append(GameAction(
+                            player=controller, action_type="toggle_upgrade",
+                            hand_index=4))
                 case pygame.K_6:
                     if board_x is not None and board_y is not None:
                         actions.append(GameAction(
@@ -143,6 +163,10 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             board_y=board_y,
                             hand_index=5
                         ))
+                    else:
+                        actions.append(GameAction(
+                            player=controller, action_type="toggle_upgrade",
+                            hand_index=5))
                 case pygame.K_7:
                     if board_x is not None and board_y is not None:
                         actions.append(GameAction(
@@ -152,6 +176,10 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             board_y=board_y,
                             hand_index=6
                         ))
+                    else:
+                        actions.append(GameAction(
+                            player=controller, action_type="toggle_upgrade",
+                            hand_index=6))
                 case pygame.K_8:
                     if board_x is not None and board_y is not None:
                         actions.append(GameAction(
@@ -161,6 +189,10 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             board_y=board_y,
                             hand_index=7
                         ))
+                    else:
+                        actions.append(GameAction(
+                            player=controller, action_type="toggle_upgrade",
+                            hand_index=7))
                 case pygame.K_9:
                     if board_x is not None and board_y is not None:
                         actions.append(GameAction(
@@ -170,6 +202,10 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             board_y=board_y,
                             hand_index=8
                         ))
+                    else:
+                        actions.append(GameAction(
+                            player=controller, action_type="toggle_upgrade",
+                            hand_index=8))
                 case pygame.K_0:
                     if board_x is not None and board_y is not None:
                         actions.append(GameAction(
@@ -179,6 +215,10 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             board_y=board_y,
                             hand_index=9
                         ))
+                    else:
+                        actions.append(GameAction(
+                            player=controller, action_type="toggle_upgrade",
+                            hand_index=9))
                 case pygame.K_SPACE:
                     if board_x is not None and board_y is not None:
                         actions.append(GameAction(
