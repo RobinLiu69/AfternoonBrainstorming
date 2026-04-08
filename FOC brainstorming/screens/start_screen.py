@@ -21,10 +21,16 @@ def main(game_screen: GameScreen) -> str:
                         game_screen.block_size*0.4, game_screen.block_size*0.2,
                         box_width=box_width, font=game_screen.big_big_text_font, text="host")
     join_button = Button(game_screen.block_size*1.5, game_screen.block_size*0.75,
-                            game_screen.display_width/2 - game_screen.block_size*0.75,
-                            game_screen.display_height/2 + game_screen.block_size*1.0,
-                            game_screen.block_size*0.45, game_screen.block_size*0.2,
-                            box_width=box_width, font=game_screen.big_big_text_font, text="join")
+                        game_screen.display_width/2 - game_screen.block_size*0.75,
+                        game_screen.display_height/2 + game_screen.block_size*1.0,
+                        game_screen.block_size*0.45, game_screen.block_size*0.2,
+                        box_width=box_width, font=game_screen.big_big_text_font, text="join")
+
+    playback_button = Button(game_screen.block_size*1.5, game_screen.block_size*0.75,
+                        game_screen.display_width/2 - game_screen.block_size*0.75,
+                        game_screen.display_height/2 + game_screen.block_size*1.9,
+                        game_screen.block_size*0.175, game_screen.block_size*0.2,
+                        box_width=box_width, font=game_screen.big_big_text_font, text="playback")
     state = "quit"
 
     clock = pygame.time.Clock()
@@ -50,7 +56,10 @@ def main(game_screen: GameScreen) -> str:
                 if join_button.touch(mouse_x, mouse_y):
                     running = False
                     state = "join"
-
+                if playback_button.touch(mouse_x, mouse_y):
+                    running = False
+                    state = "playback"
+            
             if event.type == pygame.QUIT:
                 running = False
 
@@ -64,10 +73,11 @@ def main(game_screen: GameScreen) -> str:
         local_button.update(game_screen)
         host_button.update(game_screen)
         join_button.update(game_screen)
-
+        playback_button.update(game_screen)
+        
         draw_text("(Experimental Content)", game_screen.mid_text_font, WHITE,
                 game_screen.display_width/2 - game_screen.block_size*0.9,
-                game_screen.display_height/2 + game_screen.block_size*2.0, game_screen.surface)
+                game_screen.display_height/2 + game_screen.block_size*2.8, game_screen.surface)
 
         pygame.display.update()
         clock.tick(60)

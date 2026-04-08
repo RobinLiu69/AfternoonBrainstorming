@@ -10,10 +10,10 @@ from core.player import Player
 from core.neutral import Neutral
 from core.scene_exit import DraftExitReason
 
-from screens import start_screen, join_screen
+from screens import start_screen, join_screen, replay_select
 from screens.draft import draft
 from screens.end_game import end_game
-from screens.battling import battling
+from screens.battling import battling, battling_replay
 
 from cards import (
     base, card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
@@ -36,6 +36,7 @@ def _build_game_state_from_draft(draft_state: DraftState) -> GameState:
     game_state.game_logger.info(f"player1 deck {'-'.join(player1.deck)}")
     game_state.game_logger.info(f"player2 deck {'-'.join(player2.deck)}")
     game_state.game_logger.info(f"timer mode {game_state.timer_mode}")
+    game_state.game_logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
     return game_state
 
 
@@ -109,6 +110,12 @@ def main() -> None:
                     )
                     if winner not in ("None", ""):
                         _finalize_battle(game_state, game_screen, winner)
+            case "playback":
+                replay_path = replay_select.main(game_screen)
+                if replay_path is None:
+                    return  # user backed out
+                battling_replay.main(game_screen, replay_path)
+                return
             case "quit" | _:
                 return
     finally:

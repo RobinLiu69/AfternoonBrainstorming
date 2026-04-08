@@ -108,6 +108,7 @@ class BattlingDispatcher:
         self._network.broadcast_game_over(winner, stats)
 
     def _execute(self, action: GameAction, game_state: GameState) -> ActionResult:
+        game_state.game_logger.log_action(action, action.player)
         owned_actions = ("attack", "play_card", "move_to", "heal",
                          "spawn_cube", "toggle_upgrade", "end_turn")
         if action.action_type in owned_actions:

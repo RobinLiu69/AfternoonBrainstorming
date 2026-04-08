@@ -110,7 +110,7 @@ class Lf(OrangeCard):
             return False
         
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_opponent_cards(self.owner))):
+        for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_opponent_cards(self.owner)), game_state):
             card.damage_calculate(self.damage, self, game_state)
 
 
@@ -170,7 +170,7 @@ class Sp(OrangeCard):
 
     def move_broadcast(self, target: Card, game_state: GameState) -> bool:
         if target.owner == self.owner:
-            for card in self.detection("farthest", game_state.get_side_cards(self.owner, True)):
+            for card in self.detection("farthest", game_state.get_side_cards(self.owner, True), game_state):
                 card.damage_calculate(card_settings["SP"]["movement_damage"], self, game_state)
         return True
 

@@ -102,7 +102,7 @@ class Ap(CyanCard):
         self._pending_target_iid: Optional[str] = None
 
     def deploy(self, game_state: GameState) -> None:
-        for target in self.detection("nearest", game_state.get_opponent_cards(self.owner)):
+        for target in self.detection("nearest", game_state.get_opponent_cards(self.owner), game_state):
             self.target = target
             target.been_targeted = True
 
@@ -265,7 +265,7 @@ class Lf(CyanCard):
 
     def start_turn(self, game_state: GameState) -> int:
         if self.upgrade:
-            self.attack_types = random.choice(["large_cross", "nearest", "small_cross", "small_cross small_x", "farthest"])
+            self.attack_types = game_state.rng.choice(["large_cross", "nearest", "small_cross", "small_cross small_x", "farthest"])
         return 0
 
 

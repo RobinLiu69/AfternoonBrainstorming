@@ -125,7 +125,7 @@ class Player:
             self.hand.append(card_name)
         else:
             if self.discard_pile:
-                random.shuffle(self.discard_pile)
+                game_state.rng.shuffle(self.discard_pile)
                 self.draw_pile = self.discard_pile.copy()
                 self.discard_pile = []
                 card_name = self.draw_pile.pop()

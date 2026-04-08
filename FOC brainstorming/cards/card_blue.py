@@ -1,7 +1,8 @@
 import random
 from typing import TYPE_CHECKING
 
-from core.game_state import GameState, StatType
+from core.game_state import GameState
+from core.game_statistics import StatType
 from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
@@ -154,7 +155,7 @@ class Sp(BlueCard):
             count = len(game_state.get_player(self.owner).on_board+game_state.get_player(self.owner).discard_pile)
             for i in range(count):
                 if enemies:
-                    enemies[random.randrange(len(enemies))].damage_calculate(card_settings["SP"]["spawn_damage"], self, game_state)
+                    enemies[game_state.rng.randrange(len(enemies))].damage_calculate(card_settings["SP"]["spawn_damage"], self, game_state)
                     enemies = list(filter(lambda card: card.health > 0, game_state.get_side_cards(self.owner, True)))
 
 

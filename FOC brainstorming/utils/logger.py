@@ -1,8 +1,10 @@
+import atexit
+import json
 import logging
 import os
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, Callable, List
+from typing import Optional, Callable, List, Any, TextIO
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -41,11 +43,15 @@ class GameLogger:
     log_file: Optional[Path] = None
     enable_console: bool = True
     enable_file: bool = True
+    enable_jsonl: bool = True
     max_memory_logs: int = 1000
     
     _logger: logging.Logger = field(init=False, repr=False)
     _memory_logs: List[LogEntry] = field(init=False, default_factory=list, repr=False)
     _subscribers: List[Callable[[LogEntry], None]] = field(init=False, default_factory=list, repr=False)
+    _jsonl_fp: Optional[TextIO] = field(init=False, default=None, repr=False)
+    _jsonl_path: Optional[Path] = field(init=False, default=None, repr=False)
+    _closed: bool = field(init=False, default=False, repr=False)
     
     def __post_init__(self) -> None:
         self._logger = logging.getLogger('FOC_Game_Logger')
@@ -61,18 +67,41 @@ class GameLogger:
             if self.log_file is None:
                 __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("utils", "")
                 self.log_file = Path(f"{__FOLDER_PATH}/battle_records/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log")
-            
-            self.log_file.parent.mkdir(parents=True, exist_ok=True)
-            file_handler = logging.FileHandler(self.log_file, encoding='utf-8')
-            file_handler.setLevel(logging.DEBUG)
-            file_handler.setFormatter(formatter)
-            self._logger.addHandler(file_handler)
         
+                self.log_file.parent.mkdir(parents=True, exist_ok=True)
+                file_handler = logging.FileHandler(self.log_file, encoding='utf-8')
+                file_handler.setLevel(logging.DEBUG)
+                file_handler.setFormatter(formatter)
+                self._logger.addHandler(file_handler)
+
         if self.enable_console:
             console_handler = logging.StreamHandler()
             console_handler.setLevel(logging.INFO)
             console_handler.setFormatter(formatter)
             self._logger.addHandler(console_handler)
+        
+        if self.enable_file and self.enable_jsonl and self.log_file is not None:
+            try:
+                self._jsonl_path = self.log_file.with_suffix('.jsonl')
+                self._jsonl_fp = open(self._jsonl_path, 'w', encoding='utf-8')
+            except OSError as e:
+                print(f"[GameLogger] Failed to open jsonl file: {e}")
+                self._jsonl_fp = None
+        
+        atexit.register(self.close)
+    
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        if self._jsonl_fp is not None:
+            try:
+                self._jsonl_fp.flush()
+                self._jsonl_fp.close()
+            except Exception as e:
+                print(f"[GameLogger] jsonl close failed: {e}")
+            finally:
+                self._jsonl_fp = None
     
     def log(self, level: LogLevel, category: LogCategory, message: str, **data) -> None:
         entry = LogEntry(
@@ -92,6 +121,21 @@ class GameLogger:
         
         for subscriber in self._subscribers:
             subscriber(entry)
+        
+        if self._jsonl_fp is not None and not self._closed:
+            try:
+                record: dict[str, Any] = {
+                    'timestamp': entry.timestamp.isoformat(),
+                    'level': level.name,
+                    'category': category.value,
+                    'message': message,
+                }
+                for k, v in data.items():
+                    record[k] = list(v) if isinstance(v, tuple) else v
+                self._jsonl_fp.write(json.dumps(record, default=str, ensure_ascii=False) + '\n')
+                self._jsonl_fp.flush()
+            except Exception as e:
+                print(f"[GameLogger] jsonl write failed: {e}")
     
     def info(self, message: str, category: LogCategory = LogCategory.SYSTEM, **data) -> None:
         self.log(LogLevel.INFO, category, message, **data)
@@ -102,6 +146,18 @@ class GameLogger:
     def warning(self, message: str, category: LogCategory = LogCategory.SYSTEM, **data) -> None:
         self.log(LogLevel.WARNING, category, message, **data)
     
+    def log_action(self, action: Any, player: str) -> None:
+        self.info(
+            f"ACTION {player} {action.action_type}",
+            category=LogCategory.GAME_FLOW,
+            is_action=True,
+            action_type=action.action_type,
+            action_player=action.player,
+            board_x=action.board_x,
+            board_y=action.board_y,
+            hand_index=action.hand_index,
+        )
+
     def log_turn_start(self, player_name: str, turn_number: int) -> None:
         self.info(
             f"Turn {turn_number}: {player_name} started",

@@ -1349,3 +1349,12 @@ debug:
 新增:
     若客戶端收到訊息有錯誤 則直接無視 增加穩定性
 =======================
+2026/04/09-03:15-4.0.0.0-branch Org
+編寫者 Robin
+----------------
+新增:
+    把所有 random.X 呼叫 都統一使用 game_state.rng.X
+    GameLogger 現在多記一個 jsonl file 用於回放
+    在 battling_dispatcher 增加紀錄 action 的 log
+    replay
+=======================
