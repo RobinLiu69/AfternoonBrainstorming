@@ -4,14 +4,14 @@ from typing import cast, Sequence, TextIO
 
 import pygame
 
+from core.setting import FOLDER_PATH
 
-__FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("core", "")
 
-with open(f"{__FOLDER_PATH}/setting/setting.json", "r", encoding="utf-8") as file:
+with open(f"{FOLDER_PATH}/setting/setting.json", "r", encoding="utf-8") as file:
     SETTING: dict[str, str] = json.loads(file.read())
 
-BASIC_FONT = __FOLDER_PATH+SETTING["basic_font"]
-CHINESE_FONT = __FOLDER_PATH+SETTING["chinese_font"]
+BASIC_FONT = FOLDER_PATH+SETTING["basic_font"]
+CHINESE_FONT = FOLDER_PATH+SETTING["chinese_font"]
 
 KETYS_TO_DISPLAY = SETTING["keys_to_display"]
 KEYS_TO_CHECK = SETTING["keys_to_check"]

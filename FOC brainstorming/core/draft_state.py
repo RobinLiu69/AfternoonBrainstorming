@@ -22,13 +22,12 @@ class DraftState:
     timer_mode: str = "timer"
     file_auto_delete: bool = False
 
-    def get_visible_deck(self, viewer: str, owner: str) -> list[str]:
+    def get_visible_deck(self, viewer: str, owner: str) -> range:
         deck = self.player1_deck if owner == "player1" else self.player2_deck
-        
         if viewer == owner:
-            return deck
+            return range(len(deck))
         else:
-            return deck[:6]
+            return range(min(6, len(deck)))
         
     def get_deck(self, owner: str) -> list[str]:
         return self.player1_deck if owner == "player1" else self.player2_deck

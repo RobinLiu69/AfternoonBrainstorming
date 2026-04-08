@@ -3,6 +3,7 @@ from typing import Optional
 from core.game_state import GameState
 from core.draft_state import DraftState
 from core.game_screen import GameScreen
+from core.game_statistics import StatType
 from core.network_layer import LANClient, LANServer
 from core.board_config import BoardConfig
 from core.player import Player
@@ -24,7 +25,6 @@ DEFAULT_PORT = 5555
 
 
 def _build_game_state_from_draft(draft_state: DraftState) -> GameState:
-    """Host / local path: construct a fresh GameState from completed draft picks."""
     player1 = Player(name="player1", deck=draft_state.player1_deck.copy(), hand=[], on_board=[], draw_pile=[], discard_pile=[])
     player2 = Player(name="player2", deck=draft_state.player2_deck.copy(), hand=[], on_board=[], draw_pile=[], discard_pile=[])
     neutral = Neutral()
@@ -40,7 +40,6 @@ def _build_game_state_from_draft(draft_state: DraftState) -> GameState:
 
 
 def _build_game_state_for_client() -> GameState:
-    """Client path: empty stub. battling.main will overwrite via apply_dict."""
     player1 = Player(name="player1", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
     player2 = Player(name="player2", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
     neutral = Neutral()
@@ -66,7 +65,6 @@ def main() -> None:
 
     server: Optional[LANServer] = None
     client: Optional[LANClient] = None
-    # mode = "local"
     try:
         match mode:
             case "local":
@@ -75,6 +73,10 @@ def main() -> None:
                     return
                 game_state = _build_game_state_from_draft(exit_reason.draft_state)
                 winner = battling.main(game_state, game_screen, mode="local")
+
+                # for testing
+                # game_state.game_statistics._stats = {StatType.CARD_USE: {'player1': 6, 'player2': 7}, StatType.HIT: {'player1_ASSW': 2, 'player2_ADCW': 1, 'player1_ADCW': 1, 'player2_HFW': 1, 'player2_ASSW': 1}, StatType.DAMAGE_DEALT: {'player1_ASSW': 7, 'player2_ADCW': 7, 'player1_ADCW': 1, 'player2_HFW': 4, 'player2_ASSW': 10}, StatType.DAMAGE_TAKEN: {'player2_LFW': 7, 'player1_SPW': 1, 'player1_ASSW': 4, 'player1_TANKW': 11, 'player2_SPW': 1, 'player1_ADCW': 5}, StatType.DAMAGE_TAKEN_COUNT: {'player2_LFW': 4, 'player1_SPW': 2, 'player1_ASSW': 4, 'player1_TANKW': 6, 'player2_SPW': 2, 'player1_ADCW': 2}, StatType.SCORED: {'player1_SPW': 2, 'player2_ADCW': 6, 'player2_LFW': 0, 'player2_APTW': 6, 'player1_ASSW': 4, 'player1_TANKW': 8, 'player2_HFW': 5, 'player2_SPW': 2, 'player1_ADCW': 1, 'player2_ASSW': 4, 'player2_APW': 3}, StatType.ABILITY: {}, StatType.HEALING: {}, StatType.HEAL_USE: {}, StatType.MOVE: {}, StatType.MOVE_USE: {}, StatType.CUBE_USE: {}, StatType.KILLED: {'player1_ASSW': 1, 'player2_ADCW': 2, 'player1_ADCW': 1, 'player2_HFW': 1, 'player2_ASSW': 1}, StatType.DEATH: {'player2_LFW': 1, 'player1_SPW': 1, 'player1_ASSW': 2, 'player2_SPW': 1, 'player1_ADCW': 1}, StatType.TOKEN_USE: {}, StatType.ROUNDS_SURVIVED: {'player1_SPW': 1, 'player2_ADCW': 6, 'player2_APTW': 6, 'player1_ASSW': 2, 'player1_TANKW': 8, 'player2_HFW': 5, 'player2_SPW': 1, 'player1_ADCW': 1, 'player2_ASSW': 3, 'player2_APW': 3}}
+                
                 if winner not in ("None", ""):
                     _finalize_battle(game_state, game_screen, winner)
             case "host":

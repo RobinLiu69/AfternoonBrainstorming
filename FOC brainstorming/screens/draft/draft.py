@@ -120,6 +120,6 @@ def main(game_screen: GameScreen, mode: str = "local",
 
             dispatcher.dispatch(action, draft_state)
 
-        renderer.render_frame(page, mouse_board_x, mouse_board_y, draft_state)
+        renderer.render_frame(page, mouse_board_x, mouse_board_y, draft_state, hint_on)
         pygame.display.update()
         clock.tick(60)

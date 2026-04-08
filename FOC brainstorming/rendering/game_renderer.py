@@ -14,7 +14,7 @@ class GameRenderer:
         self.ui_renderer = UIRenderer(game_screen)
     
     def render_frame(self, controller: str, mouse_x: int, mouse_y: int,
-                     mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState) -> None:
+                     mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState, hint_on: bool = False) -> None:
         self.game_screen.render()
 
         for card in game_state.neutral.on_board:
@@ -45,24 +45,30 @@ class GameRenderer:
         self.ui_renderer.render_deck_info(game_state)
         self.ui_renderer.render_timers(game_state)
 
-        self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state)
+        self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state, hint_on)
 
     def _render_hint(self, mouse_x: int, mouse_y: int,
-                     mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState) -> None:
+                     mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState, hint_on: bool) -> None:
+        self.ui_renderer._hint_box.turn_on = hint_on
+        if not hint_on:
+            return
+        
         if mouse_x < self.game_screen.display_width / 2 - self.game_screen.block_size * 2:
             name, _ = game_state.player1.get_hand_name_by_mouse_pos(mouse_x, mouse_y, self.game_screen)
+            print(name)
             if name != "None":
-                self.ui_renderer.render_hint(mouse_x, mouse_y, name, game_state)
+                self.ui_renderer.render_hint(mouse_x, mouse_y, name)
 
         elif mouse_x > self.game_screen.display_width / 2 + self.game_screen.block_size * 2:
             name, _ = game_state.player2.get_hand_name_by_mouse_pos(mouse_x, mouse_y, self.game_screen)
             if name != "None":
-                self.ui_renderer.render_hint(mouse_x, mouse_y, name, game_state)
+                self.ui_renderer.render_hint(mouse_x, mouse_y, name)
 
-        # if mouse_board_x is not None and mouse_board_y is not None:
-        #     card = get_card_in_battling(game_state.get_all_cards(), mouse_board_x, mouse_board_y)
-        #     if card:
-        #         self.ui_renderer.render_hint(mouse_x, mouse_y, card, game_state)
+        if mouse_board_x is not None and mouse_board_y is not None:
+            for card in game_state.get_all_cards():
+                if card.board_x == mouse_board_x and card.board_y == mouse_board_y:
+                    self.ui_renderer.render_hint(mouse_x, mouse_y, card)
+                    return
     
     def _render_boards(self, game_state: GameState) -> None:
         for board in game_state.board_dict.values():

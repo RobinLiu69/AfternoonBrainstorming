@@ -299,9 +299,13 @@ class Player:
         self.hand = data["hand"]
         self.draw_pile = data["draw_pile"]
         self.discard_pile = data["discard_pile"]
-        self.start_time = data["start_time"]
+
+        self.start_time = -1
         self.elapsed_time = data["elapsed_time"]
         self.time_out = data["time_out"]
+        minutes = int(self.elapsed_time // 60)
+        seconds = int(self.elapsed_time % 60)
+        self.time_minutes_and_seconds = f"{minutes:02d}:{seconds:02d}"
 
         new_on_board = []
         for card_data in data["on_board"]:
