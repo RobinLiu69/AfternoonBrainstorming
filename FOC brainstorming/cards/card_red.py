@@ -58,7 +58,7 @@ class Tank(RedCard):
         for card in self.detection(
             "nearest", filter(
                 lambda card: card != self, game_state.get_player_cards(self.owner)
-            )
+            ), game_state
         ):
             card.armor += card_settings["TANK"]["armor_increase"]
         
@@ -127,7 +127,7 @@ class Ass(RedCard):
         super().__init__(owner=owner, job_and_color="ASSR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
-        for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_player(self.owner).on_board)):
+        for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_player(self.owner).on_board), game_state):
             card.damage += card_settings["ASS"]["damage_increase"]
 
         for card in filter(lambda card: card.job_and_color == "SPR", game_state.get_player(self.owner).on_board):
@@ -141,7 +141,7 @@ class Apt(RedCard):
         super().__init__(owner=owner, job_and_color="APTR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, game_state: GameState) -> bool:
-        for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_player(self.owner).on_board)):
+        for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_player(self.owner).on_board), game_state):
             card.armor += card_settings["APT"]["armor_increase"]
             card.damage += card_settings["APT"]["damage_increase"]
         

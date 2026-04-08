@@ -1,9 +1,10 @@
 from __future__ import annotations
-from dataclasses import dataclass, field, asdict
-from typing import cast, TYPE_CHECKING
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+import random as _py_random
 
 from core.setting import SETTING
-from core.game_statistics import GameStatistics, StatType
+from core.game_statistics import GameStatistics
 from utils.logger import GameLogger
 
 from core.player import Player
@@ -11,11 +12,14 @@ from core.neutral import Neutral
 from core.board_block import Board
 from core.board_config import BoardConfig
 from cards.base import Card
-from cards.card_cyan import Ap
 
 
 if TYPE_CHECKING:
     from rendering.game_renderer import GameRenderer
+
+
+def _seed_random() -> int:
+    return _py_random.randint(0, 2**31 - 1)
 
 
 @dataclass
@@ -35,6 +39,7 @@ class GameState:
     timer_mode: str = "timer"
         
     coutdown_time = int(SETTING["countdown_time"])
+    rng_seed: int = field(default_factory=lambda: _seed_random())
     file_auto_delete: bool = False
 
     score: int = 0
@@ -51,6 +56,9 @@ class GameState:
     number_of_movings: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
     number_of_cudes: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
     number_of_heals: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
+
+    def __post_init__(self) -> None:
+        self.rng = _py_random.Random(self.rng_seed)
 
     def update(self) -> None:
         for card in self.player1.on_board:
@@ -109,7 +117,8 @@ class GameState:
             "number_of_attacks": self.number_of_attacks,
             "number_of_movings": self.number_of_movings,
             "number_of_cudes": self.number_of_cudes,
-            "number_of_heals": self.number_of_heals
+            "number_of_heals": self.number_of_heals,
+            "rng_seed": self.rng_seed,
         }
 
     def apply_dict(self, data: dict, game_renderer: GameRenderer) -> None:
@@ -158,3 +167,7 @@ class GameState:
 
         for orphan_iid in old_by_iid.keys() - all_cards_by_iid.keys():
             game_renderer.card_renderer.release(orphan_iid)
+
+        if "rng_seed" in data:
+            self.rng_seed = data["rng_seed"]
+            self.rng = _py_random.Random(self.rng_seed)

@@ -452,7 +452,7 @@ class Card(ABC):
         return True
     
     @final
-    def detection(self, attack_types: str, target_card_list: Iterable[CardType]) -> Generator[CardType, None, None]:
+    def detection(self, attack_types: str, target_card_list: Iterable[CardType], game_state: GameState) -> Generator[CardType, None, None]:
         target_card_list = tuple(filter(lambda card: card.health > 0, target_card_list))
         for attack_type in attack_types.split(" "):
             match attack_type:
@@ -490,7 +490,7 @@ class Card(ABC):
                                 , nearby_cards
                             )
                         )
-                        yield random.choice(nearet_cards)
+                        yield game_state.rng.choice(nearet_cards)
                 case "farthest":
                     faraway_cards: list[CardType] = sorted(target_card_list, 
                         key=lambda card: abs(card.board_x-self.board_x) + abs(card.board_y-self.board_y),
@@ -504,7 +504,7 @@ class Card(ABC):
                                 faraway_cards
                             )
                         )
-                        yield random.choice(farthest_cards)
+                        yield game_state.rng.choice(farthest_cards)
         return None
     
     @final
@@ -564,7 +564,7 @@ class Card(ABC):
         if self.numbness or not attack_types: return False
         allies: filter["Card"] = filter(lambda card: card.health > 0, game_state.get_player_cards(self.owner))
         enemies: Iterable["Card"] = list(filter(lambda card: card.health > 0 and card.job_and_color != "SHADOW", game_state.get_side_cards(self.owner, True)))
-        target_tuple = tuple(self.detection(attack_types, enemies)) if not custom_target_tuple else custom_target_tuple
+        target_tuple = tuple(self.detection(attack_types, enemies, game_state)) if not custom_target_tuple else custom_target_tuple
         
         if target_tuple:
             game_state.game_statistics.add_hit(self.get_uid(), 1)

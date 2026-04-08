@@ -122,7 +122,7 @@ class Apt(WhiteCard):
                 lambda card: card.owner == self.owner and
                 card != self,
                 game_state.get_player(self.owner).on_board
-            )
+            ), game_state
         ):
             card.armor += self.damage
         self.armor += self.damage

@@ -148,7 +148,7 @@ class Shadow(FuchsiaCard):
                                                 card.job_and_color != "SHADOW",
                                                 game_state.get_side_cards(self.owner, True)))
         if self.linker.launch_attack(self.attack_types, game_state,
-                                     tuple(self.detection(self.attack_types, enemies))):
+                                     tuple(self.detection(self.attack_types, enemies, game_state))):
             return True
         else:
             return False
@@ -417,7 +417,7 @@ class Sp(FuchsiaCard):
             )
         ) # pyright: ignore[reportAssignmentType]
         if targets:
-            for card in self.detection("farthest", targets):
+            for card in self.detection("farthest", targets, game_state):
                 board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
                 card.spawn_shadow(self.owner, board_x, board_y, card.attack_types, False)
 

@@ -16,13 +16,13 @@ color_code = "G"
 class GreenCard(Card):
     @staticmethod
     def lucky_effects(target: Card, game_state: GameState, AP: bool=False, AP_target: bool=False, TANK: bool=False) -> None:
-        if not AP_target and random.randint(1, 100) <= game_state.players_luck[target.owner]:
+        if not AP_target and game_state.rng.randint(1, 100) <= game_state.players_luck[target.owner]:
             if AP_target or TANK: return
             game_state.players_luck[target.owner] += 1
             game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got lucky:",
                                         LogCategory.SPECIAL_ACTION, target=target.get_uid(),
                                         target_position=target.get_position())
-            match random.randint(1, 5):
+            match game_state.rng.randint(1, 5):
                 case 1:
                     target.armor += 4
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} added 4 armor",
@@ -69,7 +69,7 @@ class GreenCard(Card):
             game_state.players_luck[target.owner] -= 1
             game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got jinx:",
                                         LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
-            match random.randint(1, 5):
+            match game_state.rng.randint(1, 5):
                 case 1:
                     target.armor = 0
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} armor was destroyed",
@@ -135,7 +135,7 @@ class Adc(GreenCard):
     def ability(self, target: Card, game_state: GameState) -> bool:
         for board in game_state.board_dict.values():
             if (board.board_x == self.board_x or board.board_y == self.board_y) and not board.occupy:
-                if random.randint(1, 100) <= card_settings["ADC"]["chance_to_spawn_luckyblock"]:
+                if game_state.rng.randint(1, 100) <= card_settings["ADC"]["chance_to_spawn_luckyblock"]:
                     game_state.neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
                     board.occupy = True
         return True
@@ -179,7 +179,7 @@ class Hf(GreenCard):
             game_state.players_luck[self.owner] += card_settings["HF"]["luck_increase"]
             board_list = tuple(filter(lambda board: board.occupy == False, game_state.board_dict.values()))
             if board_list:
-                board = board_list[random.randrange(len(board_list))]
+                board = board_list[game_state.rng.randrange(len(board_list))]
                 game_state.neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
                 board.occupy = True
         return True
@@ -194,10 +194,10 @@ class Lf(GreenCard):
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
         if victim.job_and_color == "LUCKYBLOCK":
-            for card in self.detection("nearest", filter(lambda card: card.health >= 0, game_state.get_opponent_cards(self.owner))):
+            for card in self.detection("nearest", filter(lambda card: card.health >= 0, game_state.get_opponent_cards(self.owner)), game_state):
                 card.damage_calculate(self.damage, self, game_state, False)
             
-            if random.randint(1, 100) <= card_settings["LF"]["chance_to_get_attack_count_increase"]:
+            if game_state.rng.randint(1, 100) <= card_settings["LF"]["chance_to_get_attack_count_increase"]:
                 game_state.number_of_attacks[self.owner] += card_settings["LF"]["number_of_attack_count_increase_from_killed_luckyblock"]
         return True
 
@@ -259,7 +259,7 @@ class Sp(GreenCard):
             )
         )
         if board_list:
-            random.shuffle(board_list)
+            game_state.rng.shuffle(board_list)
             if game_state.players_luck[self.owner] > card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"]:
                 for i in range(
                     min(

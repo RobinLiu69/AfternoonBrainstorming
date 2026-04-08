@@ -231,5 +231,6 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
         game_renderer.render_frame(controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on)
         pygame.display.update()
         clock.tick(60)
- 
+    
+    game_state.game_logger.close()
     return winner
