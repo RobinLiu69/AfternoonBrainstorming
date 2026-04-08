@@ -1,10 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-import pygame
-
 from core.game_state import GameState
-from core.setting import WHITE, BLACK, BLUE, RED, GREEN, DARKGREEN, CYAN
+from core.setting import WHITE, GREEN, DARKGREEN, CYAN
 from core.game_screen import GameScreen, draw_text
 from core.UI import ScoreDisplay, AttackCountDisplay, TokenDisplay, HintBox
 from cards.base import Card
@@ -162,5 +160,5 @@ class UIRenderer:
                 self.game_screen.surface
             )
 
-    def render_hint(self, mouse_x: int, mouse_y: int, card_or_name: "Card | str", game_state: GameState) -> None:
+    def render_hint(self, mouse_x: int, mouse_y: int, card_or_name: "Card | str") -> None:
         self._hint_box.update(mouse_x, mouse_y, card_or_name, self.game_screen)

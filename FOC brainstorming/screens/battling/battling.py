@@ -113,6 +113,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
     game_state.player2.initialize_display(game_state, game_screen)
 
     controller: str = "player1"
+    hint_on = False
     card_info = ["None", 0]
  
     game_state.game_logger.log_turn_start("player1", game_state.turn_number)
@@ -156,6 +157,10 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
         for action in actions:
             result = dispatcher.dispatch(action, game_state)
 
+            if action.action_type == "toggle_hint":
+                hint_on = not hint_on
+                continue
+
             if mode == "local":
                 if result.end_turn:
                     controller = "player2" if controller == "player1" else "player1"
@@ -163,6 +168,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                     if result.message:
                         winner = result.message
                     running = False
+            
 
         if is_server and dispatcher.pending_winner is not None:
             winner = dispatcher.pending_winner
@@ -188,12 +194,17 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
         
         if is_client:
             _sweep_dead_cards_visually(game_state, game_renderer)
+        
+            if controller == local_controller:
+                game_state.get_player(local_controller)._update_timer_logic(game_state.timer_mode)
+            else:
+                game_state.get_opponent(local_controller)._update_timer_logic(game_state.timer_mode)
 
         if not (mode == "local"):
             controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
 
 
-        game_renderer.render_frame(controller, mouse_x, mouse_y, board_x, board_y, game_state)
+        game_renderer.render_frame(controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on)
         pygame.display.update()
         clock.tick(60)
  

@@ -127,8 +127,8 @@ class DraftDispatcher:
                     ready_to_start=(draft_state.phase == "done"),
                 )
             case "confirm_start":
-                if not draft_state.can_advance():
-                    return DraftResult(False, message="Phase not ready")
+                # if not draft_state.can_advance():
+                #     return DraftResult(False, message="Phase not ready")
                 draft_state.advance_phase()
                 return DraftResult(
                     True,

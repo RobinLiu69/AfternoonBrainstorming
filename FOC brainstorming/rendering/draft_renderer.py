@@ -19,14 +19,14 @@ class DraftRenderer:
         self.card_renderer = CardRenderer(game_screen)
         self.board_renderer = BoardRenderer(game_screen)
 
-    def render_frame(self, page: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], draft_state: DraftState) -> None:
+    def render_frame(self, page: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], draft_state: DraftState, hint_on: bool = False) -> None:
         self.game_screen.render()
         
         self._render_cards(page)
         self._render_boards(draft_state)
         self._render_deck_displays(draft_state)
         self._render_status_labels(draft_state)
-        self._render_hint(page, mouse_board_x, mouse_board_y)
+        self._render_hint(page, mouse_board_x, mouse_board_y, hint_on)
 
     def _render_cards(self, page: int) -> None:
         for card in self.exhibit_registry.get_page(page):
@@ -48,7 +48,7 @@ class DraftRenderer:
                   self.game_screen.surface)
         
         for i, card in enumerate(draft_state.get_deck(owner)):
-            if i in draft_state.get_visible_deck(draft_state.current_editor(), owner):
+            if i in draft_state.get_visible_deck(draft_state.local_player, owner):
                 draw_text(card, self.game_screen.text_font,
                           WHITE, self.game_screen.display_width/16*(i+3),
                           self.game_screen.display_height-(self.game_screen.display_height/5/offset_y),
@@ -85,8 +85,14 @@ class DraftRenderer:
             self.game_screen.surface
         )
 
-    def _render_hint(self, page: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int]) -> None:
+    def _render_hint(self, page: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], hint_on: bool) -> None:
+        self._hint_box.turn_on = hint_on
+        if not hint_on:
+            return
+        if mouse_board_x is None or mouse_board_y is None:
+            return
+        card_name = self.exhibit_registry.card_name_at(page, mouse_board_x, mouse_board_y)
+        if card_name == "None":
+            return
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        # if mouse_board_x is not None and mouse_board_y is not None:
-        #     card_name = get_card_name_in_menu(page, mouse_board_x, mouse_board_y)
-        #     self._hint_box.update(mouse_x, mouse_y, card_name, self.game_screen)
+        self._hint_box.update(mouse_x, mouse_y, card_name, self.game_screen)
