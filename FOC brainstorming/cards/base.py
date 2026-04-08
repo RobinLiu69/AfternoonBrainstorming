@@ -637,6 +637,10 @@ class Card(ABC):
         pass
     
     def apply_dict(self, data: dict) -> None:
+        self.health = data["health"]
+        self.damage = data["damage"]
+        self.board_x = data["board_x"]
+        self.board_y = data["board_y"]
         self.job_and_color = data["job_and_color"]
         self.attack_types = data["attack_types"]
         self.numbness = data["numbness"]

@@ -193,15 +193,15 @@ class LANClient:
         sock = self._sock
         if sock is None:
             return
-        try:
-            while True:
-                try:
-                    msg = _recv_msg(sock)
-                except (OSError, ValueError):
-                    break
-                if msg is None:
-                    break
+        while True:
+            try:
+                msg = _recv_msg(sock)
+            except (OSError, ValueError):
+                break
+            if msg is None:
+                break
 
+            try:
                 mtype = msg.get("type")
                 if mtype == "state":
                     print(f"[LANClient] received state envelope")
@@ -213,15 +213,16 @@ class LANClient:
                 elif mtype == "game_over":
                     self.pending_winner = msg["winner"]
                     self.pending_statistics = msg.get("statistics", {})
-        except Exception:
-            import traceback, sys
-            try:
-                sys.stderr.write("=== LANClient._recv_loop crashed ===\n")
-                sys.stderr.write(traceback.format_exc())
-                sys.stderr.write("=====================================\n")
-                sys.stderr.flush()
             except Exception:
-                pass
+                import traceback, sys
+                try:
+                    sys.stderr.write("=== LANClient._recv_loop: message handler error ===\n")
+                    sys.stderr.write(traceback.format_exc())
+                    sys.stderr.write("====================================================\n")
+                    sys.stderr.flush()
+                except Exception:
+                    pass
+                continue
 
     def consume_pending_scene(self) -> Optional[tuple[str, dict]]:
         if self.pending_scene is None:
