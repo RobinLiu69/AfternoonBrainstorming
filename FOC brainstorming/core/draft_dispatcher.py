@@ -66,7 +66,6 @@ class DraftDispatcher:
 
         result = self._execute(action, self._draft_state)
         if result.success:
-            print(result)
             self._broadcast(self._draft_state)
 
     def _send_to_server(self, action: DraftAction) -> None:

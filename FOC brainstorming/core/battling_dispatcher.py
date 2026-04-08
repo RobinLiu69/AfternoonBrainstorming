@@ -109,7 +109,7 @@ class BattlingDispatcher:
 
     def _execute(self, action: GameAction, game_state: GameState) -> ActionResult:
         owned_actions = ("attack", "play_card", "move_to", "heal",
-                         "spawn_cube", "end_turn")
+                         "spawn_cube", "toggle_upgrade", "end_turn")
         if action.action_type in owned_actions:
             current = "player1" if (game_state.turn_number % 2 == 0) else "player2"
             if action.player != current:
@@ -151,6 +151,17 @@ class BattlingDispatcher:
                     player.spawn_cube(action.board_x, action.board_y, game_state)
                     return ActionResult(True)
                 return ActionResult(False, message="action missing: board_x or board_y")
+
+            case "toggle_upgrade":
+                if action.hand_index is None: return ActionResult(False, message="action missing: hand_index")
+                player = game_state.get_player(action.player)
+                if 0 <= action.hand_index < len(player.hand):
+                    name = player.hand[action.hand_index]
+                    if name.endswith(" (+)"):
+                        player.hand[action.hand_index] = name[:-4]
+                    elif name.endswith("C"):
+                        player.hand[action.hand_index] = name + " (+)"
+                return ActionResult(success=True)
 
             case "end_turn":
                 game_state.turn_number += 1

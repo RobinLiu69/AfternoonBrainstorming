@@ -47,9 +47,8 @@ class FuchsiaCard(Card):
         self._reconcile_shadows(data.get("shadows", []))
  
     def _reconcile_shadows(self, shadow_dicts: list) -> None:
-        from cards.factory import CardFactory
- 
-        old_by_iid = {s.instance_id: s for s in self.shadows}
+        old_by_iid = {s.instance_id: s for s in getattr(self, "shadows", [])}
+        
         new_shadows = []
         for sdata in shadow_dicts:
             iid = sdata["instance_id"]
@@ -61,6 +60,7 @@ class FuchsiaCard(Card):
             else:
                 fresh = CardFactory.from_dict(sdata)
                 fresh.linker = self  # type: ignore[attr-defined]
+                fresh.job = self.job
                 new_shadows.append(fresh)
         self.shadows = new_shadows
 
@@ -72,8 +72,19 @@ class Shadow(FuchsiaCard):
         self.attack_types = attack_types
         self.movable = movable
         self.linker = linker
-        self.job = self.linker.job
-        
+        self.job = linker.job if linker is not None else ""
+    
+    @classmethod
+    def init_args_from_dict(cls, data: dict) -> dict:
+        return {
+            "owner": data["owner"],
+            "board_x": data["board_x"],
+            "board_y": data["board_y"],
+            "linker": None,
+            "attack_types": data.get("attack_types", ""),
+            "movable": data.get("movable", True),
+        }
+    
     def heal(self, value: int, game_state: GameState) -> bool:
         return False
 
@@ -121,6 +132,7 @@ class Shadow(FuchsiaCard):
                 moving=self.moving,
                 mouse_selected=self.mouse_selected,
                 anger=self.anger,
+                been_targeted=self.been_targeted,
                 owner=self.owner,
                 shape_type="circle" if self.job == "AP" else "polygon",
                 shape_points=shape_points,
@@ -393,14 +405,15 @@ class Sp(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int,
                  health: int = card_settings["SP"]["health"],
                  damage: int = card_settings["SP"]["damage"]) -> None:
-
+        
         super().__init__(owner=owner, job_and_color="SPF", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def deploy(self, game_state: GameState) -> None:
         targets: tuple[FuchsiaCard] = tuple(
             filter(
                 lambda card: card.health > 0 and
-                isinstance(card, FuchsiaCard), game_state.get_player_cards(self.owner)
+                isinstance(card, FuchsiaCard) and
+                card.job_and_color != "SPF", game_state.get_player_cards(self.owner)
             )
         ) # pyright: ignore[reportAssignmentType]
         if targets:

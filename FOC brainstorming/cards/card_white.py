@@ -20,7 +20,7 @@ class Cube(Card):
                          health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     def end_turn(self, clear_numbness: bool=True) -> int:
-        if self.numbness == True and clear_numbness:
+        if self.numbness and clear_numbness:
             self.numbness = False
             return 0
         else:
@@ -137,8 +137,8 @@ class Sp(WhiteCard):
         super().__init__(owner=owner, job_and_color="SPW", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def end_turn(self, clear_numbness: bool=True) -> int:
-        if self.numbness == True:
-            if  clear_numbness:
+        if self.numbness:
+            if clear_numbness:
                 self.numbness = False
             return 0
         else:

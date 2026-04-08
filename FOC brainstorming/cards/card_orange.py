@@ -86,7 +86,7 @@ class Hf(OrangeCard):
         if clear_numbness:
             self.extra_damage = 0
             self.anger = False
-        if self.numbness == True:
+        if self.numbness:
             if clear_numbness:
                 self.numbness = False
             return 0
@@ -134,7 +134,7 @@ class Ass(OrangeCard):
     def end_turn(self, clear_numbness: bool=True) -> int:
         if clear_numbness:
             self.anger = False
-        if self.numbness == True:
+        if self.numbness:
             if clear_numbness:
                 self.numbness = False
             return 0

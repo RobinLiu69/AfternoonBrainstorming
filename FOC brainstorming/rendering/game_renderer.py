@@ -55,7 +55,6 @@ class GameRenderer:
         
         if mouse_x < self.game_screen.display_width / 2 - self.game_screen.block_size * 2:
             name, _ = game_state.player1.get_hand_name_by_mouse_pos(mouse_x, mouse_y, self.game_screen)
-            print(name)
             if name != "None":
                 self.ui_renderer.render_hint(mouse_x, mouse_y, name)
 

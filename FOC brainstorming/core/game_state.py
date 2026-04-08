@@ -11,6 +11,7 @@ from core.neutral import Neutral
 from core.board_block import Board
 from core.board_config import BoardConfig
 from cards.base import Card
+from cards.card_cyan import Ap
 
 
 if TYPE_CHECKING:
@@ -146,6 +147,9 @@ class GameState:
             if isinstance(card, FuchsiaCard):
                 for shadow in card.shadows:
                     all_cards_by_iid[shadow.instance_id] = shadow
+
+        for card in all_cards_by_iid.values():
+            card.resolve_references(all_cards_by_iid)
 
         for key, board_data in data["board_dict"].items():
             x, y = (int(v) for v in key.split(","))

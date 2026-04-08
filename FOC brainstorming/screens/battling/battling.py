@@ -45,7 +45,7 @@ def _sweep_dead_cards_visually(game_state: GameState, game_renderer: GameRendere
     for container in (game_state.player1.on_board, game_state.player2.on_board, game_state.neutral.on_board):
         survivors = []
         for card in container:
-            if card.health <= 0:
+            if card.health <= 0 and card.can_be_killed(game_state):
                 game_renderer.card_renderer.release(card.instance_id)
                 if (card.board_x, card.board_y) in game_state.board_dict:
                     game_state.board_dict[card.board_x, card.board_y].occupy = False
@@ -175,10 +175,34 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             running = False
 
         if not is_client:
+            prev_snapshot = None
+            if is_server:
+                prev_snapshot = (
+                    len(game_state.player1.hand),
+                    len(game_state.player2.hand),
+                    len(game_state.player1.draw_pile),
+                    len(game_state.player2.draw_pile),
+                    dict(game_state.card_to_draw),
+                    dict(game_state.players_token),
+                )
+
             game_state.get_player(controller).logic_update(game_state, game_renderer, True)
             game_state.get_opponent(controller).logic_update(game_state, game_renderer, False)
             game_state.neutral.update(game_state, game_renderer)
             game_state.update()
+
+            if is_server and prev_snapshot is not None:
+                new_snapshot = (
+                    len(game_state.player1.hand),
+                    len(game_state.player2.hand),
+                    len(game_state.player1.draw_pile),
+                    len(game_state.player2.draw_pile),
+                    dict(game_state.card_to_draw),
+                    dict(game_state.players_token),
+                )
+                if new_snapshot != prev_snapshot:
+                    dispatcher._broadcast_state(game_state)
+
 
             if game_state.player1.time_out:
                 winner = "player2"

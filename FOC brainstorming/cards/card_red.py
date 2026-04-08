@@ -92,13 +92,17 @@ class Hf(RedCard):
             return True
     
     def end_turn(self, clear_numbness: bool=True) -> int:
-        if clear_numbness:
-            self.anger = False
-        if self.numbness == True:
+        if self.numbness:
+            if clear_numbness and self.anger:
+                self.anger = False
             if clear_numbness:
                 self.numbness = False
             return 0
         else:
+            if self.anger:
+                if clear_numbness:
+                    self.anger = False
+                return 0
             return 1
 
 

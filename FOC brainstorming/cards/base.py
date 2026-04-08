@@ -6,7 +6,6 @@ from typing import TypeVar, cast, Generator, Iterable, Optional, Callable, TYPE_
 
 from core.game_statistics import StatType
 from core.setting import JOB_DICTIONARY
-from cards.factory import spawn_card
 
 
 if TYPE_CHECKING:
@@ -70,6 +69,7 @@ class CardRenderData:
     moving: bool
     mouse_selected: bool
     anger: bool
+    been_targeted: bool
     owner: str
     shape_type: str
     shape_points: tuple
@@ -146,6 +146,16 @@ class Card(ABC):
         if not self.instance_id:
             self.instance_id = _next_instance_id()
     
+    @classmethod
+    def init_args_from_dict(cls, data: dict) -> dict:
+        return {
+            "owner": data["owner"],
+            "board_x": data["board_x"],
+            "board_y": data["board_y"],
+            "health": data["health"],
+            "damage": data["damage"],
+        }
+
     @final
     def is_same_location(self, card: Card) -> bool:
         return self.board_x == card.board_x and self.board_y == card.board_y
@@ -377,6 +387,7 @@ class Card(ABC):
             moving=self.moving,
             mouse_selected=self.mouse_selected,
             anger=self.anger,
+            been_targeted=self.been_targeted,
             owner=self.owner,
             shape_type="circle" if self.job == "AP" else "polygon",
             shape_points=self._compute_shape_points(),
@@ -585,7 +596,7 @@ class Card(ABC):
         return 0
     
     def end_turn(self, clear_numbness: bool=True) -> int:
-        if self.numbness == True:
+        if self.numbness:
             if clear_numbness:
                 self.numbness = False
             return 0
@@ -615,14 +626,18 @@ class Card(ABC):
             "original_damage": self.original_damage
         }
  
+    def collect_pending_refs(self, data: dict) -> None:
+        """Stash unresolved card references from dict.
+        Called during apply_dict. Store instance_ids as _pending_*_iid."""
+        pass
+
+    def resolve_references(self, all_cards_by_iid: dict) -> None:
+        """Resolve pending references after all cards are rebuilt.
+        Called once by GameState.apply_dict at the end."""
+        pass
     
     def apply_dict(self, data: dict) -> None:
-        self.owner = data["owner"]
         self.job_and_color = data["job_and_color"]
-        self.health = data["health"]
-        self.damage = data["damage"]
-        self.board_x = data["board_x"]
-        self.board_y = data["board_y"]
         self.attack_types = data["attack_types"]
         self.numbness = data["numbness"]
         self.moving = data["moving"]
