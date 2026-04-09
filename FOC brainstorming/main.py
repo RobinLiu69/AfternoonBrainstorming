@@ -15,6 +15,8 @@ from screens.draft import draft
 from screens.end_game import end_game
 from screens.battling import battling, battling_replay
 
+from utils.logger import GameLogger
+
 from cards import (
     base, card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
     card_green, card_orange, card_purple, card_white,
@@ -44,7 +46,12 @@ def _build_game_state_for_client() -> GameState:
     player1 = Player(name="player1", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
     player2 = Player(name="player2", deck=[], hand=[], on_board=[], draw_pile=[], discard_pile=[])
     neutral = Neutral()
-    return GameState(player1, player2, neutral, BoardConfig())
+    
+    silent_logger = GameLogger(enable_file=False, enable_console=True, enable_jsonl=False)
+
+    game_state = GameState(player1, player2, neutral, BoardConfig(), game_logger=silent_logger)
+    
+    return game_state
 
 
 def _finalize_battle(game_state: GameState, game_screen: GameScreen, winner: str) -> None:

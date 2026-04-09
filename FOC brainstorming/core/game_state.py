@@ -31,7 +31,7 @@ class GameState:
     board_config: BoardConfig
     board_dict: dict[tuple[int, int], Board] = field(default_factory=dict)
 
-
+    
     game_logger: GameLogger = field(default_factory=GameLogger)
     game_statistics: GameStatistics = field(default_factory=GameStatistics)
 
