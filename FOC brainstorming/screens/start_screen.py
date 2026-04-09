@@ -26,10 +26,10 @@ def main(game_screen: GameScreen) -> str:
                         game_screen.block_size*0.45, game_screen.block_size*0.2,
                         box_width=box_width, font=game_screen.big_big_text_font, text="join")
 
-    playback_button = Button(game_screen.block_size*1.5, game_screen.block_size*0.75,
+    playback_button = Button(game_screen.block_size*1.5, game_screen.block_size*0.5,
                         game_screen.display_width/2 - game_screen.block_size*0.75,
                         game_screen.display_height/2 + game_screen.block_size*1.9,
-                        game_screen.block_size*0.175, game_screen.block_size*0.2,
+                        game_screen.block_size*0.175, game_screen.block_size*0.1,
                         box_width=box_width, font=game_screen.big_big_text_font, text="playback")
     state = "quit"
 
@@ -66,7 +66,7 @@ def main(game_screen: GameScreen) -> str:
         draw_text("Afternoon Brainstorming", game_screen.title_text_font, WHITE,
                 game_screen.display_width/2 - game_screen.block_size*2.3,
                 game_screen.display_height/2 - game_screen.block_size*2.1, game_screen.surface)
-        draw_text("by FOC stuido", game_screen.mid_text_font, WHITE,
+        draw_text("by FOC studio", game_screen.mid_text_font, WHITE,
                 game_screen.display_width/2 + game_screen.block_size*1.2,
                 game_screen.display_height/2 - game_screen.block_size*1.6, game_screen.surface)
 
@@ -75,9 +75,14 @@ def main(game_screen: GameScreen) -> str:
         join_button.update(game_screen)
         playback_button.update(game_screen)
         
-        draw_text("(Experimental Content)", game_screen.mid_text_font, WHITE,
-                game_screen.display_width/2 - game_screen.block_size*0.9,
-                game_screen.display_height/2 + game_screen.block_size*2.8, game_screen.surface)
+        # draw_text("(Experimental Content)", game_screen.mid_text_font, WHITE,
+        #         game_screen.display_width/2 - game_screen.block_size*0.9,
+        #         game_screen.display_height/2 + game_screen.block_size*2.8, game_screen.surface)
+
+        draw_text("version: 4.0.0.2", game_screen.mid_text_font, WHITE,
+                game_screen.display_width - game_screen.block_size*2,
+                game_screen.display_height/2 + game_screen.block_size*2.6, game_screen.surface)
+
 
         pygame.display.update()
         clock.tick(60)

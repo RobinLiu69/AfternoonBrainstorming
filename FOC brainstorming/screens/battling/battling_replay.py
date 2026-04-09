@@ -103,6 +103,24 @@ def _rebuild_and_fast_forward(
 
     game_state.neutral.on_board = []
 
+
+    game_state.number_of_attacks = {"player1": 0, "player2": 0}
+    game_state.number_of_attacks = {"player1": 0, "player2": 0}
+    game_state.number_of_attacks = {"player1": 0, "player2": 0}
+    game_state.number_of_attacks = {"player1": 0, "player2": 0}
+    game_state.number_of_attacks = {"player1": 0, "player2": 0}
+
+    game_state.players_luck = {"player1": 50, "player2": 50, "neutral": 50}
+    game_state.players_token = {"player1": 0, "player2": 0, "neutral": 0}
+    game_state.players_totem = {"player1": 0, "player2": 0, "neutral": 0}
+    game_state.players_coin = {"player1": 0, "player2": 0}
+    game_state.card_to_draw = {"player1": 0, "player2": 0}
+    
+    game_state.number_of_attacks = {"player1": 0, "player2": 0}
+    game_state.number_of_movings = {"player1": 0, "player2": 0}
+    game_state.number_of_cudes = {"player1": 0, "player2": 0}
+    game_state.number_of_heals = {"player1": 0, "player2": 0}
+
     game_state.score = 0
     game_state.turn_number = 0
 
@@ -126,8 +144,8 @@ def _rebuild_and_fast_forward(
 
 def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed: float) -> None:
     x = game_screen.block_size * 0.3
-    y_top = game_screen.block_size * 0.3
-    y_bottom = game_screen.display_height - game_screen.block_size * 0.5
+    y_top = game_screen.block_size * 0.2
+    y_bottom = game_screen.display_height - game_screen.block_size * 0.2
 
     status = "PAUSED" if paused else "PLAYING"
     header = (

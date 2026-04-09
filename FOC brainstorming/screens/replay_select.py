@@ -133,11 +133,11 @@ def _show_empty_and_wait(game_screen: GameScreen) -> None:
                   game_screen.surface)
         draw_text("Play a local or host game first to record one.",
                   game_screen.mid_text_font, WHITE,
-                  cx - game_screen.block_size * 3.5, cy + game_screen.block_size * 0.2,
+                  cx - game_screen.block_size * 1.5, cy + game_screen.block_size * 0.2,
                   game_screen.surface)
-        draw_text("Press any key to go back.",
+        draw_text("Press any key to exit.",
                   game_screen.mid_text_font, WHITE,
-                  cx - game_screen.block_size * 2.0, cy + game_screen.block_size * 0.7,
+                  cx - game_screen.block_size * 0.9, cy + game_screen.block_size * 0.7,
                   game_screen.surface)
 
         pygame.display.update()

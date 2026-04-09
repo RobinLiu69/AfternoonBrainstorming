@@ -2,6 +2,7 @@ import atexit
 import json
 import logging
 import os
+import threading
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Callable, List, Any, TextIO
@@ -52,7 +53,8 @@ class GameLogger:
     _jsonl_fp: Optional[TextIO] = field(init=False, default=None, repr=False)
     _jsonl_path: Optional[Path] = field(init=False, default=None, repr=False)
     _closed: bool = field(init=False, default=False, repr=False)
-    
+    _write_lock: threading.Lock = field(init=False, default_factory=threading.Lock, repr=False)
+
     def __post_init__(self) -> None:
         self._logger = logging.getLogger('FOC_Game_Logger')
         self._logger.setLevel(logging.DEBUG)
@@ -94,14 +96,15 @@ class GameLogger:
         if self._closed:
             return
         self._closed = True
-        if self._jsonl_fp is not None:
-            try:
-                self._jsonl_fp.flush()
-                self._jsonl_fp.close()
-            except Exception as e:
-                print(f"[GameLogger] jsonl close failed: {e}")
-            finally:
-                self._jsonl_fp = None
+        with self._write_lock:
+            if self._jsonl_fp is not None:
+                try:
+                    self._jsonl_fp.flush()
+                    self._jsonl_fp.close()
+                except Exception as e:
+                    print(f"[GameLogger] jsonl close failed: {e}")
+                finally:
+                    self._jsonl_fp = None
     
     def log(self, level: LogLevel, category: LogCategory, message: str, **data) -> None:
         entry = LogEntry(
@@ -132,8 +135,13 @@ class GameLogger:
                 }
                 for k, v in data.items():
                     record[k] = list(v) if isinstance(v, tuple) else v
-                self._jsonl_fp.write(json.dumps(record, default=str, ensure_ascii=False) + '\n')
-                self._jsonl_fp.flush()
+
+                line = json.dumps(record, default=str, ensure_ascii=False) + '\n'
+
+                with self._write_lock:
+                    self._jsonl_fp.write(line)
+                    self._jsonl_fp.flush()
+            
             except Exception as e:
                 print(f"[GameLogger] jsonl write failed: {e}")
     
