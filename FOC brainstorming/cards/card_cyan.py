@@ -96,27 +96,24 @@ class Ap(CyanCard):
         self._pending_target_iid: Optional[str] = None
 
     def deploy(self, game_state: GameState) -> None:
-        for target in self.detection("nearest", game_state.get_opponent_cards(self.owner), game_state):
-            self.target = target
-            target.been_targeted = True
-
-    def after_attack_broadcast(self, attacker: "Card", target: "Card", game_state: GameState) -> bool:
-        if self.target and self.target.health <= 0:
-            self.target.been_targeted = False
-            self.target = None
-
-        if self.target is None:
-            return False
-
-        if attacker.attack_types and attacker.owner == self.owner:
-            if any(item in attacker.attack_types for item in ["nearest", "farthest"]):
-                if self.target.damage_calculate(attacker.damage, attacker, game_state):
-                    if self.upgrade:
-                        self.get_coins(card_settings["AP"]["coin_gets"], game_state)
-        return False
+        if self.upgrade:
+            for _ in range(card_settings["AP"]["number_of_attack"]):
+                cards = [
+                    card for card in game_state.get_player_cards(self.owner)
+                    if any(item in card.attack_types for item in ["nearest", "farthest"]) and
+                    card != self and not card.numbness
+                ]
+                if not cards:
+                    self.launch_attack(self.attack_types, game_state)
+                    continue
+                chosen = game_state.rng.choice(cards)
+                chosen.launch_attack(chosen.attack_types, game_state, tuple(self.detection(self.attack_types, game_state.get_side_cards(self.owner, True), game_state)))
+        else:
+            for _ in range(card_settings["AP"]["number_of_attack"]): self.launch_attack(self.attack_types, game_state, ignore_numbness=True)
 
     def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
+        self.get_coins(card_settings["AP"]["coin_gets"], game_state)
         return True
 
     def die(self, game_state: GameState) -> bool:
@@ -130,19 +127,19 @@ class Ap(CyanCard):
         data["target_iid"] = self.target.instance_id if self.target else None
         return data
 
-    def apply_dict(self, data: dict) -> None:
-        super().apply_dict(data)
-        self.collect_pending_refs(data)
+    # def apply_dict(self, data: dict) -> None:
+    #     super().apply_dict(data)
+        # self.collect_pending_refs(data)
 
-    def collect_pending_refs(self, data: dict) -> None:
-        self._pending_target_iid = data.get("target_iid")
+    # def collect_pending_refs(self, data: dict) -> None:
+    #     self._pending_target_iid = data.get("target_iid")
 
-    def resolve_references(self, all_cards_by_iid: dict) -> None:
-        if self._pending_target_iid:
-            self.target = all_cards_by_iid.get(self._pending_target_iid)
-        else:
-            self.target = None
-        self._pending_target_iid = None
+    # def resolve_references(self, all_cards_by_iid: dict) -> None:
+    #     if self._pending_target_iid:
+    #         self.target = all_cards_by_iid.get(self._pending_target_iid)
+    #     else:
+    #         self.target = None
+    #     self._pending_target_iid = None
 
 
 class Tank(CyanCard):
@@ -204,7 +201,7 @@ class Hf(CyanCard):
     def end_turn(self, clear_numbness: bool=True) -> int:
         if clear_numbness:
             if self.anger:
-                self.count -= 1
+                self.count = 0
         if self.numbness or self.count == 0:
             if clear_numbness:
                 self.anger = False

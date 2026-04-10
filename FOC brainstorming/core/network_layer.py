@@ -32,7 +32,8 @@ def _recv_msg(sock: socket.socket) -> Optional[dict]:
 
 
 class LANServer:
-    def __init__(self, host: str = "0.0.0.0", port: int = 5555):
+    def __init__(self, version: str, host: str = "0.0.0.0", port: int = 5555):
+        self.version = version
         self.host = host
         self.port = port
 
@@ -56,7 +57,8 @@ class LANServer:
         self._server_sock.bind((self.host, self.port))
         self._server_sock.listen(2)
         self._running = True
-        threading.Thread(target=self._accept_loop, daemon=True).start()
+        self._accept_thread = threading.Thread(target=self._accept_loop, daemon=True)
+        self._accept_thread.start()
         print(f"[LANServer] Listening on {self.host}:{self.port}")
 
     def _accept_loop(self) -> None:
@@ -74,7 +76,7 @@ class LANServer:
             else:
                 role, state = "player2", {}
             try:
-                _send_msg(conn, {"type": "welcome", "role": role, "state": state})
+                _send_msg(conn, {"type": "welcome", "role": role, "state": state, "version": self.version})
             except OSError:
                 conn.close()
                 continue
@@ -128,11 +130,24 @@ class LANServer:
             "winner": winner,
             "statistics": statistics,
         })
+    
+    def broadcast_log_files(self, log_name: str, log_b64: str,
+                        jsonl_name: str, jsonl_b64: str) -> None:
+        self._broadcast_envelope({
+            "type": "log_transfer",
+            "log_file":   {"name": log_name,   "data": log_b64},
+            "jsonl_file": {"name": jsonl_name, "data": jsonl_b64},
+        })
 
     def stop(self) -> None:
         if not self._running:
             return
         self._running = False
+
+        if self._accept_thread is not None:
+            self._accept_thread.join(timeout=2.0)
+            self._accept_thread = None
+
         with self._lock:
             for conn in self._clients:
                 try:
@@ -140,16 +155,25 @@ class LANServer:
                 except OSError:
                     pass
             self._clients.clear()
+        
         if self._server_sock:
+            try:
+                self._server_sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
             try:
                 self._server_sock.close()
             except OSError:
                 pass
             self._server_sock = None
-
-
+ 
+        if self._accept_thread is not None:
+            self._accept_thread.join(timeout=0.3)
+            self._accept_thread = None
+        
 class LANClient:
-    def __init__(self, host: str, port: int = 5555):
+    def __init__(self, version: str, host: str, port: int = 5555):
+        self.version = version
         self.host = host
         self.port = port
         self.on_state_update: Optional[Callable[[dict], None]] = None
@@ -177,10 +201,16 @@ class LANClient:
         sock.settimeout(None)
 
         welcome = _recv_msg(sock)
+        
+        
         if not welcome or welcome.get("type") != "welcome":
             sock.close()
             raise RuntimeError(f"Handshake failed: expected welcome, got {welcome!r}")
 
+        if welcome.get("version") != self.version:
+            raise ConnectionError(f"Version mismatch detected"
+                                  f"Server requires {welcome.get("version")}, but client is running {self.version}")
+        
         self._sock = sock
         self.role = welcome["role"]
         self.initial_state = welcome.get("state", {})
@@ -213,6 +243,8 @@ class LANClient:
                 elif mtype == "game_over":
                     self.pending_winner = msg["winner"]
                     self.pending_statistics = msg.get("statistics", {})
+                elif mtype == "log_transfer":
+                    self._save_transferred_logs(msg)
             except Exception:
                 import traceback, sys
                 try:
@@ -241,6 +273,21 @@ class LANClient:
         self.pending_winner = None
         self.pending_statistics = None
         return winner, stats
+    
+    def _save_transferred_logs(self, msg: dict) -> None:
+        import base64
+        from pathlib import Path
+        out_dir = Path(__file__).resolve().parent.parent / "battle_records"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for key in ("log_file", "jsonl_file"):
+            f = msg.get(key)
+            if not f:
+                continue
+            try:
+                (out_dir / f["name"]).write_bytes(base64.b64decode(f["data"]))
+                print(f"[LANClient] saved backup: {f['name']}")
+            except Exception as e:
+                print(f"[LANClient] failed to save {key}: {e}")
 
     def send_action(self, action_dict: dict) -> None:
         if self._sock is None:

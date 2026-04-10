@@ -68,6 +68,8 @@ class CardRenderer:
                 draw_text(atk_text, self.game_screen.info_text_font, text_color, bs * 0.5 if data.extra_damage else bs * 0.6, bs * 0.03, surface)
                 if data.armor > 0:
                     draw_text(f"arm:{data.armor}", self.game_screen.small_text_font, text_color, bs * 0.1, bs * 0.12, surface)
+                if data.anger:
+                    draw_text("anger", self.game_screen.small_text_font, text_color, bs * 0.6, bs * 0.775, surface)
                 if data.numbness:
                     draw_text("numbness", self.game_screen.small_text_font, text_color, bs * 0.6, bs * 0.85, surface)
                 if data.moving:

@@ -95,7 +95,7 @@ class Ass(PurpleCard):
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
         count: int = min(len(game_state.get_player_cards(victim.owner))-len(game_state.get_player_cards(self.owner))-card_settings["ASS"]["unit_gap"], card_settings["ASS"]["maximum_card_draw_from_killed"])
-        for i in range(count):
+        for _ in range(count):
             game_state.card_to_draw[self.owner] += 1
         return True
 

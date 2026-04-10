@@ -43,8 +43,8 @@ class UIRenderer:
             height=int(game_screen.block_size)
         )
 
-    def render_score(self, controller: str, game_state: GameState) -> None:
-        self._score_display.display(controller, game_state, self.game_screen)
+    def render_score(self, local_controller: str, controller: str, game_state: GameState) -> None:
+        self._score_display.display(local_controller, controller, game_state, self.game_screen)
 
     def render_controller_label(self, controller: str) -> None:
         draw_text(

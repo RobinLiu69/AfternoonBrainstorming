@@ -228,7 +228,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
 
 
-        game_renderer.render_frame(controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on)
+        game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on)
         pygame.display.update()
         clock.tick(60)
     

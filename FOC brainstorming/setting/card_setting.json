@@ -260,12 +260,13 @@
             "coin_gets": 2
         },
         "AP": {
-            "health": 4,
+            "health": 3,
             "damage": 1,
-            "cost": 4,
+            "cost": 6,
             "upgrade_health": 5,
             "upgrade_damage": 3,
-            "coin_gets": 3
+            "coin_gets": 3,
+            "number_of_attack": 2
         },
         "TANK": {
             "health": 9,

@@ -249,7 +249,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> str:
         game_state.update()
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        game_renderer.render_frame(controller, mouse_x, mouse_y, 0, 0, game_state, hint_on)
+        game_renderer.render_frame(controller, controller, mouse_x, mouse_y, 0, 0, game_state, hint_on)
         _draw_hud(game_screen, source, paused, speed)
 
         pygame.display.update()
