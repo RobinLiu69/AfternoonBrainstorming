@@ -560,8 +560,8 @@ class Card(ABC):
         return False
 
     @final
-    def launch_attack(self, attack_types: str, game_state: GameState, custom_target_tuple: tuple[Card, ...] = tuple()) -> bool:
-        if self.numbness or not attack_types: return False
+    def launch_attack(self, attack_types: str, game_state: GameState, custom_target_tuple: tuple[Card, ...] = tuple(), ignore_numbness: bool = False, use_ability: bool = True) -> bool:
+        if not ignore_numbness and (self.numbness or not attack_types): return False
         allies: filter["Card"] = filter(lambda card: card.health > 0, game_state.get_player_cards(self.owner))
         enemies: Iterable["Card"] = list(filter(lambda card: card.health > 0 and card.job_and_color != "SHADOW", game_state.get_side_cards(self.owner, True)))
         target_tuple = tuple(self.detection(attack_types, enemies, game_state)) if not custom_target_tuple else custom_target_tuple
@@ -572,7 +572,7 @@ class Card(ABC):
                 game_state.game_logger.log_launch_attack(self.get_uid(), self.get_position())
                 # for card in player1.on_board + player2.on_board:
                 #     card.before_attack_broadcast(self, target, game_state)
-                target.damage_calculate(self.damage, self, game_state)
+                target.damage_calculate(self.damage, self, game_state, use_ability)
                 for card in game_state.get_both_player_cards():
                     card.after_attack_broadcast(self, target, game_state)
             return True

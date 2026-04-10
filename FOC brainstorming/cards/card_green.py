@@ -253,8 +253,8 @@ class Sp(GreenCard):
             filter(
                 lambda board:
                 board.occupy == False and
-                board.board_x != self.board_x and
-                board.board_y != self.board_y,
+                not (board.board_x == self.board_x and
+                board.board_y == self.board_y),
                 game_state.board_dict.values()
             )
         )

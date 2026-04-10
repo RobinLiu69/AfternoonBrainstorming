@@ -138,7 +138,7 @@ class ScoreDisplay:
     width: int
     height: int
        
-    def display(self, controller: str, game_state: GameState, game_screen: GameScreen) -> None:
+    def display(self, local_controller: str, controller: str, game_state: GameState, game_screen: GameScreen) -> None:
         score_list: list[int] = [game_state.score]
         self.x, self.y = game_screen.display_width/2-self.width/2, game_screen.display_height/10
 
@@ -157,9 +157,9 @@ class ScoreDisplay:
             else:
                 pygame.draw.rect(game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
             if i == score_list[1]:
-                pygame.draw.rect(game_screen.surface, BLUE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
+                pygame.draw.rect(game_screen.surface, BLUE if controller == local_controller else RED, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
             if i == score_list[2]:
-                pygame.draw.rect(game_screen.surface, RED, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
+                pygame.draw.rect(game_screen.surface, RED if controller == local_controller else BLUE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
 
 
 @dataclass(kw_only=True)

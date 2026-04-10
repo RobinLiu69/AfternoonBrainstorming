@@ -1,6 +1,6 @@
 import pygame
 
-from core.setting import WHITE
+from core.setting import WHITE, VERSION
 from core.game_screen import GameScreen, draw_text
 from core.UI import Button
 from utils.controls import key_pressed    
@@ -79,7 +79,7 @@ def main(game_screen: GameScreen) -> str:
         #         game_screen.display_width/2 - game_screen.block_size*0.9,
         #         game_screen.display_height/2 + game_screen.block_size*2.8, game_screen.surface)
 
-        draw_text("version: 4.0.0.2", game_screen.mid_text_font, WHITE,
+        draw_text(f"version: {VERSION}", game_screen.mid_text_font, WHITE,
                 game_screen.display_width - game_screen.block_size*2,
                 game_screen.display_height/2 + game_screen.block_size*2.6, game_screen.surface)
 

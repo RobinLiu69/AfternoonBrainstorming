@@ -9,6 +9,8 @@ from typing import Optional, Callable, List, Any, TextIO
 from dataclasses import dataclass, field
 from enum import Enum
 
+from core.setting import FOLDER_PATH
+
 
 class LogLevel(Enum):
     DEBUG = logging.DEBUG
@@ -67,8 +69,7 @@ class GameLogger:
         
         if self.enable_file:
             if self.log_file is None:
-                __FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("utils", "")
-                self.log_file = Path(f"{__FOLDER_PATH}/battle_records/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log")
+                self.log_file = Path(f"{FOLDER_PATH}/battle_records/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log")
         
                 self.log_file.parent.mkdir(parents=True, exist_ok=True)
                 file_handler = logging.FileHandler(self.log_file, encoding='utf-8')

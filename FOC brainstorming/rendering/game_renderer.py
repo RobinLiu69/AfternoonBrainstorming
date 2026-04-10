@@ -13,7 +13,7 @@ class GameRenderer:
         self.board_renderer = BoardRenderer(game_screen)
         self.ui_renderer = UIRenderer(game_screen)
     
-    def render_frame(self, controller: str, mouse_x: int, mouse_y: int,
+    def render_frame(self, local_controller: str, controller: str, mouse_x: int, mouse_y: int,
                      mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState, hint_on: bool = False) -> None:
         self.game_screen.render()
 
@@ -31,10 +31,10 @@ class GameRenderer:
 
         if mouse_board_x is not None and mouse_board_y is not None:
             self.board_renderer.render_attack_highlight(
-                mouse_board_x, mouse_board_y, controller, game_state
+                mouse_board_x, mouse_board_y, local_controller, game_state
             )
 
-        self.ui_renderer.render_score(controller, game_state)
+        self.ui_renderer.render_score(local_controller, controller, game_state)
         self.ui_renderer.render_controller_label(controller)
         self.ui_renderer.render_hands(game_state)
         self.ui_renderer.render_attack_counts(game_state)
