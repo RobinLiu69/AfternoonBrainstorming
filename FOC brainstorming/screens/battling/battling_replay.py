@@ -1,9 +1,27 @@
+# -----------------------------------------------------------------
+# Afternoon Brainstorming
+# Copyright 2024-2026 Robin Liu / FOC Studio
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# -----------------------------------------------------------------
+
 from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
 import pygame
 
+from core.setting import WHITE, RED, VERSION
 from core.game_state import GameState
 from core.game_screen import GameScreen, draw_text
 from core.player import Player
@@ -12,7 +30,6 @@ from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from core.battling_dispatcher import BattlingDispatcher
 from core.replay_source import ReplaySource
-from core.setting import WHITE
 from rendering.game_renderer import GameRenderer
 from utils.logger import GameLogger
 
@@ -153,6 +170,12 @@ def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed
         f"{source.current_action_index}/{source.total_actions}"
     )
     draw_text(header, game_screen.mid_text_font, WHITE, x, y_top, game_screen.surface)
+
+    replay_version = source.metadata.get("version")
+    if replay_version is not None and replay_version != VERSION:
+        warning = f"WARNING: Replay version {replay_version} != current {VERSION}, results may differ"
+        draw_text(warning, game_screen.mid_text_font, RED, x + game_screen.block_size * 1.8, y_top - game_screen.block_size * 0.15, game_screen.surface)
+    
 
     hint = "SPACE pause/play   RIGHT step   UP/DOWN speed   R restart   ESC exit"
     draw_text(hint, game_screen.mid_text_font, WHITE, x, y_bottom, game_screen.surface)
