@@ -16,6 +16,7 @@
 # -----------------------------------------------------------------
 
 import os
+import sys
 import json
 import math
 from typing import cast
@@ -30,10 +31,15 @@ import numpy as np
 
 from utils.type_hint import JobDictionary
 
+def _get_base() -> str:
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.realpath(os.path.dirname(__file__)).replace("utils", "")
 
-__FOLDER_PATH: str = os.path.realpath(os.path.dirname(__file__)).replace("utils", "")
+FOLDER_PATH: str = _get_base()
 
-with open(f"{__FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8") as file:
+
+with open(f"{FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
 BLACK: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Black"].split(", "))))
@@ -45,9 +51,9 @@ ORANGE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DIC
 
 COLORS_DICT: dict[str, tuple[float, float, float]] = dict(zip(JOB_DICTIONARY["colors_dict"].keys(), (cast(tuple[float, float, float], tuple(map(lambda RGB_color: float(RGB_color)/255, RGB_colors.split(", ")))) for RGB_colors in JOB_DICTIONARY["RGB_colors"].values())))
 
-font_file_path = __FOLDER_PATH+"/fonts/8bitOperatorPlus-Bold.ttf"
+font_file_path = FOLDER_PATH+"/fonts/8bitOperatorPlus-Bold.ttf"
 
-output_folder = f"{__FOLDER_PATH}/imgs"
+output_folder = f"{FOLDER_PATH}/imgs"
 
 custom_font_prop = font_manager.FontProperties(fname=font_file_path)
 

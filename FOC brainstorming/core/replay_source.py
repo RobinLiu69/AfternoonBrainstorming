@@ -122,7 +122,7 @@ class ReplaySource:
         return list(self._entries)
     
     @staticmethod
-    def list_available_replays(battle_records_dir: Path) -> list[Path]:
+    def list_available_replays(battle_records_dir: str) -> list[Path]:
         directory = Path(battle_records_dir)
         if not directory.exists():
             return []

@@ -21,7 +21,7 @@ from typing import Optional
 
 import pygame
 
-from core.setting import WHITE
+from core.setting import WHITE, FOLDER_PATH
 from core.game_screen import GameScreen, draw_text
 from core.replay_source import ReplaySource
 
@@ -30,7 +30,7 @@ VISIBLE_ROWS: int = 10
 
 
 def main(game_screen: GameScreen) -> Optional[Path]:
-    battle_records_dir = Path(__file__).resolve().parent.parent / "battle_records"
+    battle_records_dir = f"{FOLDER_PATH}/battle_records"
     replays: list[Path] = ReplaySource.list_available_replays(battle_records_dir)
 
     if not replays:
