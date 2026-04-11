@@ -21,7 +21,6 @@ from core.setting import VERSION
 from core.game_state import GameState
 from core.draft_state import DraftState
 from core.game_screen import GameScreen
-from core.game_statistics import StatType
 from core.network_layer import LANClient, LANServer
 from core.board_config import BoardConfig
 from core.player import Player
