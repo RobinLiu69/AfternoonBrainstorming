@@ -47,7 +47,7 @@ with open(f"{FOLDER_PATH}/setting/card_hints.json", "r", encoding="utf-8") as fi
 with open(f"{FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
-VERSION = "4.0.0.5"
+VERSION = "4.0.0.6"
 
 BLACK: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Black"].split(", "))))
 WHITE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["White"].split(", "))))
