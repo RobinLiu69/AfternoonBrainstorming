@@ -38,7 +38,7 @@ class ReplaySource:
         if not self.jsonl_path.exists():
             raise FileNotFoundError(f"Replay file not found: {self.jsonl_path}")
         
-        with open(self.jsonl_path, 'r', encoding='utf-8') as f:
+        with open(self.jsonl_path, "r", encoding="utf-8") as f:
             for line_no, raw in enumerate(f, start=1):
                 line = raw.strip()
                 if not line:
@@ -51,28 +51,28 @@ class ReplaySource:
                 
                 idx = len(self._entries)
                 self._entries.append(entry)
-                if entry.get('is_action') is True:
+                if entry.get("is_action") is True:
                     self._action_indices.append(idx)
     
     def _extract_metadata(self) -> None:
         first_action_idx = self._action_indices[0] if self._action_indices else len(self._entries)
         
         for entry in self._entries[:first_action_idx]:
-            msg = entry.get('message', '')
+            msg: str = entry.get("message", "")
             
-            if 'rng_seed' in entry:
-                self.metadata['rng_seed'] = entry['rng_seed']
+            if "rng_seed" in entry:
+                self.metadata["rng_seed"] = entry["rng_seed"]
             
-            if 'version' in entry:
-                self.metadata['version'] = entry['version']
+            if "version" in entry:
+                self.metadata["version"] = entry["version"]
 
-            if msg.startswith('player1 deck '):
-                self.metadata['player1_deck'] = msg[len('player1 deck '):].split('-')
-            elif msg.startswith('player2 deck '):
-                self.metadata['player2_deck'] = msg[len('player2 deck '):].split('-')
+            if msg.startswith("player1 deck "):
+                self.metadata["player1_deck"] = msg[len("player1 deck "):].split("-") if msg[len("player1 deck "):] else []
+            elif msg.startswith("player2 deck "):
+                self.metadata["player2_deck"] = msg[len("player2 deck "):].split("-") if msg[len("player1 deck "):] else []
             
-            if msg.startswith('timer mode '):
-                self.metadata['timer_mode'] = msg[len('timer mode '):].strip()
+            if msg.startswith("timer mode "):
+                self.metadata["timer_mode"] = msg[len("timer mode "):].strip()
     
     def next_action(self) -> Optional[GameAction]:
         if self._cursor >= len(self._action_indices):
@@ -84,11 +84,11 @@ class ReplaySource:
         
         try:
             return GameAction(
-                player=entry['action_player'],
-                action_type=entry['action_type'],
-                board_x=entry.get('board_x'),
-                board_y=entry.get('board_y'),
-                hand_index=entry.get('hand_index'),
+                player=entry["action_player"],
+                action_type=entry["action_type"],
+                board_x=entry.get("board_x"),
+                board_y=entry.get("board_y"),
+                hand_index=entry.get("hand_index"),
             )
         except KeyError as e:
             print(f"[ReplaySource] action entry missing field {e}: {entry}")
@@ -127,7 +127,7 @@ class ReplaySource:
         if not directory.exists():
             return []
         jsonl_files = sorted(
-            directory.glob('*.jsonl'),
+            directory.glob("*.jsonl"),
             key=lambda p: p.stat().st_mtime,
             reverse=True,
         )

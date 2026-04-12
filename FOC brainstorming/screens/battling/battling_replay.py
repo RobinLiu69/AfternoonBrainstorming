@@ -260,6 +260,8 @@ def main(game_screen: GameScreen, replay_path: Path) -> str:
 
         if should_advance and not source.exhausted:
             action = source.next_action()
+            print(action)
+            print(game_state.player1.hand, "-------", game_state.player2.hand)
             if action is not None:
                 dispatcher._execute(action, game_state)
                 controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"

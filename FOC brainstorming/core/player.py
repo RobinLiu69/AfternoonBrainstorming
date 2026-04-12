@@ -81,11 +81,11 @@ class Player:
         match self.name:
             case "player1":
                 self.discard_pile = self.deck.copy()
-                for i in range(3): self.draw_card(game_state)
+                for _ in range(3): self.draw_card(game_state)
                 game_state.number_of_attacks[self.name] += 1
             case "player2":
                 self.discard_pile = self.deck.copy()
-                for i in range(3): self.draw_card(game_state)
+                for _ in range(3): self.draw_card(game_state)
     
     def _init_highlight_display(self, game_screen: GameScreen) -> None:
         x = game_screen.display_width/2-(game_screen.block_size*3.3) if self.name == "player1" else game_screen.display_width/2+(game_screen.block_size*2.025)
