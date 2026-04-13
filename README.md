@@ -1,5 +1,6 @@
 # 午後激盪 規則介紹
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.en.md)
 [![Static Badge](https://img.shields.io/badge/lang-zh.tw-blue)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.md)
 
@@ -283,6 +284,26 @@
 **Per Round Influence:** 造成傷害\*受到傷害/存活回合數
 
 **Survival Index:** ((得分數\*2)+(造成傷害/攻擊次數\*2)+(受到傷害/受到傷害次數\*2))/存活回合數
+
+## License
+
+Copyright (C) 2024 Robin Liu, Angus Yu / FOS Studio
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+[GNU General Public License](https://www.gnu.org/licenses/gpl-3.0.html)
+for more details.
+
+See [LICENSE.txt](./LICENSE.txt) for the full license text.
+
+> **Note:** Game assets (images, fonts, sounds) are © 2024 Robin Liu / FOS Studio.
+> All rights reserved unless otherwise stated.
 
 # 外部連結
 [巴哈規則](https://home.gamer.com.tw/artwork.php?sn=5702820)
