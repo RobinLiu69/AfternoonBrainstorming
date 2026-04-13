@@ -1,5 +1,6 @@
 # 午後激盪 規則介紹
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.en.md)
 [![Static Badge](https://img.shields.io/badge/lang-zh.tw-blue)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.md)
 
@@ -217,7 +218,7 @@
 ## 淺藍派系(海盜派系)
 
 - **三角形(ADC)-4/1(6)-長十字**造成傷害後打劫2$/雙重打擊(+1/+2)。
-- **圓形(AP)-4/1(4)-單體最近**/攻擊附帶麻痺，放置時為最近敵方附上印記，所有最近單體及最遠單體攻擊時，皆會同時對其造成傷害/對印記敵方造成傷害打劫3$(+1/+2)。
+- **圓形(AP)-3/1(6)-單體最近**/攻擊附帶麻痺並打劫3$，進場則攻擊單體最近2次(無視麻痺)/進場攻擊的目標改為由隨機友方單體攻擊，且可攻擊單位攻擊目標為本體最近(優先尋找除自己以外的單位)(+2+2)。
 - **方形(TANK)-9/1(4)-小十字**/被攻擊時獲得2$/第一次攻擊，不會受到傷害(也不會觸發敵方特性)(+2/+0)。
 - **梯形(HF)-7/1(6)-九宮格**/造成傷害後打劫2$/死亡後，會多留存一回合並+2攻擊力(+2/+1)。
 - **雙菱形(LF)-5/2(4)-小十字**/造成傷害後打劫2$/回合開始時獲得隨機攻擊模式(+2/+2)。
@@ -283,6 +284,26 @@
 **Per Round Influence:** 造成傷害\*受到傷害/存活回合數
 
 **Survival Index:** ((得分數\*2)+(造成傷害/攻擊次數\*2)+(受到傷害/受到傷害次數\*2))/存活回合數
+
+## License
+
+Copyright (C) 2024 Robin Liu, Angus Yu / FOS Studio
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+[GNU General Public License](https://www.gnu.org/licenses/gpl-3.0.html)
+for more details.
+
+See [LICENSE.txt](./LICENSE.txt) for the full license text.
+
+> **Note:** Game assets (images, fonts, sounds) are © 2024 Robin Liu / FOS Studio.
+> All rights reserved unless otherwise stated.
 
 # 外部連結
 [巴哈規則](https://home.gamer.com.tw/artwork.php?sn=5702820)

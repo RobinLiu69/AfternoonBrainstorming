@@ -1,6 +1,8 @@
 # Afternoon Brainstorming Game Rules
 
-[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.en.md)  [![Static Badge](https://img.shields.io/badge/lang-zh.tw-blue)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.md)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Static Badge](https://img.shields.io/badge/lang-en-red)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.en.md)
+[![Static Badge](https://img.shields.io/badge/lang-zh.tw-blue)](https://github.com/RobinLiu69/AfternoonBrainstorming/blob/main/README.md)
 
 ## Game Overview  
 You will have 12 cards (Chose before the game starts). Each turn, you gain one attack opportunity (which can be saved for later). Use summoned minions or magic to gain an advantage.  
@@ -234,6 +236,26 @@ The second player starts their turn with four cards in hand and one attack oppor
 - **Average Attack Damage:** Total damage dealt / Number of attacks  
 - **Per Round Influence:** (Damage dealt × Damage received) / Rounds survived  
 - **Survival Index:** ((Score × 2) + (Damage dealt / Attacks × 2) + (Damage received / Times hit × 2)) / Rounds survived  
+
+## License
+
+Copyright (C) 2024 Robin Liu, Angus Yu / FOS Studio
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+[GNU General Public License](https://www.gnu.org/licenses/gpl-3.0.html)
+for more details.
+
+See [LICENSE.txt](./LICENSE.txt) for the full license text.
+
+> **Note:** Game assets (images, fonts, sounds) are © 2024 Robin Liu / FOS Studio.
+> All rights reserved unless otherwise stated.
 
 # External Links
 [Rules on Bahamut](https://home.gamer.com.tw/artwork.php?sn=5702820)  
