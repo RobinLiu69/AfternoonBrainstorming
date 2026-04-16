@@ -32,13 +32,17 @@ class Neutral:
     name: str = "neutral"
     on_board: list[Card] = field(default_factory=list)
 
-    def recycle_cards(self, game_state: GameState, game_renderer: GameRenderer) -> None:
-        for i, card in enumerate(self.on_board):
+    def recycle_cards(self, game_state:GameState, game_renderer: GameRenderer) -> None:
+        to_remove = []
+        for card in self.on_board:
             if card.health <= 0 and card.can_be_killed(game_state):
                 card.die(game_state)
-                game_renderer.card_renderer.release(card.instance_id)
+                game_renderer.dying_cards.append(card)
                 game_state.board_dict[card.board_x, card.board_y].occupy = False
-                self.on_board.pop(i)
+                game_state.game_logger.log_card_recycled(self.name, card.job_and_color, (card.board_x, card.board_y))
+                to_remove.append(card)
+        for card in to_remove:
+            self.on_board.remove(card)
 
     def update(self, game_state: GameState, game_renderer: GameRenderer) -> None:
         self.recycle_cards(game_state, game_renderer)

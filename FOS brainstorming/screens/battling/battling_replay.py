@@ -152,12 +152,31 @@ def _rebuild_and_fast_forward(
     game_state.player1.start_time = -1
     game_state.player2.start_time = -1
 
-    source.reset()
-    for _ in range(target_action_index):
-        action = source.next_action()
-        if action is None:
-            break
-        dispatcher._execute(action, game_state)
+    import core.setting as _core_setting
+    prev_anim_setting = _core_setting.COMBAT_ANIMATIONS_ENABLED
+    prev_anim_runtime = game_renderer.combat_animator.enabled
+    _core_setting.COMBAT_ANIMATIONS_ENABLED = False
+    game_renderer.combat_animator.enabled = False
+
+    try:
+        source.reset()
+        for _ in range(target_action_index):
+            action = source.next_action()
+            if action is None:
+                break
+            dispatcher._execute(action, game_state)
+            game_state.player1.logic_update(game_state, game_renderer, False)
+            game_state.player2.logic_update(game_state, game_renderer, False)
+            game_state.neutral.update(game_state, game_renderer)
+            game_state.update()
+    finally:
+        _core_setting.COMBAT_ANIMATIONS_ENABLED = prev_anim_setting
+        game_renderer.combat_animator.enabled = prev_anim_runtime
+
+    game_state.pending_combat_events.clear()
+    for card in game_renderer.dying_cards:
+        game_renderer.card_renderer.release(card.instance_id)
+    game_renderer.dying_cards.clear()
 
 
 def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed: float) -> None:
@@ -178,7 +197,7 @@ def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed
         draw_text(warning, game_screen.mid_text_font, RED, x + game_screen.block_size * 1.8, y_top - game_screen.block_size * 0.15, game_screen.surface)
     
 
-    hint = "SPACE pause/play   RIGHT step   UP/DOWN speed   R restart   ESC exit"
+    hint = "SPACE pause/play   RIGHT step   UP/DOWN speed   R restart   V toggle anim   ESC exit"
     draw_text(hint, game_screen.mid_text_font, WHITE, x, y_bottom, game_screen.surface)
 
 
@@ -222,6 +241,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> str:
     running: bool = True
 
     while running:
+        dt = clock.tick(60) / 1000.0
         game_screen.render()
 
         for event in pygame.event.get():
@@ -248,6 +268,11 @@ def main(game_screen: GameScreen, replay_path: Path) -> str:
                     running = False
                 elif event.key == pygame.K_f:
                     hint_on = not hint_on
+                elif event.key == pygame.K_v:
+                    import core.setting as _core_setting
+                    new_val = not game_renderer.combat_animator.enabled
+                    game_renderer.combat_animator.enabled = new_val
+                    _core_setting.COMBAT_ANIMATIONS_ENABLED = new_val
 
         should_advance: bool = False
         if step_once:
@@ -275,10 +300,9 @@ def main(game_screen: GameScreen, replay_path: Path) -> str:
         game_state.update()
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        game_renderer.render_frame(controller, controller, mouse_x, mouse_y, to_board_x(mouse_x, game_screen), to_board_y(mouse_y, game_screen), game_state, hint_on)
+        game_renderer.render_frame(controller, controller, mouse_x, mouse_y, to_board_x(mouse_x, game_screen), to_board_y(mouse_y, game_screen), game_state, hint_on, dt)
         _draw_hud(game_screen, source, paused, speed)
 
         pygame.display.update()
-        clock.tick(60)
 
     return "end"
