@@ -181,6 +181,12 @@ class BattlingDispatcher:
                     elif name.endswith("C"):
                         player.hand[action.hand_index] = name + " (+)"
                 return ActionResult(success=True)
+            
+            case "toggle_hint":
+                return ActionResult(True)
+            
+            case "toggle_animation":
+                return ActionResult(True)
 
             case "end_turn":
                 game_state.turn_number += 1

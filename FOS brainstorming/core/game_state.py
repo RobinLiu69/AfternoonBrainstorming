@@ -26,6 +26,7 @@ from core.game_statistics import GameStatistics
 from utils.logger import GameLogger
 
 from core.player import Player
+from core.combat_event import CombatEvent
 from core.neutral import Neutral
 from core.board_block import Board
 from core.board_config import BoardConfig
@@ -58,6 +59,7 @@ class GameState:
         
     coutdown_time = int(SETTING["countdown_time"])
     rng_seed: int = field(default_factory=lambda: _seed_random())
+    pending_combat_events: list[CombatEvent] = field(default_factory=list)
     file_auto_delete: bool = False
 
     score: int = 0
@@ -112,6 +114,7 @@ class GameState:
         return player_cards + self.neutral.on_board
 
     def to_dict(self) -> dict:
+        events_payload = [e.to_dict() for e in self.pending_combat_events]
         return {
             "player1": self.player1.to_dict(),
             "player2": self.player2.to_dict(),
@@ -137,10 +140,19 @@ class GameState:
             "number_of_cudes": self.number_of_cudes,
             "number_of_heals": self.number_of_heals,
             "rng_seed": self.rng_seed,
+            "pending_combat_events": events_payload,
         }
 
     def apply_dict(self, data: dict, game_renderer: GameRenderer) -> None:
         from cards.card_fuchsia import FuchsiaCard
+        
+        raw_events = data.get("pending_combat_events", [])
+
+        if raw_events and game_renderer is not None:
+            for ev_dict in raw_events:
+                game_renderer.combat_animator.push(CombatEvent.from_dict(ev_dict))
+
+
         self.player_timer = data["player_timer"]
         self.timer_mode = data["timer_mode"]
         self.file_auto_delete = data["file_auto_delete"]

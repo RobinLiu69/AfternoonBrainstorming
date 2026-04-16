@@ -23,7 +23,8 @@ from typing import Literal, Optional
 
 ActionType = Literal[
     "attack", "play_card", "move_select", "move_to",
-    "heal", "spawn_cube", "end_turn", "toggle_hint", "toggle_upgrade", "quit"
+    "heal", "spawn_cube", "end_turn", "toggle_hint", "toggle_upgrade", "quit",
+    "toggle_animation",
 ]
 
 

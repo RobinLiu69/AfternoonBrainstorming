@@ -229,15 +229,18 @@ class Player:
                         card.mouse_selected = True
                         break
     
-    def recycle_cards(self, game_state: GameState, game_renderer: GameRenderer) -> None:
-        for i, card in enumerate(self.on_board):
+    def recycle_cards(self, game_state:GameState, game_renderer: GameRenderer) -> None:
+        to_remove = []
+        for card in self.on_board:
             if card.health <= 0 and card.can_be_killed(game_state):
                 card.die(game_state)
-                game_renderer.card_renderer.release(card.instance_id)
-                card_name = self.on_board.pop(i).job_and_color
-                self.discard_pile.append(card_name)
+                game_renderer.dying_cards.append(card)
+                self.discard_pile.append(card.job_and_color)
                 game_state.board_dict[card.board_x, card.board_y].occupy = False
-                game_state.game_logger.log_card_recycled(self.name, card_name, (card.board_x, card.board_y))
+                game_state.game_logger.log_card_recycled(self.name, card.job_and_color, (card.board_x, card.board_y))
+                to_remove.append(card)
+        for card in to_remove:
+            self.on_board.remove(card)
     
     def add_card_to_deck(self, card: str) -> None:
         if (card != "None" and len(self.deck) < 12 and

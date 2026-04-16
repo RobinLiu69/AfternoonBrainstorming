@@ -38,7 +38,7 @@ class CardRenderer:
     def release(self, instance_id: str) -> None:
         self._surfaces.pop(instance_id, None)
 
-    def render(self, data: CardRenderData) -> None:
+    def render(self, data: CardRenderData, offset: tuple[float, float] = (0.0, 0.0)) -> None:
         surface = self._get_card_surface(data.instance_id)
         surface.fill((0, 0, 0, 0))
 
@@ -52,7 +52,7 @@ class CardRenderer:
         if data.show_stats:
             self._draw_stats(surface, data)
 
-        self._blit(surface, data)
+        self._blit(surface, data, offset)
     
     def _render_with_sprite(self, surface: pygame.Surface, data: CardRenderData, sprite: pygame.Surface) -> None:
         surface.blit(sprite, (0, 0))
@@ -102,9 +102,9 @@ class CardRenderer:
                 else:
                     draw_text(data.owner, self.game_screen.text_font, text_color, bs * 0.1, bs * 0.8, surface)
     
-    def _blit(self, surface: pygame.Surface, data: CardRenderData) -> None:
+    def _blit(self, surface: pygame.Surface, data: CardRenderData, offset: tuple[float, float]) -> None:
         game_screen = self.game_screen
-        x = (game_screen.display_width / 2 - game_screen.block_size * 2) + data.board_x * game_screen.block_size
-        y = (game_screen.display_height / 2 - game_screen.block_size * 1.65) + data.board_y * game_screen.block_size
-
-        game_screen.surface.blit(surface, (x, y))
+        x = (game_screen.display_width  / 2 - game_screen.block_size * 2) + data.board_x * game_screen.block_size + offset[0]
+        y = (game_screen.display_height / 2 - game_screen.block_size * 1.65) + data.board_y * game_screen.block_size + offset[1]
+        
+        game_screen.surface.blit(surface, (int(x), int(y)))
