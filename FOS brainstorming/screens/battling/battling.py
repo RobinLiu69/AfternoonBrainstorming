@@ -131,6 +131,8 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
         print(f"[Battling] entering loop as client.role={client.role!r}")
 
     while running:
+        dt = clock.tick(60) / 1000.0
+
         if is_client and client:
             game_over = client.consume_pending_game_over()
             if game_over is not None:
@@ -234,9 +236,8 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
 
 
-        game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on)
+        game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on, dt)
         pygame.display.update()
-        clock.tick(60)
     
     game_state.game_logger.close()
     return winner

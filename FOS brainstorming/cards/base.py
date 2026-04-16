@@ -17,13 +17,13 @@
 # -----------------------------------------------------------------
 
 from __future__ import annotations
-import random
 from abc import ABC
 from dataclasses import dataclass, field
 from typing import TypeVar, cast, Generator, Iterable, Optional, Callable, TYPE_CHECKING, final
 
 from core.game_statistics import StatType
-from core.setting import JOB_DICTIONARY
+from core.setting import JOB_DICTIONARY, COMBAT_ANIMATIONS_ENABLED, ANIM_LUNGE_STEP
+from core.combat_event import CombatEvent
 
 
 if TYPE_CHECKING:
@@ -125,6 +125,8 @@ class Card(ABC):
     extra_damage: int = 0
     movable: bool = True
     anger: bool = False
+
+    pending_death: bool = False
     
     max_health: int = field(init=False)
     original_damage: int = field(init=False)
@@ -134,6 +136,8 @@ class Card(ABC):
     recursion_limit: int = field(init=False, default=20)
 
     def __post_init__(self) -> None:
+        self.display_health = self.health
+
         self.max_health = self.health
         self.original_damage = self.damage
         
@@ -295,7 +299,7 @@ class Card(ABC):
         return final_value
 
     @final
-    def damage_calculate(self, value: int, attacker: "Card", game_state: GameState, ability: bool = True) -> bool:
+    def damage_calculate(self, value: int, attacker: "Card", game_state: GameState, ability: bool = True, anim_delay: float = 0.0) -> bool:
         if self.health <= 0: return False
         game_state.game_statistics.increment(StatType.DAMAGE_TAKEN_COUNT, self.get_uid(), 1)
         attacker.hit_cards.append(self)
@@ -315,6 +319,15 @@ class Card(ABC):
         if self.armor > 0 and self.armor >= value:
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
+            if COMBAT_ANIMATIONS_ENABLED:
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
+                )
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
+                )
+            else:
+                self.display_health = self.health
             game_state.game_logger.log_attack(attacker.get_uid(),attacker.get_position(),
                                               self.get_uid(), self.get_position(), value)
             self.armor -= value
@@ -325,6 +338,15 @@ class Card(ABC):
         elif self.armor > 0 and self.armor < value:
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
+            if COMBAT_ANIMATIONS_ENABLED:
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
+                )
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
+                )
+            else:
+                self.display_health = self.health
             game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
                                               self.get_uid(), self.get_position(), value)
             if self.health >= value-self.armor:
@@ -353,6 +375,15 @@ class Card(ABC):
                 value = self.health
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
+            if COMBAT_ANIMATIONS_ENABLED:
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
+                )
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
+                )
+            else:
+                self.display_health = self.health
             game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
                                               self.get_uid(), self.get_position(), value)
             self.health -= value
@@ -366,6 +397,8 @@ class Card(ABC):
                 attacker.killed_signal(self, game_state)
                 self.been_killed(attacker, game_state)
                 self.been_killed_signal(attacker, game_state)
+
+                self.pending_death = True
             return True
         return False
     
@@ -396,7 +429,7 @@ class Card(ABC):
             color=self.color,
             board_x=self.board_x,
             board_y=self.board_y,
-            health=self.health,
+            health=self.display_health,
             max_health=self.max_health,
             damage=self.damage,
             original_damage=self.original_damage,
@@ -581,17 +614,31 @@ class Card(ABC):
     @final
     def launch_attack(self, attack_types: str, game_state: GameState, custom_target_tuple: tuple[Card, ...] = tuple(), ignore_numbness: bool = False, use_ability: bool = True) -> bool:
         if not ignore_numbness and (self.numbness or not attack_types): return False
+
         allies: filter["Card"] = filter(lambda card: card.health > 0, game_state.get_player_cards(self.owner))
         enemies: Iterable["Card"] = list(filter(lambda card: card.health > 0, game_state.get_side_cards(self.owner, True)))
         target_tuple = tuple(self.detection(attack_types, enemies, game_state)) if not custom_target_tuple else custom_target_tuple
 
         if target_tuple:
             game_state.game_statistics.add_hit(self.get_uid(), 1)
-            for target in target_tuple:
+            for i, target in enumerate(target_tuple):
+                atk_delay  = i * ANIM_LUNGE_STEP
+                hurt_delay = atk_delay + ANIM_LUNGE_STEP * 0.55
+                if COMBAT_ANIMATIONS_ENABLED:
+                    game_state.pending_combat_events.append(
+                        CombatEvent(
+                            kind="attack",
+                            board_x=self.board_x,
+                            board_y=self.board_y,
+                            target_x=target.board_x,
+                            target_y=target.board_y,
+                            delay=atk_delay,
+                        )
+                    )
                 game_state.game_logger.log_launch_attack(self.get_uid(), self.get_position())
                 # for card in player1.on_board + player2.on_board:
                 #     card.before_attack_broadcast(self, target, game_state)
-                if target.damage_calculate(self.damage, self, game_state, use_ability):
+                if target.damage_calculate(self.damage, self, game_state, use_ability, anim_delay=hurt_delay):
                     for card in game_state.get_both_player_cards():
                         card.after_attack_broadcast(self, target, game_state)
             return True
@@ -642,7 +689,9 @@ class Card(ABC):
             "movable": self.movable,
             "anger": self.anger,
             "max_health": self.max_health,
-            "original_damage": self.original_damage
+            "original_damage": self.original_damage,
+            "pending_death": self.pending_death,
+            "display_health": self.display_health,
         }
  
     def collect_pending_refs(self, data: dict) -> None:
@@ -673,4 +722,6 @@ class Card(ABC):
         self.anger = data["anger"]
         self.max_health = data["max_health"]
         self.original_damage = data["original_damage"]
+        self.pending_death = data["pending_death"]
+        self.display_health = data["display_health"]
  

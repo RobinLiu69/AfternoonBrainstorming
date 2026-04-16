@@ -34,7 +34,7 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONDOWN:
             match event.button:
-                case 1:        
+                case 1:
                     if game_state.get_player(controller).selected_card_index != -1:
                         if board_x is not None and board_y is not None:
                             actions.append(GameAction(

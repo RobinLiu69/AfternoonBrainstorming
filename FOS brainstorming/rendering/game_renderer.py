@@ -16,36 +16,81 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+from typing import TYPE_CHECKING
+
+from core.setting import COMBAT_ANIMATIONS_ENABLED
 from core.game_screen import GameScreen
 from core.game_state import GameState
 from rendering.card_renderer import CardRenderer
 from rendering.board_renderer import BoardRenderer
 from rendering.ui_renderer import UIRenderer
+from rendering.combat_animator import CombatAnimator
+
+
+if TYPE_CHECKING:
+    from cards.base import Card
 
 
 class GameRenderer:
     def __init__(self, game_screen: GameScreen):
         self.game_screen = game_screen
-        
+        self.dying_cards: list[Card] = []
+
         self.card_renderer = CardRenderer(game_screen)
         self.board_renderer = BoardRenderer(game_screen)
         self.ui_renderer = UIRenderer(game_screen)
+        self.combat_animator = CombatAnimator(game_screen, enabled=COMBAT_ANIMATIONS_ENABLED)
     
     def render_frame(self, local_controller: str, controller: str, mouse_x: int, mouse_y: int,
-                     mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState, hint_on: bool = False) -> None:
+                     mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState, hint_on: bool = False,
+                     dt: float = 0.0) -> None:
         self.game_screen.render()
-
-        for card in game_state.neutral.on_board:
-            for render_object in card.get_render_data():
-                self.card_renderer.render(render_object)
-        for card in game_state.player1.on_board:
-            for render_object in card.get_render_data():
-                self.card_renderer.render(render_object)
-        for card in game_state.player2.on_board:
-            for render_object in card.get_render_data():
-                self.card_renderer.render(render_object)
     
+        for ev in game_state.pending_combat_events:
+            self.combat_animator.push(ev)
+        game_state.pending_combat_events.clear()
+    
+        all_groups = [game_state.neutral.on_board, game_state.player1.on_board, game_state.player2.on_board]
+
+        completed = self.combat_animator.update(dt)
+        anim_positions = self.combat_animator.get_active_positions()
+
+        for a in completed:
+            if a.event.kind == "hurt" and a.event.post_health >= 0:
+                pos = (a.event.board_x, a.event.board_y)
+                for group in all_groups:
+                    for card in group:
+                        if (card.board_x, card.board_y) == pos:
+                            card.display_health = a.event.post_health
+                for card in self.dying_cards:
+                    if (card.board_x, card.board_y) == pos:
+                        card.display_health = a.event.post_health
+        still_dying = []
+        for card in self.dying_cards:
+            pos = (card.board_x, card.board_y)
+            if pos in anim_positions:
+                for render_object in card.get_render_data():
+                    self.card_renderer.render(render_object, offset=self.combat_animator.get_offset(*pos))
+                still_dying.append(card)
+            else:
+                self.card_renderer.release(card.instance_id)
+        self.dying_cards = still_dying
+
+        for group in all_groups:
+            to_remove: list[Card] = []
+            for card in group:
+                pos = (card.board_x, card.board_y)
+                if pos not in anim_positions and card.pending_death:
+                    to_remove.append(card)
+                    continue
+                for render_object in card.get_render_data():
+                    self.card_renderer.render(render_object, offset=self.combat_animator.get_offset(*pos))
+            for card in to_remove:
+                self.card_renderer.release(card.instance_id)
+
         self.board_renderer.render_all(game_state)
+
+        self.combat_animator.render_overlays(self.game_screen.surface)
 
         if mouse_board_x is not None and mouse_board_y is not None:
             self.board_renderer.render_attack_highlight(

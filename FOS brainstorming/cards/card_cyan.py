@@ -110,8 +110,6 @@ class Ap(CyanCard):
                          board_x=board_x, board_y=board_y)
 
         self.upgrade = upgrade
-        self.target: Optional[Card] = None
-        self._pending_target_iid: Optional[str] = None
 
     def deploy(self, game_state: GameState) -> None:
         if self.upgrade:
@@ -133,32 +131,7 @@ class Ap(CyanCard):
         target.numbness = True
         self.get_coins(card_settings["AP"]["coin_gets"], game_state)
         return True
-
-    def die(self, game_state: GameState) -> bool:
-        if self.target:
-            self.target.been_targeted = False
-            self.target = None
-        return False
-
-    def to_dict(self) -> dict:
-        data = super().to_dict()
-        data["target_iid"] = self.target.instance_id if self.target else None
-        return data
-
-    # def apply_dict(self, data: dict) -> None:
-    #     super().apply_dict(data)
-        # self.collect_pending_refs(data)
-
-    # def collect_pending_refs(self, data: dict) -> None:
-    #     self._pending_target_iid = data.get("target_iid")
-
-    # def resolve_references(self, all_cards_by_iid: dict) -> None:
-    #     if self._pending_target_iid:
-    #         self.target = all_cards_by_iid.get(self._pending_target_iid)
-    #     else:
-    #         self.target = None
-    #     self._pending_target_iid = None
-
+    
 
 class Tank(CyanCard):
     def __init__(self, owner: str, board_x: int, board_y: int, upgrade: bool=False,
