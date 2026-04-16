@@ -9,10 +9,10 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# MERCHANTABILITY or FITNESS FOR active PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
+# You should have received active copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
@@ -38,7 +38,7 @@ _LUNGE_DIST_FRAC = 0.33   # fraction of block_size to lunge toward target
 _SHAKE_PX = 4      # max pixel amplitude of hurt shake
 _TINT_MAX_ALPHA = 170    # 0-255 — peak red overlay alpha
 _FLOAT_RISE_PX = 28     # total pixels damage number rises before fading
-
+_MOVE_DURATION = 0.28     # seconds for unit slide from old to new tile
 
 def _sin_ease(t: float) -> float:
     return math.sin(t * math.pi)
@@ -63,6 +63,7 @@ _DURATIONS: dict[str, float] = {
     "attack": _LUNGE_DURATION,
     "hurt":   _HURT_DURATION,
     "float":  _FLOAT_DURATION,
+    "move":   _MOVE_DURATION,
 }
 
 
@@ -85,10 +86,12 @@ class CombatAnimator:
 
     def get_active_positions(self) -> set[tuple[int, int]]:
         positions = set()
-        for a in self._active:
-            positions.add((a.event.board_x, a.event.board_y))
-            if a.event.kind == "attack":
-                positions.add((a.event.target_x, a.event.target_y))
+        for active in self._active:
+            if active.event.kind == "move":
+                continue
+            positions.add((active.event.board_x, active.event.board_y))
+            if active.event.kind == "attack":
+                positions.add((active.event.target_x, active.event.target_y))
         return positions
 
     def push(self, event: CombatEvent) -> None:
@@ -96,6 +99,15 @@ class CombatAnimator:
             if event.kind == "hurt" and event.post_health >= 0:
                 self._pending_display_health.append(event)
             return
+
+        if event.kind == "move":
+            self._active = [
+                active for active in self._active
+                if not (active.event.kind == "move"
+                        and active.event.board_x == event.board_x
+                        and active.event.board_y == event.board_y)
+            ]
+
         duration = _DURATIONS.get(event.kind, 0.35)
         self._active.append(_Anim(event=event, elapsed=-event.delay, duration=duration))
 
@@ -105,10 +117,10 @@ class CombatAnimator:
         return out
 
     def update(self, dt: float) -> list[_Anim]:
-        for a in self._active:
-            a.elapsed += dt
-        completed = [a for a in self._active if a.elapsed >= a.duration and a.started]
-        self._active = [a for a in self._active if a.elapsed < a.duration]
+        for active in self._active:
+            active.elapsed += dt
+        completed = [active for active in self._active if active.elapsed >= active.duration and active.started]
+        self._active = [active for active in self._active if active.elapsed < active.duration]
         return completed
 
     def is_animating(self) -> bool:
@@ -124,26 +136,31 @@ class CombatAnimator:
         best_lunge_nx = 0.0
         best_lunge_ny = 0.0
 
-        for a in self._active:
-            if not a.started:
+        for active in self._active:
+            if not active.started:
                 continue
-            ev = a.event
+            event = active.event
 
-            if ev.kind == "attack" and ev.board_x == board_x and ev.board_y == board_y:
-                raw_dx = ev.target_x - ev.board_x
-                raw_dy = ev.target_y - ev.board_y
+            if event.kind == "attack" and event.board_x == board_x and event.board_y == board_y:
+                raw_dx = event.target_x - event.board_x
+                raw_dy = event.target_y - event.board_y
                 length = math.hypot(raw_dx, raw_dy) or 1.0
                 nx, ny = raw_dx / length, raw_dy / length
-                magnitude = _sin_ease(a.progress) * _LUNGE_DIST_FRAC * self._game_screen.block_size
+                magnitude = _sin_ease(active.progress) * _LUNGE_DIST_FRAC * self._game_screen.block_size
                 if magnitude > best_lunge_mag:
                     best_lunge_mag = magnitude
                     best_lunge_nx  = nx
                     best_lunge_ny  = ny
 
-            elif ev.kind == "hurt" and ev.board_x == board_x and ev.board_y == board_y:
-                amp = (1.0 - a.progress) * _SHAKE_PX
+            elif event.kind == "hurt" and event.board_x == board_x and event.board_y == board_y:
+                amp = (1.0 - active.progress) * _SHAKE_PX
                 dx += random.uniform(-amp, amp)
                 dy += random.uniform(-amp, amp)
+            
+            elif event.kind == "move" and event.board_x == board_x and event.board_y == board_y:
+                remaining = 1.0 - active.progress
+                dx += (event.target_x - event.board_x) * self._game_screen.block_size * remaining
+                dy += (event.target_y - event.board_y) * self._game_screen.block_size * remaining
 
         dx += best_lunge_nx * best_lunge_mag
         dy += best_lunge_ny * best_lunge_mag
@@ -156,34 +173,34 @@ class CombatAnimator:
 
         game_screen = self._game_screen
 
-        for a in self._active:
-            if not a.started:
+        for active in self._active:
+            if not active.started:
                 continue
-            ev = a.event
+            event = active.event
 
-            if ev.kind == "hurt":
-                alpha = int(_TINT_MAX_ALPHA * (1.0 - a.progress))
+            if event.kind == "hurt":
+                alpha = int(_TINT_MAX_ALPHA * (1.0 - active.progress))
                 if alpha > 0:
-                    x, y = self._to_screen(ev.board_x, ev.board_y)
+                    x, y = self._to_screen(event.board_x, event.board_y)
                     bs = int(game_screen.block_size)
                     tint = pygame.Surface((bs, bs), pygame.SRCALPHA)
                     tint.fill((255, 0, 0, alpha))
                     surface.blit(tint, (int(x), int(y)))
 
-            elif ev.kind == "float" and ev.damage > 0:
-                t = a.progress
+            elif event.kind == "float" and event.damage > 0:
+                t = active.progress
                 if t < 0.2:
                     alpha = int(255 * (t/0.2))
                 else:
                     alpha = int(255 * (1.0 - (t - 0.2) / 0.8))
                 alpha = max(0, min(255, alpha))
 
-                x, y = self._to_screen(ev.board_x, ev.board_y)
+                x, y = self._to_screen(event.board_x, event.board_y)
                 rise = t * _FLOAT_RISE_PX
                 cx = x + game_screen.block_size*0.5
                 cy = y + game_screen.block_size*0.15 - rise
 
-                text_surf = game_screen.text_font.render(f"-{ev.damage}", True, (255, 70, 70))
+                text_surf = game_screen.text_font.render(f"-{event.damage}", True, (255, 70, 70))
                 text_surf.set_alpha(alpha)
                 tw, th = text_surf.get_size()
                 surface.blit(text_surf, (int(cx - tw/2), int(cy - th/2)))

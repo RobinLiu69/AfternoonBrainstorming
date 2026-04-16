@@ -21,7 +21,7 @@ from dataclasses import dataclass
 
 @dataclass
 class CombatEvent:
-    kind: str           # "attack" | "hurt" | "float"
+    kind: str           # "attack" | "hurt" | "float" | "move"
     board_x: int        # relevant unit's board x
     board_y: int        # relevant unit's board y
     target_x: int = 0   # target board x (used by "attack" for direction)

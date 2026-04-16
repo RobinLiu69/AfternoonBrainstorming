@@ -23,7 +23,6 @@ from typing import TypeVar, cast, Generator, Iterable, Optional, Callable, TYPE_
 
 from core.game_statistics import StatType
 from core.setting import JOB_DICTIONARY, ANIM_LUNGE_STEP
-import core.setting as _core_setting
 from core.combat_event import CombatEvent
 
 
@@ -258,6 +257,7 @@ class Card(ABC):
                     (self.board_y != board_y or self.board_x != board_x) and self.moving == True):
                 self.moving = False
                 return False
+            from_x, from_y = self.board_x, self.board_y
             game_state.game_logger.log_card_moved(self.owner, self.job_and_color, self.get_position(), (board_x, board_y))
             game_state.game_statistics.increment(StatType.MOVE, self.get_uid(), 1)
             game_state.board_dict[self.board_x, self.board_y].occupy = False
@@ -265,6 +265,14 @@ class Card(ABC):
             self.board_y = board_y
             game_state.board_dict[board_x, board_y].occupy = True
             self.moving = False
+
+            game_state.pending_combat_events.append(
+                CombatEvent(
+                    kind="move",
+                    board_x=board_x, board_y=board_y,
+                    target_x=from_x, target_y=from_y,
+                )
+            )
 
             self.after_movement(board_x, board_y, game_state)
             
@@ -324,15 +332,12 @@ class Card(ABC):
                                               self.get_uid(), self.get_position(), value)
             self.armor -= value
 
-            if _core_setting.COMBAT_ANIMATIONS_ENABLED:
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
-                )
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
-                )
-            else:
-                self.display_health = self.health
+            game_state.pending_combat_events.append(
+                CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
+            )
+            game_state.pending_combat_events.append(
+                CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
+            )
 
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
@@ -351,15 +356,12 @@ class Card(ABC):
             self.armor = 0
             self.health -= overflow_value
 
-            if _core_setting.COMBAT_ANIMATIONS_ENABLED:
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
-                )
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
-                )
-            else:
-                self.display_health = self.health
+            game_state.pending_combat_events.append(
+                CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
+            )
+            game_state.pending_combat_events.append(
+                CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
+            )
 
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
@@ -384,16 +386,13 @@ class Card(ABC):
                                               self.get_uid(), self.get_position(), value)
             self.health -= value
 
-            if _core_setting.COMBAT_ANIMATIONS_ENABLED:
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
-                )
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
-                )
-            else:
-                self.display_health = self.health
-
+            game_state.pending_combat_events.append(
+                CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
+            )
+            game_state.pending_combat_events.append(
+                CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
+            )
+            
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
             attacker.after_damage_calculated(self, value, game_state)
@@ -631,17 +630,16 @@ class Card(ABC):
             for i, target in enumerate(target_tuple):
                 atk_delay  = i * ANIM_LUNGE_STEP
                 hurt_delay = atk_delay + ANIM_LUNGE_STEP * 0.55
-                if _core_setting.COMBAT_ANIMATIONS_ENABLED:
-                    game_state.pending_combat_events.append(
-                        CombatEvent(
-                            kind="attack",
-                            board_x=self.board_x,
-                            board_y=self.board_y,
-                            target_x=target.board_x,
-                            target_y=target.board_y,
-                            delay=atk_delay,
-                        )
+                game_state.pending_combat_events.append(
+                    CombatEvent(
+                        kind="attack",
+                        board_x=self.board_x,
+                        board_y=self.board_y,
+                        target_x=target.board_x,
+                        target_y=target.board_y,
+                        delay=atk_delay,
                     )
+                )
                 game_state.game_logger.log_launch_attack(self.get_uid(), self.get_position())
                 # for card in player1.on_board + player2.on_board:
                 #     card.before_attack_broadcast(self, target, game_state)
