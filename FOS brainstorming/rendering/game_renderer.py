@@ -53,6 +53,7 @@ class GameRenderer:
                     game_state.player1.on_board,
                     game_state.player2.on_board]
         self._apply_completed_health_updates(completed, all_groups)
+        self._apply_skipped_display_updates(all_groups)
 
         anim_positions = self.combat_animator.get_active_positions()
         self._render_dying_cards(anim_positions)
@@ -80,19 +81,25 @@ class GameRenderer:
 
         self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state, hint_on)
 
+    def _apply_skipped_display_updates(self, all_groups: list[list[Card]]) -> None:
+        for event in self.combat_animator.drain_skipped_display_updates():
+            pos = (event.board_x, event.board_y)
+            for card in self._iter_cards_at(pos, all_groups):
+                card.display_health = event.post_health
+
     def _ingest_combat_events(self, game_state: GameState) -> None:
-        for ev in game_state.pending_combat_events:
-            self.combat_animator.push(ev)
+        for event in game_state.pending_combat_events:
+            self.combat_animator.push(event)
         game_state.pending_combat_events.clear()
 
     def _apply_completed_health_updates(self, completed: list[_Anim], all_groups: list[list[Card]]) -> None:
         for anim in completed:
-            ev = anim.event
-            if ev.kind != "hurt" or ev.post_health < 0:
+            event = anim.event
+            if event.kind != "hurt" or event.post_health < 0:
                 continue
-            pos = (ev.board_x, ev.board_y)
+            pos = (event.board_x, event.board_y)
             for card in self._iter_cards_at(pos, all_groups):
-                card.display_health = ev.post_health
+                card.display_health = event.post_health
 
     def _iter_cards_at(self, pos, all_groups: list[list[Card]]) -> Generator[Card]:
         for group in all_groups:

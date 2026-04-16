@@ -60,13 +60,21 @@ def number_key(number: int, mouse_x: int, mouse_y: int,
     #                 game_state.player2.hand[i] += " (+)"
 
 def _sweep_dead_cards_visually(game_state: GameState, game_renderer: GameRenderer) -> None:
+    anim_positions = game_renderer.combat_animator.get_active_positions()
+
     for container in (game_state.player1.on_board, game_state.player2.on_board, game_state.neutral.on_board):
         survivors = []
         for card in container:
             if card.health <= 0 and card.can_be_killed(game_state):
-                game_renderer.card_renderer.release(card.instance_id)
-                if (card.board_x, card.board_y) in game_state.board_dict:
-                    game_state.board_dict[card.board_x, card.board_y].occupy = False
+                pos = (card.board_x, card.board_y)
+                if pos in game_state.board_dict:
+                    game_state.board_dict[pos].occupy = False
+
+                if game_renderer.combat_animator.enabled and (pos in anim_positions or game_state.pending_combat_events):
+                    if card not in game_renderer.dying_cards:
+                        game_renderer.dying_cards.append(card)
+                else:
+                    game_renderer.card_renderer.release(card.instance_id)
             else:
                 survivors.append(card)
         container[:] = survivors
@@ -167,6 +175,12 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
 
             if action.action_type == "toggle_hint":
                 hint_on = not hint_on
+                continue
+            if action.action_type == "toggle_animation":
+                import core.setting as _core_setting
+                new_val = not game_renderer.combat_animator.enabled
+                game_renderer.combat_animator.enabled = new_val
+                _core_setting.COMBAT_ANIMATIONS_ENABLED = new_val
                 continue
 
             if mode == "local":

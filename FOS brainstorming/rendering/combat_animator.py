@@ -71,7 +71,7 @@ class CombatAnimator:
         self._game_screen    = game_screen
         self._active: list[_Anim] = []
         self._enabled = enabled
-
+        self._pending_display_health: list[CombatEvent] = []
 
     @property
     def enabled(self) -> bool:
@@ -93,9 +93,16 @@ class CombatAnimator:
 
     def push(self, event: CombatEvent) -> None:
         if not self._enabled:
+            if event.kind == "hurt" and event.post_health >= 0:
+                self._pending_display_health.append(event)
             return
         duration = _DURATIONS.get(event.kind, 0.35)
         self._active.append(_Anim(event=event, elapsed=-event.delay, duration=duration))
+
+    def drain_skipped_display_updates(self) -> list[CombatEvent]:
+        out = self._pending_display_health
+        self._pending_display_health = []
+        return out
 
     def update(self, dt: float) -> list[_Anim]:
         for a in self._active:
@@ -166,23 +173,23 @@ class CombatAnimator:
             elif ev.kind == "float" and ev.damage > 0:
                 t = a.progress
                 if t < 0.2:
-                    alpha = int(255 * (t / 0.2))
+                    alpha = int(255 * (t/0.2))
                 else:
                     alpha = int(255 * (1.0 - (t - 0.2) / 0.8))
                 alpha = max(0, min(255, alpha))
 
                 x, y = self._to_screen(ev.board_x, ev.board_y)
                 rise = t * _FLOAT_RISE_PX
-                cx = x + game_screen.block_size * 0.5
-                cy = y + game_screen.block_size * 0.15 - rise
+                cx = x + game_screen.block_size*0.5
+                cy = y + game_screen.block_size*0.15 - rise
 
                 text_surf = game_screen.text_font.render(f"-{ev.damage}", True, (255, 70, 70))
                 text_surf.set_alpha(alpha)
                 tw, th = text_surf.get_size()
-                surface.blit(text_surf, (int(cx - tw / 2), int(cy - th / 2)))
+                surface.blit(text_surf, (int(cx - tw/2), int(cy - th/2)))
 
     def _to_screen(self, board_x: int, board_y: int) -> tuple[float, float]:
         game_screen = self._game_screen
-        x = (game_screen.display_width  / 2 - game_screen.block_size * 2)    + board_x * game_screen.block_size
-        y = (game_screen.display_height / 2 - game_screen.block_size * 1.65) + board_y * game_screen.block_size
+        x = (game_screen.display_width/2 - game_screen.block_size*2) + board_x*game_screen.block_size
+        y = (game_screen.display_height/2 - game_screen.block_size*1.65) + board_y*game_screen.block_size
         return x, y

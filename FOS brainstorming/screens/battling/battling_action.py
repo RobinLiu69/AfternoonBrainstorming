@@ -84,6 +84,8 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                         ))
                 case pygame.K_f:
                     actions.append(GameAction(player=controller, action_type="toggle_hint"))
+                case pygame.K_v:
+                    actions.append(GameAction(player=controller, action_type="toggle_animation"))
                 case pygame.K_e:
                     actions.append(GameAction(
                         player=controller,

@@ -22,7 +22,8 @@ from dataclasses import dataclass, field
 from typing import TypeVar, cast, Generator, Iterable, Optional, Callable, TYPE_CHECKING, final
 
 from core.game_statistics import StatType
-from core.setting import JOB_DICTIONARY, COMBAT_ANIMATIONS_ENABLED, ANIM_LUNGE_STEP
+from core.setting import JOB_DICTIONARY, ANIM_LUNGE_STEP
+import core.setting as _core_setting
 from core.combat_event import CombatEvent
 
 
@@ -323,7 +324,7 @@ class Card(ABC):
                                               self.get_uid(), self.get_position(), value)
             self.armor -= value
 
-            if COMBAT_ANIMATIONS_ENABLED:
+            if _core_setting.COMBAT_ANIMATIONS_ENABLED:
                 game_state.pending_combat_events.append(
                     CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
                 )
@@ -349,8 +350,8 @@ class Card(ABC):
             overflow_value = -(self.armor-value)
             self.armor = 0
             self.health -= overflow_value
-            
-            if COMBAT_ANIMATIONS_ENABLED:
+
+            if _core_setting.COMBAT_ANIMATIONS_ENABLED:
                 game_state.pending_combat_events.append(
                     CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
                 )
@@ -383,7 +384,7 @@ class Card(ABC):
                                               self.get_uid(), self.get_position(), value)
             self.health -= value
 
-            if COMBAT_ANIMATIONS_ENABLED:
+            if _core_setting.COMBAT_ANIMATIONS_ENABLED:
                 game_state.pending_combat_events.append(
                     CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
                 )
@@ -630,7 +631,7 @@ class Card(ABC):
             for i, target in enumerate(target_tuple):
                 atk_delay  = i * ANIM_LUNGE_STEP
                 hurt_delay = atk_delay + ANIM_LUNGE_STEP * 0.55
-                if COMBAT_ANIMATIONS_ENABLED:
+                if _core_setting.COMBAT_ANIMATIONS_ENABLED:
                     game_state.pending_combat_events.append(
                         CombatEvent(
                             kind="attack",
