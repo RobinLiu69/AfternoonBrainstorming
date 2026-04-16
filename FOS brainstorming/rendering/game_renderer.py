@@ -16,7 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generator
 
 from core.setting import COMBAT_ANIMATIONS_ENABLED
 from core.game_screen import GameScreen
@@ -24,7 +24,7 @@ from core.game_state import GameState
 from rendering.card_renderer import CardRenderer
 from rendering.board_renderer import BoardRenderer
 from rendering.ui_renderer import UIRenderer
-from rendering.combat_animator import CombatAnimator
+from rendering.combat_animator import CombatAnimator, _Anim
 
 
 if TYPE_CHECKING:
@@ -46,47 +46,17 @@ class GameRenderer:
                      dt: float = 0.0) -> None:
         self.game_screen.render()
     
-        for ev in game_state.pending_combat_events:
-            self.combat_animator.push(ev)
-        game_state.pending_combat_events.clear()
-    
-        all_groups = [game_state.neutral.on_board, game_state.player1.on_board, game_state.player2.on_board]
+        self._ingest_combat_events(game_state)
 
         completed = self.combat_animator.update(dt)
+        all_groups = [game_state.neutral.on_board,
+                    game_state.player1.on_board,
+                    game_state.player2.on_board]
+        self._apply_completed_health_updates(completed, all_groups)
+
         anim_positions = self.combat_animator.get_active_positions()
-
-        for a in completed:
-            if a.event.kind == "hurt" and a.event.post_health >= 0:
-                pos = (a.event.board_x, a.event.board_y)
-                for group in all_groups:
-                    for card in group:
-                        if (card.board_x, card.board_y) == pos:
-                            card.display_health = a.event.post_health
-                for card in self.dying_cards:
-                    if (card.board_x, card.board_y) == pos:
-                        card.display_health = a.event.post_health
-        still_dying = []
-        for card in self.dying_cards:
-            pos = (card.board_x, card.board_y)
-            if pos in anim_positions:
-                for render_object in card.get_render_data():
-                    self.card_renderer.render(render_object, offset=self.combat_animator.get_offset(*pos))
-                still_dying.append(card)
-            else:
-                self.card_renderer.release(card.instance_id)
-        self.dying_cards = still_dying
-
-        for group in all_groups:
-            to_remove: list[Card] = []
-            for card in group:
-                pos = (card.board_x, card.board_y)
-                if pos not in anim_positions and card.pending_death:
-                    to_remove.append(card)
-                    continue
-                for render_object in card.get_render_data():
-                    self.card_renderer.render(render_object, offset=self.combat_animator.get_offset(*pos))
-            for card in to_remove:
-                self.card_renderer.release(card.instance_id)
+        self._render_dying_cards(anim_positions)
+        self._render_live_cards(all_groups, anim_positions)
 
         self.board_renderer.render_all(game_state)
 
@@ -109,6 +79,57 @@ class GameRenderer:
         self.ui_renderer.render_timers(game_state)
 
         self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state, hint_on)
+
+    def _ingest_combat_events(self, game_state: GameState) -> None:
+        for ev in game_state.pending_combat_events:
+            self.combat_animator.push(ev)
+        game_state.pending_combat_events.clear()
+
+    def _apply_completed_health_updates(self, completed: list[_Anim], all_groups: list[list[Card]]) -> None:
+        for anim in completed:
+            ev = anim.event
+            if ev.kind != "hurt" or ev.post_health < 0:
+                continue
+            pos = (ev.board_x, ev.board_y)
+            for card in self._iter_cards_at(pos, all_groups):
+                card.display_health = ev.post_health
+
+    def _iter_cards_at(self, pos, all_groups: list[list[Card]]) -> Generator[Card]:
+        for group in all_groups:
+            for card in group:
+                if (card.board_x, card.board_y) == pos:
+                    yield card
+        for card in self.dying_cards:
+            if (card.board_x, card.board_y) == pos:
+                yield card
+    
+    def _render_dying_cards(self, anim_positions: set[tuple[int, int]]) -> None:
+        still_dying = []
+        for card in self.dying_cards:
+            pos = (card.board_x, card.board_y)
+            if pos in anim_positions:
+                self._render_card_with_offset(card, pos)
+                still_dying.append(card)
+            else:
+                self.card_renderer.release(card.instance_id)
+        self.dying_cards = still_dying
+    
+    def _render_live_cards(self, all_groups: list[list[Card]], anim_positions: set[tuple[int, int]]) -> None:
+        for group in all_groups:
+            to_remove: list[Card] = []
+            for card in group:
+                pos = (card.board_x, card.board_y)
+                if card.pending_death and pos not in anim_positions:
+                    to_remove.append(card)
+                    continue
+                self._render_card_with_offset(card, pos)
+            for card in to_remove:
+                self.card_renderer.release(card.instance_id)
+
+    def _render_card_with_offset(self, card: Card, pos: tuple[int, int]) -> None:
+        offset = self.combat_animator.get_offset(*pos)
+        for render_object in card.get_render_data():
+            self.card_renderer.render(render_object, offset=offset)
 
     def _render_hint(self, mouse_x: int, mouse_y: int,
                      mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState, hint_on: bool) -> None:

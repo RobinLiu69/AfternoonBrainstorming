@@ -319,6 +319,10 @@ class Card(ABC):
         if self.armor > 0 and self.armor >= value:
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
+            game_state.game_logger.log_attack(attacker.get_uid(),attacker.get_position(),
+                                              self.get_uid(), self.get_position(), value)
+            self.armor -= value
+
             if COMBAT_ANIMATIONS_ENABLED:
                 game_state.pending_combat_events.append(
                     CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
@@ -328,9 +332,7 @@ class Card(ABC):
                 )
             else:
                 self.display_health = self.health
-            game_state.game_logger.log_attack(attacker.get_uid(),attacker.get_position(),
-                                              self.get_uid(), self.get_position(), value)
-            self.armor -= value
+
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
             attacker.after_damage_calculated(self, value, game_state)
@@ -338,15 +340,6 @@ class Card(ABC):
         elif self.armor > 0 and self.armor < value:
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
-            if COMBAT_ANIMATIONS_ENABLED:
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
-                )
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
-                )
-            else:
-                self.display_health = self.health
             game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
                                               self.get_uid(), self.get_position(), value)
             if self.health >= value-self.armor:
@@ -356,6 +349,17 @@ class Card(ABC):
             overflow_value = -(self.armor-value)
             self.armor = 0
             self.health -= overflow_value
+            
+            if COMBAT_ANIMATIONS_ENABLED:
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
+                )
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
+                )
+            else:
+                self.display_health = self.health
+
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
             if self.health <= 0:
@@ -375,6 +379,10 @@ class Card(ABC):
                 value = self.health
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
+            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
+                                              self.get_uid(), self.get_position(), value)
+            self.health -= value
+
             if COMBAT_ANIMATIONS_ENABLED:
                 game_state.pending_combat_events.append(
                     CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
@@ -384,9 +392,7 @@ class Card(ABC):
                 )
             else:
                 self.display_health = self.health
-            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
-                                              self.get_uid(), self.get_position(), value)
-            self.health -= value
+
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
             attacker.after_damage_calculated(self, value, game_state)
