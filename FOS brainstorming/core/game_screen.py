@@ -16,7 +16,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-import os
 import json
 from typing import Sequence, TextIO, Optional, cast
 
@@ -25,7 +24,7 @@ import pygame
 from core.setting import FOLDER_PATH
 
 
-with open(f"{FOLDER_PATH}/setting/setting.json", "r", encoding="utf-8") as file:
+with open(f"{FOLDER_PATH}/config/setting.json", "r", encoding="utf-8") as file:
     SETTING: dict[str, str] = json.loads(file.read())
 
 BASIC_FONT = FOLDER_PATH+SETTING["basic_font"]

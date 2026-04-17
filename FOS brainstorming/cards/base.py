@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from typing import TypeVar, cast, Generator, Iterable, Optional, Callable, TYPE_CHECKING, final
 
 from core.game_statistics import StatType
+from core.attack_request import AttackRequest
 from core.setting import JOB_DICTIONARY, ANIM_LUNGE_STEP
 from core.combat_event import CombatEvent
 
@@ -609,6 +610,17 @@ class Card(ABC):
     def attack_area_display(self, game_state: GameState) -> Iterable[tuple[int, int]]:
         return self.attack_areas(self.board_x, self.board_y, self.attack_types, game_state)
     
+    def enqueue_attack(self, game_state: GameState, attack_types: Optional[str] = None,
+                       custom_target_tuple: tuple = tuple(), ignore_numbness: bool = False,
+                       use_ability: bool = True) -> None:
+        game_state.pending_attacks.append(AttackRequest(
+            attacker=self,
+            attack_types=attack_types,
+            custom_target_tuple=custom_target_tuple,
+            ignore_numbness=ignore_numbness,
+            use_ability=use_ability,
+        ))
+
     def attack(self, game_state: GameState) -> bool:
         attack_success = self.launch_attack(self.attack_types, game_state)
         self.hit_cards.clear()
@@ -618,7 +630,39 @@ class Card(ABC):
         return False
 
     @final
-    def launch_attack(self, attack_types: str, game_state: GameState, custom_target_tuple: tuple[Card, ...] = tuple(), ignore_numbness: bool = False, use_ability: bool = True) -> bool:
+    def launch_attack(self, attack_types: str, game_state: GameState, custom_target_tuple: tuple[Card, ...] = tuple(),
+                      ignore_numbness: bool = False, use_ability: bool = True) -> bool:
+        is_outer = not game_state._attack_draining
+        if is_outer:
+            game_state._attack_draining = True
+        try:
+            result = self._launch_attack_impl(
+                attack_types, game_state,
+                custom_target_tuple, ignore_numbness, use_ability,
+            )
+            if is_outer:
+                while game_state.pending_attacks:
+                    req = game_state.pending_attacks.popleft()
+                    atk = req.attacker
+                    if atk.health <= 0:
+                        continue
+                    at = req.attack_types if req.attack_types is not None else atk.attack_types
+                    if not at:
+                        continue
+                    atk._launch_attack_impl(
+                        at, game_state,
+                        req.custom_target_tuple,
+                        req.ignore_numbness,
+                        req.use_ability,
+                    )
+                    atk.hit_cards.clear()
+            return result
+        finally:
+            if is_outer:
+                game_state._attack_draining = False
+
+    @final
+    def _launch_attack_impl(self, attack_types: str, game_state: GameState, custom_target_tuple: tuple[Card, ...] = tuple(), ignore_numbness: bool = False, use_ability: bool = True) -> bool:
         if not ignore_numbness and (self.numbness or not attack_types): return False
 
         allies: filter["Card"] = filter(lambda card: card.health > 0, game_state.get_player_cards(self.owner))
@@ -627,8 +671,9 @@ class Card(ABC):
 
         if target_tuple:
             game_state.game_statistics.add_hit(self.get_uid(), 1)
+            base_delay = game_state._attack_anim_cursor
             for i, target in enumerate(target_tuple):
-                atk_delay  = i * ANIM_LUNGE_STEP
+                atk_delay  = base_delay + i * ANIM_LUNGE_STEP
                 hurt_delay = atk_delay + ANIM_LUNGE_STEP * 0.55
                 game_state.pending_combat_events.append(
                     CombatEvent(
@@ -646,6 +691,8 @@ class Card(ABC):
                 if target.damage_calculate(self.damage, self, game_state, use_ability, anim_delay=hurt_delay):
                     for card in game_state.get_both_player_cards():
                         card.after_attack_broadcast(self, target, game_state)
+                
+                game_state._attack_anim_cursor = base_delay + len(target_tuple) * ANIM_LUNGE_STEP
             return True
         else:
             return False

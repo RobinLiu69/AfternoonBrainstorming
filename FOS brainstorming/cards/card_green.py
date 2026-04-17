@@ -16,12 +16,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-import random
-from typing import TYPE_CHECKING
-
 from core.game_state import GameState
 from core.setting import CARD_SETTING
-from core.game_screen import draw_text
 from cards.factory import CardFactory, spawn_card
 from cards.base import Card
 from utils.logger import LogCategory
@@ -55,7 +51,7 @@ class GreenCard(Card):
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} launch attack",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(),
                                                 target_position=target.get_position())
-                    target.attack(game_state)
+                    target.enqueue_attack(game_state)
                 case 4:
                     target.moving = True
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got moving",
@@ -93,7 +89,6 @@ class GreenCard(Card):
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} armor was destroyed",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 2:
-                    print("numbness")
                     target.numbness = True
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got numbness",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())

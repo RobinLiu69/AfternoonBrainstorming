@@ -178,6 +178,8 @@ def _rebuild_and_fast_forward(
         game_renderer.card_renderer.release(card.instance_id)
     game_renderer.dying_cards.clear()
 
+    game_state._attack_anim_cursor = 0.0
+
 
 def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed: float) -> None:
     x = game_screen.block_size * 0.3
@@ -286,8 +288,6 @@ def main(game_screen: GameScreen, replay_path: Path) -> str:
 
         if should_advance and not source.exhausted:
             action = source.next_action()
-            print(action)
-            print(game_state.player1.hand, "-------", game_state.player2.hand)
             if action is not None:
                 dispatcher._execute(action, game_state)
                 controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"

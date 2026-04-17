@@ -20,17 +20,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 import random as _py_random
+from collections import deque
 
 from core.setting import SETTING
+from core.attack_request import AttackRequest
 from core.game_statistics import GameStatistics
-from utils.logger import GameLogger
-
 from core.player import Player
 from core.combat_event import CombatEvent
 from core.neutral import Neutral
 from core.board_block import Board
 from core.board_config import BoardConfig
 from cards.base import Card
+from utils.logger import GameLogger
 
 
 if TYPE_CHECKING:
@@ -59,7 +60,12 @@ class GameState:
         
     coutdown_time = int(SETTING["countdown_time"])
     rng_seed: int = field(default_factory=lambda: _seed_random())
+    
     pending_combat_events: list[CombatEvent] = field(default_factory=list)
+    pending_attacks: deque[AttackRequest] = field(default_factory=deque)
+    _attack_draining: bool = False
+    _attack_anim_cursor: float = 0.0
+
     file_auto_delete: bool = False
 
     score: int = 0
