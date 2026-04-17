@@ -21,7 +21,6 @@ from typing import TYPE_CHECKING, Optional
 from core.game_action import GameAction, ActionResult
 from core.game_state import GameState
 
-
 if TYPE_CHECKING:
     from core.network_layer import LANServer, LANClient
     from rendering.game_renderer import GameRenderer

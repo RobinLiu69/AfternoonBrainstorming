@@ -36,19 +36,19 @@ def _get_base_path() -> str:
 
 FOLDER_PATH: str = _get_base_path()
 
-with open(f"{FOLDER_PATH}/setting/setting.json", "r", encoding="utf-8") as file:
+with open(f"{FOLDER_PATH}/config/setting.json", "r", encoding="utf-8") as file:
     SETTING: dict[str, str] = json.loads(file.read())
 
-with open(f"{FOLDER_PATH}/setting/card_setting.json", "r", encoding="utf-8") as file:
+with open(f"{FOLDER_PATH}/config/card_setting.json", "r", encoding="utf-8") as file:
     CARD_SETTING: CardSetting = json.loads(file.read())
 
-with open(f"{FOLDER_PATH}/setting/card_hints.json", "r", encoding="utf-8") as file:
+with open(f"{FOLDER_PATH}/config/card_hints.json", "r", encoding="utf-8") as file:
     CARDS_HINTS_DICTIONARY: dict[str, str] = json.loads(file.read())
 
-with open(f"{FOLDER_PATH}/setting/job_dictionary.json", "r", encoding="utf-8") as file:
+with open(f"{FOLDER_PATH}/config/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
-VERSION = "4.0.1.0"
+VERSION = "4.0.2.0"
 
 ANIM_LUNGE_STEP: float = 0.32
 COMBAT_ANIMATIONS_ENABLED = True

@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING
 
 from core.setting import WHITE
 
-
 if TYPE_CHECKING:
     from core.game_screen import GameScreen
     from core.board_config import BoardConfig

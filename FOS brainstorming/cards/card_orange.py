@@ -16,7 +16,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from typing import TYPE_CHECKING
 from core.game_state import GameState
 from core.setting import CARD_SETTING
 from cards.factory import CardFactory
@@ -47,7 +46,7 @@ class Adc(OrangeCard):
             return False
     
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        self.launch_attack(self.attack_types, game_state)
+        self.enqueue_attack(game_state)
         
 
 class Ap(OrangeCard):

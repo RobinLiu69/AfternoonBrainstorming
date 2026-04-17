@@ -63,7 +63,6 @@ class Adc(BlueCard):
         super().__init__(owner=owner, job_and_color="ADCB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
-        print("ADCB killed", victim.get_uid(), victim.get_position(), victim.instance_id)
         game_state.players_token[self.owner] += card_settings["ADC"]["token_gets"]
         self.got_token(game_state)
         return True
@@ -72,9 +71,7 @@ class Adc(BlueCard):
         if self.numbness:
             self.numbness = False
         else:
-            print("attack")
-            self.attack(game_state)
-            self.hit_cards.clear()
+            self.enqueue_attack(game_state)
         return True
 
 
