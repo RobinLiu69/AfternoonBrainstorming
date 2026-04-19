@@ -20,7 +20,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
     from rendering.game_renderer import GameRenderer
     from core.game_state import GameState

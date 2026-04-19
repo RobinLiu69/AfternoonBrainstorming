@@ -22,7 +22,6 @@ import sys
 import json
 from typing import cast, TYPE_CHECKING
 
-
 if TYPE_CHECKING:
     from utils.type_hint import JobDictionary, CardSetting
 

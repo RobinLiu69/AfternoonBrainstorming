@@ -16,6 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+from __future__ import annotations
 from typing import TYPE_CHECKING, Generator
 
 from core.setting import COMBAT_ANIMATIONS_ENABLED
@@ -25,7 +26,6 @@ from rendering.card_renderer import CardRenderer
 from rendering.board_renderer import BoardRenderer
 from rendering.ui_renderer import UIRenderer
 from rendering.combat_animator import CombatAnimator, _Anim
-
 
 if TYPE_CHECKING:
     from cards.base import Card

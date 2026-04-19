@@ -21,7 +21,6 @@ import pygame
 from core.board_block import Board
 from core.game_screen import GameScreen
 from core.game_state import GameState
-from core.setting import WHITE
 
 
 class BoardRenderer:

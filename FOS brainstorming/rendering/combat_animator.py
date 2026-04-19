@@ -17,7 +17,6 @@
 # -----------------------------------------------------------------
 
 from __future__ import annotations
-
 import math
 import random
 from dataclasses import dataclass
@@ -29,6 +28,7 @@ from core.combat_event import CombatEvent
 
 if TYPE_CHECKING:
     from core.game_screen import GameScreen
+
 
 _LUNGE_DURATION = 0.32   # seconds for attacker lunge
 _HURT_DURATION = 0.38   # seconds for red flash + shake

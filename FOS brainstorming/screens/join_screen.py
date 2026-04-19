@@ -16,7 +16,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-# screens/join_screen.py
 import pygame
 
 from core.setting import WHITE

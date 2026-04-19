@@ -19,9 +19,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
-    from core.board_block import Board
     from core.game_state import GameState
     from cards.base import Card
 

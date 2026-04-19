@@ -33,7 +33,6 @@ from core.board_config import BoardConfig
 from cards.base import Card
 from utils.logger import GameLogger
 
-
 if TYPE_CHECKING:
     from rendering.game_renderer import GameRenderer
 

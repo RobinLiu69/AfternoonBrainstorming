@@ -16,6 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 from typing import Optional, Sequence, cast, TYPE_CHECKING
@@ -26,7 +27,6 @@ from core.game_screen import GameScreen, draw_text
 from core.setting import BLACK, WHITE, RED, BLUE, GREEN, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
 from cards.base import Card, COLOR_TAG_LIST
 from cards.card_cyan import CyanCard
-
 
 if TYPE_CHECKING:
     from core.game_state import GameState

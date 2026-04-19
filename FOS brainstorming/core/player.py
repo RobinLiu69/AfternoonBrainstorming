@@ -16,18 +16,17 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from dataclasses import dataclass, asdict
+from __future__ import annotations
+from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
-import random
 import time
 
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen
 from core.UI import AttackCountDisplay, TokenDisplay, HighLightBox
-from core.setting import WHITE, BLUE, RED
+from core.setting import BLUE, RED
 from core.game_statistics import StatType
 from cards.base import Card
 from cards.factory import spawn_card
-
 
 if TYPE_CHECKING:
     from rendering.game_renderer import GameRenderer

@@ -16,9 +16,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-import random
-from typing import TYPE_CHECKING
-
 from core.game_state import GameState
 from core.game_statistics import StatType
 from core.setting import CARD_SETTING

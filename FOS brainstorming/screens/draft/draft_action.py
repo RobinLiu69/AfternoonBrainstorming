@@ -25,7 +25,6 @@ import pygame
 
 from utils.controls import key_pressed
 
-
 if TYPE_CHECKING:
     from screens.draft.exhibit_registry import ExhibitRegistry
 
