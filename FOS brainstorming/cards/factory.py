@@ -17,22 +17,33 @@
 # -----------------------------------------------------------------
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar, overload
 
 if TYPE_CHECKING:
     from core.game_state import GameState
     from cards.base import Card
 
+_CardType = TypeVar("_CardType", bound="Card")
+
 
 class CardFactory:
     _registry = {}
-    
+
     @classmethod
     def register(cls, card_name: str, card_class: type) -> None:
         cls._registry[card_name] = card_class
-    
+
+    @overload
     @classmethod
-    def create(cls, card_name: str, owner: str, board_x: int, board_y: int, **kwargs) -> Card:
+    def create(cls, card_name: type[_CardType], owner: str, board_x: int, board_y: int, **kwargs) -> _CardType: ...
+    @overload
+    @classmethod
+    def create(cls, card_name: str, owner: str, board_x: int, board_y: int, **kwargs) -> "Card": ...
+
+    @classmethod
+    def create(cls, card_name, owner: str, board_x: int, board_y: int, **kwargs):
+        if isinstance(card_name, type):
+            return card_name(owner, board_x, board_y, **kwargs)
         card_class = cls._registry.get(card_name)
         if card_class:
             return card_class(owner, board_x, board_y, **kwargs)

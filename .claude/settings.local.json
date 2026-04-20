@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(py -m pytest tests/ -v)",
+      "Bash(py -m pip install pytest --quiet)",
+      "Bash(python -)",
+      "Bash(python3 -)",
+      "Bash(where py *)",
+      "Bash(where python3.11)",
+      "Bash(where python3.10)",
+      "Bash(py -)"
+    ]
+  }
+}
