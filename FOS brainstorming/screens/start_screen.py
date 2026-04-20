@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------
 # Afternoon Brainstorming
-# Copyright (C) 2024 Robin Liu, Angus Yu / FOS Studio
+# Copyright (C) 2024 Robin Liu, Angus Yu / Five O'clock Shadow Studio
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ def main(game_screen: GameScreen) -> str:
         draw_text("Afternoon Brainstorming", game_screen.title_text_font, WHITE,
                 game_screen.display_width/2 - game_screen.block_size*2.3,
                 game_screen.display_height/2 - game_screen.block_size*2.1, game_screen.surface)
-        draw_text("by FOS Studio", game_screen.mid_text_font, WHITE,
+        draw_text("by Five O'clock Shadow Studio", game_screen.mid_text_font, WHITE,
                 game_screen.display_width/2 + game_screen.block_size*1.2,
                 game_screen.display_height/2 - game_screen.block_size*1.6, game_screen.surface)
 

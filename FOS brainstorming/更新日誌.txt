@@ -1412,7 +1412,7 @@ debug:
     授權從 Apache 2.0 更換為 GPL v3，自 4.0.0.7 起生效
     舊版本仍可依 Apache 2.0 條款使用
 更正:
-    FOC Studio -> FOS Studio(Five O'clock Shadow Studio)
+    FOC Studio -> Five O'clock Shadow Studio(Five O'clock Shadow Studio)
 =======================
 2026/04/17-04:37-4.0.1.0
 編寫者 Robin
