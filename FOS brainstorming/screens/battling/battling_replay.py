@@ -290,6 +290,8 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
 
         if should_advance and not source.exhausted:
             action = source.next_action()
+            while action is not None and action.action_type == "toggle_hint":
+                action = source.next_action()
             if action is not None:
                 dispatcher._execute(action, game_state)
                 controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
@@ -307,4 +309,9 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
 
         pygame.display.update()
 
-    return game_state
+
+    action = source.next_action()
+    if action is None:
+        return game_state
+    else:
+        return None
