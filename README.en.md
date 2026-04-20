@@ -311,6 +311,6 @@ See [LICENSE.txt](./LICENSE.txt) for the full license text.
 # External Links
 [Rules on Bahamut](https://home.gamer.com.tw/artwork.php?sn=5702820)
 > [!CAUTION]
-> The rules on that page take precedence!
+> The rules on GitHub page take precedence!
 
 [Godot Version](https://github.com/AaronCheng1996/AfternoonBrainstorming_godot)
