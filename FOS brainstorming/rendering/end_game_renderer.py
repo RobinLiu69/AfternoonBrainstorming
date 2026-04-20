@@ -31,48 +31,48 @@ def display_raw_data(display_player1_data: list[list[int]], display_player2_data
 
     for i in range(len(KEYS_TO_CHECK)):
         draw_text(KETYS_TO_DISPLAY[i], game_screen.mid_text_font, WHITE,
-                  game_screen.display_width/2+game_screen.block_size*(-3.3+0.75*i),
-                  game_screen.display_height/2+game_screen.block_size*(-2.25), game_screen.surface)
+                  game_screen.display_width/2 + game_screen.block_size*(-3.3+0.75*i),
+                  game_screen.display_height/2 + game_screen.block_size*(-2.25), game_screen.surface)
     
     draw_text("Player1:", game_screen.mid_text_font, WHITE,
-              game_screen.display_width/2+game_screen.block_size*(-4.7),
-              game_screen.display_height/2+game_screen.block_size*(-2.1+0.2*len(display_player1_data)/2), game_screen.surface)
+              game_screen.display_width/2 + game_screen.block_size*(-4.7),
+              game_screen.display_height/2 + game_screen.block_size*(-2.1+0.2*len(display_player1_data)/2), game_screen.surface)
     
     for i in range(len(display_player1_data)):
         for j in range(len(display_player1_data[i])):
             draw_text(str(display_player1_data[i][j]), game_screen.mid_text_font, WHITE,
-                      game_screen.display_width/2+game_screen.block_size*(-3.2+0.75*j),
-                      game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
+                      game_screen.display_width/2 + game_screen.block_size*(-3.2+0.75*j),
+                      game_screen.display_height/2 + game_screen.block_size*(-2+0.2*i), game_screen.surface)
     
         draw_text(display_player1_name[i], game_screen.mid_text_font, WHITE,
-                  game_screen.display_width/2-game_screen.block_size*4,
-                  game_screen.display_height/2+game_screen.block_size*(-2+0.2*i), game_screen.surface)
+                  game_screen.display_width/2 - game_screen.block_size*4,
+                  game_screen.display_height/2 + game_screen.block_size*(-2+0.2*i), game_screen.surface)
     
     draw_text("Player2:", game_screen.mid_text_font, WHITE,
-              game_screen.display_width/2+game_screen.block_size*(-4.7),
-              game_screen.display_height/2+game_screen.block_size*(0.15+0.2*len(display_player2_data)/2), game_screen.surface)
+              game_screen.display_width/2 + game_screen.block_size*(-4.7),
+              game_screen.display_height/2 + game_screen.block_size*(0.15+0.2*len(display_player2_data)/2), game_screen.surface)
     
     for i in range(len(display_player2_data)):
         for j in range(len(display_player2_data[i])):
             draw_text(str(display_player2_data[i][j]), game_screen.mid_text_font, WHITE,
-                      game_screen.display_width/2+game_screen.block_size*(-3.3+0.75*j), 
-                      game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
+                      game_screen.display_width/2 + game_screen.block_size*(-3.3+0.75*j), 
+                      game_screen.display_height/2 + game_screen.block_size*(0.25+0.2*i), game_screen.surface)
     
         draw_text(display_player2_name[i], game_screen.mid_text_font, WHITE,
-                  game_screen.display_width/2-game_screen.block_size*4,
-                  game_screen.display_height/2+game_screen.block_size*(0.25+0.2*i), game_screen.surface)
+                  game_screen.display_width/2 - game_screen.block_size*4,
+                  game_screen.display_height/2 + game_screen.block_size*(0.25+0.2*i), game_screen.surface)
 
 
 def display_end_game_data(winner: str, game_state: GameState, game_screen: GameScreen):
     draw_text(f"Winner: {winner.capitalize()}!!", game_screen.title_text_font,
-              WHITE, game_screen.display_width/2-game_screen.block_size*1.5,
-              game_screen.display_height/2-game_screen.block_size*2, game_screen.surface)
+              WHITE, game_screen.display_width/2 - game_screen.block_size*1.5,
+              game_screen.display_height/2 - game_screen.block_size*2, game_screen.surface)
     draw_text(f"Total Turns: {len(game_state.game_statistics.score_history)}",
-              game_screen.big_text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1,
-              game_screen.display_height/2-game_screen.block_size*0.4, game_screen.surface)
+              game_screen.big_text_font, WHITE, game_screen.display_width/2 - game_screen.block_size*3.75/1.1,
+              game_screen.display_height/2 - game_screen.block_size*0.4, game_screen.surface)
     draw_text("Player1 Timer: "+game_state.player_timer["player1"]+",   Player2 Timer: "+game_state.player_timer["player2"],
-              game_screen.text_font, WHITE, game_screen.display_width/2-game_screen.block_size*3.75/1.1,
-              game_screen.display_height/2-game_screen.block_size*0.2, game_screen.surface)
+              game_screen.text_font, WHITE, game_screen.display_width/2 - game_screen.block_size*3.75/1.1,
+              game_screen.display_height/2 - game_screen.block_size*0.2, game_screen.surface)
 
 
 class EndGameRenderer:

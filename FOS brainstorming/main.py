@@ -174,7 +174,10 @@ def main() -> None:
                 replay_path = replay_select.main(game_screen)
                 if replay_path is None:
                     continue
-                battling_replay.main(game_screen, replay_path)
+                game_state = battling_replay.main(game_screen, replay_path)
+
+                if game_state:
+                    _finalize_battle(game_state, game_screen, "player1" if game_state.score < 0 else "player2")
                 continue
             case _:
                 return

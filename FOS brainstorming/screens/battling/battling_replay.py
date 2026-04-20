@@ -17,11 +17,13 @@
 # -----------------------------------------------------------------
 
 from pathlib import Path
+from typing import Optional
 
 import pygame
 
 from core.setting import WHITE, RED, VERSION
 from core.game_state import GameState
+from core.game_statistics import GameStatistics
 from core.game_screen import GameScreen, draw_text, to_board_x, to_board_y
 from core.player import Player
 from core.neutral import Neutral
@@ -137,6 +139,8 @@ def _rebuild_and_fast_forward(
     game_state.number_of_cudes = {"player1": 0, "player2": 0}
     game_state.number_of_heals = {"player1": 0, "player2": 0}
 
+    game_state.game_statistics =  GameStatistics()
+
     game_state.score = 0
     game_state.turn_number = 0
 
@@ -201,7 +205,7 @@ def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed
     draw_text(hint, game_screen.mid_text_font, WHITE, x, y_bottom, game_screen.surface)
 
 
-def main(game_screen: GameScreen, replay_path: Path) -> str:
+def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
     from cards.base import reset_instance_counter
     reset_instance_counter()
 
@@ -209,11 +213,11 @@ def main(game_screen: GameScreen, replay_path: Path) -> str:
         source = ReplaySource(replay_path)
     except FileNotFoundError as e:
         print(f"[Replay] {e}")
-        return "end"
+        return None
 
     if source.total_actions == 0:
         print(f"[Replay] {replay_path.name} contains no actions — nothing to replay")
-        return "end"
+        return None
 
     game_state = _build_replay_game_state(source)
     game_state.board_config = BoardConfig()
@@ -303,4 +307,4 @@ def main(game_screen: GameScreen, replay_path: Path) -> str:
 
         pygame.display.update()
 
-    return "end"
+    return game_state

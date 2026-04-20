@@ -23,7 +23,7 @@ import pygame
 from core.game_screen import GameScreen, draw_text
 from core.draft_state import DraftState
 from core.setting import WHITE
-from core.UI import HintBox
+from core.card_hint import HintBox
 from rendering.board_renderer import BoardRenderer
 from rendering.card_renderer import CardRenderer
 from screens.draft.exhibit_registry import ExhibitRegistry
@@ -33,7 +33,7 @@ class DraftRenderer:
     def __init__(self, game_screen: GameScreen, exhibit_registry: ExhibitRegistry):
         self.game_screen = game_screen
         self.exhibit_registry = exhibit_registry
-        self._hint_box = HintBox(width=int(game_screen.block_size * 2), height=int(game_screen.block_size))
+        self._hint_box = HintBox(width=int(game_screen.block_size*3), height=int(game_screen.block_size))
         self.card_renderer = CardRenderer(game_screen)
         self.board_renderer = BoardRenderer(game_screen)
 
@@ -62,7 +62,7 @@ class DraftRenderer:
         offset_y = 1 if owner == "player1" else 1.5
         draw_text(f"{"P1" if owner == "player1" else "P2"}Deck:",
                   self.game_screen.text_font, WHITE, self.game_screen.display_width//16*2,
-                  self.game_screen.display_height-(self.game_screen.display_height//5/offset_y),
+                  self.game_screen.display_height - (self.game_screen.display_height//5/offset_y),
                   self.game_screen.surface)
         
         for i, card in enumerate(draft_state.get_deck(owner)):

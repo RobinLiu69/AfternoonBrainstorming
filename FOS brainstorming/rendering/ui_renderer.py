@@ -22,7 +22,8 @@ from typing import TYPE_CHECKING
 from core.game_state import GameState
 from core.setting import WHITE, GREEN, DARKGREEN, CYAN
 from core.game_screen import GameScreen, draw_text
-from core.UI import ScoreDisplay, AttackCountDisplay, TokenDisplay, HintBox
+from core.UI import ScoreDisplay, AttackCountDisplay, TokenDisplay
+from core.card_hint import HintBox
 from cards.base import Card
 
 
@@ -57,7 +58,7 @@ class UIRenderer:
             radius=int(game_screen.block_size*0.1)
         )
         self._hint_box = HintBox(
-            width=int(game_screen.block_size*2),
+            width=int(game_screen.block_size*3),
             height=int(game_screen.block_size)
         )
 
