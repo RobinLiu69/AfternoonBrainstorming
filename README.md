@@ -308,6 +308,6 @@ See [LICENSE.txt](./LICENSE.txt) for the full license text.
 # 外部連結
 [巴哈規則](https://home.gamer.com.tw/artwork.php?sn=5702820)
 > [!CAUTION]
-> 以這裡的規則為主!!!!
+> 以Github上的規則為主!!!!
 
 [Godot Version](https://github.com/AaronCheng1996/AfternoonBrainstorming_godot)
