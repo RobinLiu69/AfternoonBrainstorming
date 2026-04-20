@@ -220,7 +220,7 @@ The second player starts their turn with four cards in hand and one attack oppor
 ## Cyan Faction (Pirate Faction)
 
 - **Triangle (ADC) - 4/1 (6) - Large Cross** / Plunders 2$ after dealing damage / Double strike (+1/+2).
-- **Circle (AP) - 3/1 (6) - Nearest Target** / Attack includes paralysis and plunders 3$; when placed, attacks the nearest single target twice (ignoring paralysis) / Placement attacks are redirected to be performed by a random friendly unit, and attackable units target the original unit's nearest enemy (preferring units other than itself) (+2/+2).
+- **Circle (AP) - 3/1 (6) - Nearest Target** / Attacks paralyze the target and plunder 3$. On placement, attacks the nearest target 2 times (ignoring paralysis). / The 2 placement attacks are delegated: each one is performed by a random eligible ally — a friendly unit whose attack pattern contains `nearest` or `farthest` (i.e. AP, APT, or SP), other than itself and not paralyzed. The chosen ally uses its own attack pattern, but the target is forced to be AP's nearest enemy. If no eligible ally exists, AP performs the attack itself (+2/+2).
 - **Square (TANK) - 9/1 (4) - Small Cross** / Gains 2$ when attacked / On its first attack, takes no damage (and does not trigger the enemy's effects) (+2/+0).
 - **Trapezoid (HF) - 7/1 (6) - Nine Grid** / Plunders 2$ after dealing damage / Stays one extra turn after dying with +2 attack (+2/+1).
 - **Double Diamond (LF) - 5/2 (4) - Small Cross** / Plunders 2$ after dealing damage / Gains a random attack pattern at the start of each turn (+2/+2).
@@ -311,6 +311,6 @@ See [LICENSE.txt](./LICENSE.txt) for the full license text.
 # External Links
 [Rules on Bahamut](https://home.gamer.com.tw/artwork.php?sn=5702820)
 > [!CAUTION]
-> The rules on GitHub page take precedence!
+> The rules in this README take precedence!
 
 [Godot Version](https://github.com/AaronCheng1996/AfternoonBrainstorming_godot)
