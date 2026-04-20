@@ -16,12 +16,10 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from typing import TYPE_CHECKING
-
 from core.game_state import GameState
 from core.setting import CARD_SETTING
 from cards.factory import CardFactory
-from cards.base import Card, CardRenderData
+from cards.base import Card
 
 
 card_settings = CARD_SETTING["White"]

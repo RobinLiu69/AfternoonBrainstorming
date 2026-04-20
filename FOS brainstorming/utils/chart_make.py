@@ -32,6 +32,7 @@ import numpy as np
 
 from utils.type_hint import JobDictionary
 
+
 def _get_base() -> str:
     if getattr(sys, 'frozen', False):
         return os.path.dirname(sys.executable)

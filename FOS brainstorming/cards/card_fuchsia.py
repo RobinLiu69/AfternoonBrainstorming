@@ -16,6 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+from __future__ import annotations
 import math
 from typing import Callable, Iterable, Optional, TYPE_CHECKING
 
@@ -24,7 +25,6 @@ from core.game_state import GameState
 from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card, most_frequent_elements
-
 
 if TYPE_CHECKING:
     from core.game_state import GameState

@@ -26,7 +26,6 @@ from core.attack_request import AttackRequest
 from core.setting import JOB_DICTIONARY, ANIM_LUNGE_STEP
 from core.combat_event import CombatEvent
 
-
 if TYPE_CHECKING:
     from core.game_state import GameState
 

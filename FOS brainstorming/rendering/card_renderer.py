@@ -18,7 +18,6 @@
 
 import pygame
 
-from core.setting import RED
 from cards.base import CardRenderData
 from rendering.sprite_registry import SpriteRegistry
 from core.game_screen import GameScreen, draw_text

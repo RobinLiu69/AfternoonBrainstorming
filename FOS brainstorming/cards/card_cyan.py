@@ -16,13 +16,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-import random
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
 from core.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
-
 
 if TYPE_CHECKING:
     from core.game_state import GameState
