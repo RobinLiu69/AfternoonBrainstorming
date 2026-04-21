@@ -107,11 +107,8 @@ class Player:
         game_state.number_of_attacks[self.name] += 1
         for card in self.on_board:
             game_state.game_statistics.increment(StatType.ROUNDS_SURVIVED, f"{card.owner}_{card.job_and_color}", 1)
-            if self.name == "player1":
-                card.start_of_the_turn(game_state)
-            else:
-                card.start_of_the_turn(game_state)
-
+            card.refresh(game_state)
+    
     def turn_end(self, game_state: GameState) -> None:
         self.selected_card_index = -1
         self.hand = list(filter(lambda card: card != "MOVEO", self.hand))
@@ -120,7 +117,7 @@ class Player:
         game_state.number_of_heals[self.name] = 0
         
         for card in self.on_board:
-            card.end_of_the_turn(game_state)
+            card.settle(game_state)
     
     def attack(self, board_x: int, board_y: int, game_state: GameState) -> None:
         if game_state.number_of_attacks[self.name] > 0:

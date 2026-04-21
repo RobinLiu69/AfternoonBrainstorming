@@ -20,6 +20,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from core.setting import CARD_SETTING
+from core.combat_event import CombatEvent
 from cards.factory import CardFactory
 from cards.base import Card
 
@@ -89,7 +90,7 @@ class Hf(DarkGreenCard):
         self.heal(1, game_state)
         return True
     
-    def start_turn(self, game_state: GameState) -> int:
+    def on_refresh(self, game_state: GameState) -> int:
         self.damage_calculate(2, self, game_state, False)
         self.engraved_totem(card_settings["HF"]["engraved_totem"], game_state)
         return 0
@@ -120,6 +121,9 @@ class Ass(DarkGreenCard):
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
         self.health = 0
+        game_state.pending_combat_events.append(
+            CombatEvent(kind="hurt", board_x=self.board_x, board_y=self.board_y, post_health=0)
+        )
         self.engraved_totem(card_settings["ASS"]["engraved_totem"], game_state)
         return True
 

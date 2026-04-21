@@ -18,6 +18,7 @@
 
 from core.game_state import GameState
 from core.setting import CARD_SETTING
+from core.combat_event import CombatEvent
 from cards.factory import CardFactory, spawn_card
 from cards.base import Card
 from utils.logger import LogCategory
@@ -94,6 +95,9 @@ class GreenCard(Card):
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 3:
                     target.health //= 2
+                    game_state.pending_combat_events.append(
+                        CombatEvent(kind="hurt", board_x=target.board_x, board_y=target.board_y, post_health=target.health)
+                    )
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health halved",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 4:
@@ -101,8 +105,11 @@ class GreenCard(Card):
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} damage halved",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 5:
-                    if target.health >= 2:                
+                    if target.health >= 2:
                         target.health -= 2
+                        game_state.pending_combat_events.append(
+                            CombatEvent(kind="hurt", board_x=target.board_x, board_y=target.board_y, post_health=target.health)
+                        )
                         game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health reduced by 2",
                                                     LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                     else:
@@ -131,7 +138,7 @@ class LuckyBlock(GreenCard):
             card.armor += 1
         return True
 
-    def end_turn(self, clear_numbness: bool=True) -> int:
+    def on_settle(self, clear_numbness: bool=True) -> int:
         if self.numbness and clear_numbness:
             self.numbness = False
             return 0
@@ -243,7 +250,7 @@ class Apt(GreenCard):
     def attack(self, game_state: GameState) -> bool:
         return False
 
-    def start_turn(self, game_state: GameState) -> int:
+    def on_refresh(self, game_state: GameState) -> int:
         for board in game_state.board_dict.values():
             if ((board.board_x == self.board_x-1 and board.board_y == self.board_y) or
                 (board.board_x == self.board_x+1 and board.board_y == self.board_y) or

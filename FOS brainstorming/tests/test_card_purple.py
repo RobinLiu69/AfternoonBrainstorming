@@ -83,7 +83,7 @@ class TestPurpleHf:
         place_card(gs, RedAdc, "player2", 2, 0)
 
         before = gs.number_of_attacks["player1"]
-        hf.start_turn(gs)
+        hf.on_refresh(gs)
         assert gs.number_of_attacks["player1"] == before + 1
 
     def test_start_turn_no_bonus_when_fewer_than_three_enemies(self) -> None:
@@ -93,7 +93,7 @@ class TestPurpleHf:
         place_card(gs, RedAdc, "player2", 1, 0)
 
         before = gs.number_of_attacks["player1"]
-        hf.start_turn(gs)
+        hf.on_refresh(gs)
         assert gs.number_of_attacks["player1"] == before
 
 

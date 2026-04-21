@@ -60,7 +60,7 @@ class Ap(OrangeCard):
         target.numbness = True
         return True
     
-    def start_turn(self, game_state: GameState) -> int:
+    def on_refresh(self, game_state: GameState) -> int:
         game_state.get_player(self.owner).hand.append("MOVEO")
         return 0
 
@@ -99,7 +99,7 @@ class Hf(OrangeCard):
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
         return value + self.extra_damage
     
-    def end_turn(self, clear_numbness: bool=True) -> int:
+    def on_settle(self, clear_numbness: bool=True) -> int:
         if clear_numbness:
             self.extra_damage = 0
             self.anger = False
@@ -148,7 +148,7 @@ class Ass(OrangeCard):
             self.anger = False
         return True
     
-    def end_turn(self, clear_numbness: bool=True) -> int:
+    def on_settle(self, clear_numbness: bool=True) -> int:
         if clear_numbness:
             self.anger = False
         if self.numbness:

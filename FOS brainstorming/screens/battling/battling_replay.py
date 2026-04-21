@@ -35,9 +35,9 @@ from rendering.game_renderer import GameRenderer
 from utils.logger import GameLogger
 
 
-FRAMES_PER_ACTION: int = 30
 MIN_SPEED: float = 0.125
 MAX_SPEED: float = 8.0
+_ACTION_HOLD: float = 0.4  # minimum seconds to linger after each action (at 1x speed)
 
 
 def _build_replay_game_state(source: ReplaySource) -> GameState:
@@ -236,8 +236,8 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
 
     paused: bool = True
     speed: float = 1.0
-    frame_accumulator: float = 0.0
     step_once: bool = False
+    action_hold_remaining: float = 0.0
     hint_on: bool = False
     controller: str = "player1"
 
@@ -267,7 +267,6 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                         game_renderer, dispatcher, 0,
                     )
                     paused = True
-                    frame_accumulator = 0.0
                 elif event.key == pygame.K_ESCAPE:
                     running = False
                 elif event.key == pygame.K_f:
@@ -278,14 +277,14 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                     game_renderer.combat_animator.enabled = new_val
                     _core_setting.COMBAT_ANIMATIONS_ENABLED = new_val
 
+        action_hold_remaining = max(0.0, action_hold_remaining - dt * speed)
+
         should_advance: bool = False
         if step_once:
             should_advance = True
             step_once = False
         elif not paused and not source.exhausted:
-            frame_accumulator += speed
-            if frame_accumulator >= FRAMES_PER_ACTION:
-                frame_accumulator = 0.0
+            if not game_renderer.combat_animator.is_animating() and action_hold_remaining <= 0.0:
                 should_advance = True
 
         if should_advance and not source.exhausted:
@@ -295,6 +294,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
             if action is not None:
                 dispatcher._execute(action, game_state)
                 controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
+                action_hold_remaining = _ACTION_HOLD
             else:
                 paused = True
 
@@ -304,7 +304,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
         game_state.update()
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        game_renderer.render_frame(controller, controller, mouse_x, mouse_y, to_board_x(mouse_x, game_screen), to_board_y(mouse_y, game_screen), game_state, hint_on, dt)
+        game_renderer.render_frame(controller, controller, mouse_x, mouse_y, to_board_x(mouse_x, game_screen), to_board_y(mouse_y, game_screen), game_state, hint_on, dt * speed)
         _draw_hud(game_screen, source, paused, speed)
 
         pygame.display.update()

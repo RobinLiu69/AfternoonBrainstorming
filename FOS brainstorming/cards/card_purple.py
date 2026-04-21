@@ -87,7 +87,7 @@ class Hf(PurpleCard):
         
         super().__init__(owner=owner, job_and_color="HFP", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def start_turn(self, game_state: GameState) -> int:
+    def on_refresh(self, game_state: GameState) -> int:
         if self.attack_types:
             count = len(tuple(self.detection(self.attack_types, game_state.get_opponent_cards(self.owner), game_state)))
             game_state.number_of_attacks[self.owner] += count // 3

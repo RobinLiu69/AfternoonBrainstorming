@@ -171,7 +171,7 @@ class Shadow(FuchsiaCard):
         else:
             return False
     
-    def end_turn(self, clear_numbness: bool=True) -> int:
+    def on_settle(self, clear_numbness: bool=True) -> int:
         return 0
 
     def to_dict(self) -> dict:
@@ -250,7 +250,7 @@ class Ap(FuchsiaCard):
         for shadow in self.shadows:
             shadow.update(game_state)
 
-    def start_turn(self, game_state: GameState) -> int:
+    def on_refresh(self, game_state: GameState) -> int:
         for shadow in self.shadows:
             enemies = tuple(filter(lambda card: card.health > 0 and
                                    shadow.is_same_location(card),

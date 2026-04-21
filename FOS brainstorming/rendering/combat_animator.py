@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 _LUNGE_DURATION = 0.32   # seconds for attacker lunge
 _HURT_DURATION = 0.38   # seconds for red flash + shake
 _FLOAT_DURATION = 0.70   # seconds for floating damage number
+_DEATH_DURATION = 0.10  # seconds before death
 
 _LUNGE_DIST_FRAC = 0.33   # fraction of block_size to lunge toward target
 _SHAKE_PX = 4      # max pixel amplitude of hurt shake
@@ -64,6 +65,7 @@ _DURATIONS: dict[str, float] = {
     "hurt":   _HURT_DURATION,
     "float":  _FLOAT_DURATION,
     "move":   _MOVE_DURATION,
+    "death":  _DEATH_DURATION,
 }
 
 

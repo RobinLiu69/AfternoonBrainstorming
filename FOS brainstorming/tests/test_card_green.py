@@ -75,7 +75,7 @@ class TestGreenApt:
         apt = place_card(gs, Apt, "player1", 1, 1)
 
         before = len(gs.neutral.on_board)
-        apt.start_turn(gs)
+        apt.on_refresh(gs)
         assert len(gs.neutral.on_board) == before + 4
 
 

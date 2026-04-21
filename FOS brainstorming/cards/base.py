@@ -405,26 +405,23 @@ class Card(ABC):
                 self.been_killed_signal(attacker, game_state)
 
                 self.pending_death = True
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
+                )
             return True
         return False
     
     def heal(self, value: int, game_state: GameState) -> bool:
         if self.health+value <= self.max_health:
-            # if self.canATK == False:
-            #     self.canATK = True
             self.health += value
-            # game_screen.data.data_update("damage_taken_count", f"{self.owner}_{self.job_and_color}", 1)
+            self.display_health = self.health
             return True
         elif self.health+value > self.max_health:
-            # if self.canATK == False:
-            #     self.canATK = True
             self.health += value
             self.armor += (self.health-self.max_health) // 2
             self.health = self.max_health
+            self.display_health = self.health
             return True
-        # elif self.canATK == False:
-        #     self.canATK = True
-        #     return True
         return False
 
     def get_render_data(self) -> list[CardRenderData]:
@@ -696,23 +693,25 @@ class Card(ABC):
         else:
             return False
 
-    def start_of_the_turn(self, game_state: GameState) -> None:
+    @final
+    def refresh(self, game_state: GameState) -> None:
         self.moving = False
-        self.start_turn(game_state)
+        self.on_refresh(game_state)
     
-    def end_of_the_turn(self, game_state: GameState) -> None:
+    @final
+    def settle(self, game_state: GameState) -> None:
         self.moving = False
-        game_state.game_statistics.increment(StatType.SCORED, self.get_uid(), self.end_turn(False))
+        game_state.game_statistics.increment(StatType.SCORED, self.get_uid(), self.on_settle(False))
         match self.owner:
             case "player1":
-                game_state.score -= self.end_turn(True)
+                game_state.score -= self.on_settle(True)
             case "player2":
-                game_state.score += self.end_turn(True)
+                game_state.score += self.on_settle(True)
     
-    def start_turn(self, game_state: GameState) -> int:
+    def on_refresh(self, game_state: GameState) -> int:
         return 0
     
-    def end_turn(self, clear_numbness: bool=True) -> int:
+    def on_settle(self, clear_numbness: bool=True) -> int:
         if self.numbness:
             if clear_numbness:
                 self.numbness = False

@@ -50,7 +50,7 @@ class TestOrangeAp:
         ap = place_card(gs, Ap, "player1", 0, 0)
 
         before = len(gs.get_player("player1").hand)
-        ap.start_turn(gs)
+        ap.on_refresh(gs)
         assert len(gs.get_player("player1").hand) == before + 1
         assert gs.get_player("player1").hand[-1] == "MOVEO"
 

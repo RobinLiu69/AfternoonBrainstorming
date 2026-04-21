@@ -1451,3 +1451,16 @@ debug:
 新增:
     單元測試
 =======================
+2026/04/21-14:01-4.0.2.1-patch-3
+編寫者 Robin
+----------------
+新增:
+    replay時會等動畫播完再下一步
+優化:
+    start_of_the_turn -> refresh
+    end_of_the_turn -> settle
+    start_turn -> on_refresh
+    end_turn -> on_settle
+修正:
+    將所有直接修改單位血量的地方增加顯示更新(HFR...) 問題只存在於顯示端 背後邏輯無問題
+=======================

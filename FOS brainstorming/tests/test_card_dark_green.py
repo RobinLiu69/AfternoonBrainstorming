@@ -91,7 +91,7 @@ class TestDarkGreenHf:
 
         before_health = hf.health
         before_totem = gs.players_totem["player1"]
-        hf.start_turn(gs)
+        hf.on_refresh(gs)
         assert hf.health < before_health
         assert gs.players_totem["player1"] == before_totem + S["HF"]["engraved_totem"]
 

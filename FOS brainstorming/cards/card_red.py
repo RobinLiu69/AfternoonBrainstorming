@@ -91,10 +91,15 @@ class Hf(RedCard):
         super().__init__(owner=owner, job_and_color="HFR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, game_state: GameState) -> bool:
+        from core.combat_event import CombatEvent
         self.health -= card_settings["HF"]["health_decrease"]
         if self.health == 0:
             self.anger = True
-        
+
+        game_state.pending_combat_events.append(
+            CombatEvent(kind="hurt", board_x=self.board_x, board_y=self.board_y, post_health=self.health)
+        )
+
         self.damage += card_settings["HF"]["damage_increase"]
 
         for card in filter(lambda card: card.job_and_color == "SPR", game_state.get_player(self.owner).on_board):
@@ -107,7 +112,7 @@ class Hf(RedCard):
         else:
             return True
     
-    def end_turn(self, clear_numbness: bool=True) -> int:
+    def on_settle(self, clear_numbness: bool=True) -> int:
         if self.numbness:
             if clear_numbness and self.anger:
                 self.anger = False

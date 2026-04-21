@@ -188,7 +188,7 @@ class Hf(CyanCard):
         else:
             return True
     
-    def end_turn(self, clear_numbness: bool=True) -> int:
+    def on_settle(self, clear_numbness: bool=True) -> int:
         if clear_numbness:
             if self.anger:
                 self.count = 0
@@ -226,7 +226,7 @@ class Lf(CyanCard):
         self.get_coins(card_settings["LF"]["coin_gets"], game_state)
         return True
 
-    def start_turn(self, game_state: GameState) -> int:
+    def on_refresh(self, game_state: GameState) -> int:
         if self.upgrade:
             self.attack_types = game_state.rng.choice(["large_cross", "nearest", "small_cross", "small_cross small_x", "farthest"])
         return 0
@@ -272,7 +272,7 @@ class Apt(CyanCard):
         value -= game_state.players_coin[self.owner]//card_settings["APT"]["coin_per_damage_resistance"] if game_state.players_coin[self.owner]//card_settings["APT"]["coin_per_damage_resistance"] <= card_settings["APT"]["maximum_damage_resistance"] else card_settings["APT"]["maximum_damage_resistance"]
         return value if value > 0 else 0
     
-    def start_turn(self, game_state: GameState) -> int:
+    def on_refresh(self, game_state: GameState) -> int:
         if self.upgrade:
             self.get_coins(card_settings["APT"]["coin_gets"], game_state)
         return 0

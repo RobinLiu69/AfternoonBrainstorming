@@ -55,7 +55,7 @@ class TestWhiteSp:
         sp = place_card(gs, Sp, "player1", 0, 0)
         sp.numbness = False
 
-        result = sp.end_turn()
+        result = sp.on_settle()
         assert result == 1 + S["SP"]["extra_score"]
 
     def test_end_turn_returns_zero_when_numb(self) -> None:
@@ -63,5 +63,5 @@ class TestWhiteSp:
         sp = place_card(gs, Sp, "player1", 0, 0)
         sp.numbness = True
 
-        result = sp.end_turn()
+        result = sp.on_settle()
         assert result == 0
