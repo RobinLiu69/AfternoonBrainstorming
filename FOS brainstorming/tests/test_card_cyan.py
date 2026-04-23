@@ -114,6 +114,31 @@ class TestCyanHf:
 
         assert hf.can_be_killed(gs) is False
 
+    def test_upgrade_lethal_hit_does_not_set_pending_death(self) -> None:
+        gs = make_game_state()
+        hf = place_card(gs, Hf, "player1", 0, 0)
+        hf.upgrade = True
+        enemy = place_card(gs, RedAdc, "player2", 1, 0)
+        hf.health = enemy.damage  # exactly lethal
+
+        hf.damage_calculate(enemy.damage, enemy, gs)
+
+        assert hf.health == 0
+        assert hf.anger is True
+        assert hf.pending_death is False
+
+    def test_upgrade_lethal_hit_does_not_emit_death_event(self) -> None:
+        gs = make_game_state()
+        hf = place_card(gs, Hf, "player1", 0, 0)
+        hf.upgrade = True
+        enemy = place_card(gs, RedAdc, "player2", 1, 0)
+        hf.health = enemy.damage  # exactly lethal
+
+        hf.damage_calculate(enemy.damage, enemy, gs)
+
+        death_events = [e for e in gs.pending_combat_events if e.kind == "death"]
+        assert len(death_events) == 0
+
 
 class TestCyanLf:
     def test_ability_grants_coins(self) -> None:

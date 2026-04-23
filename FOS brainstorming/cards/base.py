@@ -397,17 +397,18 @@ class Card(ABC):
             self.been_attacked_signal(game_state)
             attacker.after_damage_calculated(self, value, game_state)
             if self.health == 0:
-                game_state.game_statistics.add_kill(attacker.get_uid())
-                game_state.game_statistics.add_death(self.get_uid())
                 attacker.killed(self, game_state)
                 attacker.killed_signal(self, game_state)
                 self.been_killed(attacker, game_state)
                 self.been_killed_signal(attacker, game_state)
 
-                self.pending_death = True
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
-                )
+                if self.can_be_killed(game_state):
+                    game_state.game_statistics.add_kill(attacker.get_uid())
+                    game_state.game_statistics.add_death(self.get_uid())
+                    self.pending_death = True
+                    game_state.pending_combat_events.append(
+                        CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
+                    )
             return True
         return False
     
