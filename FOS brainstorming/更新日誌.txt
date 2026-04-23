@@ -1412,7 +1412,7 @@ debug:
     授權從 Apache 2.0 更換為 GPL v3，自 4.0.0.7 起生效
     舊版本仍可依 Apache 2.0 條款使用
 更正:
-    FOC Studio -> FOS Studio(Five O'clock Shadow Studio)
+    FOC Studio -> Five O'clock Shadow Studio(Five O'clock Shadow Studio)
 =======================
 2026/04/17-04:37-4.0.1.0
 編寫者 Robin
@@ -1438,4 +1438,38 @@ debug:
     card_hint 現在使用動態寬度
 優化:
     將UI內的 card_hint 移出並獨立成一個檔案card_hint.py
+=======================
+2026/04/20-17:39-4.0.2.1-patch-1
+編寫者 Robin
+----------------
+優化:
+    replay 系統 現在會忽略toggle hint繼續執行下個動作了
+=======================
+2026/04/20-20:15-4.0.2.1-patch-2
+編寫者 Robin
+----------------
+新增:
+    單元測試
+=======================
+2026/04/21-14:01-4.0.2.1-patch-3
+編寫者 Robin
+----------------
+新增:
+    replay時會等動畫播完再下一步
+優化:
+    start_of_the_turn -> refresh
+    end_of_the_turn -> settle
+    start_turn -> on_refresh
+    end_turn -> on_settle
+修正:
+    將所有直接修改單位血量的地方增加顯示更新(HFR...) 問題只存在於顯示端 背後邏輯無問題
+=======================
+2026/04/23-18:21-4.0.2.2
+編寫者 Robin
+----------------
+新增:
+    單元測試用於測試下面兩個bug
+修正:
+    APC 升級後的進場效果會被麻痺吃掉
+    HFC 升級後的滯留場上 會因為顯示問題而消失
 =======================

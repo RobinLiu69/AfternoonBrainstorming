@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------
 # Afternoon Brainstorming
-# Copyright (C) 2024 Robin Liu, Angus Yu / FOS Studio
+# Copyright (C) 2024 Robin Liu, Angus Yu / Five O'clock Shadow Studio
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

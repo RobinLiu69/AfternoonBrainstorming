@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------
 # Afternoon Brainstorming
-# Copyright (C) 2024 Robin Liu, Angus Yu / FOS Studio
+# Copyright (C) 2024 Robin Liu, Angus Yu / Five O'clock Shadow Studio
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ with open(f"{FOLDER_PATH}/config/card_hints.json", "r", encoding="utf-8") as fil
 with open(f"{FOLDER_PATH}/config/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
-VERSION = "4.0.2.1"
+VERSION = "4.0.2.2"
 
 ANIM_LUNGE_STEP: float = 0.32
 COMBAT_ANIMATIONS_ENABLED = True

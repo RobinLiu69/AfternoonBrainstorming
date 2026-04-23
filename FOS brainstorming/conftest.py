@@ -16,17 +16,9 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from dataclasses import dataclass
-from typing import Literal, Optional
+# py -m pytest
 
-from core.draft_state import DraftState
+import sys
+from pathlib import Path
 
-
-ExitKind = Literal["quit", "finished", "scene_handoff"]
-
-
-@dataclass
-class DraftExitReason:
-    kind: ExitKind
-    draft_state: Optional[DraftState] = None
-    next_scene_state: Optional[dict] = None
+sys.path.insert(0, str(Path(__file__).parent))

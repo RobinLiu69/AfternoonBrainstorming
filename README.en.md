@@ -290,7 +290,7 @@ The second player starts their turn with four cards in hand and one attack oppor
 
 ## License
 
-Copyright (C) 2024 Robin Liu, Angus Yu / FOS Studio
+Copyright (C) 2024 Robin Liu, Angus Yu / Five O'clock Shadow Studio
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -305,7 +305,7 @@ for more details.
 
 See [LICENSE.txt](./LICENSE.txt) for the full license text.
 
-> **Note:** Game assets (images, fonts, sounds) are © 2024 Robin Liu / FOS Studio.
+> **Note:** Game assets (images, fonts, sounds) are © 2024 Robin Liu / Five O'clock Shadow Studio.
 > All rights reserved unless otherwise stated.
 
 # External Links

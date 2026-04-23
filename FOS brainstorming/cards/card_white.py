@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------
 # Afternoon Brainstorming
-# Copyright (C) 2024 Robin Liu, Angus Yu / FOS Studio
+# Copyright (C) 2024 Robin Liu, Angus Yu / Five O'clock Shadow Studio
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ class Cube(Card):
                          job_and_color="CUBE" if owner == "display" else "CUBE",
                          health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def end_turn(self, clear_numbness: bool=True) -> int:
+    def on_settle(self, clear_numbness: bool=True) -> int:
         if self.numbness and clear_numbness:
             self.numbness = False
             return 0
@@ -152,7 +152,7 @@ class Sp(WhiteCard):
         
         super().__init__(owner=owner, job_and_color="SPW", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def end_turn(self, clear_numbness: bool=True) -> int:
+    def on_settle(self, clear_numbness: bool=True) -> int:
         if self.numbness:
             if clear_numbness:
                 self.numbness = False

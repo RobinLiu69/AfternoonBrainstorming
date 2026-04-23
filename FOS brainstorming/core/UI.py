@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------
 # Afternoon Brainstorming
-# Copyright (C) 2024 Robin Liu, Angus Yu / FOS Studio
+# Copyright (C) 2024 Robin Liu, Angus Yu / Five O'clock Shadow Studio
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -153,11 +153,11 @@ class ScoreDisplay:
 
         score = 0
         for card in game_state.get_player_cards(controller):
-            score -= card.end_turn(False) if controller == "player1" else -card.end_turn(False)
+            score -= card.on_settle(False) if controller == "player1" else -card.on_settle(False)
         score_list.append(score_list[-1]+score)
         score = 0
         for card in game_state.get_opponent_cards(controller):
-            score -= card.end_turn(False) if controller == "player2" else -card.end_turn(False)
+            score -= card.on_settle(False) if controller == "player2" else -card.on_settle(False)
         score_list.append(score_list[-1]+score)
         
         for i in range(-10, 11):
