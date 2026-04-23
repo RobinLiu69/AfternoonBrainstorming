@@ -127,7 +127,8 @@ class LANServer:
             for conn in self._clients:
                 try:
                     _send_msg(conn, envelope)
-                except OSError:
+                except OSError as e:
+                    print(f"[LANServer] client dropped during broadcast: {e}")
                     dead.append(conn)
             for conn in dead:
                 self._clients.remove(conn)

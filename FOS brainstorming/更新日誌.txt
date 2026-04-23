@@ -1473,3 +1473,16 @@ debug:
     APC 升級後的進場效果會被麻痺吃掉
     HFC 升級後的滯留場上 會因為顯示問題而消失
 =======================
+2026/04/24-01:32-4.0.2.2-patch-1
+編寫者 Robin
+----------------
+修正:
+    number_of_cudes 錯字改為 number_of_cubes (game_state.py, player.py, battling_replay.py)
+    base.py _compute_shape_points 中重複的 case "CUBE" 分支
+    base.py damage_calculate 中無效的死碼 (空 pass 分支)
+    player.py play_card 和 spawn_cube 中多餘的 pass
+優化:
+    LANServer._broadcast_envelope 廣播失敗時附帶錯誤訊息輸出
+文件:
+    requirements.txt 補充版本號 (pygame==2.6.1, matplotlib==3.10.8, pytest>=8.0)
+=======================

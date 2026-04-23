@@ -112,7 +112,7 @@ class Player:
     def turn_end(self, game_state: GameState) -> None:
         self.selected_card_index = -1
         self.hand = list(filter(lambda card: card != "MOVEO", self.hand))
-        game_state.number_of_cudes[self.name] = 0
+        game_state.number_of_cubes[self.name] = 0
         game_state.number_of_movings[self.name] = 0
         game_state.number_of_heals[self.name] = 0
         
@@ -170,7 +170,7 @@ class Player:
                 game_state.number_of_movings[self.name] += 1
                 self.hand.pop(index)
             case "CUBES":
-                game_state.number_of_cudes[self.name] += 2
+                game_state.number_of_cubes[self.name] += 2
                 self.discard_pile.append(self.hand.pop(index))
             case _:
                 upgrade = False
@@ -190,7 +190,6 @@ class Player:
                             self.on_board, game_state, ):
                     self.hand.pop(index)
                     game_state.game_logger.log_card_played(self.name, card_name, (board_x, board_y))
-                pass
 
     def heal_card(self, board_x: int, board_y: int, game_state: GameState) -> None:
         game_state.game_logger.log_card_played(self.name, "HEAL", (board_x, board_y))
@@ -254,13 +253,12 @@ class Player:
             self.deck = deck[::-1] if from_end else deck
     
     def spawn_cube(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        if game_state.number_of_cudes[self.name] > 0:
+        if game_state.number_of_cubes[self.name] > 0:
             if spawn_card(board_x, board_y, "CUBE", "neutral", game_state.neutral.on_board, game_state):
                 game_state.game_logger.log_card_played(self.name, "CUBE", (board_x, board_y))
-                game_state.number_of_cudes[self.name] -= 1
+                game_state.number_of_cubes[self.name] -= 1
                 game_state.game_statistics.increment(StatType.CUBE_USE, self.name, 1)
-            pass
-    
+
     def timer_start(self, game_state: GameState) -> None:
         self.start_time = time.time()
         match game_state.timer_mode:

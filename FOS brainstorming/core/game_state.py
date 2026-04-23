@@ -79,7 +79,7 @@ class GameState:
     
     number_of_attacks: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
     number_of_movings: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
-    number_of_cudes: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
+    number_of_cubes: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
     number_of_heals: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
 
     def __post_init__(self) -> None:
@@ -142,7 +142,7 @@ class GameState:
             "card_to_draw": self.card_to_draw,
             "number_of_attacks": self.number_of_attacks,
             "number_of_movings": self.number_of_movings,
-            "number_of_cudes": self.number_of_cudes,
+            "number_of_cubes": self.number_of_cubes,
             "number_of_heals": self.number_of_heals,
             "rng_seed": self.rng_seed,
             "pending_combat_events": events_payload,
@@ -170,7 +170,7 @@ class GameState:
         self.card_to_draw = data["card_to_draw"]
         self.number_of_attacks = data["number_of_attacks"]
         self.number_of_movings = data["number_of_movings"]
-        self.number_of_cudes = data["number_of_cudes"]
+        self.number_of_cubes = data.get("number_of_cubes", data.get("number_of_cudes", {"player1": 0, "player2": 0}))
         self.number_of_heals = data["number_of_heals"]
 
         old_by_iid: dict = {}

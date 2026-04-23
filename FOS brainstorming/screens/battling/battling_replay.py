@@ -136,7 +136,7 @@ def _rebuild_and_fast_forward(
     
     game_state.number_of_attacks = {"player1": 0, "player2": 0}
     game_state.number_of_movings = {"player1": 0, "player2": 0}
-    game_state.number_of_cudes = {"player1": 0, "player2": 0}
+    game_state.number_of_cubes = {"player1": 0, "player2": 0}
     game_state.number_of_heals = {"player1": 0, "player2": 0}
 
     game_state.game_statistics =  GameStatistics()

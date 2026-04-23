@@ -233,8 +233,6 @@ class Card(ABC):
                 return ((0.25, 0.25), (0.25, 0.75), (0.75, 0.75), (0.75, 0.25))
             case "CUBE":
                 return ((0.45, 0.45), (0.45, 0.55), (0.55, 0.55), (0.55, 0.45))
-            case "CUBE":
-                return ((0.45, 0.45), (0.45, 0.55), (0.55, 0.55), (0.55, 0.45)) 
             case "LUCKYBLOCK":
                 return ((0.4, 0.4), (0.4, 0.6), (0.6, 0.6), (0.6, 0.4)) 
             case "MOVE":
@@ -348,10 +346,6 @@ class Card(ABC):
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
             game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
                                               self.get_uid(), self.get_position(), value)
-            if self.health >= value-self.armor:
-                pass
-            if self.health < value-self.armor:
-                pass
             overflow_value = -(self.armor-value)
             self.armor = 0
             self.health -= overflow_value
@@ -376,8 +370,6 @@ class Card(ABC):
                 attacker.after_damage_calculated(self, value, game_state)
             return True
         elif self.armor == 0:
-            if self.health >= value:
-                pass
             if self.health < value:
                 value = self.health
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
