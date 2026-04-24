@@ -51,7 +51,7 @@ class Player:
         self.time_minutes_and_seconds: str = "00:00"
         self.selected_card_index: int = -1
 
-    def _init_cards(self, game_state: GameState) -> None:
+    def initialize(self, game_state: GameState) -> None:
         match self.name:
             case "player1":
                 self.discard_pile = self.deck.copy()
@@ -60,12 +60,6 @@ class Player:
             case "player2":
                 self.discard_pile = self.deck.copy()
                 for _ in range(3): self.draw_card(game_state)
-
-    def initialize(self, game_state: GameState, game_screen: GameScreen) -> None:
-        self._init_cards(game_state)
-
-    def initialize_display(self, game_state: GameState, game_screen: GameScreen) -> None:
-        self.timer_start(game_state)
     
     def turn_start(self, game_state: GameState) -> None:
         game_state.game_logger.log_turn_start(self.name, game_state.turn_number)

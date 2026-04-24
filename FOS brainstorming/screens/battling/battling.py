@@ -117,14 +117,14 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
 
 
     if not is_client:
-        game_state.player1.initialize(game_state, game_screen)
-        game_state.player2.initialize(game_state, game_screen)
+        game_state.player1.initialize(game_state)
+        game_state.player2.initialize(game_state)
 
     if is_server and server:
         server.broadcast_scene("battling", game_state.to_dict())
- 
-    game_state.player1.initialize_display(game_state, game_screen)
-    game_state.player2.initialize_display(game_state, game_screen)
+
+    game_state.player1.timer_start(game_state)
+    game_state.player2.timer_start(game_state)
 
     controller: str = "player1"
     hint_on = False

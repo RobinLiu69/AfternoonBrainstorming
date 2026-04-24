@@ -85,11 +85,11 @@ def _build_replay_game_state(source: ReplaySource) -> GameState:
     return game_state
 
 
-def _initialize_players(game_state: GameState, game_screen: GameScreen) -> None:
-    game_state.player1.initialize(game_state, game_screen)
-    game_state.player2.initialize(game_state, game_screen)
-    game_state.player1.initialize_display(game_state, game_screen)
-    game_state.player2.initialize_display(game_state, game_screen)
+def _initialize_players(game_state: GameState) -> None:
+    game_state.player1.initialize(game_state)
+    game_state.player2.initialize(game_state)
+    game_state.player1.timer_start(game_state)
+    game_state.player2.timer_start(game_state)
 
 
 def _rebuild_and_fast_forward(
@@ -147,7 +147,7 @@ def _rebuild_and_fast_forward(
     game_state.rng = _py_random.Random(game_state.rng_seed)
 
     game_state.board_dict = initialize_board(game_screen, game_state.board_config)
-    _initialize_players(game_state, game_screen)
+    _initialize_players(game_state)
 
     game_state.player1.time_minutes_and_seconds = "--:--"
     game_state.player2.time_minutes_and_seconds = "--:--"
@@ -227,7 +227,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
     dispatcher = BattlingDispatcher(game_state=game_state, mode="local")
     dispatcher.attach_renderer(game_renderer)
 
-    _initialize_players(game_state, game_screen)
+    _initialize_players(game_state)
 
     game_state.player1.time_minutes_and_seconds = "--:--"
     game_state.player2.time_minutes_and_seconds = "--:--"

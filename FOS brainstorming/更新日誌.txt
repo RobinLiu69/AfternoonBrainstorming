@@ -1534,3 +1534,14 @@ debug:
     UIRenderer._render_one_hand 於符合條件時主動點亮 highlight.visable
     解釋: Player 應只持有純遊戲狀態 UI 座標與渲染物件屬於 rendering 層
 =======================
+2026/04/25-4.0.2.2-patch-6
+編寫者 Robin
+----------------
+優化:
+    Player.initialize 移除未使用的 game_screen 參數
+        原本只是單行委派 _init_cards 現直接收納邏輯
+    Player.initialize_display 整個函式刪除 其內容只有 timer_start
+        callers 直接呼叫 timer_start 更直白
+    battling.py / battling_replay.py 呼叫端同步更新
+    battling_replay._initialize_players 同步移除 game_screen 參數
+=======================
