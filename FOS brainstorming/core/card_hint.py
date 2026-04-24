@@ -25,7 +25,6 @@ import pygame
 from core.game_screen import GameScreen, draw_text
 from core.setting import BLACK, WHITE, RED, GREEN, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
 from cards.base import Card, COLOR_TAG_LIST
-from cards.card_cyan import CyanCard
 
 
 def get_job_and_color(card_type: str) -> tuple[str, tuple[int, int, int]]:
@@ -145,10 +144,9 @@ class HintBox:
                 pygame.draw.rect(self.surface, WHITE, (game_screen.block_size*0.05, game_screen.block_size*0.05,
                                                        game_screen.block_size*0.5, game_screen.block_size*0.5), 2)
                 job, color = get_job_and_color(card_type.split()[0])
-                if color == (0, 238, 238) and isinstance(card, CyanCard):
-                    if card.upgrade:
-                        card_type += " (+)"
-                        draw_text("(+)", game_screen.text_font, color, (game_screen.block_size*0.213), (game_screen.block_size*0.235), self.surface)
+                if color == (0, 238, 238) and getattr(card, "upgrade", False):
+                    card_type += " (+)"
+                    draw_text("(+)", game_screen.text_font, color, (game_screen.block_size*0.213), (game_screen.block_size*0.235), self.surface)
                 shape = get_job_shape(job, game_screen.block_size*0.7)
                 match job:
                     case "AP":

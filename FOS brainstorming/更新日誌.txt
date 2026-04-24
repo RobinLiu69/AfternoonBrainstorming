@@ -1510,3 +1510,11 @@ debug:
         改以 getattr(c, "shadows", ()) 收集嵌套影子卡
     解釋: core 層不該 runtime 依賴具體色系 這是反向依賴 重構後 cards/ 可獨立演化
 =======================
+2026/04/24-4.0.2.2-patch-4
+編寫者 Robin
+----------------
+優化:
+    core/card_hint.py 移除 from cards.card_cyan import CyanCard
+    HintBox.display 改用 getattr(card, "upgrade", False) 判斷是否顯示 (+) 升級標誌
+    解釋: isinstance(card, CyanCard) 是 core -> cards 具體型別的依賴 改 duck-typing 消除
+=======================
