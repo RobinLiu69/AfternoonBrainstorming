@@ -149,8 +149,6 @@ class GameState:
         }
 
     def apply_dict(self, data: dict, game_renderer: GameRenderer) -> None:
-        from cards.card_fuchsia import FuchsiaCard
-        
         raw_events = data.get("pending_combat_events", [])
 
         if raw_events and game_renderer is not None:
@@ -178,19 +176,17 @@ class GameState:
         for c in self.player2.on_board: old_by_iid[c.instance_id] = c
         for c in self.neutral.on_board: old_by_iid[c.instance_id] = c
         for c in list(old_by_iid.values()):
-            if isinstance(c, FuchsiaCard):
-                for shadow in c.shadows:
-                    old_by_iid[shadow.instance_id] = shadow
- 
+            for shadow in getattr(c, "shadows", ()):
+                old_by_iid[shadow.instance_id] = shadow
+
         all_cards_by_iid: dict = {}
         self.player1.apply_dict(data["player1"], old_by_iid, all_cards_by_iid, game_renderer)
         self.player2.apply_dict(data["player2"], old_by_iid, all_cards_by_iid, game_renderer)
         self.neutral.apply_dict(data["neutral"], old_by_iid, all_cards_by_iid, game_renderer)
 
         for card in list(all_cards_by_iid.values()):
-            if isinstance(card, FuchsiaCard):
-                for shadow in card.shadows:
-                    all_cards_by_iid[shadow.instance_id] = shadow
+            for shadow in getattr(card, "shadows", ()):
+                all_cards_by_iid[shadow.instance_id] = shadow
 
         for card in all_cards_by_iid.values():
             card.resolve_references(all_cards_by_iid)

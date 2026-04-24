@@ -1497,3 +1497,16 @@ debug:
     tests/helpers.py 同步改用 CardFactory.register_all()
     解釋: 原本缺少任一 import 就會讓該色系卡牌無法生成 現在集中控管不易遺漏
 =======================
+2026/04/24-4.0.2.2-patch-3
+編寫者 Robin
+----------------
+優化:
+    消除 core/ 對 cards/ 具體色系類別的 runtime 依賴
+    CyanCard.price_check 改為 instance method 並內建 upgrade 判斷
+        Player.play_card 不再 import CyanCard 與特別處理升級分支
+        spawn_card 以 duck-typing 方式呼叫 card.price_check(game_state)
+        非 CyanCard 沒有 price_check 方法 直接略過
+    GameState.apply_dict 移除 FuchsiaCard import 與 isinstance 檢查
+        改以 getattr(c, "shadows", ()) 收集嵌套影子卡
+    解釋: core 層不該 runtime 依賴具體色系 這是反向依賴 重構後 cards/ 可獨立演化
+=======================
