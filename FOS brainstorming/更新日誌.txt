@@ -1486,3 +1486,14 @@ debug:
 文件:
     requirements.txt 補充版本號 (pygame==2.6.1, matplotlib==3.10.8, pytest>=8.0)
 =======================
+2026/04/24-4.0.2.2-patch-2
+編寫者 Robin
+----------------
+優化:
+    CardFactory 新增 register_all() 顯式註冊所有色系卡牌
+    main.py 改以 CardFactory.register_all() 一行取代原本靠 import 副作用觸發的
+        base, card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
+        card_green, card_orange, card_purple, card_white
+    tests/helpers.py 同步改用 CardFactory.register_all()
+    解釋: 原本缺少任一 import 就會讓該色系卡牌無法生成 現在集中控管不易遺漏
+=======================
