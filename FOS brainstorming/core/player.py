@@ -22,8 +22,6 @@ from typing import Optional, TYPE_CHECKING
 import time
 
 from core.game_screen import GameScreen
-from core.UI import AttackCountDisplay, TokenDisplay, HighLightBox
-from core.setting import BLUE, RED
 from core.game_statistics import StatType
 from cards.base import Card
 from cards.factory import spawn_card
@@ -51,32 +49,8 @@ class Player:
         self.elapsed_time: int = 0
         self.time_out: bool = False
         self.time_minutes_and_seconds: str = "00:00"
-        self.menu_deck_offset_y: float = 1
-        
         self.selected_card_index: int = -1
-        self.selected_highlight: Optional[HighLightBox] = None
-        
-        self.clock_offset_x: float = 1.25
-        self.deck_info_offeset_x: float = 2
-        self.totem_offeset_x: float = 2.5
-        self.luck_offeset_x: float = 2
-        self.coin_offeset_x: float = 4.4
-        
-        if self.name == "player1":
-            self.menu_deck_offset_y = 1
-            self.clock_offset_x = 1.25
-            self.deck_info_offeset_x = 2
-            self.totem_offeset_x = 4
-            self.luck_offeset_x = 2
-            self.coin_offeset_x = 4.4
-        elif self.name == "player2":
-            self.menu_deck_offset_y = 1.5
-            self.clock_offset_x = -0.7
-            self.deck_info_offeset_x = -0.7
-            self.totem_offeset_x = -3.25
-            self.luck_offeset_x = -1.3
-            self.coin_offeset_x = -3.75
-    
+
     def _init_cards(self, game_state: GameState) -> None:
         match self.name:
             case "player1":
@@ -86,19 +60,11 @@ class Player:
             case "player2":
                 self.discard_pile = self.deck.copy()
                 for _ in range(3): self.draw_card(game_state)
-    
-    def _init_highlight_display(self, game_screen: GameScreen) -> None:
-        x = game_screen.display_width/2-(game_screen.block_size*3.3) if self.name == "player1" else game_screen.display_width/2+(game_screen.block_size*2.025)
-        self.selected_highlight = HighLightBox(x=x, y=0, box_color=BLUE if self.name=="player1" else RED,
-        box_height=int(game_screen.block_size/3), box_width=int(game_screen.block_size), line_width=int(game_screen.block_size//50))
-    
+
     def initialize(self, game_state: GameState, game_screen: GameScreen) -> None:
-        self.attack_count_display = AttackCountDisplay(player_name=self.name, width=int(game_screen.block_size*0.1), height=int(game_screen.block_size*0.1))
-        self.token_count_display = TokenDisplay(player_name=self.name, radius=int(game_screen.block_size*0.1))
         self._init_cards(game_state)
-    
+
     def initialize_display(self, game_state: GameState, game_screen: GameScreen) -> None:
-        self._init_highlight_display(game_screen)
         self.timer_start(game_state)
     
     def turn_start(self, game_state: GameState) -> None:
@@ -150,10 +116,8 @@ class Player:
             game_state.game_logger.info(f"{self.name} draw pile is empty, no card to draw")
 
     def selecte_card_from_hand(self, index: Optional[int]) -> None:
-        if not self.selected_highlight or index is None: return
+        if index is None: return
         self.selected_card_index = index
-        if self.selected_card_index != -1:
-            self.selected_highlight.visable = True
 
     def play_card(self, board_x: int, board_y: int, index: int, game_state: GameState) -> None:
         if -len(self.hand) > index or index >= len(self.hand): return
