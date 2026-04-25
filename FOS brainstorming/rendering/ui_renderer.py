@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from core.game_state import GameState
-from core.setting import WHITE, GREEN, DARKGREEN, CYAN, BLUE, RED
+from shared.setting import WHITE, GREEN, DARKGREEN, CYAN, BLUE, RED
 from core.game_screen import GameScreen, draw_text
 from core.UI import ScoreDisplay, AttackCountDisplay, TokenDisplay, HighLightBox
 from core.card_hint import HintBox

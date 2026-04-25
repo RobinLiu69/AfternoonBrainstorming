@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import pygame
 
-from core.setting import BLACK, WHITE
+from shared.setting import BLACK, WHITE
 from core.game_state import GameState
 from core.game_screen import GameScreen, draw_text, KEYS_TO_CHECK, KETYS_TO_DISPLAY
 from screens.end_game.data_prep import set_all_invisible, init_datas, making_image, display_chart

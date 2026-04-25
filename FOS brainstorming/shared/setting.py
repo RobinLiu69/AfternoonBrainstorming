@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 def _get_base_path() -> str:
     if getattr(sys, 'frozen', False):
         return os.path.dirname(sys.executable)
-    return os.path.realpath(os.path.dirname(__file__)).replace("core", "")
+    return os.path.realpath(os.path.dirname(__file__)).replace("shared", "")
 
 
 

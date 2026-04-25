@@ -23,7 +23,7 @@ from typing import cast
 import pygame
 
 from core.game_screen import GameScreen, draw_text
-from core.setting import BLACK, WHITE, RED, GREEN, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
+from shared.setting import BLACK, WHITE, RED, GREEN, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
 from cards.base import Card, COLOR_TAG_LIST
 
 

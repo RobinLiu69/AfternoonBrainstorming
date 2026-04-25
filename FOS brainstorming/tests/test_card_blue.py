@@ -16,7 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.setting import CARD_SETTING
+from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
 from cards.card_blue import Adc, Ap, Tank, Hf, Lf, Ass, Apt
 from cards.card_red import Adc as RedAdc, Tank as RedTank

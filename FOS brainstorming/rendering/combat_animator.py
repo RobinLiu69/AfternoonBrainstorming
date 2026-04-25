@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from core.combat_event import CombatEvent
+from shared.combat_event import CombatEvent
 
 if TYPE_CHECKING:
     from core.game_screen import GameScreen

@@ -22,11 +22,11 @@ from typing import TYPE_CHECKING
 import random as _py_random
 from collections import deque
 
-from core.setting import SETTING
-from core.attack_request import AttackRequest
+from shared.setting import SETTING
+from shared.attack_request import AttackRequest
 from core.game_statistics import GameStatistics
 from core.player import Player
-from core.combat_event import CombatEvent
+from shared.combat_event import CombatEvent
 from core.neutral import Neutral
 from core.board_block import Board
 from core.board_config import BoardConfig

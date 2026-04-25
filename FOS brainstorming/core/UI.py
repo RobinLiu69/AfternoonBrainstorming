@@ -24,7 +24,7 @@ from typing import Optional, Sequence, TYPE_CHECKING
 import pygame
 
 from core.game_screen import GameScreen, draw_text
-from core.setting import WHITE, RED, BLUE
+from shared.setting import WHITE, RED, BLUE
 
 if TYPE_CHECKING:
     from core.game_state import GameState

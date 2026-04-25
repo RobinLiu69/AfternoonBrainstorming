@@ -26,7 +26,7 @@ from typing import Optional, Callable, List, Any, TextIO
 from dataclasses import dataclass, field
 from enum import Enum
 
-from core.setting import FOLDER_PATH
+from shared.setting import FOLDER_PATH
 
 
 class LogLevel(Enum):

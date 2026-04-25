@@ -22,7 +22,7 @@ from typing import Sequence, TextIO, Optional, cast
 
 import pygame
 
-from core.setting import FOLDER_PATH
+from shared.setting import FOLDER_PATH
 
 
 with open(f"{FOLDER_PATH}/config/setting.json", "r", encoding="utf-8") as file:

@@ -22,7 +22,7 @@ import pygame
 
 from core.game_screen import GameScreen, draw_text
 from core.draft_state import DraftState
-from core.setting import WHITE
+from shared.setting import WHITE
 from core.card_hint import HintBox
 from rendering.board_renderer import BoardRenderer
 from rendering.card_renderer import CardRenderer

@@ -20,7 +20,7 @@ import shutil
 
 import pygame
 
-from core.setting import FOLDER_PATH
+from shared.setting import FOLDER_PATH
 from core.game_state import GameState
 from core.game_screen import GameScreen
 from rendering.end_game_renderer import EndGameRenderer

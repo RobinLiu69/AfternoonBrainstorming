@@ -16,10 +16,15 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.game_state import GameState
-from core.setting import CARD_SETTING
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from shared.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
+
+if TYPE_CHECKING:
+    from core.game_state import GameState
 
 
 card_settings = CARD_SETTING["Red"]
@@ -91,7 +96,7 @@ class Hf(RedCard):
         super().__init__(owner=owner, job_and_color="HFR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, game_state: GameState) -> bool:
-        from core.combat_event import CombatEvent
+        from shared.combat_event import CombatEvent
         self.health -= card_settings["HF"]["health_decrease"]
         if self.health == 0:
             self.anger = True

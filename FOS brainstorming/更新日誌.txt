@@ -1545,3 +1545,26 @@ debug:
     battling.py / battling_replay.py 呼叫端同步更新
     battling_replay._initialize_players 同步移除 game_screen 參數
 =======================
+2026/04/25-4.0.2.2-patch-7
+編寫者 Robin
+----------------
+優化:
+    新增 shared/ package 用於存放 cards/ 與 core/ 共用的純資料與常數
+        shared/setting.py        (從 core/setting.py 整體搬遷)
+        shared/combat_event.py   (從 core/combat_event.py 整體搬遷)
+        shared/attack_request.py (從 core/attack_request.py 整體搬遷)
+        shared/stat_type.py      (從 core/game_statistics.py 拆出 StatType enum)
+    cards/ 目錄下所有檔案完全移除 runtime 對 core/ 的 import
+        所有 from core.game_state import GameState 改為 TYPE_CHECKING 條件 import
+        所有 card_xxx.py 補上 from __future__ import annotations
+    全專案 import 路徑同步更新 (約 50+ 處)
+        from core.setting        -> from shared.setting
+        from core.combat_event   -> from shared.combat_event
+        from core.attack_request -> from shared.attack_request
+        from core.game_statistics import StatType -> from shared.stat_type import StatType
+        (GameStatistics 仍留在 core/game_statistics.py 因為含遊戲邏輯)
+        battling.py / battling_replay.py 內 import core.setting as _core_setting 也順手改名
+    解釋: 原本 cards/base.py runtime import core/* 形成 Card <-> GameState 雙向依賴
+          抽出共享的 DTO/enum/常數 後 依賴方向變單向 shared <- cards <- core
+          cards/ 從此可獨立演化 不需 core/ 即可被 import
+=======================

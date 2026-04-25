@@ -18,7 +18,7 @@
 
 from typing import Optional
 
-from core.setting import VERSION
+from shared.setting import VERSION
 from core.game_state import GameState
 from core.draft_state import DraftState
 from core.game_screen import GameScreen

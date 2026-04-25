@@ -19,8 +19,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from core.setting import CARD_SETTING
-from core.combat_event import CombatEvent
+from shared.setting import CARD_SETTING
+from shared.combat_event import CombatEvent
 from cards.factory import CardFactory
 from cards.base import Card
 

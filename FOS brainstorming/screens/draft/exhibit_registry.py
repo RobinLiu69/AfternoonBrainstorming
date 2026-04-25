@@ -18,7 +18,7 @@
 
 from typing import Optional
 
-from core.setting import JOB_DICTIONARY, CARD_SETTING
+from shared.setting import JOB_DICTIONARY, CARD_SETTING
 from cards.base import Card
 from cards.factory import CardFactory
 

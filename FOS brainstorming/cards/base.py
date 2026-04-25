@@ -21,10 +21,10 @@ from abc import ABC
 from dataclasses import dataclass, field
 from typing import TypeVar, cast, Generator, Iterable, Optional, Callable, TYPE_CHECKING, final
 
-from core.game_statistics import StatType
-from core.attack_request import AttackRequest
-from core.setting import JOB_DICTIONARY, ANIM_LUNGE_STEP
-from core.combat_event import CombatEvent
+from shared.stat_type import StatType
+from shared.attack_request import AttackRequest
+from shared.setting import JOB_DICTIONARY, ANIM_LUNGE_STEP
+from shared.combat_event import CombatEvent
 
 if TYPE_CHECKING:
     from core.game_state import GameState

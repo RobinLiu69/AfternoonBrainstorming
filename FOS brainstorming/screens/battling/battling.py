@@ -21,11 +21,11 @@ from typing import Optional
 import pygame
 
 from core.network_layer import LANServer, LANClient
-from core.setting import WHITE
+from shared.setting import WHITE
 from core.game_state import GameState
 from core.game_screen import GameScreen, draw_text, to_board_x, to_board_y
 from core.battling_dispatcher import BattlingDispatcher
-from core.game_statistics import StatType
+from shared.stat_type import StatType
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from rendering.game_renderer import GameRenderer
@@ -177,7 +177,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                 hint_on = not hint_on
                 continue
             if action.action_type == "toggle_animation":
-                import core.setting as _core_setting
+                import shared.setting as _core_setting
                 new_val = not game_renderer.combat_animator.enabled
                 game_renderer.combat_animator.enabled = new_val
                 _core_setting.COMBAT_ANIMATIONS_ENABLED = new_val

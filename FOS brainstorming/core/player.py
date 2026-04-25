@@ -22,7 +22,7 @@ from typing import Optional, TYPE_CHECKING
 import time
 
 from core.game_screen import GameScreen
-from core.game_statistics import StatType
+from shared.stat_type import StatType
 from cards.base import Card
 from cards.factory import spawn_card
 
