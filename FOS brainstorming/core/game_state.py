@@ -22,11 +22,11 @@ from typing import TYPE_CHECKING
 import random as _py_random
 from collections import deque
 
-from core.setting import SETTING
-from core.attack_request import AttackRequest
+from shared.setting import SETTING
+from shared.attack_request import AttackRequest
 from core.game_statistics import GameStatistics
 from core.player import Player
-from core.combat_event import CombatEvent
+from shared.combat_event import CombatEvent
 from core.neutral import Neutral
 from core.board_block import Board
 from core.board_config import BoardConfig
@@ -79,7 +79,7 @@ class GameState:
     
     number_of_attacks: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
     number_of_movings: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
-    number_of_cudes: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
+    number_of_cubes: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
     number_of_heals: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
 
     def __post_init__(self) -> None:
@@ -142,15 +142,13 @@ class GameState:
             "card_to_draw": self.card_to_draw,
             "number_of_attacks": self.number_of_attacks,
             "number_of_movings": self.number_of_movings,
-            "number_of_cudes": self.number_of_cudes,
+            "number_of_cubes": self.number_of_cubes,
             "number_of_heals": self.number_of_heals,
             "rng_seed": self.rng_seed,
             "pending_combat_events": events_payload,
         }
 
     def apply_dict(self, data: dict, game_renderer: GameRenderer) -> None:
-        from cards.card_fuchsia import FuchsiaCard
-        
         raw_events = data.get("pending_combat_events", [])
 
         if raw_events and game_renderer is not None:
@@ -170,7 +168,7 @@ class GameState:
         self.card_to_draw = data["card_to_draw"]
         self.number_of_attacks = data["number_of_attacks"]
         self.number_of_movings = data["number_of_movings"]
-        self.number_of_cudes = data["number_of_cudes"]
+        self.number_of_cubes = data.get("number_of_cubes", data.get("number_of_cudes", {"player1": 0, "player2": 0}))
         self.number_of_heals = data["number_of_heals"]
 
         old_by_iid: dict = {}
@@ -178,19 +176,17 @@ class GameState:
         for c in self.player2.on_board: old_by_iid[c.instance_id] = c
         for c in self.neutral.on_board: old_by_iid[c.instance_id] = c
         for c in list(old_by_iid.values()):
-            if isinstance(c, FuchsiaCard):
-                for shadow in c.shadows:
-                    old_by_iid[shadow.instance_id] = shadow
- 
+            for shadow in getattr(c, "shadows", ()):
+                old_by_iid[shadow.instance_id] = shadow
+
         all_cards_by_iid: dict = {}
         self.player1.apply_dict(data["player1"], old_by_iid, all_cards_by_iid, game_renderer)
         self.player2.apply_dict(data["player2"], old_by_iid, all_cards_by_iid, game_renderer)
         self.neutral.apply_dict(data["neutral"], old_by_iid, all_cards_by_iid, game_renderer)
 
         for card in list(all_cards_by_iid.values()):
-            if isinstance(card, FuchsiaCard):
-                for shadow in card.shadows:
-                    all_cards_by_iid[shadow.instance_id] = shadow
+            for shadow in getattr(card, "shadows", ()):
+                all_cards_by_iid[shadow.instance_id] = shadow
 
         for card in all_cards_by_iid.values():
             card.resolve_references(all_cards_by_iid)

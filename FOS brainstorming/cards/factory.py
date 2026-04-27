@@ -28,10 +28,21 @@ _CardType = TypeVar("_CardType", bound="Card")
 
 class CardFactory:
     _registry = {}
+    _all_registered = False
 
     @classmethod
     def register(cls, card_name: str, card_class: type) -> None:
         cls._registry[card_name] = card_class
+
+    @classmethod
+    def register_all(cls) -> None:
+        if cls._all_registered:
+            return
+        cls._all_registered = True
+        from cards import (
+            base, card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
+            card_green, card_orange, card_purple, card_white,
+        )
 
     @overload
     @classmethod
@@ -71,6 +82,9 @@ class CardFactory:
 def spawn_card(board_x: int, board_y: int, card_name: str, owner: str, target_board: list[Card], game_state: GameState, **kwargs) -> bool:
     if not spawn_check(board_x, board_y, game_state): return False
     card = CardFactory.create(card_name, owner, board_x, board_y, **kwargs)
+    price_check = getattr(card, "price_check", None)
+    if price_check is not None and not price_check(game_state):
+        return False
     card.deploy(game_state)
     game_state.board_dict[board_x, board_y].occupy = True
     target_board.append(card)

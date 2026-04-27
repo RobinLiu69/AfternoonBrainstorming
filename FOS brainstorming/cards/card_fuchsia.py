@@ -21,8 +21,7 @@ import math
 from typing import Callable, Iterable, Optional, TYPE_CHECKING
 
 from cards.base import CardRenderData
-from core.game_state import GameState
-from core.setting import CARD_SETTING
+from shared.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card, most_frequent_elements
 

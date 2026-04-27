@@ -21,7 +21,7 @@ from typing import Optional
 
 import pygame
 
-from core.setting import WHITE, FOLDER_PATH
+from shared.setting import WHITE, FOLDER_PATH
 from core.game_screen import GameScreen, draw_text
 from core.replay_source import ReplaySource
 

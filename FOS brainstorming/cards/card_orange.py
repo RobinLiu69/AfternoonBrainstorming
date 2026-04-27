@@ -16,10 +16,15 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.game_state import GameState
-from core.setting import CARD_SETTING
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from shared.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
+
+if TYPE_CHECKING:
+    from core.game_state import GameState
 
 
 card_settings = CARD_SETTING["Orange"]
@@ -46,7 +51,7 @@ class Adc(OrangeCard):
             return False
     
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        self.enqueue_attack(game_state)
+        self.launch_attack(self.attack_types, game_state)
         
 
 class Ap(OrangeCard):

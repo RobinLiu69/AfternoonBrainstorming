@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 def _get_base_path() -> str:
     if getattr(sys, 'frozen', False):
         return os.path.dirname(sys.executable)
-    return os.path.realpath(os.path.dirname(__file__)).replace("core", "")
+    return os.path.realpath(os.path.dirname(__file__)).replace("shared", "")
 
 
 
@@ -47,7 +47,7 @@ with open(f"{FOLDER_PATH}/config/card_hints.json", "r", encoding="utf-8") as fil
 with open(f"{FOLDER_PATH}/config/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
-VERSION = "4.0.2.2"
+VERSION = "4.0.2.3"
 
 ANIM_LUNGE_STEP: float = 0.32
 COMBAT_ANIMATIONS_ENABLED = True

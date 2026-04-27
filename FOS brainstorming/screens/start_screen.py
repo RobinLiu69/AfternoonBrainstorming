@@ -18,7 +18,7 @@
 
 import pygame
 
-from core.setting import WHITE, VERSION
+from shared.setting import WHITE, VERSION
 from core.game_screen import GameScreen, draw_text
 from core.UI import Button
 from utils.controls import key_pressed    

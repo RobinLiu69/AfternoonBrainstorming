@@ -21,7 +21,7 @@ from typing import Optional
 
 import pygame
 
-from core.setting import WHITE, RED, VERSION
+from shared.setting import WHITE, RED, VERSION
 from core.game_state import GameState
 from core.game_statistics import GameStatistics
 from core.game_screen import GameScreen, draw_text, to_board_x, to_board_y
@@ -85,11 +85,11 @@ def _build_replay_game_state(source: ReplaySource) -> GameState:
     return game_state
 
 
-def _initialize_players(game_state: GameState, game_screen: GameScreen) -> None:
-    game_state.player1.initialize(game_state, game_screen)
-    game_state.player2.initialize(game_state, game_screen)
-    game_state.player1.initialize_display(game_state, game_screen)
-    game_state.player2.initialize_display(game_state, game_screen)
+def _initialize_players(game_state: GameState) -> None:
+    game_state.player1.initialize(game_state)
+    game_state.player2.initialize(game_state)
+    game_state.player1.timer_start(game_state)
+    game_state.player2.timer_start(game_state)
 
 
 def _rebuild_and_fast_forward(
@@ -136,7 +136,7 @@ def _rebuild_and_fast_forward(
     
     game_state.number_of_attacks = {"player1": 0, "player2": 0}
     game_state.number_of_movings = {"player1": 0, "player2": 0}
-    game_state.number_of_cudes = {"player1": 0, "player2": 0}
+    game_state.number_of_cubes = {"player1": 0, "player2": 0}
     game_state.number_of_heals = {"player1": 0, "player2": 0}
 
     game_state.game_statistics =  GameStatistics()
@@ -147,14 +147,14 @@ def _rebuild_and_fast_forward(
     game_state.rng = _py_random.Random(game_state.rng_seed)
 
     game_state.board_dict = initialize_board(game_screen, game_state.board_config)
-    _initialize_players(game_state, game_screen)
+    _initialize_players(game_state)
 
     game_state.player1.time_minutes_and_seconds = "--:--"
     game_state.player2.time_minutes_and_seconds = "--:--"
     game_state.player1.start_time = -1
     game_state.player2.start_time = -1
 
-    import core.setting as _core_setting
+    import shared.setting as _core_setting
     prev_anim_setting = _core_setting.COMBAT_ANIMATIONS_ENABLED
     prev_anim_runtime = game_renderer.combat_animator.enabled
     _core_setting.COMBAT_ANIMATIONS_ENABLED = False
@@ -227,7 +227,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
     dispatcher = BattlingDispatcher(game_state=game_state, mode="local")
     dispatcher.attach_renderer(game_renderer)
 
-    _initialize_players(game_state, game_screen)
+    _initialize_players(game_state)
 
     game_state.player1.time_minutes_and_seconds = "--:--"
     game_state.player2.time_minutes_and_seconds = "--:--"
@@ -272,7 +272,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                 elif event.key == pygame.K_f:
                     hint_on = not hint_on
                 elif event.key == pygame.K_v:
-                    import core.setting as _core_setting
+                    import shared.setting as _core_setting
                     new_val = not game_renderer.combat_animator.enabled
                     game_renderer.combat_animator.enabled = new_val
                     _core_setting.COMBAT_ANIMATIONS_ENABLED = new_val

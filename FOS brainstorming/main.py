@@ -18,7 +18,7 @@
 
 from typing import Optional
 
-from core.setting import VERSION
+from shared.setting import VERSION
 from core.game_state import GameState
 from core.draft_state import DraftState
 from core.game_screen import GameScreen
@@ -35,10 +35,9 @@ from screens.battling import battling, battling_replay
 
 from utils.logger import GameLogger
 
-from cards import (
-    base, card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
-    card_green, card_orange, card_purple, card_white,
-)
+from cards.factory import CardFactory
+
+CardFactory.register_all()
 
 
 DEFAULT_PORT = 5555

@@ -19,7 +19,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from core.setting import CARD_SETTING
+from shared.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
 
@@ -53,12 +53,13 @@ class CyanCard(Card):
             "upgrade": data.get("upgrade", False),
         }
 
-    @staticmethod
-    def price_check(owner: str, job: str, game_state: GameState) -> bool:
+    def price_check(self, game_state: GameState) -> bool:
+        if not self.upgrade:
+            return True
         cyan_cards: filter[CyanCard] = filter(lambda card: isinstance(card, CyanCard), game_state.get_both_player_cards()) # pyright: ignore[reportAssignmentType]
-        price = card_settings[job]["cost"]- (card_settings["SP"]["coin_reduced"]*len(tuple(filter(lambda card: card.job_and_color == "SPC" and card.upgrade and card.owner == owner, cyan_cards))))
-        if game_state.players_coin[owner] >= price:
-            game_state.players_coin[owner] -= price
+        price = card_settings[self.job]["cost"] - (card_settings["SP"]["coin_reduced"] * len(tuple(filter(lambda card: card.job_and_color == "SPC" and card.upgrade and card.owner == self.owner, cyan_cards))))
+        if game_state.players_coin[self.owner] >= price:
+            game_state.players_coin[self.owner] -= price
             return True
         else:
             return False
@@ -85,9 +86,9 @@ class Adc(CyanCard):
         self.upgrade = upgrade
         
     def attack(self, game_state: GameState) -> bool:
-        if self._launch_attack_impl(self.attack_types, game_state):
+        if self.launch_attack(self.attack_types, game_state):
             if self.upgrade:
-                self.enqueue_attack(game_state)
+                self.launch_attack(self.attack_types, game_state)
             self.hit_cards.clear()
             return True
         else:

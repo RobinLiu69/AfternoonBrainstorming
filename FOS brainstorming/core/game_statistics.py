@@ -18,26 +18,8 @@
 
 from dataclasses import dataclass, field
 from typing import Dict, List
-from enum import Enum
 
-
-class StatType(Enum):
-    CARD_USE = "card_use_count"
-    HIT = "hit_count"
-    DAMAGE_DEALT = "damage_dealt"
-    DAMAGE_TAKEN = "damage_taken"
-    DAMAGE_TAKEN_COUNT = "damage_taken_count"
-    SCORED = "scored"
-    ABILITY = "ability_count"
-    HEALING = "healing_amount"
-    HEAL_USE = "use_heal_count"
-    MOVE = "move_count"
-    MOVE_USE = "use_move_count"
-    CUBE_USE = "cube_used_count"
-    KILLED = "killed_count"
-    DEATH = "death_count"
-    TOKEN_USE = "use_token_count"
-    ROUNDS_SURVIVED = "rounds_survived"
+from shared.stat_type import StatType
 
 
 @dataclass

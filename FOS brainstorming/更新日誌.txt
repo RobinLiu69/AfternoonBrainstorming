@@ -1473,3 +1473,106 @@ debug:
     APC 升級後的進場效果會被麻痺吃掉
     HFC 升級後的滯留場上 會因為顯示問題而消失
 =======================
+2026/04/24-01:32-4.0.2.2-patch-1
+編寫者 Robin
+----------------
+修正:
+    number_of_cudes 錯字改為 number_of_cubes (game_state.py, player.py, battling_replay.py)
+    base.py _compute_shape_points 中重複的 case "CUBE" 分支
+    base.py damage_calculate 中無效的死碼 (空 pass 分支)
+    player.py play_card 和 spawn_cube 中多餘的 pass
+優化:
+    LANServer._broadcast_envelope 廣播失敗時附帶錯誤訊息輸出
+文件:
+    requirements.txt 補充版本號 (pygame==2.6.1, matplotlib==3.10.8, pytest>=8.0)
+=======================
+2026/04/24-4.0.2.2-patch-2
+編寫者 Robin
+----------------
+優化:
+    CardFactory 新增 register_all() 顯式註冊所有色系卡牌
+    main.py 改以 CardFactory.register_all() 一行取代原本靠 import 副作用觸發的
+        base, card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
+        card_green, card_orange, card_purple, card_white
+    tests/helpers.py 同步改用 CardFactory.register_all()
+    解釋: 原本缺少任一 import 就會讓該色系卡牌無法生成 現在集中控管不易遺漏
+=======================
+2026/04/24-4.0.2.2-patch-3
+編寫者 Robin
+----------------
+優化:
+    消除 core/ 對 cards/ 具體色系類別的 runtime 依賴
+    CyanCard.price_check 改為 instance method 並內建 upgrade 判斷
+        Player.play_card 不再 import CyanCard 與特別處理升級分支
+        spawn_card 以 duck-typing 方式呼叫 card.price_check(game_state)
+        非 CyanCard 沒有 price_check 方法 直接略過
+    GameState.apply_dict 移除 FuchsiaCard import 與 isinstance 檢查
+        改以 getattr(c, "shadows", ()) 收集嵌套影子卡
+    解釋: core 層不該 runtime 依賴具體色系 這是反向依賴 重構後 cards/ 可獨立演化
+=======================
+2026/04/24-4.0.2.2-patch-4
+編寫者 Robin
+----------------
+優化:
+    core/card_hint.py 移除 from cards.card_cyan import CyanCard
+    HintBox.display 改用 getattr(card, "upgrade", False) 判斷是否顯示 (+) 升級標誌
+    解釋: isinstance(card, CyanCard) 是 core -> cards 具體型別的依賴 改 duck-typing 消除
+=======================
+2026/04/25-4.0.2.2-patch-5
+編寫者 Robin
+----------------
+優化:
+    Player 移除所有 UI 相關座標偏移與 HighLightBox 引用
+        clock_offset_x deck_info_offeset_x totem_offeset_x luck_offeset_x coin_offeset_x
+        menu_deck_offset_y (已無人讀取 一併刪除)
+        selected_highlight attack_count_display token_count_display (皆無人讀取 一併刪除)
+    Player 移除 from core.UI 與 from core.setting 的 BLUE/RED import
+    Player._init_highlight_display 整個函式刪除
+    Player.selecte_card_from_hand 精簡 只負責 selected_card_index
+    UIRenderer 新增 _PLAYER_OFFSETS 常數 依 player.name 查表
+    UIRenderer 內建 self._highlights 字典管理兩位玩家的 HighLightBox
+    UIRenderer._render_one_hand 於符合條件時主動點亮 highlight.visable
+    解釋: Player 應只持有純遊戲狀態 UI 座標與渲染物件屬於 rendering 層
+=======================
+2026/04/25-4.0.2.2-patch-6
+編寫者 Robin
+----------------
+優化:
+    Player.initialize 移除未使用的 game_screen 參數
+        原本只是單行委派 _init_cards 現直接收納邏輯
+    Player.initialize_display 整個函式刪除 其內容只有 timer_start
+        callers 直接呼叫 timer_start 更直白
+    battling.py / battling_replay.py 呼叫端同步更新
+    battling_replay._initialize_players 同步移除 game_screen 參數
+=======================
+2026/04/25-4.0.2.2-patch-7
+編寫者 Robin
+----------------
+優化:
+    新增 shared/ package 用於存放 cards/ 與 core/ 共用的純資料與常數
+        shared/setting.py        (從 core/setting.py 整體搬遷)
+        shared/combat_event.py   (從 core/combat_event.py 整體搬遷)
+        shared/attack_request.py (從 core/attack_request.py 整體搬遷)
+        shared/stat_type.py      (從 core/game_statistics.py 拆出 StatType enum)
+    cards/ 目錄下所有檔案完全移除 runtime 對 core/ 的 import
+        所有 from core.game_state import GameState 改為 TYPE_CHECKING 條件 import
+        所有 card_xxx.py 補上 from __future__ import annotations
+    全專案 import 路徑同步更新 (約 50+ 處)
+        from core.setting        -> from shared.setting
+        from core.combat_event   -> from shared.combat_event
+        from core.attack_request -> from shared.attack_request
+        from core.game_statistics import StatType -> from shared.stat_type import StatType
+        (GameStatistics 仍留在 core/game_statistics.py 因為含遊戲邏輯)
+        battling.py / battling_replay.py 內 import core.setting as _core_setting 也順手改名
+    解釋: 原本 cards/base.py runtime import core/* 形成 Card <-> GameState 雙向依賴
+          抽出共享的 DTO/enum/常數 後 依賴方向變單向 shared <- cards <- core
+          cards/ 從此可獨立演化 不需 core/ 即可被 import
+=======================
+2026/04/27-4.0.2.3
+編寫者 Robin
+----------------
+修正:
+    ADCO ADCC 的移動後攻擊和雙重打擊 都不會被正確觸發
+新增:
+    對上述的測試單元和對ADCB的擴充測試
+=======================

@@ -16,33 +16,23 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from dataclasses import dataclass, field
-import os
-
-import pygame
-
-from shared.setting import FOLDER_PATH
-from core.game_screen import GameScreen
+from enum import Enum
 
 
-@dataclass(kw_only=True)
-class Chart:
-    file_path: str
-    x: int
-    y: int
-    width: int
-    height: int
-    visible: bool = field(init=False, default=False)
-
-    def __post_init__(self) -> None:
-        full_path = FOLDER_PATH + "/imgs/" + self.file_path
-        self.image: pygame.surface.Surface | None = None
-        if os.path.exists(full_path):
-            self.image = pygame.transform.scale(
-                pygame.image.load(full_path).convert_alpha(),
-                (self.width, self.height),
-            )
-
-    def display(self, game_screen: GameScreen) -> None:
-        if self.visible and self.image:
-            game_screen.surface.blit(self.image, (self.x, self.y))
+class StatType(Enum):
+    CARD_USE = "card_use_count"
+    HIT = "hit_count"
+    DAMAGE_DEALT = "damage_dealt"
+    DAMAGE_TAKEN = "damage_taken"
+    DAMAGE_TAKEN_COUNT = "damage_taken_count"
+    SCORED = "scored"
+    ABILITY = "ability_count"
+    HEALING = "healing_amount"
+    HEAL_USE = "use_heal_count"
+    MOVE = "move_count"
+    MOVE_USE = "use_move_count"
+    CUBE_USE = "cube_used_count"
+    KILLED = "killed_count"
+    DEATH = "death_count"
+    TOKEN_USE = "use_token_count"
+    ROUNDS_SURVIVED = "rounds_survived"

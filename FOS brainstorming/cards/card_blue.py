@@ -16,11 +16,16 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.game_state import GameState
-from core.game_statistics import StatType
-from core.setting import CARD_SETTING
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from shared.stat_type import StatType
+from shared.setting import CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
+
+if TYPE_CHECKING:
+    from core.game_state import GameState
 
 
 card_settings = CARD_SETTING["Blue"]

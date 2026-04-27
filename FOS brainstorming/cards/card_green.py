@@ -16,12 +16,17 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.game_state import GameState
-from core.setting import CARD_SETTING
-from core.combat_event import CombatEvent
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from shared.setting import CARD_SETTING
+from shared.combat_event import CombatEvent
 from cards.factory import CardFactory, spawn_card
 from cards.base import Card
 from utils.logger import LogCategory
+
+if TYPE_CHECKING:
+    from core.game_state import GameState
 
 
 card_settings = CARD_SETTING["Green"]

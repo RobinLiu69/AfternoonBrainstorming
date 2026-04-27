@@ -29,10 +29,7 @@ from utils.logger import GameLogger
 
 _CardType = TypeVar("_CardType", bound=Card)
 
-from cards import (
-    card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
-    card_green, card_orange, card_purple, card_white,
-)
+CardFactory.register_all()
 
 
 def make_game_state(rng_seed: int = 42) -> GameState:

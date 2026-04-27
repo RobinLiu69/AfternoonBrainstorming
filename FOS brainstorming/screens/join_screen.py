@@ -18,7 +18,7 @@
 
 import pygame
 
-from core.setting import WHITE
+from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text
 
 

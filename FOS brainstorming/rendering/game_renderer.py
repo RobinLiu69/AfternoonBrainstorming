@@ -19,7 +19,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Generator
 
-from core.setting import COMBAT_ANIMATIONS_ENABLED
+from shared.setting import COMBAT_ANIMATIONS_ENABLED
 from core.game_screen import GameScreen
 from core.game_state import GameState
 from rendering.card_renderer import CardRenderer
