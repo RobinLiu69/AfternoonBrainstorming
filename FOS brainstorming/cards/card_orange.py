@@ -51,7 +51,7 @@ class Adc(OrangeCard):
             return False
     
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        self.enqueue_attack(game_state)
+        self.launch_attack(self.attack_types, game_state)
         
 
 class Ap(OrangeCard):

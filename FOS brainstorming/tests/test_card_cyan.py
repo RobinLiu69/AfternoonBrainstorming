@@ -20,11 +20,25 @@ from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
 from cards.card_cyan import Adc, Ap, Tank, Hf, Lf, Ass, Apt
 from cards.card_red import Adc as RedAdc, Tank as RedTank
+from cards.card_green import LuckyBlock
 
 S = CARD_SETTING["Cyan"]
 
 
 class TestCyanAdc:
+    def test_upgrade_double_strike_lands_twice(self) -> None:
+        gs = make_game_state()
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        adc.upgrade = True
+        adc.numbness = False
+        enemy = place_card(gs, RedTank, "player2", 2, 0)
+        enemy.health = adc.damage * 3
+
+        before = enemy.health
+        adc.attack(gs)
+
+        assert enemy.health == before - adc.damage * 2
+
     def test_ability_grants_coins(self) -> None:
         gs = make_game_state()
         adc = place_card(gs, Adc, "player1", 0, 0)
@@ -33,16 +47,6 @@ class TestCyanAdc:
         before = gs.players_coin["player1"]
         do_attack(adc, gs)
         assert gs.players_coin["player1"] >= before + S["ADC"]["coin_gets"]
-
-    def test_upgrade_enqueues_attack_after_hit(self) -> None:
-        gs = make_game_state()
-        adc = place_card(gs, Adc, "player1", 0, 0)
-        adc.upgrade = True
-        adc.numbness = False
-        place_card(gs, RedTank, "player2", 2, 0)
-
-        adc.attack(gs)
-        assert len(gs.pending_attacks) >= 1
 
 
 class TestCyanAp:

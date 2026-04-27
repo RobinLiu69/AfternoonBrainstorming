@@ -26,6 +26,24 @@ TOKEN_THRESHOLD = 3
 
 
 class TestBlueAdc:
+    def test_kill_at_token_threshold_fires_followup_attack(self) -> None:
+        gs = make_game_state()
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        adc.numbness = False
+
+        victim = place_card(gs, RedAdc, "player2", 2, 0)
+        victim.health = 1
+        second = place_card(gs, RedTank, "player2", 0, 2)
+
+        gs.players_token["player1"] = TOKEN_THRESHOLD - S["ADC"]["token_gets"]
+
+        before = second.health
+        adc.attack(gs)
+
+        assert victim.health <= 0
+        assert gs.card_to_draw["player1"] >= 1
+        assert second.health == before - adc.damage * 2
+
     def test_kill_grants_tokens(self) -> None:
         gs = make_game_state()
         adc = place_card(gs, Adc, "player1", 1, 1)

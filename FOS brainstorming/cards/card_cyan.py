@@ -86,9 +86,9 @@ class Adc(CyanCard):
         self.upgrade = upgrade
         
     def attack(self, game_state: GameState) -> bool:
-        if self._launch_attack_impl(self.attack_types, game_state):
+        if self.launch_attack(self.attack_types, game_state):
             if self.upgrade:
-                self.enqueue_attack(game_state)
+                self.launch_attack(self.attack_types, game_state)
             self.hit_cards.clear()
             return True
         else:

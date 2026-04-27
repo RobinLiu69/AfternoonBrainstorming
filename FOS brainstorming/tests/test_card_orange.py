@@ -25,6 +25,19 @@ S = CARD_SETTING["Orange"]
 
 
 class TestOrangeAdc:
+    def test_after_movement_attack_actually_fires(self) -> None:
+        gs = make_game_state()
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        adc.numbness = False
+        enemy = place_card(gs, RedTank, "player2", 0, 2)
+
+        adc.moving = True
+        before = enemy.health
+        moved = adc.move(0, 1, gs)
+        assert moved is True
+
+        assert enemy.health == before - adc.damage
+
     def test_sets_moving_after_attack(self) -> None:
         gs = make_game_state()
         adc = place_card(gs, Adc, "player1", 0, 0)
