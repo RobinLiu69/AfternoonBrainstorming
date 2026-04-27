@@ -120,7 +120,7 @@ class Ap(CyanCard):
                     card != self and not card.numbness
                 ]
                 if not cards:
-                    self.launch_attack(self.attack_types, game_state, ignore_numbness=True)
+                    self.launch_attack(self.attack_types, game_state)
                     continue
                 chosen = game_state.rng.choice(cards)
                 chosen.launch_attack(chosen.attack_types, game_state, tuple(self.detection(self.attack_types, game_state.get_side_cards(self.owner, True), game_state)), ignore_numbness=True)
