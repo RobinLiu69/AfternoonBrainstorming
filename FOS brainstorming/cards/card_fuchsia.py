@@ -161,14 +161,12 @@ class Shadow(FuchsiaCard):
         )]
     
     def attack(self, game_state: GameState) -> bool:
-        enemies: Iterable["Card"] = list(filter(lambda card: card.health > 0 and
-                                                card.job_and_color != "SHADOW",
-                                                game_state.get_side_cards(self.owner, True)))
-        if self.linker.launch_attack(self.attack_types, game_state,
-                                     tuple(self.detection(self.attack_types, enemies, game_state))):
-            return True
-        else:
+        enemies: list["Card"] = [c for c in game_state.get_side_cards(self.owner, True)
+                                 if c.health > 0 and c.job_and_color != "SHADOW"]
+        targets = tuple(self.detection(self.attack_types, enemies, game_state))
+        if not targets:
             return False
+        return self.linker.launch_attack(self.attack_types, game_state, targets)
     
     def on_settle(self, clear_numbness: bool=True) -> int:
         return 0
