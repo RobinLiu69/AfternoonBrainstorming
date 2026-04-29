@@ -83,7 +83,7 @@ class TestRedAp:
         target_before = target.damage
 
         do_attack(ap, gs)
-        assert ap.damage     == ap_before + steal
+        assert ap.damage == ap_before + steal
         assert target.damage == target_before - steal
 
     def test_allied_sp_receives_stolen_damage(self) -> None:
@@ -183,7 +183,7 @@ class TestRedLf:
         before_armor = lf.armor
         before_damage = lf.damage
         do_attack(lf, gs)
-        assert lf.armor  == before_armor  + S["LF"]["armor_increase"]
+        assert lf.armor == before_armor  + S["LF"]["armor_increase"]
         assert lf.damage == before_damage + S["LF"]["damage_increase"]
 
     def test_allied_sp_gains_armor_and_damage(self) -> None:
@@ -195,7 +195,7 @@ class TestRedLf:
         before_armor = sp.armor
         before_damage = sp.damage
         do_attack(lf, gs)
-        assert sp.armor  == before_armor  + S["LF"]["armor_increase"]
+        assert sp.armor == before_armor + S["LF"]["armor_increase"]
         assert sp.damage == before_damage + S["LF"]["damage_increase"]
 
 
@@ -243,7 +243,7 @@ class TestRedApt:
         before_armor = apt.armor
         before_damage = apt.damage
         do_attack(apt, gs)
-        assert apt.armor  == before_armor  + S["APT"]["armor_increase"]
+        assert apt.armor == before_armor + S["APT"]["armor_increase"]
         assert apt.damage == before_damage + S["APT"]["damage_increase"]
 
     def test_nearest_ally_gains_stats(self) -> None:
@@ -255,7 +255,7 @@ class TestRedApt:
         before_armor = ally.armor
         before_damage = ally.damage
         do_attack(apt, gs)
-        assert ally.armor  == before_armor  + S["APT"]["armor_increase"]
+        assert ally.armor == before_armor + S["APT"]["armor_increase"]
         assert ally.damage == before_damage + S["APT"]["damage_increase"]
 
     def test_allied_sp_gains_stats(self) -> None:
@@ -268,5 +268,5 @@ class TestRedApt:
         before_armor = sp.armor
         before_damage = sp.damage
         do_attack(apt, gs)
-        assert sp.armor  == before_armor  + S["APT"]["armor_increase"]
+        assert sp.armor == before_armor + S["APT"]["armor_increase"]
         assert sp.damage == before_damage + S["APT"]["damage_increase"]

@@ -170,7 +170,7 @@ class TestOrangeApt:
         before_apt = apt.armor
         before_ally = ally.armor
         apt.move_broadcast(ally, gs)
-        assert apt.armor  == before_apt  + S["APT"]["armor_get_from_moving"]
+        assert apt.armor == before_apt + S["APT"]["armor_get_from_moving"]
         assert ally.armor == before_ally + S["APT"]["armor_get_from_moving"]
 
 

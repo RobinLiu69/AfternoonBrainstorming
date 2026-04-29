@@ -18,8 +18,8 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_fuchsia import Adc, Ap, Ass, Apt
-from cards.card_red import Adc as RedAdc
+from cards.card_fuchsia import Adc, Ap, Ass, Apt, Hf, Sp
+from cards.card_red import Adc as RedAdc, Tank as RedTank
 
 S = CARD_SETTING["Fuchsia"]
 
@@ -35,6 +35,19 @@ class TestFuchsiaAdc:
         assert adc.shadows[0].board_x == sx
         assert adc.shadows[0].board_y == sy
 
+    def test_attack_also_triggers_shadow_attack(self) -> None:
+        gs = make_game_state()
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        enemy = place_card(gs, RedTank, "player2", 3, 0)
+        
+        before = enemy.health
+
+        adc.deploy(gs)
+
+        do_attack(adc, gs)
+        
+        assert enemy.health == before - adc.damage * 2
+
 
 class TestFuchsiaAp:
     def test_ability_numbs_target(self) -> None:
@@ -45,6 +58,21 @@ class TestFuchsiaAp:
 
         do_attack(ap, gs)
         assert target.numbness is True
+
+
+class TestFuchsiaHf:
+    def test_attack_also_triggers_shadow_attack(self) -> None:
+        gs = make_game_state()
+        hf = place_card(gs, Hf, "player1", 1, 1)
+        enemy = place_card(gs, RedTank, "player2", 1, 2)
+
+        before = enemy.health
+
+        hf.deploy(gs)
+
+        do_attack(hf, gs)
+
+        assert enemy.health == before - hf.damage * 2
 
 
 class TestFuchsiaAss:
@@ -58,6 +86,55 @@ class TestFuchsiaAss:
         assert len(ass.shadows) == 1
         assert ass.shadows[0].board_x == 2
         assert ass.shadows[0].board_y == 0
+
+    def test_spawned_shadow_attacks_normally(self) -> None:
+        gs = make_game_state()
+        ass = place_card(gs, Ass, "player1", 1, 1)
+        victim = place_card(gs, RedTank, "player2", 2, 2)
+        victim.health = 1
+
+        do_attack(ass, gs)
+
+        enemy = place_card(gs, RedTank, "player2", 3, 3)
+        before = enemy.health
+
+        do_attack(ass, gs)
+
+        assert enemy.health == before - ass.damage
+
+    def test_shadow_kill_spawns_shadow_at_victim_position(self) -> None:
+        gs = make_game_state()
+        ass = place_card(gs, Ass, "player1", 1, 1)
+        first_victim = place_card(gs, RedTank, "player2", 2, 2)
+        first_victim.health = 1
+
+        do_attack(ass, gs)
+
+        second_victim = place_card(gs, RedTank, "player2", 3, 3)
+        second_victim.health = 1
+
+        do_attack(ass, gs)
+
+        assert len(ass.shadows) == 2
+        positions = {(s.board_x, s.board_y) for s in ass.shadows}
+        assert (3, 3) in positions
+
+
+class TestFuchsiaSp:
+    def test_deploy_spawns_immovable_shadow_on_farthest_fuchsia_ally(self) -> None:
+        gs = make_game_state()
+        sp = place_card(gs, Sp, "player1", 0, 0)
+        near_ally = place_card(gs, Adc, "player1", 1, 0)
+        far_ally = place_card(gs, Hf, "player1", 3, 2)
+
+        sp.deploy(gs)
+
+        sx, sy = gs.board_config.get_symmetric_pos(0, 0)
+        assert len(far_ally.shadows) == 1
+        assert len(near_ally.shadows) == 0
+        assert (far_ally.shadows[0].board_x, far_ally.shadows[0].board_y) == (sx, sy)
+        assert far_ally.shadows[0].movable is False
+        assert far_ally.shadows[0].attack_types == far_ally.attack_types
 
 
 class TestFuchsiaApt:
