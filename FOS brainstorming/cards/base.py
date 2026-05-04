@@ -598,6 +598,10 @@ class Card(ABC):
 
     def attack_area_display(self, game_state: GameState) -> Iterable[tuple[int, int]]:
         return self.attack_areas(self.board_x, self.board_y, self.attack_types, game_state)
+
+    def attack_order_actors(self, game_state: GameState) -> Iterable[tuple["Card", list["Card"]]]:
+        enemies = [c for c in game_state.get_side_cards(self.owner, True) if c.health > 0]
+        yield (self, enemies)
     
     def enqueue_attack(self, game_state: GameState, attack_types: Optional[str] = None,
                        custom_target_tuple: tuple = tuple(), ignore_numbness: bool = False,
