@@ -1629,3 +1629,9 @@ debug:
         修法: 改走 self.launch_attack(self.attack_types, game_state, custom_target_tuple=(target,))
               動畫事件由 launch_attack 統一補上 確認 after_attack_broadcast 全代碼庫無覆寫 無副作用
 =======================
+2026/05/06-4.0.2.4-patch-3
+編寫者 Robin
+----------------
+修正:
+    在玩家統計數據被攻擊(StatType.DAMAGE_TAKEN) 會被多算一次
+=======================

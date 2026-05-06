@@ -308,7 +308,6 @@ class Card(ABC):
     @final
     def damage_calculate(self, value: int, attacker: "Card", game_state: GameState, ability: bool = True, anim_delay: float = 0.0) -> bool:
         if self.health <= 0: return False
-        game_state.game_statistics.increment(StatType.DAMAGE_TAKEN_COUNT, self.get_uid(), 1)
         attacker.hit_cards.append(self)
         if self.damage_block(value, attacker, game_state): return False
         
