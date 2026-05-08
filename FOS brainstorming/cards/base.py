@@ -308,7 +308,6 @@ class Card(ABC):
     @final
     def damage_calculate(self, value: int, attacker: "Card", game_state: GameState, ability: bool = True, anim_delay: float = 0.0) -> bool:
         if self.health <= 0: return False
-        game_state.game_statistics.increment(StatType.DAMAGE_TAKEN_COUNT, self.get_uid(), 1)
         attacker.hit_cards.append(self)
         if self.damage_block(value, attacker, game_state): return False
         
@@ -342,13 +341,19 @@ class Card(ABC):
             attacker.after_damage_calculated(self, value, game_state)
             return True
         elif self.armor > 0 and self.armor < value:
+            if self.armor + self.health > value:
+                overflow_value = -(self.armor-value)
+                self.armor = 0
+                self.health -= overflow_value
+            else:
+                value = self.armor + self.health
+                self.armor = 0
+                self.health = 0
+            
             game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
             game_state.game_statistics.add_damage_taken(self.get_uid(), value)
             game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
                                               self.get_uid(), self.get_position(), value)
-            overflow_value = -(self.armor-value)
-            self.armor = 0
-            self.health -= overflow_value
 
             game_state.pending_combat_events.append(
                 CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
@@ -359,15 +364,22 @@ class Card(ABC):
 
             self.been_attacked(attacker, value, game_state)
             self.been_attacked_signal(game_state)
-            if self.health <= 0:
-                value += self.health
-                attacker.after_damage_calculated(self, value, game_state)
+            
+            if self.health == 0:
+                game_state.game_statistics.add_kill(attacker.get_uid())
+                game_state.game_statistics.add_death(self.get_uid())
                 attacker.killed(self, game_state)
                 attacker.killed_signal(self, game_state)
                 self.been_killed(attacker, game_state)
                 self.been_killed_signal(attacker, game_state)
-            else:
-                attacker.after_damage_calculated(self, value, game_state)
+
+                if self.can_be_killed(game_state):
+                    self.pending_death = True
+                    game_state.pending_combat_events.append(
+                        CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
+                    )
+                
+            attacker.after_damage_calculated(self, value, game_state)
             return True
         elif self.armor == 0:
             if self.health < value:
@@ -389,14 +401,14 @@ class Card(ABC):
             self.been_attacked_signal(game_state)
             attacker.after_damage_calculated(self, value, game_state)
             if self.health == 0:
+                game_state.game_statistics.add_kill(attacker.get_uid())
+                game_state.game_statistics.add_death(self.get_uid())
                 attacker.killed(self, game_state)
                 attacker.killed_signal(self, game_state)
                 self.been_killed(attacker, game_state)
                 self.been_killed_signal(attacker, game_state)
 
                 if self.can_be_killed(game_state):
-                    game_state.game_statistics.add_kill(attacker.get_uid())
-                    game_state.game_statistics.add_death(self.get_uid())
                     self.pending_death = True
                     game_state.pending_combat_events.append(
                         CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
@@ -598,6 +610,10 @@ class Card(ABC):
 
     def attack_area_display(self, game_state: GameState) -> Iterable[tuple[int, int]]:
         return self.attack_areas(self.board_x, self.board_y, self.attack_types, game_state)
+
+    def attack_order_actors(self, game_state: GameState) -> Iterable[tuple["Card", list["Card"]]]:
+        enemies = [c for c in game_state.get_side_cards(self.owner, True) if c.health > 0]
+        yield (self, enemies)
     
     def enqueue_attack(self, game_state: GameState, attack_types: Optional[str] = None,
                        custom_target_tuple: tuple = tuple(), ignore_numbness: bool = False,

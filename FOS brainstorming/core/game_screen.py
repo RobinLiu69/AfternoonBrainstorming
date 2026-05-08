@@ -65,6 +65,7 @@ def to_board_y(mouse_y: int, game_screen: GameScreen) -> Optional[int]:
 class GameScreen:
     def __init__(self) -> None:
         pygame.init()
+        pygame.display.set_caption("AfternoonBrainstorming")
         self.display_width: int = pygame.display.get_desktop_sizes()[0][0]
         self.display_height: int = pygame.display.get_desktop_sizes()[0][1]
         # if self.display_width == 2880 and self.display_height == 1800:

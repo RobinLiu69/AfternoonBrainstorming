@@ -59,14 +59,14 @@ class GameRenderer:
         self._render_dying_cards(anim_positions)
         self._render_live_cards(all_groups, anim_positions)
 
-        self.board_renderer.render_all(game_state)
-
-        self.combat_animator.render_overlays(self.game_screen.surface)
-
         if mouse_board_x is not None and mouse_board_y is not None:
             self.board_renderer.render_attack_highlight(
                 mouse_board_x, mouse_board_y, local_controller, game_state
             )
+        
+        self.board_renderer.render_all(game_state)
+
+        self.combat_animator.render_overlays(self.game_screen.surface)
 
         self.ui_renderer.render_score(local_controller, controller, game_state)
         self.ui_renderer.render_controller_label(controller)

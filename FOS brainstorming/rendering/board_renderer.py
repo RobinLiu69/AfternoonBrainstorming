@@ -17,7 +17,7 @@
 # -----------------------------------------------------------------
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 import pygame
 
 from core.board_block import Board
@@ -26,7 +26,6 @@ from core.game_state import GameState
 
 if TYPE_CHECKING:
     from cards.base import Card
-    from cards.card_fuchsia import Shadow
 
 
 class BoardRenderer:
@@ -62,15 +61,12 @@ class BoardRenderer:
     def _render_attack_order_numbers(self, card: Card, game_state: GameState) -> None:
         if not card.attack_types:
             return
-        enemies = [c for c in game_state.get_side_cards(card.owner, True) if c.health > 0]
         font = self.game_screen.big_text_font
 
         labels: list[tuple[int, int, str, tuple[int, int, int]]] = []
-        ordinal = self._collect_attack_labels(card, enemies, 1, game_state, labels)
-        for shadow in cast(list["Shadow"], getattr(card, "shadows", ())):
-            shadow_enemies = [c for c in game_state.get_side_cards(shadow.owner, True)
-                              if c.health > 0 and c.job_and_color != "SHADOW"]
-            ordinal = self._collect_attack_labels(shadow, shadow_enemies, ordinal, game_state, labels)
+        ordinal = 1
+        for actor, enemies in card.attack_order_actors(game_state):
+            ordinal = self._collect_attack_labels(actor, enemies, ordinal, game_state, labels)
 
         self._render_labels(labels, font)
 

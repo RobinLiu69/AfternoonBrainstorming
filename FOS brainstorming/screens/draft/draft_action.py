@@ -97,9 +97,9 @@ def collect_draft_actions(current_editor: str, page: int, registry: ExhibitRegis
             match key_pressed(keys):
                 case pygame.K_ESCAPE:
                     actions.append(DraftAction(current_editor, "quit"))
-                case pygame.K_SPACE | pygame.K_d:
+                case pygame.K_SPACE | pygame.K_d | pygame.K_RIGHT:
                     actions.append(DraftAction(current_editor, "page_next"))
-                case pygame.K_a:
+                case pygame.K_a | pygame.K_LEFT:
                     actions.append(DraftAction(current_editor, "page_prev"))
                 case pygame.K_s:
                     card = registry.card_name_at(page, mouse_board_x, mouse_board_y)

@@ -194,12 +194,19 @@ class Adc(FuchsiaCard):
         yield from self.attack_areas(self.board_x, self.board_y, self.attack_types, game_state)
         for shadow in self.shadows:
             yield from shadow.attack_areas(shadow.board_x, shadow.board_y, shadow.attack_types, game_state)
-    
+
+    def attack_order_actors(self, game_state: GameState) -> Iterable[tuple[Card, list[Card]]]:
+        enemies = [c for c in game_state.get_side_cards(self.owner, True) if c.health > 0]
+        yield (self, enemies)
+        shadow_enemies = [c for c in enemies if c.job_and_color != "SHADOW"]
+        for shadow in self.shadows:
+            yield (shadow, shadow_enemies)
+
     def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
             self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
-        
+
     def attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             for shadow in self.shadows:
@@ -216,7 +223,7 @@ class Adc(FuchsiaCard):
                 if count:
                     return True
             return False
-    
+
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
@@ -291,7 +298,14 @@ class Hf(FuchsiaCard):
         yield from self.attack_areas(self.board_x, self.board_y, self.attack_types, game_state)
         for shadow in self.shadows:
             yield from shadow.attack_areas(shadow.board_x, shadow.board_y, shadow.attack_types, game_state)
-    
+
+    def attack_order_actors(self, game_state: GameState) -> Iterable[tuple[Card, list[Card]]]:
+        enemies = [c for c in game_state.get_side_cards(self.owner, True) if c.health > 0]
+        yield (self, enemies)
+        shadow_enemies = [c for c in enemies if c.job_and_color != "SHADOW"]
+        for shadow in self.shadows:
+            yield (shadow, shadow_enemies)
+
     def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
@@ -313,11 +327,11 @@ class Hf(FuchsiaCard):
                 if count:
                     return True
             return False
-    
+
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
-    
+
 
 class Lf(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int,

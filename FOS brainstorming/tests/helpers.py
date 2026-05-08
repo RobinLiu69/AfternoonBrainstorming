@@ -63,6 +63,9 @@ def place_card(game_state: GameState, card_name, owner: str, x: int, y: int) -> 
 
 
 def do_attack(attacker: Card, game_state: GameState) -> bool:
-    result = attacker.launch_attack(attacker.attack_types, game_state, ignore_numbness=True)
-    attacker.hit_cards.clear()
-    return result
+    prev_numbness = attacker.numbness
+    attacker.numbness = False
+    try:
+        return attacker.attack(game_state)
+    finally:
+        attacker.numbness = prev_numbness

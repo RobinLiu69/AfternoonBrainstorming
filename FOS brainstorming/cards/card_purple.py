@@ -137,11 +137,11 @@ class Sp(PurpleCard):
         super().__init__(owner=owner, job_and_color="SPP", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
 
-CardFactory.register("ADC" + color_code, Adc)
+# CardFactory.register("ADC" + color_code, Adc)
 CardFactory.register("AP" + color_code, Ap)
 CardFactory.register("TANK" + color_code, Tank)
 CardFactory.register("HF" + color_code, Hf)
-CardFactory.register("LF" + color_code, Lf)
+# CardFactory.register("LF" + color_code, Lf)
 CardFactory.register("ASS" + color_code, Ass)
-CardFactory.register("APT" + color_code, Apt)
-CardFactory.register("SP" + color_code, Sp)
+# CardFactory.register("APT" + color_code, Apt)
+# CardFactory.register("SP" + color_code, Sp)

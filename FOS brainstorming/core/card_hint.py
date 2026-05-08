@@ -161,18 +161,18 @@ class HintBox:
                         elif isinstance(card, Card):
                             draw_text(f"{card_type}", game_screen.text_fontCHI, WHITE, game_screen.block_size*0.6,
                                       (game_screen.block_size*0.05), self.surface)
-                            draw_text(f"{card.health}", game_screen.text_fontCHI, RED if card.health < card.max_health else WHITE,
+                            draw_text(f"{card.health+card.armor}", game_screen.text_fontCHI, RED if card.health+card.armor < card.max_health else WHITE,
                                       game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)), (game_screen.block_size*0.05), self.surface)
                             draw_text(f"/", game_screen.text_fontCHI, WHITE,
-                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health))),
+                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))),
                                       (game_screen.block_size*0.05), self.surface)
                             draw_text(f"{card.damage}", game_screen.text_fontCHI,
                                       RED if card.damage < card.original_damage else GREEN if card.damage > card.original_damage else WHITE,
-                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health))+1),
+                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))+1),
                                       (game_screen.block_size*0.05), self.surface)
                             atk_type = line.split("-")
                             draw_text(f"-{atk_type[1]}", game_screen.text_fontCHI, WHITE,
-                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health))+len(str(card.damage))+1),
+                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))+len(str(card.damage))+1),
                                       (game_screen.block_size*0.05), self.surface)
                     elif i < 4:
                         draw_text(f"{line}", game_screen.text_fontCHI, WHITE, (game_screen.block_size*0.6),

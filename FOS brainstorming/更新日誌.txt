@@ -1605,3 +1605,51 @@ debug:
         導致 HFF ADCF 等在 SPF 複製分身後會多攻擊一次
         修法: 影子偵測無目標時直接 return False 不呼叫 launch_attack
 =======================
+2026/04/29-4.0.2.4-patch-1
+編寫者 Robin
+----------------
+新增:
+    新增對於依影的單元測試包括(ADCF/HFF/ASSF/SPF)
+    新增左右鍵用來切換選角頁面
+=======================
+2026/05/04-4.0.2.4-patch-2
+編寫者 Robin
+----------------
+修正:
+    懸停 APF/TANKF/APTF 時 影子位置會顯示攻擊順序數字
+        解釋: 這三種卡的影子並不會出手 (本體 attack 沒有覆寫去呼叫 shadow.attack)
+              但 board_renderer 的 _render_attack_order_numbers 不分青紅皂白把所有 shadows 都標上
+        修法: 在 cards/base.py 新增 attack_order_actors 方法 預設只回傳 (self, enemies)
+              ADCF/HFF/LFF/ASSF 覆寫加入 self.shadows
+              renderer 改用 card.attack_order_actors() 與 attack_area_display 對稱
+    LFF 對最常被命中目標的追加傷害 沒有播放撲擊動畫
+        解釋: 原本直接呼叫 target.damage_calculate 跳過了 _launch_attack_impl 內
+              CombatEvent(kind="attack") 入隊與 anim_delay 計算邏輯
+              只有飄字與血條動畫 沒有本體前撲動作
+        修法: 改走 self.launch_attack(self.attack_types, game_state, custom_target_tuple=(target,))
+              動畫事件由 launch_attack 統一補上 確認 after_attack_broadcast 全代碼庫無覆寫 無副作用
+=======================
+2026/05/06-4.0.2.4-patch-3
+編寫者 Robin
+----------------
+修正:
+    在玩家統計數據被攻擊(StatType.DAMAGE_TAKEN) 會被多算一次
+=======================
+2026/05/07-4.0.2.4-patch-4
+編寫者 Robin
+----------------
+優化:
+    將攻擊範圍的顯示順序調整到方框下
+新增:
+    現在卡牌提示所顯示的血量為加上護盾的
+=======================
+2026/05/08-4.0.2.5
+編寫者 Robin
+----------------
+修正:
+    若受到的傷害大於自身護盾加血量死亡時不會觸發不死效果 且相關數據不會被正確紀錄到數據中
+    LFO的描述 從 "攻擊後可移動並對單體最近再次造成傷害" 改為 "攻擊後可移動 移動後對單體最近造成傷害" 但效果並未改變
+    將未被實裝的紫色單位移出選角頁面
+新增:
+    遊戲視窗名字
+=======================

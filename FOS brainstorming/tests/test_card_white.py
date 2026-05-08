@@ -45,7 +45,7 @@ class TestWhiteApt:
         before_apt = apt.armor
         before_ally = ally.armor
         do_attack(apt, gs)
-        assert apt.armor  == before_apt  + apt.damage
+        assert apt.armor  == before_apt + apt.damage
         assert ally.armor == before_ally + apt.damage
 
 
