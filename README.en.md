@@ -199,7 +199,7 @@ The second player starts their turn with four cards in hand and one attack oppor
 - **Circle (AP) - 3/2 - Nearest Target** / Attack includes paralysis. At the start of the turn, gains one Move spell card usable that turn.
 - **Square (TANK) - 10/1 - Small Cross** / After taking damage, gains one Move spell card usable that turn.
 - **Trapezoid (HF) - 9/1 - Nine Grid** / Can move after attacking and gains +1 attack. The effect expires at end of turn.
-- **Double Diamond (LF) - 6/3 - Small Cross** / Can move after attacking, and deals damage to the nearest target again.
+- **Double Diamond (LF) - 6/3 - Small Cross** / Can move after attacking, and deals damage to the nearest target  after moving.
 - **Assassin (ASS) - 2/3 - Diagonal Cross** / Can move after a kill, and moving enters Rage (see [Effect Explanation](#effect-explanation)). While in Rage, killing an enemy refunds the attack opportunity and ends the Rage state.
 - **Hexagon (APT) - 6/0 - Nearest Target** / When an ally moves, grants itself and the moving ally 1 shield. When it moves itself, shield is converted into attack at a 2:1 ratio.
 - **Diamond (SP) - 1/5 - Farthest Target** / When an ally moves, deals 3 damage to the farthest target.
