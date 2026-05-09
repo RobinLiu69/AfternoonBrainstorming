@@ -82,6 +82,10 @@ class GameState:
     number_of_cubes: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
     number_of_heals: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
 
+    paused: bool = False
+    pause_reason: str = ""
+    pause_seconds_remaining: float = 0.0
+
     def __post_init__(self) -> None:
         self.rng = _py_random.Random(self.rng_seed)
 
@@ -146,7 +150,16 @@ class GameState:
             "number_of_heals": self.number_of_heals,
             "rng_seed": self.rng_seed,
             "pending_combat_events": events_payload,
+            "paused": self.paused,
+            "pause_reason": self.pause_reason,
+            "pause_seconds_remaining": self.pause_seconds_remaining,
         }
+
+    def to_dict_for(self, viewer: str) -> dict:
+        data = self.to_dict()
+        data["player1"] = self.player1.to_dict_for(viewer)
+        data["player2"] = self.player2.to_dict_for(viewer)
+        return data
 
     def apply_dict(self, data: dict, game_renderer: GameRenderer) -> None:
         raw_events = data.get("pending_combat_events", [])
@@ -170,6 +183,10 @@ class GameState:
         self.number_of_movings = data["number_of_movings"]
         self.number_of_cubes = data.get("number_of_cubes", data.get("number_of_cudes", {"player1": 0, "player2": 0}))
         self.number_of_heals = data["number_of_heals"]
+
+        self.paused = data.get("paused", False)
+        self.pause_reason = data.get("pause_reason", "")
+        self.pause_seconds_remaining = data.get("pause_seconds_remaining", 0.0)
 
         old_by_iid: dict = {}
         for c in self.player1.on_board: old_by_iid[c.instance_id] = c

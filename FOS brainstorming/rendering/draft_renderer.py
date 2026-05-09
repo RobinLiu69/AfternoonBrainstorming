@@ -39,12 +39,36 @@ class DraftRenderer:
 
     def render_frame(self, page: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], draft_state: DraftState, hint_on: bool = False) -> None:
         self.game_screen.render()
-        
+
         self._render_cards(page)
         self._render_boards(draft_state)
         self._render_deck_displays(draft_state)
         self._render_status_labels(draft_state)
         self._render_hint(page, mouse_board_x, mouse_board_y, hint_on)
+
+        if draft_state.paused:
+            self._render_pause_overlay(draft_state)
+
+    def _render_pause_overlay(self, draft_state: DraftState) -> None:
+        gs = self.game_screen
+        overlay = pygame.Surface((gs.display_width, gs.display_height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
+        gs.surface.blit(overlay, (0, 0))
+
+        bs = gs.block_size
+        cx = gs.display_width / 2
+        cy = gs.display_height / 2
+        seconds = max(0, int(draft_state.pause_seconds_remaining))
+        reason = draft_state.pause_reason or "opponent disconnected"
+
+        lines = [
+            reason,
+            f"reconnect window: {seconds}s",
+            "(match cancels on timeout)",
+        ]
+        offsets = (-bs * 0.6, 0.0, bs * 0.6)
+        for line, dy in zip(lines, offsets):
+            draw_text(line, gs.big_text_font, WHITE, cx - bs * 2.0, cy + dy, gs.surface)
 
     def _render_cards(self, page: int) -> None:
         for card in self.exhibit_registry.get_page(page):

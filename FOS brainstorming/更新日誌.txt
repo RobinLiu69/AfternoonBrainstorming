@@ -1653,3 +1653,88 @@ debug:
 新增:
     遊戲視窗名字
 =======================
+2026/05/09-4.0.3.0
+編寫者 Robin
+----------------
+新增:
+    視野迷霧 (fog of war) client 不再收到完整遊戲狀態 只收到當下 viewer 該看見的部分
+        Player.to_dict_for(viewer) DraftState.to_dict_for(viewer) GameState.to_dict_for(viewer)
+        Draft 階段: 對手只收到前 6 張選牌 第 7 張之後用 "?" 哨兵填補 保持長度=已選張數 客戶端可以看到對手已選幾張但不知道是什麼
+        戰鬥階段: 對手的 deck (完整 12 張牌組) 與 draw_pile (抽牌堆) 全換成 "?" 哨兵 hand discard_pile on_board 維持可見
+        渲染端不需修改 draft_renderer 已用 get_visible_deck 判定可見範圍 不可見的位置會印 "???" 戰鬥端 ui_renderer 對 draw_pile 全部只用 len() 看不到實際內容
+        實作位置: LANServer 新增 broadcast_state_for / broadcast_scene_for 接收 (role) -> dict 的 builder dispatcher 廣播時依每個 client 的 role 算個別 payload
+    觀戰系統
+        Handshake 改為 client 先送 hello{intent, version, ...} server 讀完才回 welcome (wire format 改變)
+        intent="play" 第一個進來拿到 player2 之後一律走 spectator/god 路徑
+        intent="spectate" 一進來就當觀戰者 不佔 player2 slot
+        房主可在 start screen 切換 god view 開關 開啟時觀戰者 role 變 god 收到的 state 走 to_dict_for("god") 跳過遮蔽 看到完整訊息
+        關閉時觀戰者拿 spectator role 與一般 client 看到的訊息相同 (對手雙方 deck/draw_pile 都被遮)
+        Action 收集層擋下 spectator/god 的 attack play_card 等遊戲動作 只放行 toggle_hint toggle_animation page_next page_prev quit
+        中途接入時 server 廣播當下 scene + state client 依 scene 直接跳到對應畫面 (draft 或 battling)
+=======================
+2026/05/09-4.0.3.1
+編寫者 Robin
+----------------
+新增:
+    玩家中途斷線時的暫停 + 重連系統
+        Server 偵測 player2 socket 斷掉時進入 paused 狀態 啟動 60 秒倒數 (預設 之後可在 lobby 調)
+            BattlingDispatcher / DraftDispatcher 各自掛 on_peer_disconnect / on_peer_reconnect callback
+        暫停期間 dispatcher._execute 拒絕所有 game action (除 toggle/quit) 並把 game_state.paused = True 廣播給所有 client
+        battling.py 主迴圈在 paused 期間跳過 logic_update / game_state.update 凍結遊戲邏輯
+        渲染層 (game_renderer / draft_renderer) 偵測到 paused 時畫半透明黑色遮罩
+            "對手斷線中" / "reconnect window: XX s" / "(declares win on timeout)"
+        Welcome 訊息加入 token 欄位 client 端存在記憶體中 (LANClient.token)
+        Client 重連時送 hello 帶舊 token server 比對成功取消倒數 玩家重新接上 player2 slot 廣播 paused=False 解凍
+        逾時無人重連: BattlingDispatcher 直接設 pending_winner=host_seat 並廣播 game_over
+            DraftDispatcher 不分勝負 設 peer_lost=True draft.main 看到後回傳 DraftExitReason(kind="peer_lost") main.py 收到後回起始畫面 (DraftExitReason 新增 "peer_lost" kind)
+        Client 端在 _recv_loop 偵測 socket 斷掉時設 is_disconnected=True battling.py / draft.py 主迴圈每 2 秒呼叫 try_reconnect()
+修正:
+    LANClient.disconnect() 加 socket.shutdown(SHUT_RDWR) 確保 server 端立刻收到 FIN
+        解釋: 原本只 close() socket 由於同進程的 _recv_loop thread 還持有 sock ref OS 不會立刻送 FIN server 端的 _client_loop 阻塞在 recv 偵測不到斷線 disconnect callback 不會觸發
+        修法: shutdown(SHUT_RDWR) 強制 socket 半關 server 的 recv 立刻拿到 EOF
+=======================
+2026/05/09-4.0.4.0
+編寫者 Robin
+----------------
+新增:
+    Lobby 房間頁面 host 按下 host 後不再直接進 draft 而是先進 lobby 等開局
+        Host 可調整: god view / timer mode / file auto delete / reconnect timeout (30/60/120/300 秒)
+        Player2 client 可在 lobby 切換成觀戰者 觀戰者也可在 player2 slot 空著時接手
+        Host 也可按 swap seats 跟 player2 client 對調 player1 / player2 seat (host 不再強制 = player1)
+        Host 按 START MATCH 才正式進 draft 期間若有玩家或觀戰者進出 lobby 即時顯示 roster
+        ESC 退出 lobby 等同關掉整個 server 所有 client 一起下線
+    新增 LobbyState / LobbyDispatcher / LobbyAction / screens/lobby.py
+        LobbyState.to_dict_for(viewer_role) 會在 payload 塞入 your_role host swap seats 後 client 端的 local_role 自動跟著更新
+優化:
+    把 host 一律 = player1 的假設一般化為 host_seat
+        LANServer 加 host_seat 屬性 _decide_role 用 peer_seat() 算對手該分到哪個 role
+        update_host_seat() reassign_role() 用於 swap_seats 時即時把已連線 client 的 role 標籤翻轉
+        draft.main / battling.main 接 host_seat 參數 host 端 local_controller = host_seat 取代寫死的 "player1"
+        暫停逾時 BattlingDispatcher.pending_winner = host_seat 取代寫死的 "player1"
+    LANServer Phase B hooks 改名 on_player2_disconnect -> on_peer_disconnect
+                                  on_player2_reconnect -> on_peer_reconnect
+                                  _player2_token -> _peer_token
+        新增 on_client_dropped(role) callback (lobby 用來追 spectator 進出)
+    reconnect_timeout 從 module 常數改成 dispatcher 建構參數 lobby 設好後沿著 main.py -> draft.main / battling.main -> dispatcher 流入
+    Welcome 訊息加入 scene 欄位 client 連上後依 scene 直接跳對應頁面 (lobby / draft / battling)
+        中途接入也走同一條路徑 不再寫死從 draft 開始
+    Phase A 加在 LANServer._client_loop 內擋 spectator/god 送 action 的過濾移除
+        原因: lobby 階段觀戰者要送 switch_to_player 等 action 過濾要做要做在 dispatcher 層
+        battling/draft 的 dispatcher 本來就 turn-gate 不受影響
+    God view toggle 從 start screen 移到 lobby
+=======================
+2026/05/09-4.0.4.0-patch-1
+編寫者 Robin
+----------------
+修正:
+    file_auto_delete 改成「不寫」而非「寫了再砍」
+        解釋: 原本 file_auto_delete=True 時 end_game 收尾呼叫 shutil.rmtree(battle_records) shutil.rmtree(imgs) 是把整個資料夾砍掉 連其他比賽的紀錄也會一起砍 是 bug
+        修法: 在 _build_game_state_from_draft 依 file_auto_delete 決定 GameLogger 的 enable_file / enable_jsonl 都關 -> log_file / _jsonl_path 留 None 一開始就不寫 後續 _broadcast_log_backup 已經早 return 不會再嘗試讀檔
+        移除 end_game 收尾的 rmtree (連同 shutil import)
+    draft renderer _render_status_labels 函式空殼導致 IndentationError 補回 Timer Mode / File Mode 兩行字
+優化:
+    Start screen 拿掉 spectate 按鈕 觀戰者改成 join 後在 lobby 切 (簡化主選單 join 一律 intent="play")
+    Start screen 排版 replay 按鈕寬度改為與其他主按鈕齊 (main_w 1.5*bs) 高度維持 0.45*bs
+    Lobby 排版 LOBBY 標題位置從 cy-3.2*bs 拉到 cy-2.5*bs 不再壓在畫面最上邊
+    Draft 階段 timer / file mode 在 LAN 模式經由 lobby 流入 但 T / Y 鍵與 Timer Mode / File Mode 顯示維持留著 給 local 模式用
+=======================

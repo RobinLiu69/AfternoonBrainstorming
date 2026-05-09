@@ -28,27 +28,30 @@ def main(game_screen: GameScreen) -> str:
     running = True
     box_width: int = int(game_screen.block_size/30)
 
-    local_button = Button(game_screen.block_size*1.5, game_screen.block_size*0.75,
-                        game_screen.display_width/2 - game_screen.block_size*0.75,
-                        game_screen.display_height/2 - game_screen.block_size*0.8,
-                        game_screen.block_size*0.4, game_screen.block_size*0.2,
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+
+    main_w, main_h = bs * 1.5, bs * 0.75
+    main_x = cx - main_w / 2
+    main_text_x = bs * 0.4
+    main_text_y = bs * 0.2
+
+    local_button = Button(main_w, main_h, main_x, cy - bs * 1.2,
+                        main_text_x, main_text_y,
                         box_width=box_width, font=game_screen.big_big_text_font, text="local")
-    host_button = Button(game_screen.block_size*1.5, game_screen.block_size*0.75,
-                        game_screen.display_width/2 - game_screen.block_size*0.75,
-                        game_screen.display_height/2 + game_screen.block_size*0.1,
-                        game_screen.block_size*0.4, game_screen.block_size*0.2,
+    host_button = Button(main_w, main_h, main_x, cy - bs * 0.3,
+                        main_text_x, main_text_y,
                         box_width=box_width, font=game_screen.big_big_text_font, text="host")
-    join_button = Button(game_screen.block_size*1.5, game_screen.block_size*0.75,
-                        game_screen.display_width/2 - game_screen.block_size*0.75,
-                        game_screen.display_height/2 + game_screen.block_size*1.0,
-                        game_screen.block_size*0.45, game_screen.block_size*0.2,
+    join_button = Button(main_w, main_h, main_x, cy + bs * 0.6,
+                        bs * 0.45, main_text_y,
                         box_width=box_width, font=game_screen.big_big_text_font, text="join")
 
-    playback_button = Button(game_screen.block_size*1.5, game_screen.block_size*0.5,
-                        game_screen.display_width/2 - game_screen.block_size*0.75,
-                        game_screen.display_height/2 + game_screen.block_size*1.9,
-                        game_screen.block_size*0.175, game_screen.block_size*0.1,
+    playback_h = bs * 0.45
+    playback_button = Button(main_w, playback_h, main_x, cy + bs * 1.5,
+                        bs * 0.2, bs * 0.07,
                         box_width=box_width, font=game_screen.big_big_text_font, text="playback")
+
     state = "quit"
 
     clock = pygame.time.Clock()
@@ -77,29 +80,23 @@ def main(game_screen: GameScreen) -> str:
                 if playback_button.touch(mouse_x, mouse_y):
                     running = False
                     state = "playback"
-            
+
             if event.type == pygame.QUIT:
                 running = False
 
         draw_text("Afternoon Brainstorming", game_screen.title_text_font, WHITE,
-                game_screen.display_width/2 - game_screen.block_size*2.3,
-                game_screen.display_height/2 - game_screen.block_size*2.1, game_screen.surface)
+                cx - bs * 2.3, cy - bs * 2.4, game_screen.surface)
         draw_text("by Five O'clock Shadow Studio", game_screen.mid_text_font, WHITE,
-                game_screen.display_width/2 + game_screen.block_size*1.2,
-                game_screen.display_height/2 - game_screen.block_size*1.6, game_screen.surface)
+                cx + bs * 1.2, cy - bs * 1.9, game_screen.surface)
 
         local_button.update(game_screen)
         host_button.update(game_screen)
         join_button.update(game_screen)
         playback_button.update(game_screen)
-        
-        # draw_text("(Experimental Content)", game_screen.mid_text_font, WHITE,
-        #         game_screen.display_width/2 - game_screen.block_size*0.9,
-        #         game_screen.display_height/2 + game_screen.block_size*2.8, game_screen.surface)
 
         draw_text(f"version: {VERSION}", game_screen.mid_text_font, WHITE,
-                game_screen.display_width - game_screen.block_size*2,
-                game_screen.display_height/2 + game_screen.block_size*2.6, game_screen.surface)
+                game_screen.display_width - bs * 2,
+                cy + bs * 2.5, game_screen.surface)
 
 
         pygame.display.update()

@@ -19,14 +19,24 @@
 from dataclasses import dataclass
 from typing import Literal, Optional
 
-from core.draft_state import DraftState
 
-
-ExitKind = Literal["quit", "finished", "scene_handoff", "peer_lost"]
+LobbyActionType = Literal[
+    "set_god_view",
+    "set_timer_mode",
+    "set_file_auto_delete",
+    "set_reconnect_timeout",
+    "swap_seats",
+    "switch_to_spectator",
+    "switch_to_player",
+    "start_match",
+    "quit",
+]
 
 
 @dataclass
-class DraftExitReason:
-    kind: ExitKind
-    draft_state: Optional[DraftState] = None
-    next_scene_state: Optional[dict] = None
+class LobbyAction:
+    player: str
+    action_type: LobbyActionType
+    bool_value: Optional[bool] = None
+    str_value: Optional[str] = None
+    float_value: Optional[float] = None

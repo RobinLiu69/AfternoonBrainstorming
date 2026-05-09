@@ -16,11 +16,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-import shutil
-
 import pygame
 
-from shared.setting import FOLDER_PATH
 from core.game_state import GameState
 from core.game_screen import GameScreen
 from rendering.end_game_renderer import EndGameRenderer
@@ -66,12 +63,3 @@ def main(winner: str, game_state: GameState, game_screen: GameScreen) -> None:
         renderer.render_frame(winner, display_state)
         pygame.display.update()
         clock.tick(60)
-
-    imgs_file_path = FOLDER_PATH + "/imgs"
-    battle_records_file_path = FOLDER_PATH + "/battle_records"
-    try:
-        if game_state.file_auto_delete:
-            shutil.rmtree(imgs_file_path)
-            shutil.rmtree(battle_records_file_path)
-    except FileNotFoundError:
-        pass
