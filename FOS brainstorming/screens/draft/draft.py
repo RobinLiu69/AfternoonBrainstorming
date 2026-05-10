@@ -53,13 +53,23 @@ def _turn_page(page: int, direction: int, total: int) -> int:
 
 
 def main(game_screen: GameScreen, mode: str = "local",
-         server: Optional[LANServer] = None, client: Optional[LANClient] = None) -> DraftExitReason:
+         server: Optional[LANServer] = None, client: Optional[LANClient] = None,
+         draft_state: Optional[DraftState] = None,
+         host_seat: str = "player1",
+         reconnect_timeout: float = 60.0,
+         timer_mode: str = "timer",
+         file_auto_delete: bool = False) -> DraftExitReason:
     registry = ExhibitRegistry()
-    draft_state = DraftState()
+    if draft_state is None:
+        draft_state = DraftState()
     draft_state.board_config = BoardConfig(4, 3)
     draft_state.board_dict = initialize_board(game_screen, draft_state.board_config)
+    draft_state.timer_mode = timer_mode
+    draft_state.file_auto_delete = file_auto_delete
 
-    dispatcher = DraftDispatcher(draft_state, mode=mode)
+    dispatcher = DraftDispatcher(draft_state, mode=mode,
+                                 reconnect_timeout=reconnect_timeout,
+                                 host_seat=host_seat)
 
     match mode:
         case "lan_server":
@@ -67,7 +77,8 @@ def main(game_screen: GameScreen, mode: str = "local",
             dispatcher.attach_server(server)
             if not server.is_running:
                 server.start()
-            draft_state.local_player = "player1"
+            draft_state.local_player = host_seat
+            server.broadcast_scene_for("draft", draft_state.to_dict_for)
 
         case "lan_client":
             assert client is not None, "lan_client mode requires a LANClient"
@@ -75,10 +86,14 @@ def main(game_screen: GameScreen, mode: str = "local",
             if not client.is_connected:
                 role, initial_state = client.connect()
             else:
-                role, initial_state = client.role, client.initial_state
-            
+                role = client.role
+                initial_state = client.pending_scene_state or client.initial_state
+
             if initial_state:
                 draft_state.apply_dict(initial_state)
+            if client.pending_scene == "draft":
+                client.pending_scene = None
+                client.pending_scene_state = None
             draft_state.local_player = role or "player2"
 
         case _:
@@ -90,6 +105,8 @@ def main(game_screen: GameScreen, mode: str = "local",
     hint_on = False
     last_phase = draft_state.phase
     clock = pygame.time.Clock()
+
+    last_reconnect_attempt = 0.0
 
     while True:
         if mode == "local":
@@ -103,11 +120,21 @@ def main(game_screen: GameScreen, mode: str = "local",
                     kind="scene_handoff",
                     next_scene_state=next_state,
                 )
+            if client.is_disconnected and client.role == "player2":
+                import time as _time
+                now = _time.monotonic()
+                if now - last_reconnect_attempt > 2.0:
+                    last_reconnect_attempt = now
+                    if client.try_reconnect():
+                        print("[draft] reconnect succeeded")
+
+        if mode == "lan_server" and getattr(dispatcher, "peer_lost", False):
+            return DraftExitReason(kind="peer_lost")
 
         if draft_state.phase != last_phase:
             page = 0
             last_phase = draft_state.phase
-        
+
         if draft_state.phase == "done" and mode != "lan_client":
             return DraftExitReason(kind="finished", draft_state=draft_state)
 

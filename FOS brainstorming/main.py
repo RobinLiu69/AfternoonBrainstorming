@@ -22,16 +22,17 @@ from shared.setting import VERSION
 from core.game_state import GameState
 from core.draft_state import DraftState
 from core.game_screen import GameScreen
-from core.network_layer import LANClient, LANServer
+from core.network_layer import LANClient, LANServer, VersionMismatchError
 from core.board_config import BoardConfig
 from core.player import Player
 from core.neutral import Neutral
 from core.scene_exit import DraftExitReason
 
-from screens import start_screen, join_screen, replay_select
+from screens import start_screen, join_screen, replay_select, lobby, version_mismatch_screen
 from screens.draft import draft
 from screens.end_game import end_game
 from screens.battling import battling, battling_replay
+from core.lobby_state import LobbyState
 
 from utils.logger import GameLogger
 
@@ -48,7 +49,9 @@ def _build_game_state_from_draft(draft_state: DraftState) -> GameState:
     player2 = Player(name="player2", deck=draft_state.player2_deck.copy(), hand=[], on_board=[], draw_pile=[], discard_pile=[])
     neutral = Neutral()
 
-    game_state = GameState(player1, player2, neutral, BoardConfig())
+    keep_files = not draft_state.file_auto_delete
+    logger = GameLogger(enable_file=keep_files, enable_console=True, enable_jsonl=keep_files)
+    game_state = GameState(player1, player2, neutral, BoardConfig(), game_logger=logger)
     game_state.timer_mode = draft_state.timer_mode
     game_state.file_auto_delete = draft_state.file_auto_delete
 
@@ -114,7 +117,7 @@ def main() -> None:
 
         if mode in ("quit", None):
             return
-        
+
         server: Optional[LANServer] = None
         client: Optional[LANClient] = None
         match mode:
@@ -132,15 +135,33 @@ def main() -> None:
                     _finalize_battle(game_state, game_screen, winner)
             case "host":
                 try:
-                    server = LANServer(VERSION, port=DEFAULT_PORT)
-                    exit_reason = draft.main(game_screen, mode="lan_server", server=server)
+                    lobby_state = LobbyState()
+                    server = LANServer(VERSION, port=DEFAULT_PORT,
+                                       god_view=lobby_state.god_view,
+                                       host_seat=lobby_state.host_seat)
+                    lobby_exit = lobby.main(game_screen, mode="lan_server",
+                                             server=server, lobby_state=lobby_state)
+                    if lobby_exit.kind != "start_match":
+                        continue
+
+                    exit_reason = draft.main(
+                        game_screen, mode="lan_server", server=server,
+                        host_seat=lobby_state.host_seat,
+                        reconnect_timeout=lobby_state.reconnect_timeout,
+                        timer_mode=lobby_state.timer_mode,
+                        file_auto_delete=lobby_state.file_auto_delete,
+                    )
+                    if exit_reason.kind == "peer_lost":
+                        print("[main] draft cancelled: opponent did not reconnect in time")
+                        continue
                     if exit_reason.kind != "finished" or exit_reason.draft_state is None:
-                        server.stop()
                         continue
                     game_state = _build_game_state_from_draft(exit_reason.draft_state)
                     winner = battling.main(
                         game_state, game_screen,
                         mode="lan_server", server=server,
+                        host_seat=lobby_state.host_seat,
+                        reconnect_timeout=lobby_state.reconnect_timeout,
                     )
                     if winner not in ("None", ""):
                         _finalize_battle(game_state, game_screen, winner, server)
@@ -154,15 +175,41 @@ def main() -> None:
                         continue
                     client = LANClient(VERSION, host_ip, port=DEFAULT_PORT)
                     try:
-                        exit_reason = draft.main(game_screen, mode="lan_client", client=client)
-                    except (ConnectionRefusedError, RuntimeError, OSError) as e:
+                        client.connect(intent="play")
+                    except VersionMismatchError as e:
+                        version_mismatch_screen.main(game_screen, e.server_version, e.client_version)
+                        continue
+                    except (ConnectionRefusedError, RuntimeError, ConnectionError, OSError) as e:
                         print(f"[main] Failed to join {host_ip}: {e}")
                         continue
+
+                    if client.scene == "lobby":
+                        lobby_state = LobbyState()
+                        lobby_state.apply_dict(client.initial_state)
+                        lobby_exit = lobby.main(game_screen, mode="lan_client",
+                                                 client=client, lobby_state=lobby_state)
+                        if lobby_exit.kind != "start_match":
+                            continue
+                        client.scene = "draft"
+
+                    if client.scene == "battling":
+                        game_state = _build_game_state_for_client()
+                        winner = battling.main(
+                            game_state, game_screen,
+                            mode="lan_client", client=client,
+                            initial_state_dict=client.initial_state,
+                        )
+                        if winner not in ("None", ""):
+                            _finalize_battle(game_state, game_screen, winner)
+                        continue
+
+                    exit_reason = draft.main(game_screen, mode="lan_client", client=client)
                     if exit_reason.kind == "scene_handoff":
                         game_state = _build_game_state_for_client()
                         winner = battling.main(
                             game_state, game_screen,
-                            mode="lan_client", client=client, initial_state_dict=exit_reason.next_scene_state
+                            mode="lan_client", client=client,
+                            initial_state_dict=exit_reason.next_scene_state,
                         )
                         if winner not in ("None", ""):
                             _finalize_battle(game_state, game_screen, winner)

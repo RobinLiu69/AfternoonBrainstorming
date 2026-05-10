@@ -19,8 +19,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Generator
 
-from shared.setting import COMBAT_ANIMATIONS_ENABLED
-from core.game_screen import GameScreen
+import pygame
+
+from shared.setting import COMBAT_ANIMATIONS_ENABLED, WHITE
+from core.game_screen import GameScreen, draw_text
 from core.game_state import GameState
 from rendering.card_renderer import CardRenderer
 from rendering.board_renderer import BoardRenderer
@@ -43,7 +45,7 @@ class GameRenderer:
     
     def render_frame(self, local_controller: str, controller: str, mouse_x: int, mouse_y: int,
                      mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState, hint_on: bool = False,
-                     dt: float = 0.0) -> None:
+                     dt: float = 0.0, multiplayer: bool = False) -> None:
         self.game_screen.render()
     
         self._ingest_combat_events(game_state)
@@ -80,6 +82,33 @@ class GameRenderer:
         self.ui_renderer.render_timers(game_state)
 
         self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state, hint_on)
+
+        if multiplayer:
+            self.ui_renderer.render_identity_label(local_controller)
+
+        if game_state.paused:
+            self._render_pause_overlay(game_state)
+
+    def _render_pause_overlay(self, game_state: GameState) -> None:
+        gs = self.game_screen
+        overlay = pygame.Surface((gs.display_width, gs.display_height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
+        gs.surface.blit(overlay, (0, 0))
+
+        bs = gs.block_size
+        cx = gs.display_width / 2
+        cy = gs.display_height / 2
+        seconds = max(0, int(game_state.pause_seconds_remaining))
+        reason = game_state.pause_reason or "opponent disconnected"
+
+        draft_text_lines = [
+            reason,
+            f"reconnect window: {seconds}s",
+            "(declares win on timeout)",
+        ]
+        offsets = (-bs * 0.6, 0.0, bs * 0.6)
+        for line, dy in zip(draft_text_lines, offsets):
+            draw_text(line, gs.big_text_font, WHITE, cx - bs * 2.0, cy + dy, gs.surface)
 
     def _apply_skipped_display_updates(self, all_groups: list[list[Card]]) -> None:
         for event in self.combat_animator.drain_skipped_display_updates():

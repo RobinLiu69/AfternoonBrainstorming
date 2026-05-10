@@ -65,9 +65,13 @@ class DraftResult:
     quit: bool = False
 
 
+SPECTATOR_ALLOWED: tuple[str, ...] = ("page_next", "page_prev", "toggle_hint", "quit")
+
+
 def collect_draft_actions(current_editor: str, page: int, registry: ExhibitRegistry,
                           mouse_board_x: Optional[int], mouse_board_y: Optional[int]) -> list[DraftAction]:
     actions: list[DraftAction] = []
+    is_spectator = current_editor in ("spectator", "god")
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -117,4 +121,6 @@ def collect_draft_actions(current_editor: str, page: int, registry: ExhibitRegis
                     actions.append(DraftAction(current_editor, "toggle_file_save"))
                 case pygame.K_f:
                     actions.append(DraftAction(current_editor, "toggle_hint"))
+    if is_spectator:
+        actions = [a for a in actions if a.action_type in SPECTATOR_ALLOWED]
     return actions

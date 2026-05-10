@@ -271,6 +271,15 @@ class Player:
             "time_out": self.time_out
         }
 
+    def to_dict_for(self, viewer: str) -> dict:
+        data = self.to_dict()
+        if viewer == "god":
+            return data
+        if viewer != self.name:
+            data["deck"] = ["?"] * len(self.deck)
+            data["draw_pile"] = ["?"] * len(self.draw_pile)
+        return data
+
     def apply_dict(self, data: dict, old_by_iid: dict, all_cards_by_iid: dict, game_renderer: GameRenderer) -> None:
         from cards.factory import CardFactory
         self.name = data["name"]

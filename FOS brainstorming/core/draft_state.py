@@ -40,9 +40,13 @@ class DraftState:
     timer_mode: str = "timer"
     file_auto_delete: bool = False
 
+    paused: bool = False
+    pause_reason: str = ""
+    pause_seconds_remaining: float = 0.0
+
     def get_visible_deck(self, viewer: str, owner: str) -> range:
         deck = self.player1_deck if owner == "player1" else self.player2_deck
-        if viewer == owner:
+        if viewer == owner or viewer == "god":
             return range(len(deck))
         else:
             return range(min(6, len(deck)))
@@ -77,11 +81,35 @@ class DraftState:
             "phase": self.phase,
             "timer_mode": self.timer_mode,
             "file_auto_delete": self.file_auto_delete,
+            "paused": self.paused,
+            "pause_reason": self.pause_reason,
+            "pause_seconds_remaining": self.pause_seconds_remaining,
         }
- 
+
+    def to_dict_for(self, viewer: str) -> dict:
+        return {
+            "player1_deck": self._mask_deck("player1", viewer),
+            "player2_deck": self._mask_deck("player2", viewer),
+            "phase": self.phase,
+            "timer_mode": self.timer_mode,
+            "file_auto_delete": self.file_auto_delete,
+            "paused": self.paused,
+            "pause_reason": self.pause_reason,
+            "pause_seconds_remaining": self.pause_seconds_remaining,
+        }
+
+    def _mask_deck(self, owner: str, viewer: str) -> list[str]:
+        deck = self.player1_deck if owner == "player1" else self.player2_deck
+        if viewer == owner or viewer == "god":
+            return list(deck)
+        return list(deck[:6]) + ["?"] * max(0, len(deck) - 6)
+
     def apply_dict(self, data: dict) -> None:
         self.player1_deck = data["player1_deck"]
         self.player2_deck = data["player2_deck"]
         self.phase = data["phase"]
         self.timer_mode = data["timer_mode"]
         self.file_auto_delete = data["file_auto_delete"]
+        self.paused = data.get("paused", False)
+        self.pause_reason = data.get("pause_reason", "")
+        self.pause_seconds_remaining = data.get("pause_seconds_remaining", 0.0)

@@ -17,6 +17,8 @@
 # -----------------------------------------------------------------
 
 from __future__ import annotations
+import threading
+import time
 from typing import TYPE_CHECKING, Optional
 
 from core.game_action import GameAction, ActionResult
@@ -27,30 +29,97 @@ if TYPE_CHECKING:
     from rendering.game_renderer import GameRenderer
 
 
+DEFAULT_PAUSE_TIMEOUT_SECONDS: float = 60.0
+
+
 class BattlingDispatcher:
-    def __init__(self, game_state: GameState, mode: str = "local"):
+    def __init__(self, game_state: GameState, mode: str = "local",
+                 reconnect_timeout: float = DEFAULT_PAUSE_TIMEOUT_SECONDS,
+                 host_seat: str = "player1"):
         self.mode = mode
         self._network = None
         self._game_state: GameState = game_state
         self._game_renderer: Optional["GameRenderer"] = None
+        self.reconnect_timeout = reconnect_timeout
+        self.host_seat = host_seat
 
         self.pending_winner: Optional[str] = None
+        self._pause_deadline: Optional[float] = None
+        self._pause_timer: Optional[threading.Timer] = None
+        self._pause_lock = threading.Lock()
 
     def attach_renderer(self, renderer: "GameRenderer") -> None:
         self._game_renderer = renderer
 
     def attach_server(self, server: "LANServer") -> None:
         self._network = server
+        server.set_scene("battling")
+        server.host_seat = self.host_seat
         server.on_action = self._on_remote_action
         server.on_client_connect = self._on_client_connect
+        server.on_peer_disconnect = self._on_peer_disconnect
+        server.on_peer_reconnect = self._on_peer_reconnect
 
     def attach_client(self, client: "LANClient") -> None:
         self._network = client
         client.on_state_update = self._client_apply_state
 
-    def _on_client_connect(self) -> tuple[str, dict]:
-        state = self._game_state.to_dict() if self._game_state else {}
-        return "player2", state
+    def _on_client_connect(self, role: str) -> dict:
+        if self._game_state is None:
+            return {}
+        self._refresh_pause_remaining()
+        return self._game_state.to_dict_for(role)
+
+    def _refresh_pause_remaining(self) -> None:
+        if self._game_state is None:
+            return
+        if self._game_state.paused and self._pause_deadline is not None:
+            self._game_state.pause_seconds_remaining = max(0.0, self._pause_deadline - time.monotonic())
+
+    def _on_peer_disconnect(self) -> None:
+        if self._game_state is None:
+            return
+        with self._pause_lock:
+            if self._pause_timer is not None:
+                return
+            self._pause_deadline = time.monotonic() + self.reconnect_timeout
+            self._pause_timer = threading.Timer(self.reconnect_timeout, self._on_pause_timeout)
+            self._pause_timer.daemon = True
+            self._pause_timer.start()
+        self._game_state.paused = True
+        self._game_state.pause_reason = "opponent disconnected"
+        self._game_state.pause_seconds_remaining = self.reconnect_timeout
+        print(f"[BattlingDispatcher] paused; reconnect window {self.reconnect_timeout}s")
+        self._broadcast_state(self._game_state)
+
+    def _on_peer_reconnect(self) -> None:
+        if self._game_state is None:
+            return
+        with self._pause_lock:
+            if self._pause_timer is not None:
+                self._pause_timer.cancel()
+                self._pause_timer = None
+            self._pause_deadline = None
+        self._game_state.paused = False
+        self._game_state.pause_reason = ""
+        self._game_state.pause_seconds_remaining = 0.0
+        print("[BattlingDispatcher] resumed (peer reconnected)")
+        self._broadcast_state(self._game_state)
+
+    def _on_pause_timeout(self) -> None:
+        if self._game_state is None or not self._game_state.paused:
+            return
+        with self._pause_lock:
+            self._pause_timer = None
+            self._pause_deadline = None
+        self._game_state.paused = False
+        self._game_state.pause_reason = ""
+        self._game_state.pause_seconds_remaining = 0.0
+        winner = self.host_seat
+        self.pending_winner = winner
+        print(f"[BattlingDispatcher] reconnect timeout; declaring {winner} winner")
+        self._broadcast_state(self._game_state)
+        self._broadcast_game_over(winner, self._game_state)
 
     def _client_apply_state(self, state_dict: dict) -> None:
         if self._game_renderer is None:
@@ -79,7 +148,7 @@ class BattlingDispatcher:
 
         return ActionResult(False, message=f"unknown mode: {self.mode}")
 
-    def _on_remote_action(self, envelope: dict) -> None:
+    def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
         """Background thread: a client sent us an action."""
         payload = {k: v for k, v in envelope.items() if k != "type"}
         try:
@@ -112,8 +181,9 @@ class BattlingDispatcher:
         from core.network_layer import LANServer
         if not isinstance(self._network, LANServer):
             return
-        print(f"[BattlingDispatcher] broadcast_state turn={game_state.turn_number} score={game_state.score}")
-        self._network.broadcast_state(game_state.to_dict())
+        self._refresh_pause_remaining()
+        print(f"[BattlingDispatcher] broadcast_state turn={game_state.turn_number} score={game_state.score} paused={game_state.paused}")
+        self._network.broadcast_state_for(game_state.to_dict_for)
 
     def _broadcast_game_over(self, winner: str, game_state: GameState) -> None:
         from core.network_layer import LANServer
@@ -126,6 +196,8 @@ class BattlingDispatcher:
         self._network.broadcast_game_over(winner, stats)
 
     def _execute(self, action: GameAction, game_state: GameState) -> ActionResult:
+        if game_state.paused and action.action_type not in ("toggle_hint", "toggle_animation", "quit"):
+            return ActionResult(False, message="paused")
         game_state.game_logger.log_action(action, action.player)
         owned_actions = ("attack", "play_card", "move_to", "heal",
                          "spawn_cube", "toggle_upgrade", "end_turn")

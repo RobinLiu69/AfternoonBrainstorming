@@ -24,15 +24,19 @@ from core.game_action import GameAction
 from utils.controls import key_pressed
 
 
+SPECTATOR_ALLOWED: tuple[str, ...] = ("toggle_hint", "toggle_animation", "quit")
+
+
 def collect_actions(controller: str, card_info: list, game_state: GameState, game_screen: GameScreen) -> list[GameAction]:
     actions: list[GameAction] = []
+    is_spectator = controller in ("spectator", "god")
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
     board_x = to_board_x(mouse_x, game_screen)
     board_y = to_board_y(mouse_y, game_screen)
     
     for event in pygame.event.get():
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN and not is_spectator:
             match event.button:
                 case 1:
                     if game_state.get_player(controller).selected_card_index != -1:
@@ -239,7 +243,9 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                             hand_index=-1
                         ))
                 case pygame.K_ESCAPE:
-                    actions.append(GameAction(player=controller, action_type="quit"))                    
+                    actions.append(GameAction(player=controller, action_type="quit"))
             if event.type == pygame.QUIT:
                 actions.append(GameAction(player=controller, action_type="quit"))
+    if is_spectator:
+        actions = [a for a in actions if a.action_type in SPECTATOR_ALLOWED]
     return actions
