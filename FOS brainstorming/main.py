@@ -22,13 +22,13 @@ from shared.setting import VERSION
 from core.game_state import GameState
 from core.draft_state import DraftState
 from core.game_screen import GameScreen
-from core.network_layer import LANClient, LANServer
+from core.network_layer import LANClient, LANServer, VersionMismatchError
 from core.board_config import BoardConfig
 from core.player import Player
 from core.neutral import Neutral
 from core.scene_exit import DraftExitReason
 
-from screens import start_screen, join_screen, replay_select, lobby
+from screens import start_screen, join_screen, replay_select, lobby, version_mismatch_screen
 from screens.draft import draft
 from screens.end_game import end_game
 from screens.battling import battling, battling_replay
@@ -176,6 +176,9 @@ def main() -> None:
                     client = LANClient(VERSION, host_ip, port=DEFAULT_PORT)
                     try:
                         client.connect(intent="play")
+                    except VersionMismatchError as e:
+                        version_mismatch_screen.main(game_screen, e.server_version, e.client_version)
+                        continue
                     except (ConnectionRefusedError, RuntimeError, ConnectionError, OSError) as e:
                         print(f"[main] Failed to join {host_ip}: {e}")
                         continue

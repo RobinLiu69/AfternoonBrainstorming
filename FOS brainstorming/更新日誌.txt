@@ -1738,3 +1738,38 @@ debug:
     Lobby 排版 LOBBY 標題位置從 cy-3.2*bs 拉到 cy-2.5*bs 不再壓在畫面最上邊
     Draft 階段 timer / file mode 在 LAN 模式經由 lobby 流入 但 T / Y 鍵與 Timer Mode / File Mode 顯示維持留著 給 local 模式用
 =======================
+2026/05/10-4.0.4.1
+編寫者 Robin
+----------------
+修正:
+    旁觀者無法切換成玩家（只有最先連線的人會被換成玩家）
+        解釋: switch_to_player / switch_to_spectator 使用 _find_conn_by_role(action.player) 找連線
+              但多個旁觀者都叫 "spectator" 故永遠找到第一個
+        修法: network_layer._client_loop 呼叫 on_action(msg, conn) 把 sender 的 socket 帶過來
+              LobbyDispatcher / BattlingDispatcher / DraftDispatcher._on_remote_action 補上 sender_conn=None 參數
+              _execute 改以 sender_conn 優先 找不到才 fallback 至 _find_conn_by_role
+    旁觀者戰鬥畫面問題
+        旁觀者點擊手牌區會改寫 player2.selected_card_index
+            修法: battling_action.py MOUSEBUTTONDOWN 整個 block 包入 if not is_spectator
+        旁觀者計時器在遊戲暫停時依舊跑動
+            修法: battling.py 客戶端計時器加 not game_state.paused 判斷
+                  local_controller 非 player1/player2 時跳過計時器更新
+        旁觀者分數條 BLUE/RED 顏色始終錯誤
+            修法: ScoreDisplay.display 正規化 local_controller 非玩家時視同 player1（BLUE=player1 方 RED=player2 方）
+    暫停倒數不更新
+        解釋: pause_seconds_remaining 僅在 broadcast 時由伺服器更新 畫面靜止不動
+        修法: 伺服器與客戶端主迴圈各自每幀用 dt 遞減 pause_seconds_remaining
+    玩家重連後遊戲狀態過舊
+        修法: try_reconnect() 成功後立即將 client.initial_state 套用至 game_state
+    進入 end_game 時螢幕縮放
+        解釋: matplotlib 在 Windows 預設啟用互動式 GUI backend (TkAgg/Qt5Agg) 初始化時觸發 Win32 DPI API 干擾 SDL2 視窗
+        修法: chart_make.py 於 import pyplot 前加 matplotlib.use('Agg') 強制使用非 GUI backend
+        附帶修正: make_pie_chart 缺少 plt.close() 導致 figure 殘留 補上
+    只有雙方玩家就緒時房主才可開始遊戲
+        修法: LobbyDispatcher start_match case 加入 peer_connected 檢查
+              Lobby 按鈕文字在無對手時顯示 (waiting for player)
+新增:
+    戰鬥畫面多人連線時左上角顯示自身身分（You: P1 / You: P2 / Spectator / God View）
+        新增 UIRenderer.render_identity_label 方法
+        GameRenderer.render_frame 加 multiplayer 參數 為 True 時呼叫 identity label
+=======================

@@ -45,7 +45,7 @@ class GameRenderer:
     
     def render_frame(self, local_controller: str, controller: str, mouse_x: int, mouse_y: int,
                      mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState, hint_on: bool = False,
-                     dt: float = 0.0) -> None:
+                     dt: float = 0.0, multiplayer: bool = False) -> None:
         self.game_screen.render()
     
         self._ingest_combat_events(game_state)
@@ -82,6 +82,9 @@ class GameRenderer:
         self.ui_renderer.render_timers(game_state)
 
         self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state, hint_on)
+
+        if multiplayer:
+            self.ui_renderer.render_identity_label(local_controller)
 
         if game_state.paused:
             self._render_pause_overlay(game_state)

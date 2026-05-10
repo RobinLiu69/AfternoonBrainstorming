@@ -105,6 +105,22 @@ class UIRenderer:
             self.game_screen.surface
         )
 
+    def render_identity_label(self, local_controller: str) -> None:
+        label_map = {
+            "player1": "You: P1",
+            "player2": "You: P2",
+            "spectator": "Spectator",
+            "god": "God View",
+        }
+        label = label_map.get(local_controller, local_controller)
+        draw_text(
+            label,
+            self.game_screen.text_font, WHITE,
+            self.game_screen.block_size * 0.2,
+            self.game_screen.block_size * 0.2,
+            self.game_screen.surface,
+        )
+
     def render_hands(self, game_state: GameState) -> None:
         self._render_one_hand(game_state.player1, game_state)
         self._render_one_hand(game_state.player2, game_state)

@@ -159,16 +159,18 @@ class ScoreDisplay:
         for card in game_state.get_opponent_cards(controller):
             score -= card.on_settle(False) if controller == "player2" else -card.on_settle(False)
         score_list.append(score_list[-1]+score)
-        
+
+        # Spectators use player1's perspective: BLUE = player1 side, RED = player2 side.
+        effective_local = local_controller if local_controller in ("player1", "player2") else "player1"
         for i in range(-10, 11):
             if i == score_list[0]:
                 pygame.draw.rect(game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
             else:
                 pygame.draw.rect(game_screen.surface, WHITE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
             if i == score_list[1]:
-                pygame.draw.rect(game_screen.surface, BLUE if controller == local_controller else RED, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
+                pygame.draw.rect(game_screen.surface, BLUE if controller == effective_local else RED, (self.x+(self.width*i*1.25), self.y, self.width, self.height), self.width)
             if i == score_list[2]:
-                pygame.draw.rect(game_screen.surface, RED if controller == local_controller else BLUE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
+                pygame.draw.rect(game_screen.surface, RED if controller == effective_local else BLUE, (self.x+(self.width*i*1.25), self.y, self.width, self.height), int(game_screen.thickness/1.5))
 
 
 @dataclass(kw_only=True)

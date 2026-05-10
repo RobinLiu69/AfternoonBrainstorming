@@ -16,7 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 RECONNECT_TIMEOUT_OPTIONS: tuple[float, ...] = (30.0, 60.0, 120.0, 300.0)
@@ -32,6 +32,7 @@ class LobbyState:
 
     peer_connected: bool = False
     spectator_count: int = 0
+    latencies: dict = field(default_factory=dict)
 
     local_role: str = ""
 
@@ -47,6 +48,7 @@ class LobbyState:
             "reconnect_timeout": self.reconnect_timeout,
             "peer_connected": self.peer_connected,
             "spectator_count": self.spectator_count,
+            "latencies": dict(self.latencies),
         }
 
     def to_dict_for(self, viewer_role: str) -> dict:
@@ -62,6 +64,7 @@ class LobbyState:
         self.reconnect_timeout = data["reconnect_timeout"]
         self.peer_connected = data["peer_connected"]
         self.spectator_count = data["spectator_count"]
+        self.latencies = data.get("latencies", {})
         new_role = data.get("your_role", "")
         if new_role:
             self.local_role = new_role

@@ -22,6 +22,8 @@ import json
 import math
 from typing import cast
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 from matplotlib.patches import Wedge
@@ -110,6 +112,7 @@ def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict
         os.makedirs(output_folder, exist_ok=True)
         title_text = title_text.replace(" ", "_")
         plt.savefig(os.path.join(output_folder, player_name+"_pie_chart_"+title_text+".png"), transparent=True)
+        plt.close()
     return player_name+"_pie_chart_"+title_text+".png"
 
 

@@ -21,7 +21,15 @@ import secrets
 import socket
 import struct
 import threading
+import time
 from typing import Callable, Optional
+
+
+class VersionMismatchError(ConnectionError):
+    def __init__(self, server_version: str, client_version: str):
+        super().__init__(f"Version mismatch: server={server_version!r}, client={client_version!r}")
+        self.server_version = server_version
+        self.client_version = client_version
 
 
 def _recv_exactly(sock: socket.socket, n: int) -> Optional[bytes]:
@@ -60,11 +68,13 @@ class LANServer:
         self.host_seat = host_seat
         self.scene: str = ""
 
-        self.on_action: Optional[Callable[[dict], None]] = None
+        self.on_action: Optional[Callable[[dict, socket.socket], None]] = None
         self.on_client_connect: Optional[Callable[[str], dict]] = None
         self.on_peer_disconnect: Optional[Callable[[], None]] = None
         self.on_peer_reconnect: Optional[Callable[[], None]] = None
         self.on_client_dropped: Optional[Callable[[str], None]] = None
+        self.on_pong: Optional[Callable[[str, float], None]] = None
+        self._last_seen: dict = {}
 
         self._clients: list[tuple[socket.socket, str]] = []
         self._peer_token: Optional[str] = None
@@ -161,6 +171,21 @@ class LANServer:
                 conn.close()
                 continue
 
+            client_version = hello.get("version", "")
+            if client_version != self.version:
+                try:
+                    _send_msg(conn, {
+                        "type": "rejected",
+                        "reason": "version_mismatch",
+                        "server_version": self.version,
+                        "client_version": client_version,
+                    })
+                except OSError:
+                    pass
+                conn.close()
+                print(f"[LANServer] Rejected {addr}: version mismatch (client={client_version!r}, server={self.version!r})")
+                continue
+
             intent = hello.get("intent", "play")
             token = hello.get("token")
             role, issued_token = self._decide_role(intent, token)
@@ -183,6 +208,7 @@ class LANServer:
 
             with self._lock:
                 self._clients.append((conn, role))
+                self._last_seen[conn] = time.monotonic()
             print(f"[LANServer] Assigned role={role} to {addr} (reconnect={is_reconnect})")
 
             if is_reconnect and self.on_peer_reconnect is not None:
@@ -203,6 +229,7 @@ class LANServer:
                 with self._lock:
                     dropped_role = next((r for c, r in self._clients if c is conn), "")
                     self._clients = [c for c in self._clients if c[0] is not conn]
+                    self._last_seen.pop(conn, None)
                 try:
                     conn.close()
                 except OSError:
@@ -218,8 +245,19 @@ class LANServer:
                     except Exception as e:
                         print(f"[LANServer] on_peer_disconnect raised: {e}")
                 break
-            if msg.get("type") == "action" and self.on_action is not None:
-                self.on_action(msg)
+            with self._lock:
+                self._last_seen[conn] = time.monotonic()
+            if msg.get("type") == "pong":
+                if self.on_pong is not None:
+                    role = self.find_role(conn)
+                    sent_ts = msg.get("ts", 0.0)
+                    rtt_ms = (time.monotonic() - sent_ts) * 1000.0
+                    try:
+                        self.on_pong(role, rtt_ms)
+                    except Exception as e:
+                        print(f"[LANServer] on_pong raised: {e}")
+            elif msg.get("type") == "action" and self.on_action is not None:
+                self.on_action(msg, conn)
 
     def _prune_dead(self, dead_conns: list[socket.socket]) -> list[str]:
         if not dead_conns:
@@ -227,6 +265,8 @@ class LANServer:
         with self._lock:
             dropped_roles = [r for c, r in self._clients if c in dead_conns]
             self._clients = [c for c in self._clients if c[0] not in dead_conns]
+            for c in dead_conns:
+                self._last_seen.pop(c, None)
         return dropped_roles
 
     def _fire_disconnect_callbacks(self, dropped_roles: list[str]) -> None:
@@ -305,6 +345,33 @@ class LANServer:
             "jsonl_file": {"name": jsonl_name, "data": jsonl_b64},
         })
 
+    def broadcast_ping(self) -> None:
+        ts = time.monotonic()
+        with self._lock:
+            snapshot = list(self._clients)
+        dead: list[socket.socket] = []
+        for conn, _role in snapshot:
+            try:
+                _send_msg(conn, {"type": "ping", "ts": ts})
+            except OSError:
+                dead.append(conn)
+        if dead:
+            self._fire_disconnect_callbacks(self._prune_dead(dead))
+
+    def check_heartbeat(self, timeout: float = 10.0) -> None:
+        now = time.monotonic()
+        with self._lock:
+            snapshot = list(self._clients)
+            last_seen_snap = dict(self._last_seen)
+        for conn, _role in snapshot:
+            last = last_seen_snap.get(conn)
+            if last is not None and now - last > timeout:
+                print(f"[LANServer] heartbeat timeout, closing stale connection")
+                try:
+                    conn.close()
+                except OSError:
+                    pass
+
     def stop(self) -> None:
         if not self._running:
             return
@@ -321,7 +388,8 @@ class LANServer:
                 except OSError:
                     pass
             self._clients.clear()
-        
+            self._last_seen.clear()
+
         if self._server_sock:
             try:
                 self._server_sock.shutdown(socket.SHUT_RDWR)
@@ -398,14 +466,30 @@ class LANClient:
 
         welcome = _recv_msg(sock)
 
-        if not welcome or welcome.get("type") != "welcome":
+        if not welcome:
+            sock.close()
+            raise RuntimeError("Handshake failed: no response from server")
+
+        if welcome.get("type") == "rejected":
+            sock.close()
+            reason = welcome.get("reason", "unknown")
+            if reason == "version_mismatch":
+                raise VersionMismatchError(
+                    server_version=welcome.get("server_version", "unknown"),
+                    client_version=welcome.get("client_version", self.version),
+                )
+            raise ConnectionError(f"Connection rejected by server: {reason}")
+
+        if welcome.get("type") != "welcome":
             sock.close()
             raise RuntimeError(f"Handshake failed: expected welcome, got {welcome!r}")
 
         if welcome.get("version") != self.version:
             sock.close()
-            raise ConnectionError(f"Version mismatch detected"
-                                  f"Server requires {welcome.get('version')}, but client is running {self.version}")
+            raise VersionMismatchError(
+                server_version=welcome.get("version", "unknown"),
+                client_version=self.version,
+            )
 
         self._sock = sock
         self.role = welcome["role"]
@@ -448,6 +532,12 @@ class LANClient:
                     self.pending_statistics = msg.get("statistics", {})
                 elif mtype == "log_transfer":
                     self._save_transferred_logs(msg)
+                elif mtype == "ping":
+                    ts = msg.get("ts", 0.0)
+                    try:
+                        _send_msg(sock, {"type": "pong", "ts": ts})
+                    except OSError:
+                        pass
             except Exception:
                 import traceback, sys
                 try:

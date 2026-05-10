@@ -155,6 +155,8 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                     last_reconnect_attempt = now
                     if client.try_reconnect():
                         print("[battling] reconnect succeeded")
+                        if client.initial_state:
+                            game_state.apply_dict(client.initial_state, game_renderer)
 
             game_over = client.consume_pending_game_over()
             if game_over is not None:
@@ -204,6 +206,8 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                     if result.message:
                         winner = result.message
                     running = False
+            elif action.action_type == "quit" and is_client:
+                running = False
             
 
         if is_server and dispatcher.pending_winner is not None:
@@ -252,19 +256,26 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                     dispatcher._broadcast_state(game_state)
                     dispatcher._broadcast_game_over(winner, game_state)
         
+        if not is_client and game_state.paused and game_state.pause_seconds_remaining > 0:
+            game_state.pause_seconds_remaining = max(0.0, game_state.pause_seconds_remaining - dt)
+
         if is_client:
             _sweep_dead_cards_visually(game_state, game_renderer)
-        
-            if controller == local_controller:
-                game_state.get_player(local_controller)._update_timer_logic(game_state.timer_mode)
-            else:
-                game_state.get_opponent(local_controller)._update_timer_logic(game_state.timer_mode)
+            if game_state.paused:
+                if game_state.pause_seconds_remaining > 0:
+                    game_state.pause_seconds_remaining = max(0.0, game_state.pause_seconds_remaining - dt)
+            elif local_controller in ("player1", "player2"):
+                if controller == local_controller:
+                    game_state.get_player(local_controller)._update_timer_logic(game_state.timer_mode)
+                else:
+                    game_state.get_opponent(local_controller)._update_timer_logic(game_state.timer_mode)
 
         if not (mode == "local"):
             controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
 
 
-        game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on, dt)
+        game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on, dt,
+                                   multiplayer=(mode != "local"))
         pygame.display.update()
     
     game_state.game_logger.close()

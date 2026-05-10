@@ -54,35 +54,45 @@ def _make_buttons(gs: GameScreen) -> dict[str, Button]:
     cy = gs.display_height / 2
     box_width = max(1, int(bs / 30))
 
-    btn_w = bs * 3.0
-    btn_h = bs * 0.45
-    btn_x = cx - btn_w / 2
+    left_btn_w = bs * 2.8
+    btn_h = bs * 0.43
+    left_x = cx - bs * 3.3
 
-    def mk(y_offset: float, text: str) -> Button:
-        return Button(btn_w, btn_h, btn_x, cy + bs * y_offset,
+    action_btn_w = bs * 2.5
+    action_x = cx - action_btn_w / 2
+
+    def left_btn(y_offset: float, text: str) -> Button:
+        return Button(left_btn_w, btn_h, left_x, cy + bs * y_offset,
+                      bs * 0.15, bs * 0.10,
+                      box_width=box_width, font=gs.mid_text_font, text=text)
+
+    def action_btn(y_offset: float, text: str) -> Button:
+        return Button(action_btn_w, btn_h, action_x, cy + bs * y_offset,
                       bs * 0.15, bs * 0.10,
                       box_width=box_width, font=gs.mid_text_font, text=text)
 
     return {
-        "god_view":          mk(-1.05, "god view: off"),
-        "timer_mode":        mk(-0.55, "timer mode: timer"),
-        "file_auto_delete":  mk(-0.05, "auto-delete log: no"),
-        "reconnect_timeout": mk(0.45, "reconnect timeout: 60s"),
-        "swap_seats":        mk(0.95, "host plays: player1"),
-        "switch_role":       mk(1.45, "switch role"),
-        "start_match":       mk(2.05, "START MATCH"),
+        "god_view":          left_btn(-1.30, "god view: off"),
+        "timer_mode":        left_btn(-0.75, "timer mode: timer"),
+        "file_auto_delete":  left_btn(-0.20, "auto-delete log: no"),
+        "reconnect_timeout": left_btn(0.35, "reconnect timeout: 60s"),
+        "swap_seats":        left_btn(0.90, "host plays: player1"),
+        "switch_role":       action_btn(1.70, "switch role"),
+        "start_match":       action_btn(2.35, "START MATCH"),
     }
 
 
 def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: str) -> None:
-    buttons["god_view"].text          = f"god view: {'on' if state.god_view else 'off'}"
-    buttons["timer_mode"].text        = f"timer mode: {state.timer_mode}"
-    buttons["file_auto_delete"].text  = f"auto-delete log: {'yes' if state.file_auto_delete else 'no'}"
+    buttons["god_view"].text = f"god view: {'on' if state.god_view else 'off'}"
+    buttons["timer_mode"].text = f"timer mode: {state.timer_mode}"
+    buttons["file_auto_delete"].text = f"auto-delete log: {'yes' if state.file_auto_delete else 'no'}"
     buttons["reconnect_timeout"].text = f"reconnect timeout: {int(state.reconnect_timeout)}s"
-    buttons["swap_seats"].text        = f"host plays: {state.host_seat}"
+    buttons["swap_seats"].text = f"host plays: {state.host_seat}"
+
+    buttons["start_match"].text = "START MATCH" if state.peer_connected else "(waiting for player)"
 
     if _is_host(role):
-        buttons["switch_role"].text = "(spectators can switch role themselves)"
+        buttons["switch_role"].text = ""
     elif role == state.peer_seat():
         buttons["switch_role"].text = "switch to spectator"
     elif _is_spectator(role):
@@ -94,32 +104,64 @@ def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: 
         buttons["switch_role"].text = ""
 
 
+def _render_settings_labels(gs: GameScreen, state: LobbyState) -> None:
+    bs = gs.block_size
+    cx = gs.display_width / 2
+    cy = gs.display_height / 2
+    x = cx - bs * 3.15
+    y_offsets = [-1.30, -0.75, -0.20, 0.35, 0.90]
+    labels = [
+        f"god view: {'on' if state.god_view else 'off'}",
+        f"timer mode: {state.timer_mode}",
+        f"auto-delete log: {'yes' if state.file_auto_delete else 'no'}",
+        f"reconnect timeout: {int(state.reconnect_timeout)}s",
+        f"host plays: {state.host_seat}",
+    ]
+    for label, y_off in zip(labels, y_offsets):
+        draw_text(label, gs.mid_text_font, WHITE, x, cy + bs * y_off + bs * 0.10, gs.surface)
+
+
 def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
     bs = gs.block_size
     cx = gs.display_width / 2
     cy = gs.display_height / 2
+    right_x = cx + bs * 0.3
 
     draw_text("LOBBY", gs.title_text_font, WHITE,
-              cx - bs * 0.7, cy - bs * 2.5, gs.surface)
+              cx - bs * 0.7, cy - bs * 2.8, gs.surface)
+
+    draw_text("Settings", gs.text_font, WHITE,
+              cx - bs * 3.3, cy - bs * 1.85, gs.surface)
+
+    draw_text("Players", gs.text_font, WHITE,
+              right_x, cy - bs * 1.85, gs.surface)
 
     host_seat = state.host_seat
     peer_seat = state.peer_seat()
     peer_status = "connected" if state.peer_connected else "waiting..."
 
-    you_marker = lambda this_role: "  <-- you" if role == this_role else ""
+    def lat_str(key: str) -> str:
+        ms = state.latencies.get(key)
+        return f" ({ms:.0f}ms)" if ms is not None else ""
+
+    def you_marker(r: str) -> str:
+        return "  <-- you" if role == r else ""
+
+    spectator_lat = lat_str("spectator") or lat_str("god")
+    spectator_you = you_marker("spectator") or you_marker("god")
 
     lines = [
         f"{host_seat}: host{you_marker('host')}",
-        f"{peer_seat}: {peer_status}{you_marker(peer_seat)}",
-        f"spectators: {state.spectator_count}{you_marker('spectator') or you_marker('god')}",
+        f"{peer_seat}: {peer_status}{lat_str(peer_seat)}{you_marker(peer_seat)}",
+        f"spectators: {state.spectator_count}{spectator_lat}{spectator_you}",
     ]
     for i, line in enumerate(lines):
         draw_text(line, gs.text_font, WHITE,
-                  cx - bs * 3.0, cy - bs * (2.4 - i * 0.35), gs.surface)
+                  right_x, cy - bs * (1.35 - i * 0.48), gs.surface)
 
     if state.god_view:
         draw_text("(spectators see all decks)", gs.mid_text_font, WHITE,
-                  cx - bs * 3.0, cy - bs * 1.4, gs.surface)
+                  right_x, cy + bs * 0.20, gs.surface)
 
 
 def _render_help(gs: GameScreen, role: str) -> None:
@@ -131,7 +173,7 @@ def _render_help(gs: GameScreen, role: str) -> None:
     else:
         msg = "host controls settings  |  ESC: leave"
     draw_text(msg, gs.mid_text_font, WHITE,
-              cx - bs * 3.0, cy + bs * 2.7, gs.surface)
+              cx - bs * 3.3, cy + bs * 3.0, gs.surface)
 
 
 def _click_dispatch(buttons: dict[str, Button], mouse_x: float, mouse_y: float,
@@ -217,6 +259,8 @@ def main(game_screen: GameScreen, mode: str,
                 mx, my = pygame.mouse.get_pos()
                 _click_dispatch(buttons, mx, my, state, state.local_role, dispatcher)
 
+        dispatcher.tick()
+
         game_screen.render()
         _render_roster(game_screen, state, state.local_role)
         _refresh_button_labels(buttons, state, state.local_role)
@@ -225,13 +269,15 @@ def main(game_screen: GameScreen, mode: str,
             for key in ("god_view", "timer_mode", "file_auto_delete", "reconnect_timeout", "swap_seats", "start_match"):
                 buttons[key].update(game_screen)
         else:
-            buttons["god_view"].update(game_screen)
-            buttons["timer_mode"].update(game_screen)
-            buttons["file_auto_delete"].update(game_screen)
-            buttons["reconnect_timeout"].update(game_screen)
-            buttons["swap_seats"].update(game_screen)
-            if buttons["switch_role"].text:
-                buttons["switch_role"].update(game_screen)
+            _render_settings_labels(game_screen, state)
+            sw = buttons["switch_role"]
+            if sw.text and not sw.text.startswith("("):
+                sw.update(game_screen)
+            elif sw.text:
+                draw_text(sw.text, game_screen.mid_text_font, WHITE,
+                          sw.x + game_screen.block_size * 0.15,
+                          sw.y + game_screen.block_size * 0.10,
+                          game_screen.surface)
 
         _render_help(game_screen, state.local_role)
         pygame.display.update()

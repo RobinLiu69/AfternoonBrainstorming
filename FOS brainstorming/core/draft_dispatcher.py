@@ -134,7 +134,7 @@ class DraftDispatcher:
 
         return DraftResult(False, message=f"unknown mode: {self.mode}")
 
-    def _on_remote_action(self, envelope: dict) -> None:
+    def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
         payload = {k: v for k, v in envelope.items() if k != "type"}
         try:
             action = DraftAction(**payload)

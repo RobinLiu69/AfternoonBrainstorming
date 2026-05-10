@@ -36,7 +36,7 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
     board_y = to_board_y(mouse_y, game_screen)
     
     for event in pygame.event.get():
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN and not is_spectator:
             match event.button:
                 case 1:
                     if game_state.get_player(controller).selected_card_index != -1:

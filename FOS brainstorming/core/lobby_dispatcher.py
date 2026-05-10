@@ -16,6 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+import time
 from dataclasses import dataclass
 
 from core.lobby_state import LobbyState, RECONNECT_TIMEOUT_OPTIONS
@@ -36,6 +37,7 @@ class LobbyDispatcher:
         self._state = lobby_state
         self.start_signal: bool = False
         self.peer_left: bool = False
+        self._last_ping_time: float = 0.0
 
     def attach_server(self, server: "LANServer") -> None:
         self._network = server
@@ -47,6 +49,7 @@ class LobbyDispatcher:
         server.on_peer_disconnect = self._on_peer_disconnect
         server.on_peer_reconnect = self._on_peer_reconnect
         server.on_client_dropped = self._on_client_dropped
+        server.on_pong = self._on_pong
 
     def attach_client(self, client: "LANClient") -> None:
         self._network = client
@@ -95,14 +98,14 @@ class LobbyDispatcher:
                 return LobbyResult(True, message="pending")
         return LobbyResult(False, message=f"unknown mode: {self.mode}")
 
-    def _on_remote_action(self, envelope: dict) -> None:
+    def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
         payload = {k: v for k, v in envelope.items() if k != "type"}
         try:
             action = LobbyAction(**payload)
         except TypeError as e:
             print(f"[LobbyDispatcher] Bad remote action: {e}")
             return
-        result = self._execute(action)
+        result = self._execute(action, sender_conn=sender_conn)
         if result.success:
             self._broadcast()
 
@@ -117,7 +120,7 @@ class LobbyDispatcher:
             "float_value": action.float_value,
         })
 
-    def _execute(self, action: LobbyAction) -> LobbyResult:
+    def _execute(self, action: LobbyAction, sender_conn=None) -> LobbyResult:
         host_only = ("set_god_view", "set_timer_mode", "set_file_auto_delete",
                      "set_reconnect_timeout", "swap_seats", "start_match")
         if action.action_type in host_only and action.player != "host":
@@ -160,7 +163,7 @@ class LobbyDispatcher:
             case "switch_to_spectator":
                 if not isinstance(self._network, LANServer):
                     return LobbyResult(False, message="server only")
-                conn = self._find_conn_by_role(action.player)
+                conn = sender_conn if sender_conn is not None else self._find_conn_by_role(action.player)
                 if conn is None:
                     return LobbyResult(False, message="no such connection")
                 if action.player not in ("player1", "player2"):
@@ -176,7 +179,7 @@ class LobbyDispatcher:
                     return LobbyResult(False, message="server only")
                 if self._state.peer_connected:
                     return LobbyResult(False, message="seat occupied")
-                conn = self._find_conn_by_role(action.player)
+                conn = sender_conn if sender_conn is not None else self._find_conn_by_role(action.player)
                 if conn is None:
                     return LobbyResult(False, message="no such connection")
                 import secrets
@@ -188,6 +191,8 @@ class LobbyDispatcher:
                 return LobbyResult(True)
 
             case "start_match":
+                if not self._state.peer_connected:
+                    return LobbyResult(False, message="no peer")
                 self.start_signal = True
                 return LobbyResult(True)
 
@@ -204,6 +209,19 @@ class LobbyDispatcher:
                 if r == role:
                     return c
         return None
+
+    def _on_pong(self, role: str, rtt_ms: float) -> None:
+        self._state.latencies[role] = round(rtt_ms, 1)
+        self._broadcast()
+
+    def tick(self) -> None:
+        if not isinstance(self._network, LANServer):
+            return
+        now = time.monotonic()
+        if now - self._last_ping_time >= 2.0:
+            self._last_ping_time = now
+            self._network.broadcast_ping()
+            self._network.check_heartbeat(timeout=10.0)
 
     def _broadcast(self) -> None:
         if not isinstance(self._network, LANServer):
