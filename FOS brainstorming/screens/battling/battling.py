@@ -155,8 +155,6 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                     last_reconnect_attempt = now
                     if client.try_reconnect():
                         print("[battling] reconnect succeeded")
-                        if client.initial_state:
-                            game_state.apply_dict(client.initial_state, game_renderer)
 
             game_over = client.consume_pending_game_over()
             if game_over is not None:

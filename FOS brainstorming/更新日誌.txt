@@ -1759,8 +1759,12 @@ debug:
     暫停倒數不更新
         解釋: pause_seconds_remaining 僅在 broadcast 時由伺服器更新 畫面靜止不動
         修法: 伺服器與客戶端主迴圈各自每幀用 dt 遞減 pause_seconds_remaining
-    玩家重連後遊戲狀態過舊
-        修法: try_reconnect() 成功後立即將 client.initial_state 套用至 game_state
+    玩家重連後遊戲仍停留在暫停狀態（reconnect 後遊戲不繼續、計時器不動）
+        解釋: try_reconnect() 成功後主執行緒將 client.initial_state（含 paused=True 的歡迎快照）
+              套用至 game_state 覆蓋了 _recv_loop 已從伺服器 _on_peer_reconnect broadcast
+              收到的 paused=False 狀態 導致遊戲永遠停在暫停畫面
+        修法: 移除 battling.py reconnect 成功後的 apply_dict(client.initial_state) 呼叫
+              _recv_loop 透過 broadcast 已可正確同步恢復後的完整狀態 無需主執行緒重覆套用
     進入 end_game 時螢幕縮放
         解釋: matplotlib 在 Windows 預設啟用互動式 GUI backend (TkAgg/Qt5Agg) 初始化時觸發 Win32 DPI API 干擾 SDL2 視窗
         修法: chart_make.py 於 import pyplot 前加 matplotlib.use('Agg') 強制使用非 GUI backend
