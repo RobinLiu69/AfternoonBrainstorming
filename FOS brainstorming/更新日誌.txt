@@ -1777,3 +1777,32 @@ debug:
         新增 UIRenderer.render_identity_label 方法
         GameRenderer.render_frame 加 multiplayer 參數 為 True 時呼叫 identity label
 =======================
+2026/05/14-4.0.4.2
+編寫者 Robin
+----------------
+修正:
+    客戶端斷線秒重連 server 把它當成觀戰者 暫停倒數一路跑到逾時
+        解釋: 客戶端突然斷網 (沒送 TCP FIN) server 需要等 heartbeat timeout 約 10 秒才偵測舊連線已死
+              若客戶端在這段時間內帶舊 token 自動重連 _decide_role 看到 _clients 仍有殘留舊 conn
+              (has_peer=True) valid_reconnect 因此為 False 新 conn 被降級成 spectator
+              等 heartbeat 真的關掉舊 conn 才 fire on_peer_disconnect 遊戲進入暫停
+              但已重連的人實際身分是 spectator on_peer_reconnect 永遠不會觸發 倒數跑到逾時宣告獲勝
+        修法: _decide_role 改成 token 一致時強制驅逐占著 peer 座位的舊 conn
+              (close socket 從 _clients 移除 並加入 _evicted 集合)
+              LANServer 加 _evicted: set[socket.socket] 追蹤被驅逐的 conn
+              _client_loop cleanup 若 conn in _evicted 直接 break
+              不再 fire on_client_dropped / on_peer_disconnect 避免覆蓋已生效的 reconnect
+    客戶端關掉重開新進程接手空著的 player 座位 倒數不解除
+        解釋: 客戶端進程關閉後重開 token 已遺失 server _decide_role 看到 has_peer=False token=None
+              落入「intent=play 且 not has_peer」分支 把 peer slot 給他並發新 token
+              但 is_reconnect=False on_peer_reconnect 不會 fire game_state.paused 維持 True 倒數繼續
+        修法: _accept_loop 把 on_peer_reconnect 觸發條件從「token 一致 reconnect」改成
+              「role in (player1, player2)」 只要 peer 座位被填上就 fire
+              dispatcher._on_peer_reconnect 本身冪等 沒 pause 時呼叫只會 paused=False 重新廣播 不影響首次連線
+    host_seat=player2 時客戶端重連後本機畫面仍停在暫停
+        解釋: LANClient.try_reconnect 寫死 return role == "player2"
+              當 host 在 lobby 換過座位 (host_seat=player2) 客戶端重連後 server 給的 role 是 "player1"
+              try_reconnect 因此回傳 False battling.py / draft.py 主迴圈不會把 welcome 帶回來
+              含 paused=False 的 initial_state 套上 client 端永遠停在暫停畫面
+        修法: try_reconnect 回傳值改為 role in ("player1", "player2") 兩個 player 角色都正確處理
+=======================

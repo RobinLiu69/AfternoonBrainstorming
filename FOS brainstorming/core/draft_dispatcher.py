@@ -57,12 +57,14 @@ class DraftDispatcher:
 
     def attach_server(self, server: "LANServer") -> None:
         self._network = server
+        server.reset_callbacks()
         server.set_scene("draft")
         server.host_seat = self.host_seat
         server.on_action = self._on_remote_action
         server.on_client_connect = self._on_client_connect
         server.on_peer_disconnect = self._on_peer_disconnect
         server.on_peer_reconnect = self._on_peer_reconnect
+        server.on_pulse = self._on_pulse
 
     def attach_client(self, client: "LANClient") -> None:
         self._network = client
@@ -71,6 +73,10 @@ class DraftDispatcher:
     def _on_client_connect(self, role: str) -> dict:
         self._refresh_pause_remaining()
         return self._draft_state.to_dict_for(role)
+
+    def _on_pulse(self) -> None:
+        if self._draft_state.paused:
+            self._broadcast(self._draft_state)
 
     def _refresh_pause_remaining(self) -> None:
         if self._draft_state.paused and self._pause_deadline is not None:

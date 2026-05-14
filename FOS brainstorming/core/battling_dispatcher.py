@@ -53,12 +53,14 @@ class BattlingDispatcher:
 
     def attach_server(self, server: "LANServer") -> None:
         self._network = server
+        server.reset_callbacks()
         server.set_scene("battling")
         server.host_seat = self.host_seat
         server.on_action = self._on_remote_action
         server.on_client_connect = self._on_client_connect
         server.on_peer_disconnect = self._on_peer_disconnect
         server.on_peer_reconnect = self._on_peer_reconnect
+        server.on_pulse = self._on_pulse
 
     def attach_client(self, client: "LANClient") -> None:
         self._network = client
@@ -69,6 +71,10 @@ class BattlingDispatcher:
             return {}
         self._refresh_pause_remaining()
         return self._game_state.to_dict_for(role)
+
+    def _on_pulse(self) -> None:
+        if self._game_state is not None and self._game_state.paused:
+            self._broadcast_state(self._game_state)
 
     def _refresh_pause_remaining(self) -> None:
         if self._game_state is None:
@@ -149,7 +155,6 @@ class BattlingDispatcher:
         return ActionResult(False, message=f"unknown mode: {self.mode}")
 
     def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
-        """Background thread: a client sent us an action."""
         payload = {k: v for k, v in envelope.items() if k != "type"}
         try:
             action = GameAction(**payload)

@@ -147,14 +147,19 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
     while running:
         dt = clock.tick(60) / 1000.0
 
+        if is_server and server is not None:
+            server.pulse()
+
         if is_client and client:
-            if client.is_disconnected and client.role == "player2":
+            if client.is_disconnected and client.role in ("player1", "player2"):
                 import time as _time
                 now = _time.monotonic()
                 if now - last_reconnect_attempt > 2.0:
                     last_reconnect_attempt = now
                     if client.try_reconnect():
                         print("[battling] reconnect succeeded")
+                        if client.initial_state:
+                            game_state.apply_dict(client.initial_state, game_renderer)
 
             game_over = client.consume_pending_game_over()
             if game_over is not None:

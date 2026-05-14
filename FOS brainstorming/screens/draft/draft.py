@@ -120,16 +120,20 @@ def main(game_screen: GameScreen, mode: str = "local",
                     kind="scene_handoff",
                     next_scene_state=next_state,
                 )
-            if client.is_disconnected and client.role == "player2":
+            if client.is_disconnected and client.role in ("player1", "player2"):
                 import time as _time
                 now = _time.monotonic()
                 if now - last_reconnect_attempt > 2.0:
                     last_reconnect_attempt = now
                     if client.try_reconnect():
                         print("[draft] reconnect succeeded")
+                        if client.initial_state:
+                            draft_state.apply_dict(client.initial_state)
 
-        if mode == "lan_server" and getattr(dispatcher, "peer_lost", False):
-            return DraftExitReason(kind="peer_lost")
+        if mode == "lan_server" and server is not None:
+            server.pulse()
+            if getattr(dispatcher, "peer_lost", False):
+                return DraftExitReason(kind="peer_lost")
 
         if draft_state.phase != last_phase:
             page = 0
