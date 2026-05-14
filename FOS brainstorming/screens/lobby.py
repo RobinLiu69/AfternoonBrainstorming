@@ -247,6 +247,9 @@ def main(game_screen: GameScreen, mode: str,
             if state.local_role:
                 client.role = state.local_role
 
+        if mode == "lan_server" and server is not None:
+            server.pulse()
+
         if mode == "lan_server" and dispatcher.start_signal:
             return LobbyExit(kind="start_match", state=state)
 

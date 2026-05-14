@@ -41,6 +41,7 @@ class LobbyDispatcher:
 
     def attach_server(self, server: "LANServer") -> None:
         self._network = server
+        server.reset_callbacks()
         server.set_scene("lobby")
         server.host_seat = self._state.host_seat
         server.god_view = self._state.god_view

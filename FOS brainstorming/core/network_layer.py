@@ -60,7 +60,8 @@ def _recv_msg(sock: socket.socket) -> Optional[dict]:
 
 class LANServer:
     def __init__(self, version: str, host: str = "0.0.0.0", port: int = 5555,
-                 god_view: bool = False, host_seat: str = "player1"):
+                 god_view: bool = False, host_seat: str = "player1",
+                 heartbeat_interval: float = 1.0, heartbeat_timeout: float = 10.0):
         self.version = version
         self.host = host
         self.port = port
@@ -68,22 +69,52 @@ class LANServer:
         self.host_seat = host_seat
         self.scene: str = ""
 
+        self.heartbeat_interval = heartbeat_interval
+        self.heartbeat_timeout = heartbeat_timeout
+        self._last_pulse: float = 0.0
+
         self.on_action: Optional[Callable[[dict, socket.socket], None]] = None
         self.on_client_connect: Optional[Callable[[str], dict]] = None
         self.on_peer_disconnect: Optional[Callable[[], None]] = None
         self.on_peer_reconnect: Optional[Callable[[], None]] = None
         self.on_client_dropped: Optional[Callable[[str], None]] = None
         self.on_pong: Optional[Callable[[str, float], None]] = None
+        self.on_pulse: Optional[Callable[[], None]] = None
         self._last_seen: dict = {}
 
         self._clients: list[tuple[socket.socket, str]] = []
         self._peer_token: Optional[str] = None
+        self._evicted: set[socket.socket] = set()
         self._lock = threading.Lock()
         self._server_sock: Optional[socket.socket] = None
         self._running = False
 
     def set_scene(self, scene: str) -> None:
         self.scene = scene
+
+    def reset_callbacks(self) -> None:
+        self.on_action = None
+        self.on_client_connect = None
+        self.on_peer_disconnect = None
+        self.on_peer_reconnect = None
+        self.on_client_dropped = None
+        self.on_pong = None
+        self.on_pulse = None
+
+    def pulse(self, now: Optional[float] = None) -> None:
+        if not self._running:
+            return
+        now = now if now is not None else time.monotonic()
+        if now - self._last_pulse < self.heartbeat_interval:
+            return
+        self._last_pulse = now
+        self.broadcast_ping()
+        self.check_heartbeat(self.heartbeat_timeout)
+        if self.on_pulse is not None:
+            try:
+                self.on_pulse()
+            except Exception as e:
+                print(f"[LANServer] on_pulse raised: {e}")
 
     def peer_seat(self) -> str:
         return "player2" if self.host_seat == "player1" else "player1"
@@ -102,7 +133,6 @@ class LANServer:
             return next((r for c, r in self._clients if c is conn), "")
 
     def reassign_role(self, conn: socket.socket, new_role: str) -> bool:
-        """Update the role label for a connected client. Returns True on success."""
         with self._lock:
             for i, (c, _r) in enumerate(self._clients):
                 if c is conn:
@@ -111,26 +141,49 @@ class LANServer:
         return False
 
     def _decide_role(self, intent: str, token: Optional[str]) -> tuple[str, str]:
-        """Returns (role, issued_token). issued_token is sent back in welcome."""
         peer_role = self.peer_seat()
+        token_matches = (
+            token is not None
+            and self._peer_token is not None
+            and token == self._peer_token
+        )
+
+        evicted: list[socket.socket] = []
         with self._lock:
-            has_peer = any(role == peer_role for _conn, role in self._clients)
-            valid_reconnect = (
-                token is not None
-                and self._peer_token is not None
-                and token == self._peer_token
-                and not has_peer
-            )
+            if token_matches:
+                kept: list[tuple[socket.socket, str]] = []
+                for c, r in self._clients:
+                    if r == peer_role:
+                        evicted.append(c)
+                        self._evicted.add(c)
+                        self._last_seen.pop(c, None)
+                    else:
+                        kept.append((c, r))
+                self._clients = kept
+                chosen_role: str = peer_role
+                issued_token: str = self._peer_token  # type: ignore[assignment]
+            else:
+                has_peer = any(r == peer_role for _conn, r in self._clients)
+                if intent == "play" and not has_peer:
+                    new_token = secrets.token_urlsafe(16)
+                    self._peer_token = new_token
+                    chosen_role = peer_role
+                    issued_token = new_token
+                else:
+                    chosen_role = "god" if self.god_view else "spectator"
+                    issued_token = ""
 
-        if valid_reconnect:
-            return peer_role, self._peer_token  # type: ignore[return-value]
+        for c in evicted:
+            try:
+                c.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            try:
+                c.close()
+            except OSError:
+                pass
 
-        if intent == "play" and not has_peer:
-            new_token = secrets.token_urlsafe(16)
-            self._peer_token = new_token
-            return peer_role, new_token
-
-        return ("god" if self.god_view else "spectator"), ""
+        return chosen_role, issued_token
 
     @property
     def is_running(self) -> bool:
@@ -191,6 +244,14 @@ class LANServer:
             role, issued_token = self._decide_role(intent, token)
             is_reconnect = (role in ("player1", "player2")
                             and token is not None and token == issued_token)
+            peer_joined = role in ("player1", "player2")
+
+            if peer_joined and self.on_peer_reconnect is not None:
+                try:
+                    self.on_peer_reconnect()
+                except Exception as e:
+                    print(f"[LANServer] on_peer_reconnect raised: {e}")
+
             state = self.on_client_connect(role) if self.on_client_connect is not None else {}
 
             try:
@@ -211,12 +272,6 @@ class LANServer:
                 self._last_seen[conn] = time.monotonic()
             print(f"[LANServer] Assigned role={role} to {addr} (reconnect={is_reconnect})")
 
-            if is_reconnect and self.on_peer_reconnect is not None:
-                try:
-                    self.on_peer_reconnect()
-                except Exception as e:
-                    print(f"[LANServer] on_peer_reconnect raised: {e}")
-
             threading.Thread(
                 target=self._client_loop, args=(conn, addr), daemon=True
             ).start()
@@ -227,6 +282,8 @@ class LANServer:
             if msg is None:
                 print(f"[LANServer] Client disconnected: {addr}")
                 with self._lock:
+                    was_evicted = conn in self._evicted
+                    self._evicted.discard(conn)
                     dropped_role = next((r for c, r in self._clients if c is conn), "")
                     self._clients = [c for c in self._clients if c[0] is not conn]
                     self._last_seen.pop(conn, None)
@@ -234,6 +291,8 @@ class LANServer:
                     conn.close()
                 except OSError:
                     pass
+                if was_evicted:
+                    break
                 if self.on_client_dropped is not None:
                     try:
                         self.on_client_dropped(dropped_role)
@@ -437,7 +496,6 @@ class LANClient:
         return self._do_handshake(timeout=timeout, intent=intent, token=None)
 
     def try_reconnect(self, timeout: float = 5.0) -> bool:
-        """Returns True if reconnect succeeded with the same role."""
         if self._sock is not None:
             return True
         if not self.token:
@@ -447,7 +505,7 @@ class LANClient:
         except (OSError, RuntimeError, ConnectionError) as e:
             print(f"[LANClient] reconnect failed: {e}")
             return False
-        return role == "player2"
+        return role in ("player1", "player2")
 
     def _do_handshake(self, timeout: float, intent: str, token: Optional[str]) -> tuple[str, dict]:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
