@@ -38,6 +38,13 @@ from utils.logger import GameLogger
 
 from cards.factory import CardFactory
 
+from campaign import stage_select as campaign_stage_select
+from campaign import pre_battle as campaign_pre_battle
+from campaign import deck_builder as campaign_deck_builder
+from campaign import campaign_save
+from campaign.campaign_manager import build_campaign_game_state
+from campaign.ai_controller import AIController
+
 CardFactory.register_all()
 
 
@@ -225,6 +232,30 @@ def main() -> None:
                 if game_state:
                     _finalize_battle(game_state, game_screen, "player1" if game_state.score < 0 else "player2")
                 continue
+            case "campaign":
+                stage = campaign_stage_select.main(game_screen)
+                if stage is None:
+                    continue
+                pre_battle_result = campaign_pre_battle.main(game_screen, stage)
+                if pre_battle_result != "start":
+                    continue
+                save_state = campaign_save.load()
+                player_deck = campaign_deck_builder.main(
+                    game_screen, stage, set(save_state.get("cleared", []))
+                )
+                if player_deck is None:
+                    continue
+                game_state = build_campaign_game_state(stage, player_deck_override=player_deck)
+                ai_controller = AIController(stage, player_name="player2")
+                winner = battling.main(
+                    game_state, game_screen,
+                    mode="campaign",
+                    ai_controller=ai_controller,
+                )
+                if winner not in ("None", ""):
+                    if winner == "player1":
+                        campaign_save.mark_cleared(stage)
+                    _finalize_battle(game_state, game_screen, winner)
             case _:
                 return
     

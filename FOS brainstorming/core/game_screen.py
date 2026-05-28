@@ -68,9 +68,9 @@ class GameScreen:
         pygame.display.set_caption("AfternoonBrainstorming")
         self.display_width: int = pygame.display.get_desktop_sizes()[0][0]
         self.display_height: int = pygame.display.get_desktop_sizes()[0][1]
-        if self.display_width == 1440 and self.display_height == 900:
-            self.display_width = 1080
-            self.display_height =675
+        if self.display_width == 2880 and self.display_height == 1800:
+            self.display_width = 1920
+            self.display_height = 1080
         print(self.display_width, self.display_height)
         self.surface, self.block_size = self.fitting_screen()
         print(self.display_width, self.display_height)

@@ -1,0 +1,32 @@
+{
+    "ai_delay_ms": {
+        "turn_start": 900,
+        "action": 650,
+        "attack": 500,
+        "busy_recheck": 120
+    },
+    "thresholds": {
+        "placement_min_score": 1.0,
+        "attack_min_score": 15.0,
+        "lethal_score_threshold": 100.0
+    },
+    "scoring": {
+        "kill_bonus_base": 100.0,
+        "kill_bonus_per_threat": 10.0,
+        "score_income_multiplier": 8.0,
+        "hand_threat_value": {
+            "ASS": 20.0
+        }
+    },
+    "threat_model": {
+        "ass_threat_damage": 5,
+        "incoming_kill_penalty": 30.0,
+        "incoming_chip_penalty_per_damage": 1.5
+    },
+    "faction_overrides": {
+        "red": { "attack_min_score": 12.0 },
+        "blue": { "attack_min_score": 13.0 },
+        "orange": { "attack_min_score": 12.0 },
+        "boss": { "attack_min_score": 13.0 }
+    }
+}

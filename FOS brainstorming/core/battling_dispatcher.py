@@ -136,7 +136,7 @@ class BattlingDispatcher:
         self._game_state = game_state
 
         match self.mode:
-            case "local":
+            case "local" | "campaign":
                 return self._execute(action, game_state)
 
             case "lan_client":
