@@ -46,7 +46,13 @@ _DEFAULTS: dict = {
         "incoming_kill_penalty": 30.0,
         "incoming_chip_penalty_per_damage": 1.5,
     },
-    "faction_overrides": {},
+    "faction_overrides": {
+        "white": {"attack_min_score": 10.0},
+        "red": {"attack_min_score": 12.0},
+        "blue": {"attack_min_score": 13.0},
+        "orange": {"attack_min_score": 12.0},
+        "boss": {"attack_min_score": 13.0},
+    },
 }
 
 

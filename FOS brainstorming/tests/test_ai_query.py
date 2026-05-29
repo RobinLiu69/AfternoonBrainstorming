@@ -177,3 +177,26 @@ def test_incoming_damage_ignores_numb_enemies():
     e.numbness = True
     gs.number_of_attacks["player1"] = 2
     assert ai_query.incoming_damage_at_position(gs, "player2", 0, 1) == 0
+
+
+def test_attack_coverage_cells_hf_pattern_corner_vs_center():
+    """HF's small_cross + small_x covers 8 cells from center, only 3 from a corner."""
+    gs = make_game_state()
+    corner = ai_query.attack_coverage_cells(gs, 0, 0, "small_cross small_x")
+    center = ai_query.attack_coverage_cells(gs, 1, 1, "small_cross small_x")
+    assert corner == 3
+    assert center == 8
+
+
+def test_attack_coverage_cells_adc_large_cross_uniform():
+    """Large_cross covers 6 cells from any position on a 4x4 board."""
+    gs = make_game_state()
+    assert ai_query.attack_coverage_cells(gs, 0, 0, "large_cross") == 6
+    assert ai_query.attack_coverage_cells(gs, 1, 1, "large_cross") == 6
+
+
+def test_attack_coverage_cells_zero_for_nearest_pattern():
+    """Nearest/farthest patterns don't translate to cell coverage."""
+    gs = make_game_state()
+    assert ai_query.attack_coverage_cells(gs, 1, 1, "nearest") == 0
+    assert ai_query.attack_coverage_cells(gs, 1, 1, "farthest") == 0

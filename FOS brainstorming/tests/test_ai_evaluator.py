@@ -233,6 +233,105 @@ def test_evaluate_placement_sp_outscores_equivalent_unit_for_score_income():
     assert sp_score > ass_score
 
 
+def test_protection_bonus_penalizes_unprotected_squishy_dps():
+    """No tank on board → ADC/SP/AP get a penalty for deploying naked."""
+    gs = make_game_state()
+    assert ai_evaluator.protection_bonus("ADCW", gs, "player2") < 0
+    assert ai_evaluator.protection_bonus("SPW",  gs, "player2") < 0
+    assert ai_evaluator.protection_bonus("APW",  gs, "player2") < 0
+
+
+def test_protection_bonus_rewards_dps_with_front_line():
+    """A friendly TANK / HF / LF on board flips the penalty into a bonus."""
+    gs = make_game_state()
+    place_card(gs, "TANKW", "player2", 0, 0)
+    assert ai_evaluator.protection_bonus("ADCW", gs, "player2") > 0
+
+
+def test_protection_bonus_zero_for_tank_class():
+    """TANK / HF / LF aren't gated by the front-line check."""
+    gs = make_game_state()
+    assert ai_evaluator.protection_bonus("TANKW", gs, "player2") == 0.0
+    assert ai_evaluator.protection_bonus("HFW",   gs, "player2") == 0.0
+    assert ai_evaluator.protection_bonus("LFW",   gs, "player2") == 0.0
+
+
+def test_strategy_prefers_tank_over_adc_on_empty_board():
+    """First placement of the game with both options in hand: TANK should win
+    so that ADC waits for the front line."""
+    from campaign.ai_strategies.white import WhiteStrategy
+    s = WhiteStrategy()
+    gs = make_game_state()
+    gs.player2.hand = ["ADCW", "TANKW"]
+    best = s.best_placement(gs, "player2")
+    assert best is not None
+    assert best.card_name == "TANKW"
+
+
+def test_strategy_releases_adc_after_tank_is_down():
+    """After the front line is established, ADC placement clears the penalty."""
+    from campaign.ai_strategies.white import WhiteStrategy
+    s = WhiteStrategy()
+    gs = make_game_state()
+    place_card(gs, "TANKW", "player2", 0, 0)
+    gs.player2.hand = ["ADCW"]
+    best = s.best_placement(gs, "player2")
+    assert best is not None
+    assert best.card_name == "ADCW"
+
+
+def test_future_ass_threat_penalty_scales_with_empty_diagonal_neighbors():
+    """ADCW (5 HP, killable by ASS) at center has 4 empty small_x neighbors
+    (each is a kill-spot opponent can deploy ASS at) — penalty quadruples
+    compared to a corner where only one such cell exists."""
+    gs = make_game_state()
+    center = ai_evaluator.future_ass_threat_penalty("ADCW", (1, 1), gs)
+    corner = ai_evaluator.future_ass_threat_penalty("ADCW", (0, 0), gs)
+    assert center < corner  # both negative; center is more negative
+    assert center < 0
+    assert corner < 0
+
+
+def test_future_ass_threat_zero_for_high_hp_units():
+    """HF (9 HP), TANK (15 HP), LF (>5 HP) survive a 5-damage ASS swing — no penalty."""
+    gs = make_game_state()
+    assert ai_evaluator.future_ass_threat_penalty("HFW", (1, 1), gs) == 0.0
+    assert ai_evaluator.future_ass_threat_penalty("TANKW", (1, 1), gs) == 0.0
+    assert ai_evaluator.future_ass_threat_penalty("LFW", (1, 1), gs) == 0.0
+
+
+def test_future_ass_threat_zero_when_diagonal_neighbors_occupied():
+    """If all small_x adjacent cells are filled (no ASS deploy slot), no threat."""
+    gs = make_game_state()
+    for x, y in ((0, 0), (2, 0), (0, 2), (2, 2)):
+        place_card(gs, "TANKW", "player1", x, y)
+    assert ai_evaluator.future_ass_threat_penalty("ADCW", (1, 1), gs) == 0.0
+
+
+def test_adcw_placement_prefers_corner_over_center_under_ass_threat():
+    """The classic user complaint: AI placed ADCW in the open. With the threat
+    penalty, corners (1 vulnerable cell) clearly beat center (4 vulnerable cells)."""
+    gs = make_game_state()
+    corner = ai_evaluator.evaluate_placement("ADCW", (0, 0), gs, "player2")
+    center = ai_evaluator.evaluate_placement("ADCW", (1, 1), gs, "player2")
+    assert corner > center
+
+
+def test_hf_placement_prefers_center_over_corner_due_to_reach():
+    """HF (small_cross + small_x) covers 8 cells in center vs 3 in corner — center wins."""
+    gs = make_game_state()
+    corner = ai_evaluator.evaluate_placement("HFW", (0, 0), gs, "player2")
+    center = ai_evaluator.evaluate_placement("HFW", (1, 1), gs, "player2")
+    assert center > corner
+
+
+def test_reach_bonus_zero_for_nearest_attackers():
+    """SP/AP/APT shouldn't get a reach bonus — their range is enemy-dependent."""
+    gs = make_game_state()
+    assert ai_evaluator.reach_bonus("SPW", (0, 0), gs) == 0.0
+    assert ai_evaluator.reach_bonus("APW", (1, 1), gs) == 0.0
+
+
 def test_evaluate_placement_avoids_immediate_kill_spot():
     """If opponent's existing attackers can wipe out the placement, score gets a big hit."""
     gs = make_game_state()

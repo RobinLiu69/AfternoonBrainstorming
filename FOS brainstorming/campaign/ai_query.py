@@ -126,6 +126,42 @@ def nearest_enemy_distance(gs: "GameState", owner: str, x: int, y: int) -> int:
     return min(manhattan((x, y), (e.board_x, e.board_y)) for e in enemies)
 
 
+def attack_coverage_cells(gs: "GameState", x: int, y: int, attack_types: str) -> int:
+    """Number of board cells the attack pattern reaches from (x, y).
+
+    Counts pattern geometry only — independent of which cells are currently
+    occupied, since the value of a position is about its long-term threat range
+    (units come and go). Returns 0 for non-cell patterns (nearest, farthest) so
+    those jobs don't get an arbitrary reach bonus.
+    """
+    if not attack_types:
+        return 0
+    cells: set[tuple[int, int]] = set()
+    w = gs.board_config.width
+    h = gs.board_config.height
+    for at in attack_types.split(" "):
+        match at:
+            case "small_cross":
+                for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < w and 0 <= ny < h:
+                        cells.add((nx, ny))
+            case "small_x":
+                for dx, dy in ((-1, -1), (-1, 1), (1, -1), (1, 1)):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < w and 0 <= ny < h:
+                        cells.add((nx, ny))
+            case "large_cross":
+                for i in range(w):
+                    if i != x:
+                        cells.add((i, y))
+                for j in range(h):
+                    if j != y:
+                        cells.add((x, j))
+            # "nearest" / "farthest" depend on actual enemy positions, not cells.
+    return len(cells)
+
+
 def is_playable_unit_card(card_name: str) -> bool:
     """Returns True if the card represents a unit (placed on the board).
 

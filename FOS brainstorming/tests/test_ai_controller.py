@@ -173,12 +173,13 @@ def test_saves_attacks_when_only_low_value_chips_available():
     gs.number_of_attacks["player2"] = 1
     gs.player2.hand = []
 
-    attacker = place_card(gs, Adc, "player2", 0, 0)
+    # Use TANKW as attacker (1 dmg) and a non-priority TANKW target so the chip
+    # score stays well below white's threshold even with the new target-priority
+    # bonus (which only fires for ADC / SP).
+    attacker = place_card(gs, "TANKW", "player2", 0, 0)
     attacker.numbness = False
-    tank = place_card(gs, Adc, "player1", 1, 0)
-    tank.numbness = False
-    tank.health = 5  # ADCW base — but with armor… no, just health
-    tank.damage = 1  # mimic a low-threat target so attack score is small
+    chump = place_card(gs, "TANKW", "player1", 1, 0)
+    chump.numbness = False
 
     ai.tick(gs, 0)
     actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1)

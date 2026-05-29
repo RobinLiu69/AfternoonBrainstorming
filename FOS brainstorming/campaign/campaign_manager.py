@@ -28,9 +28,12 @@ from campaign.ai_decks import STAGE_AI_DECKS, STAGE_PLAYER_DECKS
 
 def build_campaign_game_state(
     stage: str,
-    file_auto_delete: bool = True,
+    file_auto_delete: bool = False,
     player_deck_override: list[str] | None = None,
 ) -> GameState:
+    """Default `file_auto_delete=False` so .log + .jsonl persist under
+    `battle_records/` and the player can replay campaign matches from the
+    Playback menu, identical to local 2P games."""
     p1_deck = (player_deck_override or STAGE_PLAYER_DECKS[stage]).copy()
     p2_deck = STAGE_AI_DECKS[stage].copy()
 

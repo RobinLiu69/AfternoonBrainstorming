@@ -80,6 +80,7 @@ class AIController:
         self._next_release_ms: int = 0
         self._last_turn_seen: int = -1
         self._initialized: bool = False
+        self._buffed_unit_ids: set[str] = set()
         self.focus_position: tuple[int, int] | None = None
 
     def tick(self, gs: "GameState", now_ms: int, renderer_busy: bool = False) -> list[GameAction]:
@@ -87,7 +88,10 @@ class AIController:
         # populated and players initialized). Runs every tick but no-ops after first run.
         self._ensure_initialized(gs)
         # Idempotent per-tick: tag and buff any new AI units (boss +1 HP).
-        maintain_unit_buffs(self.stage, gs)
+        # Tracking set is owned by this controller instance — a fresh
+        # AIController is created for every campaign match, so the registry
+        # can't leak across games (instance_ids reset between matches).
+        maintain_unit_buffs(self.stage, gs, self._buffed_unit_ids)
 
         current = "player1" if gs.turn_number % 2 == 0 else "player2"
         if current != self.player_name:
@@ -118,7 +122,11 @@ class AIController:
             self.focus_position = None
             return []
 
-        if action.action_type in ("play_card", "attack"):
+        if (
+            action.action_type in ("play_card", "attack")
+            and action.board_x is not None
+            and action.board_y is not None
+        ):
             self.focus_position = (action.board_x, action.board_y)
         else:
             self.focus_position = None

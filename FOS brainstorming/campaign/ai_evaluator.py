@@ -23,6 +23,7 @@ from shared.setting import CARD_SETTING, JOB_DICTIONARY
 from campaign.ai_query import (
     attack_targets_at, attack_targets_from_pos, position_safety, nearest_enemy_distance,
     friendly_cards, cells_threatening_card, incoming_damage_at_position,
+    attack_coverage_cells, ASS_THREAT_DAMAGE,
 )
 from campaign.config_loader import CAMPAIGN_SETTINGS
 
@@ -43,6 +44,63 @@ NON_ATTACKING_CARDS: set[str] = {"APTG"}
 ever connects). Letting the AI pick one as an attacker causes an infinite loop:
 the dispatcher fires, attack returns False, attack count isn't decremented, so
 the AI re-picks the same target every tick."""
+
+
+PRIORITY_TARGET_JOBS: set[str] = {"ADC", "SP"}
+"""Jobs whose units are extra-valuable to weaken or kill:
+- ADC: highest standing damage in most factions, removing it slows opponent offense.
+- SP: highest score income (1 + extra_score per turn) — every turn alive is a point.
+
+Their `target.damage * 3` term already gives SP a bump (damage 5 → +15), but a
+plain ADC chip with a low-damage attacker still scores ~11 — below default thresholds.
+This explicit bonus lets the AI commit to chipping ADC/SP even when its current
+attacker isn't a heavy hitter."""
+
+
+def target_priority_bonus(target: "Card") -> float:
+    """Flat +5 for chipping or killing a priority-target job."""
+    job, _ = parse_card_name(target.job_and_color)
+    return 5.0 if job in PRIORITY_TARGET_JOBS else 0.0
+
+
+def followup_kill_bonus(
+    attacker: "Card", target: "Card", gs: "GameState", chip_damage: int,
+) -> float:
+    """Reward chip damage that another friendly attacker can finish this turn.
+
+    Without a follow-up, chip is "wasted work": the target stays alive and keeps
+    scoring 1+/turn for the opponent. We only count chips that chain into a kill
+    within the current attack budget.
+
+    Conditions:
+    - We need at least 2 attack counts (this chip + the follow-up).
+    - The chip must not already be lethal (separate kill bonus handles that).
+    - Some other non-numb friendly must be in attack range of `target` and able
+      to one-shot the chipped HP (accounting for target armor).
+    """
+    if gs.number_of_attacks.get(attacker.owner, 0) < 2:
+        return 0.0
+    remaining = target.health - chip_damage
+    if remaining <= 0:
+        return 0.0
+    armor = max(0, target.armor)
+    for other in gs.get_player(attacker.owner).on_board:
+        if other is attacker or other.numbness or other.health <= 0:
+            continue
+        if other.job_and_color in NON_ATTACKING_CARDS:
+            continue
+        if target not in attack_targets_at(gs, other):
+            continue
+        other_dmg = other.damage + other.extra_damage
+        if remaining + armor <= other_dmg:
+            return 15.0 + target.damage * 2.0
+    return 0.0
+
+
+WASTED_CHIP_PENALTY: float = 5.0
+"""Subtracted from chip-damage scores when there's no follow-up kill chain.
+Encodes 'doing nothing this turn beats wasting attacks on chips you can't
+finish' — the opponent keeps scoring from the surviving target either way."""
 
 
 _SCORING = CAMPAIGN_SETTINGS["scoring"]
@@ -199,6 +257,81 @@ def hand_threat_penalty(card_name: str) -> float:
     return -HAND_THREAT_VALUE.get(job, 0.0)
 
 
+def future_ass_threat_penalty(
+    card_name: str, position: tuple[int, int], gs: "GameState",
+) -> float:
+    """Penalty for dropping a one-shot-able unit where opponent can deploy ASS to kill it.
+
+    Symmetric to `defensive_placement_bonus` and `cells_threatening_card`: same
+    worst-case assumption (opponent has a hypothetical ASS with damage 5 / small_x).
+    Counts the empty small_x-adjacent cells around the proposed position — each
+    one is a slot opponent can pay 1 card + 1 attack to one-shot us.
+
+    Only fires for units whose base health is ≤ ASS damage. TANK / HF / LF tank
+    a 5-damage swing and don't trigger this.
+    """
+    health, _ = card_base_stats(card_name)
+    if health <= 0 or health > ASS_THREAT_DAMAGE:
+        return 0.0
+    x, y = position
+    vulnerable = 0
+    for dx, dy in ((-1, -1), (-1, 1), (1, -1), (1, 1)):
+        nx, ny = x + dx, y + dy
+        if gs.board_config.is_valid_position(nx, ny) and not gs.board_dict[nx, ny].occupy:
+            vulnerable += 1
+    if vulnerable == 0:
+        return 0.0
+    # Per-cell penalty scaled by how much score income we'd lose if killed.
+    score_per_turn = estimate_score_per_turn(card_name)
+    return -float(vulnerable) * (3.0 + score_per_turn * 1.5)
+
+
+SQUISHY_DPS_JOBS: set[str] = {"ADC", "AP", "SP"}
+"""Low-HP key scorers / damage dealers (1-5 base HP across factions). Without
+a front-line shield they die fast and their score income evaporates."""
+
+
+def protection_bonus(card_name: str, gs: "GameState", owner: str) -> float:
+    """Hold-or-deploy weight for squishy DPS.
+
+    Deploying ADC/SP/AP into open ground without a tank-shaped friendly already
+    on the board is a tempo trap — the opponent removes them cheaply (chip
+    chain, ASS deploy-kill, large_cross ranged shot). Wait until TANK/HF/LF
+    (HP > 5) anchors the front line first, then commit.
+
+    Returns +4 when at least one friendly tank-class unit is on the board,
+    −12 otherwise. The magnitude offsets normal positional scoring enough that
+    a same-turn TANK placement (no penalty) consistently out-scores an ADC
+    placement when neither is on the board yet.
+    """
+    job, _ = parse_card_name(card_name)
+    if job not in SQUISHY_DPS_JOBS:
+        return 0.0
+    has_front_line = any(
+        c.health > ASS_THREAT_DAMAGE for c in gs.get_player(owner).on_board
+    )
+    return 4.0 if has_front_line else -12.0
+
+
+def reach_bonus(card_name: str, position: tuple[int, int], gs: "GameState") -> float:
+    """Reward placement positions where the attack pattern covers more cells.
+
+    HF (small_cross + small_x) reaches 3 cells from a corner vs 8 from center —
+    a corner placement wastes more than half the unit's range. ASS and TANK have
+    the same problem to lesser degrees. ADC (large_cross) covers 6 cells from any
+    position so its reach bonus is uniform. AP / APT / SP use nearest/farthest
+    and get 0 (their range is enemy-dependent, not cell-based).
+    """
+    job, _ = parse_card_name(card_name)
+    if not job:
+        return 0.0
+    attack_types = JOB_DICTIONARY.get("attack_type_tags", {}).get(job, "")
+    if not attack_types or attack_types == "None":
+        return 0.0
+    cells = attack_coverage_cells(gs, position[0], position[1], attack_types)
+    return cells * 0.8
+
+
 def lethal_placement_bonus(
     card_name: str,
     position: tuple[int, int],
@@ -233,7 +366,12 @@ def lethal_placement_bonus(
         if effective_damage <= 0:
             continue
         if target.health <= effective_damage:
-            bonus = KILL_BONUS_BASE + target.damage * KILL_BONUS_PER_THREAT + attack_denial_bonus(target)
+            bonus = (
+                KILL_BONUS_BASE
+                + target.damage * KILL_BONUS_PER_THREAT
+                + attack_denial_bonus(target)
+                + target_priority_bonus(target)
+            )
             if bonus > best_bonus:
                 best_bonus = bonus
     return best_bonus
@@ -284,6 +422,9 @@ def evaluate_placement(
     score += incoming_damage_penalty(card_name, position, gs, owner)
     score += hand_threat_penalty(card_name)
     score += score_income_bonus(card_name)
+    score += reach_bonus(card_name, position, gs)
+    score += future_ass_threat_penalty(card_name, position, gs)
+    score += protection_bonus(card_name, gs, owner)
 
     return score
 
@@ -362,8 +503,13 @@ def evaluate_attack(attacker: "Card", gs: "GameState") -> tuple[float, "Card | N
         else:
             # Either chip damage, or hitting an anger-immortal target (can't be killed this turn).
             s += min(effective_damage, target.health) * 2.0
+            followup = followup_kill_bonus(attacker, target, gs, effective_damage)
+            s += followup
+            if followup == 0.0:
+                s -= WASTED_CHIP_PENALTY
 
         s += target.damage * 3.0
+        s += target_priority_bonus(target)
 
         # Self-suicide penalty: skip if attacker is anger-immortal (HFR @ 0 HP).
         if target.damage >= attacker.health and not target.numbness and not attacker_immortal:
