@@ -19,9 +19,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from campaign.config_loader import CAMPAIGN_SETTINGS as _CS
+
 if TYPE_CHECKING:
     from core.game_state import GameState
     from cards.base import Card
+
+
+ASS_THREAT_DAMAGE: int = int(_CS["threat_model"]["ass_threat_damage"])
 
 
 def empty_positions(gs: "GameState") -> list[tuple[int, int]]:
@@ -65,11 +70,6 @@ def friendly_cards(gs: "GameState", owner: str) -> list["Card"]:
 def attack_targets_from_pos(
     gs: "GameState", owner: str, x: int, y: int, attack_types: str,
 ) -> list["Card"]:
-    """Compute what enemy cards a unit with `attack_types` at (x, y) would hit.
-
-    Position-based variant used both for live attackers and for evaluating
-    hypothetical placements. Deterministic — does NOT consume `gs.rng`.
-    """
     candidates = [c for c in gs.get_side_cards(owner, get_opponent=True) if c.health > 0]
     if not candidates or not attack_types:
         return []
@@ -127,13 +127,6 @@ def nearest_enemy_distance(gs: "GameState", owner: str, x: int, y: int) -> int:
 
 
 def attack_coverage_cells(gs: "GameState", x: int, y: int, attack_types: str) -> int:
-    """Number of board cells the attack pattern reaches from (x, y).
-
-    Counts pattern geometry only — independent of which cells are currently
-    occupied, since the value of a position is about its long-term threat range
-    (units come and go). Returns 0 for non-cell patterns (nearest, farthest) so
-    those jobs don't get an arbitrary reach bonus.
-    """
     if not attack_types:
         return 0
     cells: set[tuple[int, int]] = set()
@@ -158,30 +151,18 @@ def attack_coverage_cells(gs: "GameState", x: int, y: int, attack_types: str) ->
                 for j in range(h):
                     if j != y:
                         cells.add((x, j))
-            # "nearest" / "farthest" depend on actual enemy positions, not cells.
     return len(cells)
 
 
 def is_playable_unit_card(card_name: str) -> bool:
-    """Returns True if the card represents a unit (placed on the board).
-
-    Magic cards (HEAL/MOVE/MOVEO/CUBES) are handled separately — they generate
-    counters when played, not board units.
-    """
     return card_name not in ("HEAL", "MOVE", "MOVEO", "CUBES")
 
 
 def units_with_pending_move(gs: "GameState", owner: str) -> list["Card"]:
-    """My units that have `moving=True` (typically just after an orange attack).
-
-    They're waiting for a move command — if we don't drive them now, the move
-    opportunity wastes once the next action resolves.
-    """
     return [c for c in gs.get_player(owner).on_board if c.moving and c.health > 0]
 
 
 def move_destinations_for(gs: "GameState", card: "Card") -> list[tuple[int, int]]:
-    """Empty board cells reachable from `card` via a single 8-neighbor step."""
     cells: list[tuple[int, int]] = []
     for dx in (-1, 0, 1):
         for dy in (-1, 0, 1):
@@ -196,20 +177,9 @@ def move_destinations_for(gs: "GameState", card: "Card") -> list[tuple[int, int]
     return cells
 
 
-from campaign.config_loader import CAMPAIGN_SETTINGS as _CS
-ASS_THREAT_DAMAGE: int = int(_CS["threat_model"]["ass_threat_damage"])
-"""Worst-case lethal-on-deploy threat: a hypothetical enemy ASS (white baseline = 5)."""
-
-
 def attacker_would_hit_position(
     attacker: "Card", tx: int, ty: int, target_owner: str, gs: "GameState",
 ) -> bool:
-    """Would `attacker` hit a hypothetical enemy unit placed at (tx, ty)?
-
-    `target_owner` is the side that would own the hypothetical target (i.e. attacker's
-    opposite). Handles all attack_types patterns including nearest/farthest, which
-    depend on existing friendly positions.
-    """
     ax, ay = attacker.board_x, attacker.board_y
     if not attacker.attack_types:
         return False
@@ -241,16 +211,10 @@ def attacker_would_hit_position(
 
 def incoming_damage_at_position(
     gs: "GameState", owner: str, x: int, y: int,
+    min_attacks: int = 0,
 ) -> int:
-    """Damage a unit placed at (x, y) would soak this turn from opponent attacks.
-
-    Opponent can only fire `number_of_attacks[opponent]` of its non-numb units this
-    turn; pick the highest-damage candidates as worst case. Ignores positional bonuses
-    (red increase-damage, anger, etc) — purely a stat readout. Good enough to avoid
-    obvious self-suicide placements.
-    """
     opp = gs.get_opponent_name(owner)
-    available = gs.number_of_attacks.get(opp, 0)
+    available = max(min_attacks, gs.number_of_attacks.get(opp, 0))
     if available <= 0:
         return 0
 
@@ -265,13 +229,13 @@ def incoming_damage_at_position(
     return sum(threats[:available])
 
 
-def cells_threatening_card(gs: "GameState", card: "Card") -> list[tuple[int, int]]:
-    """Empty cells where an enemy ASS could be deployed this turn to kill `card`.
+def projected_incoming_damage(
+    gs: "GameState", owner: str, x: int, y: int,
+) -> int:
+    return incoming_damage_at_position(gs, owner, x, y, min_attacks=1)
 
-    Threat model (Phase 1): opponent could place an ASS (small_x, damage 5, deploys
-    non-numb) at any empty cell. Anything else they could place is numb-on-deploy and
-    can't attack this turn, so it isn't a same-turn lethal threat.
-    """
+
+def cells_threatening_card(gs: "GameState", card: "Card") -> list[tuple[int, int]]:
     effective = ASS_THREAT_DAMAGE - max(0, card.armor)
     if card.health > effective:
         return []

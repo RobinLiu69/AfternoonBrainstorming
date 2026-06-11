@@ -19,61 +19,41 @@
 from __future__ import annotations
 
 from campaign.ai_strategies.base import Strategy
+from campaign import ai_query
+from campaign.config_loader import CAMPAIGN_SETTINGS
+
+_B = CAMPAIGN_SETTINGS["strategy_bonuses"]["red"]
+_P = _B["placement"]
 
 
 def _damage_grown(card) -> int:
-    """How much the card's damage has grown over its base. Red ADCR/HFR/LFR/APR/ASSR
-    all bump `self.damage` directly (not `extra_damage`) on their on-hit/kill ability,
-    so this is the canonical "has this unit ramped" check."""
     return max(0, card.damage - getattr(card, "original_damage", card.damage))
 
 
 class RedStrategy(Strategy):
-    """Damage-snowball faction. Red abilities permanently bump `self.damage` on hit:
-
-    - ADCR ability: +damage_increase every hit. Pure ramper, no downside.
-    - HFR ability: +damage_increase every hit but self-takes 1 dmg; gains `anger`
-      (can_be_killed=False) when its health reaches 0 — effectively immortal that turn.
-    - LFR ability: +armor and +damage on hit.
-    - ASSR killed: nearest ally +damage. ASS itself doesn't ramp, but feeds others.
-    - SPR is the broadcast target for everyone's growth (a stat reservoir).
-
-    Strategy: HFR is the dedicated burst attacker. Once it has 1-2 ramps it should
-    keep firing — even at low HP it's still useful because anger gates death. ADCR is
-    the safe ramper. Protect SPR (it accumulates everyone else's bonus).
-    """
 
     def attack_bonus(self, attacker, gs, base_score: float) -> float:
         bonus = 0.0
 
-        # Already-ramped units have proven value — keep feeding them attacks.
         grown = _damage_grown(attacker)
         if grown > 0:
-            bonus += grown * 6.0  # +6 per +1 stacked damage
+            bonus += grown * _B["damage_grown_per_stack"]
 
-        # HFR is the primary attacker: every swing pushes its damage curve forward.
-        # When `anger` is on (it hit 0 HP via self-harm), it can't be killed — pile in.
         if attacker.job_and_color == "HFR":
-            bonus += 8.0  # baseline preference to swing HFR
+            bonus += _B["hfr_baseline"]
             if attacker.anger:
-                bonus += 20.0  # immortal this turn, fire freely
+                bonus += _B["hfr_anger_bonus"]
 
-        # ADCR scales on every hit too — encourage swings over a low-damage TANKR poke.
         if attacker.job_and_color == "ADCR":
-            bonus += 5.0
+            bonus += _B["adcr_baseline"]
+
+        if attacker.job_and_color == "APR":
+            bonus += _B["apr_baseline"]
+            targets = ai_query.attack_targets_at(gs, attacker)
+            if targets:
+                bonus += max(t.damage for t in targets) * _B["apr_target_damage_mult"]
 
         return base_score + bonus
 
     def placement_bonus(self, card_name, position, gs, owner, base_score: float) -> float:
-        bonus = 0.0
-        if card_name == "LFR":
-            bonus += 5.0  # LFR survives each turn and ramps on hit
-        if card_name == "SPR":
-            # SPR is the team's stat reservoir — it inherits every red ability bonus
-            # broadcast. Place it safely (base scoring already biases SP toward corners).
-            bonus += 4.0
-        if card_name == "HFR":
-            # HFR is precious as a ramper — bias center/safe so it survives to fire
-            # multiple times.
-            bonus += 3.0
-        return base_score + bonus
+        return base_score + _P.get(card_name, 0.0)

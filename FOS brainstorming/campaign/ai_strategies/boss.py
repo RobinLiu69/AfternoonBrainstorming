@@ -19,15 +19,12 @@
 from __future__ import annotations
 
 from campaign.ai_strategies.base import Strategy
+from campaign.config_loader import CAMPAIGN_SETTINGS
+
+_B = CAMPAIGN_SETTINGS["strategy_bonuses"]["boss"]
 
 
 class BossStrategy(Strategy):
-    """Mixed elite. Reads the player's board composition and shifts emphasis:
-    - Player runs high-damage cards → bias toward placing protective TANKs.
-    - Player stacks high-HP units → bias toward landing ASS hits to whittle them.
-
-    Hard-tier baseline + composition recognition.
-    """
 
     def placement_bonus(self, card_name, position, gs, owner, base_score: float) -> float:
         opp = gs.get_opponent_name(owner)
@@ -39,17 +36,13 @@ class BossStrategy(Strategy):
         avg_hp = sum(c.health for c in opp_cards) / len(opp_cards)
 
         bonus = 0.0
-        # Heavy-hitting opponent → reinforce front line.
-        if avg_dmg >= 4 and card_name.startswith("TANK"):
-            bonus += 5.0
-        # Beefy opponent → favor ASS deployment (deploy-and-strike).
-        if avg_hp >= 6 and card_name.startswith("ASS"):
-            bonus += 6.0
+        if avg_dmg >= _B["heavy_dmg_threshold"] and card_name.startswith("TANK"):
+            bonus += _B["tank_vs_heavy_dmg"]
+        if avg_hp >= _B["beefy_hp_threshold"] and card_name.startswith("ASS"):
+            bonus += _B["ass_vs_beefy"]
         return base_score + bonus
 
     def attack_bonus(self, attacker, gs, base_score: float) -> float:
-        # When trailing, attack more aggressively (lower threshold via flat boost).
-        # When leading, behave normally — score is signed, positive = boss leads.
-        if gs.score < -2:
-            return base_score + 5.0
+        if gs.score < _B["trailing_threshold"]:
+            return base_score + _B["trailing_attack_bonus"]
         return base_score

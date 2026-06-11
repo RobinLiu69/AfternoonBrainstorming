@@ -70,7 +70,6 @@ def _color_code_of(job_and_color: str) -> str:
 
 
 class _CampaignExhibitRegistry:
-    """ExhibitRegistry wrapper that only exposes pages whose colour is unlocked."""
 
     def __init__(self, base: ExhibitRegistry, unlocked_codes: list[str]):
         self._pages: list[list[Card]] = []
@@ -167,7 +166,6 @@ def _can_add(deck: list[str], card: str) -> bool:
 
 
 def main(game_screen: GameScreen, stage: str, cleared: set[str]) -> Optional[list[str]]:
-    """Draft-style deck builder for campaign. Returns the chosen 12-card deck or None."""
     unlocked = _unlocked_color_codes(stage, cleared)
     base_registry = ExhibitRegistry()
     registry = _CampaignExhibitRegistry(base_registry, unlocked)
@@ -233,6 +231,6 @@ def _draw_help(game_screen: GameScreen, p1_deck: list[str]) -> None:
     msg_left = "left-click: add   right-click: remove   wheel/arrows: page"
     msg_right = f"deck: {len(p1_deck)}/{DECK_SIZE}   press ENTER when full"
     draw_text(msg_left, game_screen.mid_text_font, WHITE,
-              cx - bs * 4.2, cy + bs * 1.55, game_screen.surface)
+              cx - bs * 4.2, cy - bs * 2, game_screen.surface)
     draw_text(msg_right, game_screen.mid_text_font, WHITE,
-              cx + bs * 0.6, cy + bs * 1.55, game_screen.surface)
+              cx + bs * 0.9, cy + bs * 1.55, game_screen.surface)

@@ -20,7 +20,7 @@ from typing import Optional
 
 import pygame
 
-from shared.setting import WHITE, BLACK
+from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text
 from core.UI import Button
 from utils.controls import key_pressed
@@ -73,7 +73,7 @@ def main(game_screen: GameScreen) -> Optional[str]:
 
     back_button = Button(
         bs * 1.5, bs * 0.6, bs * 0.5, bs * 0.5,
-        bs * 0.3, bs * 0.15,
+        bs * 0.55, bs * 0.2,
         box_width=box_width, font=game_screen.big_text_font, text="back",
     )
 
@@ -100,9 +100,9 @@ def main(game_screen: GameScreen) -> Optional[str]:
                 running = False
 
         draw_text("Campaign", game_screen.title_text_font, WHITE,
-                  cx - bs * 1.0, cy - bs * 2.7, game_screen.surface)
-        draw_text("* = cleared", game_screen.small_text_font, CLEARED_COLOR,
-                  cx - bs * 0.3, cy + bs * 2.5, game_screen.surface)
+                  cx - bs * 0.875, cy - bs * 2.7, game_screen.surface)
+        draw_text("* = cleared", game_screen.text_font, CLEARED_COLOR,
+                  cx - bs * 0.3, cy - bs * 2.1, game_screen.surface)
 
         for btn, _stage, _u in buttons:
             btn.update(game_screen)
@@ -111,5 +111,4 @@ def main(game_screen: GameScreen) -> Optional[str]:
         pygame.display.update()
         clock.tick(60)
 
-    _ = BLACK
     return selected

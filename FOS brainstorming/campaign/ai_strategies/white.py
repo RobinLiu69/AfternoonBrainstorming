@@ -17,19 +17,9 @@
 # -----------------------------------------------------------------
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
 from campaign.ai_strategies.base import Strategy
 
-if TYPE_CHECKING:
-    from core.game_state import GameState
-
 
 class WhiteStrategy(Strategy):
-    """Easy: pure-stats faction, no special synergies. Use base scoring as-is."""
-
-    def placement_bonus(self, card_name, position, gs, owner, base_score):
-        return base_score
-
-    def attack_bonus(self, attacker, gs, base_score):
-        return base_score
+    pass

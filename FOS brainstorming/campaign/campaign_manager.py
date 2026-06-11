@@ -31,9 +31,6 @@ def build_campaign_game_state(
     file_auto_delete: bool = False,
     player_deck_override: list[str] | None = None,
 ) -> GameState:
-    """Default `file_auto_delete=False` so .log + .jsonl persist under
-    `battle_records/` and the player can replay campaign matches from the
-    Playback menu, identical to local 2P games."""
     p1_deck = (player_deck_override or STAGE_PLAYER_DECKS[stage]).copy()
     p2_deck = STAGE_AI_DECKS[stage].copy()
 
@@ -45,9 +42,6 @@ def build_campaign_game_state(
     game_state = GameState(player1, player2, neutral, BoardConfig(), game_logger=logger)
     game_state.timer_mode = "timer"
     game_state.file_auto_delete = file_auto_delete
-    # Note: stage buffs (initial hand, board lucky blocks, +HP) are applied later by
-    # AIController._ensure_initialized — at this point board_dict is still empty and
-    # players haven't been initialized() yet, so draws/spawns would no-op.
 
     game_state.game_logger.info(f"campaign stage {stage}")
     game_state.game_logger.info(f"player1 deck {'-'.join(player1.deck)}")

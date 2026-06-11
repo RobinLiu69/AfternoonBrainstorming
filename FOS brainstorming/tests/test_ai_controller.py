@@ -95,7 +95,6 @@ def test_tick_paused_returns_empty():
 
 
 def test_tick_waits_for_pending_combat_events():
-    """AI shouldn't fire its next action while the renderer is still animating."""
     from shared.combat_event import CombatEvent
     ai = AIController("white", player_name="player2")
     gs = make_game_state()
@@ -107,8 +106,6 @@ def test_tick_waits_for_pending_combat_events():
 
 
 def test_tick_waits_for_renderer_busy_signal():
-    """`pending_combat_events` is cleared after one frame; `renderer_busy` is the
-    follow-up signal for animations still mid-flight in combat_animator."""
     from campaign.ai_controller import AI_BUSY_RECHECK_MS
     ai = AIController("white", player_name="player2")
     gs = make_game_state()
@@ -116,14 +113,12 @@ def test_tick_waits_for_renderer_busy_signal():
     ai.tick(gs, 0, renderer_busy=True)
     actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1, renderer_busy=True)
     assert actions == []
-    # After the busy gate clears, the AI still respects its busy-recheck delay.
     later = AI_TURN_START_DELAY_MS + 1 + AI_BUSY_RECHECK_MS + 5
     actions_after = ai.tick(gs, later, renderer_busy=False)
     assert len(actions_after) == 1
 
 
 def test_prefers_lethal_board_attack_over_placement():
-    """A killing strike from an existing unit is cheaper than placing — go for the attack."""
     ai = AIController("white", player_name="player2")
     gs = make_game_state()
     _ai_turn(gs)
@@ -144,20 +139,40 @@ def test_prefers_lethal_board_attack_over_placement():
     assert (actions[0].board_x, actions[0].board_y) == (1, 1)
 
 
-def test_attacks_chip_damage_when_trailing_in_score():
-    """When losing, the AI must spend attacks on chip damage rather than hoarding them."""
+def test_hoards_when_no_kill_setup_even_when_trailing():
     ai = AIController("white", player_name="player2")
     gs = make_game_state()
     _ai_turn(gs)
     gs.number_of_attacks["player2"] = 1
     gs.player2.hand = []
-    gs.score = -7  # player2 (AI) badly losing
+    gs.score = -7
 
     attacker = place_card(gs, Adc, "player2", 0, 0)
     attacker.numbness = False
     chump = place_card(gs, Adc, "player1", 1, 0)
     chump.numbness = False
-    chump.damage = 1  # forces non-lethal chip — score ~11 normally below threshold
+
+    ai.tick(gs, 0)
+    actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1)
+    assert len(actions) == 1
+    assert actions[0].action_type == "end_turn"
+
+
+def test_attacks_when_trailing_if_chip_chains_into_a_kill():
+    ai = AIController("white", player_name="player2")
+    gs = make_game_state()
+    _ai_turn(gs)
+    gs.number_of_attacks["player2"] = 2
+    gs.player2.hand = []
+    gs.score = -7
+
+    chipper = place_card(gs, "TANKW", "player2", 0, 0)
+    chipper.numbness = False
+    finisher = place_card(gs, Adc, "player2", 3, 0)
+    finisher.numbness = False
+    victim = place_card(gs, "ASSW", "player1", 1, 0)
+    victim.numbness = False
+    victim.health = 3
 
     ai.tick(gs, 0)
     actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1)
@@ -166,16 +181,12 @@ def test_attacks_chip_damage_when_trailing_in_score():
 
 
 def test_saves_attacks_when_only_low_value_chips_available():
-    """attack_min_score gates chip damage; with no kill in sight AI should hoard attacks."""
     ai = AIController("white", player_name="player2")
     gs = make_game_state()
     _ai_turn(gs)
     gs.number_of_attacks["player2"] = 1
     gs.player2.hand = []
 
-    # Use TANKW as attacker (1 dmg) and a non-priority TANKW target so the chip
-    # score stays well below white's threshold even with the new target-priority
-    # bonus (which only fires for ADC / SP).
     attacker = place_card(gs, "TANKW", "player2", 0, 0)
     attacker.numbness = False
     chump = place_card(gs, "TANKW", "player1", 1, 0)
@@ -188,7 +199,6 @@ def test_saves_attacks_when_only_low_value_chips_available():
 
 
 def test_holds_ass_in_hand_when_no_kill_or_defense_available():
-    """No killable enemy and no friendly to defend — ASS in hand stays as a threat."""
     ai = AIController("white", player_name="player2")
     gs = make_game_state()
     _ai_turn(gs)
@@ -202,7 +212,6 @@ def test_holds_ass_in_hand_when_no_kill_or_defense_available():
 
 
 def test_prefers_ass_lethal_placement_over_generic_placement():
-    """With ASS in hand and a killable enemy in small_x range, AI should place ASS to kill — not a stat-dump ADC elsewhere."""
     ai = AIController("white", player_name="player2")
     gs = make_game_state()
     _ai_turn(gs)
@@ -218,3 +227,112 @@ def test_prefers_ass_lethal_placement_over_generic_placement():
     assert actions[0].action_type == "play_card"
     assert gs.player2.hand[actions[0].hand_index] == "ASSW"
     assert (actions[0].board_x, actions[0].board_y) in {(1, 1), (1, 3), (3, 1), (3, 3)}
+
+
+def test_heal_not_emitted_when_no_heal_counter():
+    ai = AIController("boss", player_name="player2")
+    gs = make_game_state()
+    _ai_turn(gs)
+    gs.number_of_attacks["player2"] = 0
+    gs.number_of_heals["player2"] = 0
+    gs.player2.hand = []
+
+    wounded = place_card(gs, "TANKW", "player2", 0, 0)
+    wounded.numbness = False
+    wounded.health = 3
+    wounded.max_health = 15
+
+    ai.tick(gs, 0)
+    actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1)
+    assert len(actions) == 1
+    assert actions[0].action_type != "heal"
+
+
+def test_heal_targets_wounded_friendly_when_counter_available():
+    ai = AIController("boss", player_name="player2")
+    gs = make_game_state()
+    _ai_turn(gs)
+    gs.number_of_attacks["player2"] = 0
+    gs.number_of_heals["player2"] = 1
+    gs.player2.hand = []
+
+    wounded = place_card(gs, "TANKW", "player2", 0, 0)
+    wounded.numbness = False
+    wounded.health = 3
+    wounded.max_health = 15
+
+    ai.tick(gs, 0)
+    actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1)
+    assert len(actions) == 1
+    assert actions[0].action_type == "heal"
+    assert (actions[0].board_x, actions[0].board_y) == (0, 0)
+
+
+def test_heal_skipped_when_deficit_too_small():
+    ai = AIController("boss", player_name="player2")
+    gs = make_game_state()
+    _ai_turn(gs)
+    gs.number_of_attacks["player2"] = 0
+    gs.number_of_heals["player2"] = 1
+    gs.player2.hand = []
+
+    almost_full = place_card(gs, "TANKW", "player2", 0, 0)
+    almost_full.numbness = False
+    almost_full.max_health = 15
+    almost_full.health = 14
+
+    ai.tick(gs, 0)
+    actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1)
+    assert len(actions) == 1
+    assert actions[0].action_type != "heal"
+
+
+def test_heal_picks_critical_unit_over_lightly_chipped_one():
+    ai = AIController("boss", player_name="player2")
+    gs = make_game_state()
+    _ai_turn(gs)
+    gs.number_of_attacks["player2"] = 0
+    gs.number_of_heals["player2"] = 1
+    gs.player2.hand = []
+
+    critical = place_card(gs, "TANKW", "player2", 0, 0)
+    critical.numbness = False
+    critical.max_health = 15
+    critical.health = 2
+
+    chipped = place_card(gs, "TANKW", "player2", 3, 3)
+    chipped.numbness = False
+    chipped.max_health = 15
+    chipped.health = 10
+
+    ai.tick(gs, 0)
+    actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1)
+    assert len(actions) == 1
+    assert actions[0].action_type == "heal"
+    assert (actions[0].board_x, actions[0].board_y) == (0, 0)
+
+
+def test_heal_runs_after_lethal_attack_priority():
+    ai = AIController("boss", player_name="player2")
+    gs = make_game_state()
+    _ai_turn(gs)
+    gs.number_of_attacks["player2"] = 1
+    gs.number_of_heals["player2"] = 1
+    gs.player2.hand = []
+
+    attacker = place_card(gs, Adc, "player2", 0, 1)
+    attacker.numbness = False
+    victim = place_card(gs, Ass, "player1", 0, 2)
+    victim.numbness = False
+    victim.health = 1
+
+    wounded = place_card(gs, "TANKW", "player2", 3, 3)
+    wounded.numbness = False
+    wounded.max_health = 15
+    wounded.health = 3
+
+    ai.tick(gs, 0)
+    actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1)
+    assert len(actions) == 1
+    assert actions[0].action_type == "attack"
+    assert (actions[0].board_x, actions[0].board_y) == (0, 1)

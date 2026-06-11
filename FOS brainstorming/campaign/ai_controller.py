@@ -50,20 +50,27 @@ AI_ACTION_DELAY_MS: int = int(_DELAYS["action"])
 AI_ATTACK_DELAY_MS: int = int(_DELAYS["attack"])
 AI_TURN_START_DELAY_MS: int = int(_DELAYS["turn_start"])
 AI_BUSY_RECHECK_MS: int = int(_DELAYS["busy_recheck"])
-"""Polling interval while waiting for combat animations / pending attacks to drain."""
 
 LETHAL_SCORE_THRESHOLD: float = float(CAMPAIGN_SETTINGS["thresholds"]["lethal_score_threshold"])
-"""evaluate_attack adds KILL_BONUS_BASE=100 for a kill; same threshold gates priority."""
+
+_PANIC = CAMPAIGN_SETTINGS["panic"]
+MIN_PANIC_THRESHOLD: float = float(_PANIC["min_panic_threshold"])
+_PANIC_NO_DROP_BELOW: int = int(_PANIC["deficit_no_drop_below"])
+_PANIC_DROP_PER_STEP: float = float(_PANIC["deficit_drop_per_step"])
+
+_HEAL = CAMPAIGN_SETTINGS["heal"]
+HEAL_AMOUNT: int = int(_HEAL["amount"])
+HEAL_MIN_AMOUNT: int = int(_HEAL["min_amount"])
+HEAL_MIN_SCORE: float = float(_HEAL["min_score"])
+_HEAL_LOW_RATIO: float = float(_HEAL["low_ratio_threshold"])
+_HEAL_LOW_RATIO_BONUS: float = float(_HEAL["low_ratio_bonus"])
+_HEAL_SAVE_BASE: float = float(_HEAL["save_from_lethal_base"])
+_HEAL_SAVE_DMG_MULT: float = float(_HEAL["save_from_lethal_damage_mult"])
+_HEAL_INCOME_MULT: float = float(_HEAL["score_income_mult"])
+_HEAL_DAMAGE_MULT: float = float(_HEAL["damage_mult"])
 
 
 class AIController:
-    """GameAction producer for campaign mode.
-
-    Each tick returns at most one GameAction, gated by a per-action delay so the
-    human player can follow what's happening. The AI re-evaluates the live
-    GameState every tick — no pre-planned action queue, which avoids stale
-    decisions after card abilities mutate the board.
-    """
 
     def __init__(self, stage: str, player_name: str = "player2"):
         strategy_cls = STRATEGY_REGISTRY.get(stage)
@@ -71,7 +78,6 @@ class AIController:
             raise ValueError(f"No strategy registered for stage {stage!r}")
         self.stage: str = stage
         self.strategy: Strategy = strategy_cls()
-        # Apply per-faction config overrides (campaign_setting.json) on top of class defaults.
         overrides = CAMPAIGN_SETTINGS.get("faction_overrides", {}).get(stage, {})
         for key, val in overrides.items():
             if hasattr(self.strategy, key):
@@ -84,13 +90,7 @@ class AIController:
         self.focus_position: tuple[int, int] | None = None
 
     def tick(self, gs: "GameState", now_ms: int, renderer_busy: bool = False) -> list[GameAction]:
-        # Apply stage one-shots / initial buffs as soon as the world is ready (board_dict
-        # populated and players initialized). Runs every tick but no-ops after first run.
         self._ensure_initialized(gs)
-        # Idempotent per-tick: tag and buff any new AI units (boss +1 HP).
-        # Tracking set is owned by this controller instance — a fresh
-        # AIController is created for every campaign match, so the registry
-        # can't leak across games (instance_ids reset between matches).
         maintain_unit_buffs(self.stage, gs, self._buffed_unit_ids)
 
         current = "player1" if gs.turn_number % 2 == 0 else "player2"
@@ -109,10 +109,6 @@ class AIController:
         if now_ms < self._next_release_ms:
             return []
 
-        # Wait for combat animations / pending attacks / dying cards to drain before
-        # issuing the next action. `pending_combat_events` only stays non-empty for the
-        # single frame before the renderer drains it into combat_animator; after that
-        # `renderer_busy` is the only signal that animations are still in flight.
         if gs.pending_combat_events or gs.pending_attacks or renderer_busy:
             self._next_release_ms = now_ms + AI_BUSY_RECHECK_MS
             return []
@@ -138,8 +134,6 @@ class AIController:
     def _ensure_initialized(self, gs: "GameState") -> None:
         if self._initialized:
             return
-        # Wait until battling.main has populated the board and called player.initialize
-        # (signaled by a non-empty board_dict + non-empty hand+pile on player2).
         if not gs.board_dict:
             return
         player2 = gs.player2
@@ -150,26 +144,13 @@ class AIController:
         self._initialized = True
 
     def _effective_attack_min(self, gs: "GameState") -> float:
-        """Lower the attack threshold proportionally as the AI falls behind.
-
-        `gs.score` is signed: positive = player2 leads, negative = player1 leads. The
-        AI is always player2 in campaign, so a negative score means trailing.
-        Hoarding attacks while losing is dead weight — at any nontrivial deficit start
-        cashing in chip damage instead, and at deep deficit drop the threshold to 0 so
-        any damage at all is preferred over end_turn.
-        """
         base = float(self.strategy.attack_min_score)
         deficit = -gs.score if self.player_name == "player2" else gs.score
-        if deficit <= 2:
+        if deficit <= _PANIC_NO_DROP_BELOW:
             return base
-        return max(0.0, base - (deficit - 2) * 3.5)
+        return max(MIN_PANIC_THRESHOLD, base - (deficit - _PANIC_NO_DROP_BELOW) * _PANIC_DROP_PER_STEP)
 
     def _decide_next(self, gs: "GameState") -> Optional[GameAction]:
-        # Move chain (highest priority — tempo lost if interrupted):
-        #   1. Drive a unit already in moving=True state to select / commit destination.
-        #   2. If we have unused movings count, set a fresh unit's moving=True.
-        #   3. If MOVEO sits in hand, play it to inject a free movings count.
-        # All three cascade; the next tick walks down the chain until exhausted.
         move = self._best_move_action(gs)
         if move is not None:
             return move
@@ -203,35 +184,66 @@ class AIController:
                 hand_index=play.hand_index,
             )
 
-        # 1. Lethal attack from an already-deployed unit is cheapest: spends 1 attack,
-        #    no card. Take it before placing anything.
         if attack is not None and attack.score >= LETHAL_SCORE_THRESHOLD and attack_action is not None:
             return attack_action
 
-        # 2. Placement (lethal_placement_bonus folds same-turn ASS kills in here, so
-        #    a kill-enabling placement still ranks above generic build-board placements).
+        heal_action = self._best_heal(gs)
+        if heal_action is not None:
+            return heal_action
+
         if play_action is not None:
             return play_action
 
-        # 3. Non-lethal attack (chip damage, anti-armor pokes).
         if attack_action is not None:
             return attack_action
 
         return GameAction(player=self.player_name, action_type="end_turn")
 
-    def _start_unit_move(self, gs: "GameState") -> Optional[GameAction]:
-        """Use a banked movings count to set the best orange unit's moving=True.
+    def _best_heal(self, gs: "GameState") -> Optional[GameAction]:
+        if gs.number_of_heals.get(self.player_name, 0) <= 0:
+            return None
 
-        Caller must already have established that no unit is mid-move (`_best_move_action`
-        handles that case). When `number_of_movings > 0` and the AI clicks on a unit at
-        its own cell, [core/player.py move_card] branch 1 fires and consumes 1 count
-        to enter the moving=True state, ready for the standard select/dest chain.
-        """
+        best_score = HEAL_MIN_SCORE
+        best_target = None
+        for c in gs.get_player(self.player_name).on_board:
+            if c.health <= 0:
+                continue
+            deficit = c.max_health - c.health
+            heal_amount = min(HEAL_AMOUNT, deficit)
+            if heal_amount < HEAL_MIN_AMOUNT:
+                continue
+
+            score = heal_amount * 2.0
+            score += ai_evaluator.estimate_score_per_turn(c.job_and_color) * _HEAL_INCOME_MULT
+            score += c.damage * _HEAL_DAMAGE_MULT
+
+            ratio = c.health / max(1, c.max_health)
+            if ratio < _HEAL_LOW_RATIO:
+                score += _HEAL_LOW_RATIO_BONUS
+
+            incoming = ai_query.incoming_damage_at_position(
+                gs, self.player_name, c.board_x, c.board_y
+            )
+            if incoming >= c.health and incoming < c.health + heal_amount:
+                score += _HEAL_SAVE_BASE + c.damage * _HEAL_SAVE_DMG_MULT
+
+            if score > best_score:
+                best_score = score
+                best_target = c
+
+        if best_target is None:
+            return None
+        return GameAction(
+            player=self.player_name, action_type="heal",
+            board_x=best_target.board_x, board_y=best_target.board_y,
+        )
+
+    def _start_unit_move(self, gs: "GameState") -> Optional[GameAction]:
         if gs.number_of_movings.get(self.player_name, 0) <= 0:
             return None
         on_board = gs.get_player(self.player_name).on_board
         if any(c.moving for c in on_board):
-            return None  # _best_move_action will handle the in-progress mover
+            return None
 
         candidates = [c for c in on_board if not c.numbness and c.health > 0]
         if not candidates:
@@ -245,7 +257,7 @@ class AIController:
 
         best_unit = max(candidates, key=best_dest_score)
         if best_dest_score(best_unit) <= 0:
-            return None  # no destination would generate net value
+            return None
 
         return GameAction(
             player=self.player_name, action_type="move_to",
@@ -253,13 +265,6 @@ class AIController:
         )
 
     def _play_moveo(self, gs: "GameState") -> Optional[GameAction]:
-        """Play MOVEO from hand to gain +1 movings.
-
-        Only fire when there's at least one non-numb orange unit that could plausibly
-        consume the movings count this turn — otherwise the magic card discards into
-        the void at turn_end (`number_of_movings` resets to 0). We don't pre-pay for
-        a movings count we can't use.
-        """
         hand = gs.get_player(self.player_name).hand
         try:
             idx = hand.index("MOVEO")
@@ -278,12 +283,10 @@ class AIController:
         )
 
     def _best_move_action(self, gs: "GameState") -> Optional[GameAction]:
-        """Two-step move: first tick selects the unit, second tick commits the dest."""
         movers = ai_query.units_with_pending_move(gs, self.player_name)
         if not movers:
             return None
 
-        # If something is already mouse_selected, the next move_to commits the actual move.
         selected = [m for m in movers if m.mouse_selected]
         if selected:
             unit = selected[0]
@@ -296,8 +299,6 @@ class AIController:
                 board_x=best_dest[0], board_y=best_dest[1],
             )
 
-        # Nothing selected yet — pick the best mover (one with the highest-scoring dest)
-        # and emit move_to on its own cell to select it.
         def best_dest_score(unit) -> float:
             dests = ai_query.move_destinations_for(gs, unit)
             if not dests:

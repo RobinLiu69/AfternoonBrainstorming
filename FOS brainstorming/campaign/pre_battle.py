@@ -32,7 +32,6 @@ from campaign.boss_config import STAGE_BUFF_TEXT
 
 
 def main(game_screen: GameScreen, stage: str) -> Optional[str]:
-    """Returns 'start' to begin battle, 'back' to return to stage select, None on quit."""
     running = True
     bs = game_screen.block_size
     cx = game_screen.display_width / 2
@@ -40,13 +39,13 @@ def main(game_screen: GameScreen, stage: str) -> Optional[str]:
     box_width: int = int(bs / 30)
 
     start_button = Button(
-        bs * 2.2, bs * 0.8, cx - bs * 1.1, cy + bs * 2.5,
-        bs * 0.5, bs * 0.2,
+        bs * 1.5, bs * 0.6, cx - bs * 0.75, cy + bs * 2,
+        bs * 0.4, bs * 0.15,
         box_width=box_width, font=game_screen.big_big_text_font, text="start",
     )
     back_button = Button(
         bs * 1.5, bs * 0.6, bs * 0.5, bs * 0.5,
-        bs * 0.3, bs * 0.15,
+        bs * 0.55, bs * 0.2,
         box_width=box_width, font=game_screen.big_text_font, text="back",
     )
 

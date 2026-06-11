@@ -44,16 +44,9 @@ class AttackChoice:
 
 
 class Strategy:
-    """Default strategy. Subclass to override scoring for specific factions.
-
-    The AI evaluates one action at a time and re-reads the live GameState every tick,
-    so strategies are stateless query objects, not turn planners.
-    """
 
     placement_min_score: float = float(CAMPAIGN_SETTINGS["thresholds"]["placement_min_score"])
     attack_min_score: float = float(CAMPAIGN_SETTINGS["thresholds"]["attack_min_score"])
-    """Below this, attacks are skipped and the attack count is saved for next turn.
-    Lethal hits score 100+ so they always pass; non-lethal chips (~11-14) are filtered."""
 
     def best_placement(self, gs: "GameState", owner: str) -> Optional[PlacementChoice]:
         player = gs.get_player(owner)
@@ -80,11 +73,6 @@ class Strategy:
         best: Optional[AttackChoice] = None
         for card in ai_query.friendly_cards(gs, owner):
             score, _target = ai_evaluator.evaluate_attack(card, gs)
-            # Negative score is a hard sentinel from the evaluator (numb attacker,
-            # non-attacker job, no targets in range). Faction bonuses must not
-            # resurrect such candidates — otherwise the AI fires an attack action
-            # that the engine refuses, attack_count never decrements, and the AI
-            # locks in an infinite loop selecting the same illegal attacker.
             if score < 0:
                 continue
             score = self.attack_bonus(card, gs, score)

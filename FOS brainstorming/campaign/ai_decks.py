@@ -79,7 +79,6 @@ STAGE_PLAYER_DECKS: dict[str, list[str]] = {
     "orange": WHITE_DECK,
     "boss":   WHITE_DECK,
 }
-"""Phase 1: player always uses a baseline white deck. Phase 4 may add deck-builder UI."""
 
 STAGE_ORDER: list[str] = ["white", "red", "blue", "green", "orange", "boss"]
 
