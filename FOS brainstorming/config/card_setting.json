@@ -133,7 +133,7 @@
         "ADC": {
             "health": 4,
             "damage": 2,
-            "token_gets": 2
+            "token_gets": 1
         },
         "AP": {
             "health": 4,

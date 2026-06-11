@@ -30,6 +30,7 @@ from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from rendering.game_renderer import GameRenderer
 from screens.battling.battling_action import collect_actions
+from campaign.ai_controller import AIController
 
 
 def number_key(number: int, mouse_x: int, mouse_y: int,
@@ -86,11 +87,24 @@ def display_controller(controller: str, game_screen: GameScreen) -> None:
               game_screen.display_height/2 - game_screen.block_size*2.1, game_screen.surface)
 
 
+def _draw_ai_focus(game_screen: GameScreen, focus: tuple[int, int]) -> None:
+    """Draw a yellow ring on the cell the AI is targeting this frame."""
+    bx, by = focus
+    bs = game_screen.block_size
+    x_origin = game_screen.display_width / 2 - bs * 2
+    y_origin = game_screen.display_height / 2 - bs * 1.65
+    cx = int(x_origin + (bx + 0.5) * bs)
+    cy = int(y_origin + (by + 0.5) * bs)
+    radius = int(bs * 0.44)
+    pygame.draw.circle(game_screen.surface, (255, 220, 80), (cx, cy), radius, max(1, int(bs / 70)))
+
+
 def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
          server: Optional[LANServer] = None, client: Optional[LANClient] = None,
          initial_state_dict: Optional[dict] = None,
          host_seat: str = "player1",
-         reconnect_timeout: float = 60.0) -> str:
+         reconnect_timeout: float = 60.0,
+         ai_controller: Optional[AIController] = None) -> str:
     from cards.base import reset_instance_counter
     reset_instance_counter()
 
@@ -180,6 +194,8 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             local_controller = client.role
         elif is_server:
             local_controller = host_seat
+        elif mode == "campaign":
+            local_controller = "player1" if controller == "player1" else "spectator"
         else:
             local_controller = controller
 
@@ -188,6 +204,15 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
         board_y = to_board_y(mouse_y, game_screen)
 
         actions = collect_actions(local_controller, card_info, game_state, game_screen)
+
+        if mode == "campaign" and ai_controller is not None:
+            renderer_busy = bool(
+                game_renderer.combat_animator.get_active_positions()
+                or game_renderer.dying_cards
+            )
+            actions.extend(ai_controller.tick(
+                game_state, pygame.time.get_ticks(), renderer_busy=renderer_busy,
+            ))
 
         for action in actions:
             result = dispatcher.dispatch(action, game_state)
@@ -202,7 +227,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                 _core_setting.COMBAT_ANIMATIONS_ENABLED = new_val
                 continue
 
-            if mode == "local":
+            if mode in ("local", "campaign"):
                 if result.end_turn:
                     controller = "player2" if controller == "player1" else "player1"
                 if result.quit:
@@ -273,12 +298,16 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                 else:
                     game_state.get_opponent(local_controller)._update_timer_logic(game_state.timer_mode)
 
-        if not (mode == "local"):
+        if mode not in ("local", "campaign"):
             controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
 
 
         game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on, dt,
                                    multiplayer=(mode != "local"))
+
+        if mode == "campaign" and ai_controller is not None and ai_controller.focus_position is not None:
+            _draw_ai_focus(game_screen, ai_controller.focus_position)
+
         pygame.display.update()
     
     game_state.game_logger.close()

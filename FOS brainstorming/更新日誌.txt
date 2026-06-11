@@ -1806,3 +1806,93 @@ debug:
               含 paused=False 的 initial_state 套上 client 端永遠停在暫停畫面
         修法: try_reconnect 回傳值改為 role in ("player1", "player2") 兩個 player 角色都正確處理
 =======================
+2026/06/11-4.1.0.0
+編寫者 Robin
+----------------
+修正:
+    AI 對「下回合必死」的單位仍套用「省刀」邏輯導致瀕死單位不出招
+        解釋: WASTED_CHIP_PENALTY (-18) 與自殺懲罰 (-50) 都建立在「攻擊者活到下回合」前提
+              ADCR HP:1 large_cross 範圍內有 3 個敵人 chip 2 dmg 一輪能輸出 6 點傷害 + 觸發紅色 ramp 但被兩層懲罰擋住分數 (aggregate -156) 直接 end_turn
+              下回合 ADCR 必被打死 累積的「省下來」攻擊次數隨單位陣亡蒸發 整體淨損
+        修法: ai_query.incoming_damage_at_position 加 min_attacks 參數 並加 projected_incoming_damage helper (對手刀數至少假設 1 避免結束自己回合時計數器=0 造成的誤判沒威脅)
+              evaluate_attack 算 attacker_doomed = attacker.health <= projected_incoming_damage
+              對 doomed 攻擊者 skip WASTED_CHIP_PENALTY 與自殺懲罰
+              HFR anger 免疫優先於 doomed (immortal 一定活著 不算瀕死)
+              ADCR 重算後 aggregate 3 targets = 48 + Red strategy +5 = 53 ≫ 13 threshold 會打
+              新增 3 個對應測試 (瀕死跳 wasted_chip / 瀕死跳自殺 / 非瀕死照常扣 wasted_chip)
+              既有的「anger HFR 跳自殺懲罰」測試調整 HP 與威脅位置確保走的是 anger 路徑而不是 doomed 路徑
+    Boss 關 AI 拿到的 heal 計數器永遠沒被消費
+        解釋: boss buff 每 5 個 AI 回合 +1 number_of_heals 計數器有正確加但 AIController._decide_next 整段沒有 heal 分支 玩家輸入時 heal_card() 才會消費計數器 AI 從來不送 heal action
+              加上 turn_end 會把 number_of_heals 清 0 所以每次 buff 觸發直接浪費
+              BOSS_DECK 也沒有 HEAL 牌 所以連從手牌打 HEAL 觸發的可能性都沒有
+        修法: AIController 加 _best_heal 在 lethal attack 之後 placement 之前優先試補
+              評分依: heal_amount*2 + score_income*4 + damage*1.5 + 低 HP 比例 (<0.4) +10 + 補救瀕死 (incoming 殺得死目前血但補完救得回) +30+damage*3
+              最低分門檻 12 避免摸 1 HP 微補搶 placement 機會 deficit < 3 也直接 skip
+              新增 5 個對應測試 (沒計數器不補 / 摸到計數器補最瀕死 / 微傷不補 / 多人挑最慘 / 斬殺優先於補)
+新增:
+    Campaign 單人戰役模式
+        從主選單可進入 Campaign 流程: stage_select → pre_battle → deck_builder → battling → end_game
+        共六關 白 -> 紅 -> 藍 -> 綠 -> 橘 -> Boss 須依序解鎖
+        過關紀錄存於 campaign_progress.json 重啟遊戲後保留進度
+        ESC 在每個子畫面只退一層 (pre_battle/deck_builder ESC 回 stage_select stage_select ESC 才回主選單)
+        對局結束後自動回到 stage_select 不必再經主選單
+        對局留 .log 與 .jsonl 與一般本機對戰相同 可由 Playback 重播
+    AIController 戰役 AI 操作層 (campaign/ai_controller.py)
+        每幀 tick(gs, now_ms, renderer_busy) 至多回傳 1 個 GameAction 由 battling 主迴圈消化
+        per-action 延遲 (turn_start / action / attack / busy_recheck) 從 config/campaign_setting.json 載入 玩家看得到 AI 一步一步在動
+        renderer_busy 訊號從 combat_animator 來 動畫沒跑完 AI 就不會搶下一步
+        _decide_next 優先順序: move chain (橘色 moving=True) > start_unit_move > play MOVEO > lethal attack > placement > non-lethal attack > end_turn
+        _effective_attack_min 落後時下修攻擊門檻 但設地板 MIN_PANIC_THRESHOLD=8 避免絕望時還拿低傷 TANK 硬刀高血量目標
+        focus_position 暴露給 UI 提示玩家 AI 下一步要點哪格
+    AI 評分核心 (campaign/ai_evaluator.py + campaign/ai_query.py)
+        placement 評分 11 項 bonus 累加: 基礎血傷 角落/邊緣安全 reach lethal_placement defensive (擋對手 ASS 殺位) threat (出招範圍有沒有人) incoming_damage 懲罰 hand_threat 懲罰 (ASS 留手價值) score_income protection_bonus (脆皮 DPS 沒前排不出) future_ass_threat (脆皮被 ASS 一刀位置加罰)
+        attack 評分: 斬殺 +100+ 威脅 +damage×3 priority (ADC/SP) +5 numb 目標 -20 自殺 -50 chip 沒接力 -WASTED_CHIP_PENALTY(18)
+        deterministic_aoe 偵測 (small_cross/small_x/large_cross 才可加總多目標分) nearest/farthest 只挑 1 個目標 不加總
+        followup_kill_bonus chip 攻擊只有在本回合有友軍能補刀時才加分 否則計入 wasted_chip
+        anger immortal (HFR 在 anger 狀態 can_be_killed=False) 在 lethal_placement_bonus 與 evaluate_attack 都當作不可斬殺 不會誤刷斬殺分
+    各派系策略 (campaign/ai_strategies/*.py)
+        White 純基礎評分 不加額外 bonus (Tutorial 用)
+        Red 累積傷害 ramper bonus: 已成長的單位 +6/堆 HFR baseline +8 anger 時再 +20 ADCR +5 APR 偷傷害 +7 並依目標傷害加碼
+        Blue Token-tempo: 2 token 時下一擊 +16 SPB +12 HFB 隨 token 估傷害 LFB 多目標 +4/個 ADCB/ASSB +4 expected_tokens_from_attack 帶 4×token_value 預期收益 token_draw 鏈接時若場上有非 numb ADCB +12
+        Blue 擺放: TANKB 貼線 SPB 視場上 my_units+discard 與敵方數量計傷害並按手上其他可下單位數抑制 ADCB 視 token 狀態 + engine 數加分 HFB 沒 token 扣分 LFB/APB/APTB 微調
+        Green 幸運方塊鏈: LFG 攻擊範圍每塊 +45 HFG +30 ADCG row/col 空格 +2/個 擺放 APTG 看周圍空格 LFG/HFG 看鄰塊/鄰 APTG 數量
+        Orange 移動鏈: ADCO 移動再攻擊 score×0.4 + move 後可命中數 LFO +8 HFO 隨 extra_damage stack +12 + 多目標加成 ASSO 沒 anger +4 有 anger +25 擺放偏中央高機動格
+        Boss 觀察玩家平均傷害決定 TANK 是否加分 平均血量決定 ASS 是否加分 落後 >2 攻擊 +5
+    各關 AI Buff (campaign/boss_config.py)
+        green: 起始幸運 65%
+        orange: 每 3 個 AI 回合 +1 移動次數
+        boss: 每隻 AI 單位 +1 HP 起始手牌 4 張 每 5 個 AI 回合 +1 治療次數
+        apply_per_turn_buffs 以 AI 回合數計 (turn+1)//2 % N == 0 不在第 1 回合白費 maintain_unit_buffs 追蹤 buffed_unit_ids set 確保新 deploy 的單位也吃到 HP buff 且不重複加
+        buff set 改成 AIController instance 屬性 (原本是模組級) 避免下一場 reset_instance_counter 後 c1 c2 殘留導致第二場 HP buff 失效
+    戰役牌組 (campaign/ai_decks.py)
+        六關各自 12 張 AI 牌組 玩家預設沿用白色 deck
+        deck_builder 允許玩家依過關進度解鎖顏色: white 永遠可用 自己關卡顏色可用 之前已過關的關卡顏色可用 Boss 關全色解鎖
+    Deck Builder UI (campaign/deck_builder.py)
+        改用 DraftRenderer + 包裝過的 ExhibitRegistry 只展示已解鎖顏色的頁
+        左鍵加 右鍵移除 滾輪/方向鍵翻頁 K_E/K_RETURN/K_KP_ENTER 確認
+        每張單位至多 2 張 魔法卡至多 3 張 總共 12 張才能 confirm
+    存檔 (campaign/campaign_save.py)
+        campaign_progress.json 存 unlocked / cleared 兩個列表 載入時對 STAGE_ORDER 做過濾防 typo
+        過關自動解鎖下一關
+    設定外部化 (config/campaign_setting.json + campaign/config_loader.py)
+        所有 AI 延遲 評分門檻 kill_bonus 各項 hand_threat threat_model 都從 JSON 載入 與內建 _DEFAULTS deep_merge JSON 缺欄不會炸
+        faction_overrides 可逐派系覆蓋 attack_min_score 等門檻
+優化:
+    AI 各派系加成全部外部化到 config/campaign_setting.json
+        新增 strategy_bonuses 區塊 各派系 (red/blue/green/orange/boss) attack/placement 加成數值都可改
+        新增 heal 區塊 (heal 評分參數 amount min_amount min_score low_ratio_threshold 等)
+        新增 panic 區塊 (落後時下修攻擊門檻的相關參數 MIN_PANIC_THRESHOLD/no_drop_below/drop_per_step)
+        新增 stage_buffs 區塊 (各關卡 AI 特殊加成: green initial_luck / orange free_moving_every_n_turns / boss unit_hp_plus, initial_hand_size, free_heal_every_n_turns)
+        新增 stage_buff_text_templates 區塊 (pre_battle 顯示每種 buff 的文字模板 {value} 會帶入實際數值) 改數值或文字都只動 JSON
+        boss_config.py STAGE_BUFFS 與 _BUFF_TEXT_TEMPLATES 都改讀 CAMPAIGN_SETTINGS STAGE_BUFF_TEXT 依模板動態生成 改參數時 UI 文字自動同步
+        config_loader._DEFAULTS 同步加入相同內容 JSON 缺欄會走 default 不會炸
+        舊有 ai_controller.py / ai_strategies/*.py 把 magic number 全部改讀 CAMPAIGN_SETTINGS
+    WhiteStrategy 兩個只回傳 base_score 的覆寫方法刪除 直接繼承 Strategy (white 無派系協同 純基礎評分) 連帶移除未用的 GameState import
+    所有 campaign 模組移除註解與 docstring
+        解釋: 程式碼以命名與結構自述語意 多餘的 # 與 """ 看久了變雜訊 不如直接讀程式
+        修法: 自動腳本掃 18 個 campaign 檔案 跳過 GPL header 與 # type:/noqa 等 pragma 移除其他 docstring 與註解 對應的 test_ai_controller.py / test_campaign_strategies.py 也一併清理
+測試:
+    新增 tests/test_ai_controller.py 與 tests/test_campaign_strategies.py 共 96 個案例
+    所有戰役 AI 行為都有測試: tick 節流 renderer_busy gate 斬殺優先 deny 玩家 ASS 殺位 anger 不誤算斬殺 deterministic_aoe 區分 nearest/farthest token chain heal 評分 doomed 攻擊者跳省刀 等
+    全套 267 tests 通過 (campaign 加入後從 ~170 提升)
+=======================
