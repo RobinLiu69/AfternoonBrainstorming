@@ -23,6 +23,7 @@ import pygame
 from core.board_block import Board
 from core.game_screen import GameScreen, draw_text
 from core.game_state import GameState
+from shared.setting import BLUE, RED
 
 if TYPE_CHECKING:
     from cards.base import Card
@@ -37,13 +38,20 @@ class BoardRenderer:
         y = (self.game_screen.display_height/2 - self.game_screen.block_size*1.675) + board_y*self.game_screen.block_size
         return x, y
 
-    def render(self, board: Board) -> None:
+    def render(self, board: Board, color: tuple[int, int, int] | None = None) -> None:
         x, y = self._board_to_pixel(board.board_x, board.board_y)
-        pygame.draw.rect(self.game_screen.surface, board.color, (x, y, board.width, board.height), self.game_screen.thickness)
+        pygame.draw.rect(self.game_screen.surface, color if color is not None else board.color,
+                         (x, y, board.width, board.height), self.game_screen.thickness)
 
-    def render_all(self, game_state: GameState) -> None:
+    def render_all(self, game_state: GameState, local_controller: str = "") -> None:
+        effective_local = local_controller if local_controller in ("player1", "player2") else "player1"
+        owner_at = {(card.board_x, card.board_y): card.owner for card in game_state.get_both_player_cards()}
         for board in game_state.board_dict.values():
-            self.render(board)
+            owner = owner_at.get((board.board_x, board.board_y))
+            if owner is None:
+                self.render(board)
+            else:
+                self.render(board, BLUE if owner == effective_local else RED)
 
     def render_attack_highlight(self, board_x: int, board_y: int, controller: str, game_state: GameState) -> None:
         target_cards = tuple(filter(lambda card: card.board_x == board_x and card.board_y == board_y, game_state.get_all_cards()))
