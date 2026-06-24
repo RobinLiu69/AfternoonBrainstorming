@@ -66,7 +66,7 @@ class GameRenderer:
                 mouse_board_x, mouse_board_y, local_controller, game_state
             )
         
-        self.board_renderer.render_all(game_state)
+        self.board_renderer.render_all(game_state, local_controller)
 
         self.combat_animator.render_overlays(self.game_screen.surface)
 

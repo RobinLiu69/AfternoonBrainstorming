@@ -1896,3 +1896,18 @@ debug:
     所有戰役 AI 行為都有測試: tick 節流 renderer_busy gate 斬殺優先 deny 玩家 ASS 殺位 anger 不誤算斬殺 deterministic_aoe 區分 nearest/farthest token chain heal 評分 doomed 攻擊者跳省刀 等
     全套 267 tests 通過 (campaign 加入後從 ~170 提升)
 =======================
+2026/06/25-4.1.1.0
+編寫者 Robin
+----------------
+新增:
+    遊戲中棋盤外框依單位所屬玩家變色 操控方藍色 敵方紅色 本地遊玩時操控方恆為藍色
+        BoardRenderer.render 增加可選 color 參數覆寫該格外框顏色 不傳則維持原本 board.color (抽牌畫面等呼叫者不受影響)
+        BoardRenderer.render_all 增加 local_controller 參數 以 get_both_player_cards 建立座標->owner 對照表 逐格判定 屬操控方畫藍 屬敵方畫紅 空格與中立單位維持白框
+        沿用 ScoreDisplay 的 effective_local 慣例 local_controller 非 player1/player2 時退回 player1 故本地與觀戰一律以 player1 為藍方
+        GameRenderer.render_frame 呼叫 render_all 時帶入 local_controller
+優化:
+    卡牌生命/攻擊數值統一以 card_setting.json 為單一來源 card_hints.json 移除所有數值前綴 只保留技能與攻擊範圍描述 日後調整數值只需改 card_setting
+        card_hint.py 新增 get_job_and_color_name / get_stat_prefix 提示框顯示時即時由 card_setting 拼回生命/攻擊 (海盜另含費用括號 進化後改取 upgrade_health/upgrade_damage)
+        進化判定 (card_type += " (+)") 提前至框體寬高計算之前 框體尺寸改依實際渲染的第一行計算 (對戰中實體卡用即時數值 抽牌畫面用 card_setting 數值) 修正海盜進化後提示框版面與數值不同步
+        Card 分支改直接使用 line 取代 line.split("-")[1] 前綴清空後字串無 "-" 否則會 IndexError
+=======================

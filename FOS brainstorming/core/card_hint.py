@@ -23,7 +23,7 @@ from typing import cast
 import pygame
 
 from core.game_screen import GameScreen, draw_text
-from shared.setting import BLACK, WHITE, RED, GREEN, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
+from shared.setting import BLACK, WHITE, RED, GREEN, CARD_SETTING, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
 from cards.base import Card, COLOR_TAG_LIST
 
 
@@ -37,6 +37,30 @@ def get_job_and_color(card_type: str) -> tuple[str, tuple[int, int, int]]:
             else:
                 return card_type.replace(tag, "", 1), color
     return "None", (0, 0, 0)
+
+
+def get_job_and_color_name(card_type: str) -> tuple[str, str]:
+    for tag in COLOR_TAG_LIST:
+        if card_type.endswith(tag):
+            color_name = JOB_DICTIONARY["colors_dict"][tag]
+            if card_type.count(tag) > 1:
+                return card_type[::-1].replace(tag, "", 1)[::-1], color_name
+            else:
+                return card_type.replace(tag, "", 1), color_name
+    return "None", "None"
+
+
+def get_stat_prefix(card_type: str) -> str:
+    upgraded = card_type.endswith("(+)")
+    job, color_name = get_job_and_color_name(card_type.split()[0])
+    settings = CARD_SETTING.get(color_name, {}).get(job)
+    if not settings:
+        return ""
+    if "cost" in settings:
+        health = settings["upgrade_health"] if upgraded else settings["health"]
+        damage = settings["upgrade_damage"] if upgraded else settings["damage"]
+        return f"{health}/{damage}({settings['cost']})"
+    return f"{settings['health']}/{settings['damage']}"
 
 
 def get_job_shape(job: str, block_size: float) -> tuple:
@@ -134,8 +158,18 @@ class HintBox:
                 return
             if card_type not in CARDS_HINTS_DICTIONARY: return
             if card_type not in ["CUBE", "CUBES", "LUCKYBLOCK", "MOVE", "MOVEO", "HEAL"]:
-                box_height = len(CARDS_HINTS_DICTIONARY[card_type].split("\n")) if len(CARDS_HINTS_DICTIONARY[card_type].split("\n")) > 4 else 4
-                box_width = game_screen.block_size* 1.15 + game_screen.block_size*max(map(len, CARDS_HINTS_DICTIONARY[card_type].split("\n")))/12
+                job, color = get_job_and_color(card_type.split()[0])
+                upgraded = color == (0, 238, 238) and getattr(card, "upgrade", False)
+                if upgraded:
+                    card_type += " (+)"
+                hint_lines = CARDS_HINTS_DICTIONARY[card_type].split("\n")
+                if isinstance(card, Card):
+                    first_line = f"{card_type}{card.health+card.armor}/{card.damage}-{hint_lines[0]}"
+                else:
+                    first_line = f"{card_type} {get_stat_prefix(card_type)}-{hint_lines[0]}"
+                display_lines = [first_line, *hint_lines[1:]]
+                box_height = len(display_lines) if len(display_lines) > 4 else 4
+                box_width = game_screen.block_size* 1.15 + game_screen.block_size*max(map(len, display_lines))/12
 
                 pygame.draw.rect(self.surface, WHITE, (0, 0, box_width, (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)), 2)
                 pygame.draw.rect(self.surface, BLACK, ((game_screen.thickness//2), (game_screen.thickness//2), box_width-game_screen.thickness,
@@ -143,9 +177,7 @@ class HintBox:
 
                 pygame.draw.rect(self.surface, WHITE, (game_screen.block_size*0.05, game_screen.block_size*0.05,
                                                        game_screen.block_size*0.5, game_screen.block_size*0.5), 2)
-                job, color = get_job_and_color(card_type.split()[0])
-                if color == (0, 238, 238) and getattr(card, "upgrade", False):
-                    card_type += " (+)"
+                if upgraded:
                     draw_text("(+)", game_screen.text_font, color, (game_screen.block_size*0.213), (game_screen.block_size*0.235), self.surface)
                 shape = get_job_shape(job, game_screen.block_size*0.7)
                 match job:
@@ -153,10 +185,10 @@ class HintBox:
                         pygame.draw.circle(self.surface, color, shape, game_screen.block_size*0.15, int(game_screen.thickness/1.1))
                     case _:
                         pygame.draw.lines(self.surface, color, True, shape, int(game_screen.thickness*1.1))
-                for i, line in enumerate(CARDS_HINTS_DICTIONARY[card_type].split("\n")):
+                for i, line in enumerate(hint_lines):
                     if i == 0:
                         if isinstance(card, str):
-                            draw_text(f"{card_type} {line}", game_screen.text_fontCHI, WHITE,
+                            draw_text(f"{card_type} {get_stat_prefix(card_type)}-{line}", game_screen.text_fontCHI, WHITE,
                                       (game_screen.block_size*0.6), (game_screen.block_size*0.05), self.surface)
                         elif isinstance(card, Card):
                             draw_text(f"{card_type}", game_screen.text_fontCHI, WHITE, game_screen.block_size*0.6,
@@ -170,8 +202,7 @@ class HintBox:
                                       RED if card.damage < card.original_damage else GREEN if card.damage > card.original_damage else WHITE,
                                       game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))+1),
                                       (game_screen.block_size*0.05), self.surface)
-                            atk_type = line.split("-")
-                            draw_text(f"-{atk_type[1]}", game_screen.text_fontCHI, WHITE,
+                            draw_text(f"-{line}", game_screen.text_fontCHI, WHITE,
                                       game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))+len(str(card.damage))+1),
                                       (game_screen.block_size*0.05), self.surface)
                     elif i < 4:

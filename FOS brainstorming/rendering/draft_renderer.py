@@ -84,7 +84,7 @@ class DraftRenderer:
     
     def _render_player_deck(self, owner: str, draft_state: DraftState) -> None:
         offset_y = 1 if owner == "player1" else 1.5
-        draw_text(f"{"P1" if owner == "player1" else "P2"}Deck:",
+        draw_text(f"{'P1' if owner == 'player1' else 'P2'}Deck:",
                   self.game_screen.text_font, WHITE, self.game_screen.display_width//16*2,
                   self.game_screen.display_height - (self.game_screen.display_height//5/offset_y),
                   self.game_screen.surface)
