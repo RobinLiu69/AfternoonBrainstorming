@@ -1911,3 +1911,18 @@ debug:
         進化判定 (card_type += " (+)") 提前至框體寬高計算之前 框體尺寸改依實際渲染的第一行計算 (對戰中實體卡用即時數值 抽牌畫面用 card_setting 數值) 修正海盜進化後提示框版面與數值不同步
         Card 分支改直接使用 line 取代 line.split("-")[1] 前綴清空後字串無 "-" 否則會 IndexError
 =======================
+2026/06/25-4.1.1.0-patch-1
+編寫者 Robin
+----------------
+新增:
+    打包成 Windows exe (PyInstaller onedir)
+        build_exe.ps1 / build_exe.bat 一鍵打包: 停止舊進程 -> 清理 build/dist (鎖檔最多重試 5 次) -> PyInstaller (--onedir --windowed --icon) -> 複製 config/fonts 到 exe 旁
+        以 .venv 內的 pygame 2.6.1 打包 確保打進去的是 requirements 指定版本 而非全域的 pygame-ce
+        icon.png 轉成多尺寸 icon.ico 作為 exe 圖示
+        程式 frozen 時 _get_base_path 回傳 dirname(sys.executable) 故 config/fonts 需放 exe 旁 imgs/battle_records/campaign_progress.json 執行時自動建立 分發時整個 dist/AfternoonBrainstorming 資料夾一起給
+        .gitignore 加入 build/ dist/ *.spec 打包產物不進版控
+修正:
+    network_layer._save_transferred_logs 用 Path(__file__).parent.parent 找 battle_records
+        解釋: frozen 後 __file__ 指向暫存解壓目錄 LAN 對戰紀錄會寫到暫存而非 exe 旁 與其餘改用 FOLDER_PATH 的路徑不一致
+        修法: 改用 FOLDER_PATH (frozen 時即 exe 所在目錄) 與 setting.py / chart_make.py 等保持一致
+=======================

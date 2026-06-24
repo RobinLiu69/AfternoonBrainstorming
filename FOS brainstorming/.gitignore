@@ -2,3 +2,6 @@ __pycache__/
 imgs/
 battle_records/
 campaign_progress.json
+build/
+dist/
+*.spec
