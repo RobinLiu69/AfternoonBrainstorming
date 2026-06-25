@@ -181,7 +181,7 @@ The second player starts their turn with four cards in hand and one attack oppor
 
 ## Blue Faction
 
-- **Triangle (ADC) - 4/2 - Large Cross** / After drawing a card via blue tokens, it will auto-attack; if currently paralyzed, the paralysis is removed instead (no attack). Gains 2 blue tokens after a kill.
+- **Triangle (ADC) - 4/1 - Large Cross** / After drawing a card via blue tokens, it will auto-attack; if currently paralyzed, the paralysis is removed instead (no attack). Gains 2 blue tokens after a kill.
 - **Circle (AP) - 4/2 - Nearest Target** / Attack includes paralysis and gains 2 blue tokens.
 - **Square (TANK) - 10/1 - Small Cross** / Gains 1 blue token after taking damage.
 - **Trapezoid (HF) - 8/2 - Nine Grid** / Attacks deal extra damage based on current blue tokens.
