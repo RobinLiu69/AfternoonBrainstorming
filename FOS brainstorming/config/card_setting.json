@@ -132,8 +132,8 @@
     "Blue": {
         "ADC": {
             "health": 4,
-            "damage": 2,
-            "token_gets": 1
+            "damage": 1,
+            "token_gets": 2
         },
         "AP": {
             "health": 4,

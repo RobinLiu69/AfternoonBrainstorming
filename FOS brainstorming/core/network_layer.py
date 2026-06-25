@@ -637,7 +637,8 @@ class LANClient:
     def _save_transferred_logs(self, msg: dict) -> None:
         import base64
         from pathlib import Path
-        out_dir = Path(__file__).resolve().parent.parent / "battle_records"
+        from shared.setting import FOLDER_PATH
+        out_dir = Path(FOLDER_PATH) / "battle_records"
         out_dir.mkdir(parents=True, exist_ok=True)
         for key in ("log_file", "jsonl_file"):
             f = msg.get(key)
