@@ -177,6 +177,7 @@ class Sp(BlueCard):
                     enemies[game_state.rng.randrange(len(enemies))].damage_calculate(card_settings["SP"]["spawn_damage"], self, game_state)
                     enemies = list(filter(lambda card: card.health > 0, game_state.get_side_cards(self.owner, True)))
 
+            game_state.pending_attacks.clear()
 
 CardFactory.register("ADC" + color_code, Adc)
 CardFactory.register("AP" + color_code, Ap)

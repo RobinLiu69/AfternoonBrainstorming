@@ -1947,3 +1947,11 @@ debug:
               battling_replay 新增 _CampaignReplayBuffs 完整對應 AIController.tick 的 buff 部分 (一次性初始 buff / 每幀 maintain_unit_buffs / 每回合 apply_per_turn_buffs) 在主迴圈與快轉重建路徑各自套用 使 RNG 與單位狀態與原局一致
               campaign AI 決策本身不使用 RNG 故重現 buff 後回放即可決定性還原
 =======================
+2026/06/28-4.1.2.1
+編寫者 Robin
+----------------
+修正:
+    SPB 若放置時攻擊到幸運方塊 並觸發再次攻擊 會導致待攻擊序列中 存在它 但卻不會在此次行動中消耗掉 導致後續不可控之問題
+    攻擊範圍的展示 即使該單位血量歸零(HFR/HFC) 依舊會顯示其為合法攻擊目標
+    ADCB 遊戲內中文提示有疊字字
+=======================
