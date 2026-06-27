@@ -74,6 +74,9 @@ class ReplaySource:
             
             if msg.startswith("timer mode "):
                 self.metadata["timer_mode"] = msg[len("timer mode "):].strip()
+
+            if msg.startswith("campaign stage "):
+                self.metadata["campaign_stage"] = msg[len("campaign stage "):].strip()
     
     def next_action(self) -> Optional[GameAction]:
         if self._cursor >= len(self._action_indices):
