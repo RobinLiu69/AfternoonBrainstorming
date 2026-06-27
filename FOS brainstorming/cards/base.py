@@ -595,13 +595,13 @@ class Card(ABC):
                 case "large_x":
                     pass
                 case"nearest":
-                    nearby_cards: list["Card"] = sorted(game_state.get_side_cards(self.owner, True), key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y))
+                    nearby_cards: list["Card"] = sorted(filter(lambda card: card.health > 0, game_state.get_side_cards(self.owner, True)), key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y))
                     if nearby_cards:
                         temp_card = nearby_cards[0]
                         nearet_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y) == abs(temp_card.board_x-board_x)+abs(temp_card.board_y-board_y), nearby_cards))
                         for card in nearet_cards: yield card.board_x, card.board_y
                 case "farthest":
-                    faraway_cards: list["Card"] = sorted(game_state.get_side_cards(self.owner, True), key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y), reverse=True)
+                    faraway_cards: list["Card"] = sorted(filter(lambda card: card.health > 0, game_state.get_side_cards(self.owner, True)), key=lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y), reverse=True)
                     if faraway_cards:
                         temp_card = faraway_cards[0]
                         farthest_cards: list["Card"] = list(filter(lambda card: abs(card.board_x-board_x)+abs(card.board_y-board_y) == abs(temp_card.board_x-board_x)+abs(temp_card.board_y-board_y), faraway_cards))
