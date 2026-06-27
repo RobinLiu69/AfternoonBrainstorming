@@ -1933,3 +1933,17 @@ debug:
 修正:
     ADCB 數值 ATK 2 -> 1 獲得籃球 1 -> 2
 =======================
+2026/06/28-4.1.2.0-patch-1
+編寫者 Robin
+----------------
+新增:
+    戰役破完全部章節 (擊敗 boss Mixed Elite) 後 牌組構築階段開放全部顏色卡片任意選擇
+        deck_builder._unlocked_color_codes 在 cleared 含 "boss" 時回傳 colors_dict 全部色碼 (不再限於 W/R/B/G/O) 且不分當前章節
+修正:
+    戰役回放 AI 的 buff 未被重現 導致回放與原局逐漸不同步
+        解釋: green/orange/boss 的 buff (初始幸運 / 額外起手 / 單位+HP / 每 N 回合免費移動或治療) 原本由 AIController.tick 在實戰中套用 回放沒有 AIController 故完全不套用
+              其中 initial_hand_size 的額外抽牌與 initial_luck 會改變 RNG 與後續抽牌 / 幸運判定 一旦缺失整局回放就偏移 免費移動 / 治療次數缺失也會讓錄下的 AI 移動 / 治療動作被拒
+        修法: 回放紀錄已含 "campaign stage X" ReplaySource 解析為 metadata.campaign_stage
+              battling_replay 新增 _CampaignReplayBuffs 完整對應 AIController.tick 的 buff 部分 (一次性初始 buff / 每幀 maintain_unit_buffs / 每回合 apply_per_turn_buffs) 在主迴圈與快轉重建路徑各自套用 使 RNG 與單位狀態與原局一致
+              campaign AI 決策本身不使用 RNG 故重現 buff 後回放即可決定性還原
+=======================

@@ -33,11 +33,48 @@ from core.battling_dispatcher import BattlingDispatcher
 from core.replay_source import ReplaySource
 from rendering.game_renderer import GameRenderer
 from utils.logger import GameLogger
+from campaign.boss_config import (
+    apply_initial_buffs, apply_stage_one_shots, maintain_unit_buffs, apply_per_turn_buffs,
+)
 
 
 MIN_SPEED: float = 0.125
 MAX_SPEED: float = 8.0
 _ACTION_HOLD: float = 0.4  # minimum seconds to linger after each action (at 1x speed)
+
+
+class _CampaignReplayBuffs:
+    def __init__(self, stage: str) -> None:
+        self.stage = stage
+        self._buffed_ids: set[str] = set()
+        self._last_turn_seen: int = -1
+        self._initialized: bool = False
+
+    def reset(self) -> None:
+        self._buffed_ids = set()
+        self._last_turn_seen = -1
+        self._initialized = False
+
+    def _ensure_initialized(self, gs: GameState) -> None:
+        if self._initialized:
+            return
+        p2 = gs.player2
+        if not (p2.hand or p2.draw_pile or p2.discard_pile):
+            return
+        apply_stage_one_shots(self.stage, gs)
+        apply_initial_buffs(self.stage, gs)
+        self._initialized = True
+
+    def tick(self, gs: GameState) -> None:
+        self._ensure_initialized(gs)
+        maintain_unit_buffs(self.stage, gs, self._buffed_ids)
+        current = "player1" if gs.turn_number % 2 == 0 else "player2"
+        if current != "player2":
+            self._last_turn_seen = -1
+            return
+        if self._last_turn_seen != gs.turn_number:
+            self._last_turn_seen = gs.turn_number
+            apply_per_turn_buffs(self.stage, gs)
 
 
 def _build_replay_game_state(source: ReplaySource) -> GameState:
@@ -99,6 +136,7 @@ def _rebuild_and_fast_forward(
     game_renderer: GameRenderer,
     dispatcher: BattlingDispatcher,
     target_action_index: int,
+    buffs: "Optional[_CampaignReplayBuffs]" = None,
 ) -> None:
     import random as _py_random
     from cards.base import reset_instance_counter
@@ -160,9 +198,14 @@ def _rebuild_and_fast_forward(
     _core_setting.COMBAT_ANIMATIONS_ENABLED = False
     game_renderer.combat_animator.enabled = False
 
+    if buffs is not None:
+        buffs.reset()
+
     try:
         source.reset()
         for _ in range(target_action_index):
+            if buffs is not None:
+                buffs.tick(game_state)
             action = source.next_action()
             if action is None:
                 break
@@ -171,6 +214,8 @@ def _rebuild_and_fast_forward(
             game_state.player2.logic_update(game_state, game_renderer, False)
             game_state.neutral.update(game_state, game_renderer)
             game_state.update()
+        if buffs is not None:
+            buffs.tick(game_state)
     finally:
         _core_setting.COMBAT_ANIMATIONS_ENABLED = prev_anim_setting
         game_renderer.combat_animator.enabled = prev_anim_runtime
@@ -223,6 +268,9 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
     game_state.board_config = BoardConfig()
     game_state.board_dict = initialize_board(game_screen, game_state.board_config)
 
+    campaign_stage = source.metadata.get("campaign_stage")
+    buffs = _CampaignReplayBuffs(campaign_stage) if campaign_stage else None
+
     game_renderer = GameRenderer(game_screen)
     dispatcher = BattlingDispatcher(game_state=game_state, mode="local")
     dispatcher.attach_renderer(game_renderer)
@@ -264,7 +312,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                 elif event.key == pygame.K_r:
                     _rebuild_and_fast_forward(
                         source, game_state, game_screen,
-                        game_renderer, dispatcher, 0,
+                        game_renderer, dispatcher, 0, buffs,
                     )
                     paused = True
                 elif event.key == pygame.K_ESCAPE:
@@ -276,6 +324,9 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                     new_val = not game_renderer.combat_animator.enabled
                     game_renderer.combat_animator.enabled = new_val
                     _core_setting.COMBAT_ANIMATIONS_ENABLED = new_val
+
+        if buffs is not None:
+            buffs.tick(game_state)
 
         action_hold_remaining = max(0.0, action_hold_remaining - dt * speed)
 

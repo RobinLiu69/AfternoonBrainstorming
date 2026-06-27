@@ -46,6 +46,8 @@ STAGE_TO_COLOR_CODE: dict[str, str] = {
 
 
 def _unlocked_color_codes(stage: str, cleared: set[str]) -> list[str]:
+    if "boss" in cleared:
+        return list(JOB_DICTIONARY["colors_dict"].keys())
     if stage == "boss":
         return ["W", "R", "B", "G", "O"]
     codes: list[str] = ["W"]
