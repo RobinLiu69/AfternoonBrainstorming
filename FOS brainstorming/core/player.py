@@ -83,14 +83,10 @@ class Player:
         if game_state.number_of_attacks[self.name] > 0:
             for card in self.on_board:
                 if card.board_x == board_x and card.board_y == board_y:
-                    if self.name == "player1":
-                        if card.attack(game_state):
-                            game_state.number_of_attacks[self.name] -= card.attack_uses
-                            break
-                    else:
-                        if card.attack(game_state):
-                            game_state.number_of_attacks[self.name] -= card.attack_uses
-                            break
+                    if card.attack(game_state):
+                        game_state.number_of_attacks[self.name] -= card.attack_uses            
+                        game_state.game_statistics.add_hit(card.get_uid(), 1)
+                        break
 
     def draw_card(self, game_state: GameState) -> None:
         card_name: str = ""

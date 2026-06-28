@@ -21,9 +21,9 @@ import math
 from typing import Callable, Iterable, Optional, TYPE_CHECKING
 
 from cards.base import CardRenderData
-from shared.setting import CARD_SETTING
+from shared.setting import CARD_SETTING, ANIM_LUNGE_STEP
 from cards.factory import CardFactory
-from cards.base import Card, most_frequent_elements
+from cards.base import Card
 
 if TYPE_CHECKING:
     from core.game_state import GameState
@@ -38,6 +38,7 @@ class FuchsiaCard(Card):
 
         super().__init__(owner=owner, job_and_color=job_and_color, health=health, damage=damage, board_x=board_x, board_y=board_y)
         self.shadows: list[Shadow] = []
+        self.shadow_attack_types = self.attack_types
         self._pending_shadow_iids: Optional[str] = None
     
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
@@ -45,8 +46,8 @@ class FuchsiaCard(Card):
             if shadow.movable:
                 shadow.board_x, shadow.board_y = game_state.board_config.get_symmetric_pos(board_x, board_y)
 
-    def spawn_shadow(self, owner: str, board_x: int, board_y: int, attack_types: str, movable: bool=True) -> None:
-        self.shadows.append(Shadow(owner, board_x, board_y, self, attack_types, movable))
+    def spawn_shadow(self, owner: str, board_x: int, board_y: int, movable: bool=True) -> None:
+        self.shadows.append(Shadow(owner, board_x, board_y, self, self.shadow_attack_types, movable))
 
     def get_render_data(self) -> list[CardRenderData]:
         render_objects: list[CardRenderData] = super().get_render_data()
@@ -117,7 +118,7 @@ class Shadow(FuchsiaCard):
     def killed(self, victim: Card, game_state: GameState) -> bool:
         match self.linker.job_and_color:
             case "ASSF":
-                self.linker.spawn_shadow(self.owner, victim.board_x, victim.board_y, self.attack_types)
+                self.linker.spawn_shadow(self.owner, victim.board_x, victim.board_y)
                 return False
             case _:
                 return False
@@ -161,8 +162,11 @@ class Shadow(FuchsiaCard):
         )]
     
     def attack(self, game_state: GameState) -> bool:
-        enemies: list["Card"] = [c for c in game_state.get_side_cards(self.owner, True)
-                                 if c.health > 0 and c.job_and_color != "SHADOW"]
+        if self.linker.job_and_color == "LFF":
+            candidates = game_state.get_opponent_cards(self.owner)
+        else:
+            candidates = game_state.get_side_cards(self.owner, True)
+        enemies: list["Card"] = [c for c in candidates if c.health > 0]
         targets = tuple(self.detection(self.attack_types, enemies, game_state))
         if not targets:
             return False
@@ -205,7 +209,7 @@ class Adc(FuchsiaCard):
     def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
-            self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
+            self.spawn_shadow(self.owner, board_x, board_y)
 
     def attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
@@ -239,7 +243,7 @@ class Ap(FuchsiaCard):
     def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
-            self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
+            self.spawn_shadow(self.owner, board_x, board_y)
         
         for shadow in self.shadows:
             enemies = tuple(filter(lambda card: card.health > 0 and shadow.is_same_location(card), game_state.get_side_cards(self.owner, True)))
@@ -274,7 +278,7 @@ class Tank(FuchsiaCard):
     def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
-            self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
+            self.spawn_shadow(self.owner, board_x, board_y)
             
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
@@ -309,7 +313,7 @@ class Hf(FuchsiaCard):
     def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
-            self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
+            self.spawn_shadow(self.owner, board_x, board_y)
 
     def attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
@@ -339,19 +343,25 @@ class Lf(FuchsiaCard):
                  damage: int = card_settings["LF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="LFF", health=health, damage=damage, board_x=board_x, board_y=board_y)
+        self.shadow_attack_types = "nearest"
 
     def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
-            self.spawn_shadow(self.owner, board_x, board_y, "nearest")
+            self.spawn_shadow(self.owner, board_x, board_y)
 
     def attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
+            body_hits = list(self.hit_cards)
             for shadow in self.shadows:
                 shadow.attack(game_state)
-            
-            for target in (most_frequent_elements(self.hit_cards, 1)):
-                target.damage_calculate(self.damage, self, game_state)
+
+            body_iids = {card.instance_id for card in body_hits}
+            for target in self.hit_cards[len(body_hits):]:
+                if target.instance_id in body_iids and target.health > 0:
+                    hurt_delay = game_state._attack_anim_cursor + ANIM_LUNGE_STEP * 0.55
+                    target.damage_calculate(self.damage, self, game_state, anim_delay=hurt_delay)
+                    game_state._attack_anim_cursor += ANIM_LUNGE_STEP
             self.hit_cards.clear()
             return True
         return False
@@ -374,7 +384,7 @@ class Ass(FuchsiaCard):
             yield from shadow.attack_areas(shadow.board_x, shadow.board_y, shadow.attack_types, game_state)
 
     def killed(self, victim: Card, game_state: GameState) -> bool:
-        self.spawn_shadow(self.owner, victim.board_x, victim.board_y, self.attack_types)
+        self.spawn_shadow(self.owner, victim.board_x, victim.board_y)
         return False
     
     def die(self, game_state: GameState) -> bool:
@@ -416,7 +426,7 @@ class Apt(FuchsiaCard):
     def deploy(self, game_state: GameState) -> None:
         if self.owner != "display":
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
-            self.spawn_shadow(self.owner, board_x, board_y, self.attack_types)
+            self.spawn_shadow(self.owner, board_x, board_y)
     
     def update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
@@ -448,7 +458,7 @@ class Sp(FuchsiaCard):
         if targets:
             for card in self.detection("farthest", targets, game_state):
                 board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
-                card.spawn_shadow(self.owner, board_x, board_y, card.attack_types, False)
+                card.spawn_shadow(self.owner, board_x, board_y, False)
 
 
 CardFactory.register("ADC" + color_code, Adc)

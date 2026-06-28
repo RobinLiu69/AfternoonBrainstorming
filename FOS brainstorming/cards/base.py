@@ -675,7 +675,6 @@ class Card(ABC):
         target_tuple = tuple(self.detection(attack_types, enemies, game_state)) if not custom_target_tuple else custom_target_tuple
 
         if target_tuple:
-            game_state.game_statistics.add_hit(self.get_uid(), 1)
             base_delay = game_state._attack_anim_cursor
             for i, target in enumerate(target_tuple):
                 atk_delay  = base_delay + i * ANIM_LUNGE_STEP
