@@ -22,56 +22,40 @@ from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text
 
 
-def main(game_screen: GameScreen, default: str = "") -> str:
-    text = default
+def main(game_screen: GameScreen, server_version: str, client_version: str) -> None:
     clock = pygame.time.Clock()
-    blink = 0
+    pygame.event.clear()
 
     while True:
         game_screen.render()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return ""
-
+                return
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    return ""
-                if event.key == pygame.K_RETURN:
-                    if text:
-                        return text
-                    continue
-                if event.key == pygame.K_BACKSPACE:
-                    text = text[:-1]
-                    continue
-
-                ch = event.unicode
-                if ch and (ch.isdigit() or ch == ".") and len(text) < 21:
-                    text += ch
-
-        caret = "_" if (blink // 30) % 2 == 0 else " "
-        blink += 1
+                return
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                return
 
         cx = game_screen.display_width / 2
         cy = game_screen.display_height / 2
+        bs = game_screen.block_size
 
-        draw_text("Enter host IP",
+        draw_text("Version Mismatch",
                   game_screen.big_text_font, WHITE,
-                  cx - game_screen.block_size * 1.2,
-                  cy - game_screen.block_size * 1.2,
-                  game_screen.surface)
+                  cx - bs * 2.5, cy - bs * 1.4, game_screen.surface)
 
-        draw_text(text + caret,
-                  game_screen.big_text_font, WHITE,
-                  cx - game_screen.block_size * 1.8,
-                  cy - game_screen.block_size * 0.1,
-                  game_screen.surface)
+        draw_text(f"Server version :  {server_version}",
+                  game_screen.mid_text_font, WHITE,
+                  cx - bs * 2.0, cy - bs * 0.4, game_screen.surface)
 
-        draw_text("[Enter] connect    [Esc] cancel",
+        draw_text(f"Your version   :  {client_version}",
+                  game_screen.mid_text_font, WHITE,
+                  cx - bs * 2.0, cy + bs * 0.2, game_screen.surface)
+
+        draw_text("Press any key to go back",
                   game_screen.text_font, WHITE,
-                  cx - game_screen.block_size * 1.6,
-                  cy + game_screen.block_size * 1.0,
-                  game_screen.surface)
-        
+                  cx - bs * 1.3, cy + bs * 1.2, game_screen.surface)
+
         pygame.display.update()
         clock.tick(60)

@@ -19,7 +19,8 @@
 from dataclasses import dataclass, field
 
 
-RECONNECT_TIMEOUT_OPTIONS: tuple[float, ...] = (30.0, 60.0, 120.0, 300.0)
+INFINITE_RECONNECT: float = float("inf")
+RECONNECT_TIMEOUT_OPTIONS: tuple[float, ...] = (30.0, 60.0, 120.0, 300.0, INFINITE_RECONNECT)
 
 
 @dataclass

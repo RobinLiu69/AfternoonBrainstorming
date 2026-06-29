@@ -292,18 +292,25 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             if game_state.paused:
                 if game_state.pause_seconds_remaining > 0:
                     game_state.pause_seconds_remaining = max(0.0, game_state.pause_seconds_remaining - dt)
-            elif local_controller in ("player1", "player2"):
-                if controller == local_controller:
-                    game_state.get_player(local_controller)._update_timer_logic(game_state.timer_mode)
-                else:
-                    game_state.get_opponent(local_controller)._update_timer_logic(game_state.timer_mode)
+            else:
+                game_state.get_player(controller)._update_timer_logic(game_state.timer_mode)
 
         if mode not in ("local", "campaign"):
             controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
 
 
+        if is_server and server is not None:
+            game_state.net_spectator_count = server.count_spectators()
+            game_state.net_latencies = dispatcher.latencies
+        elif is_client and client is not None:
+            game_state.net_spectator_count = client.net_spectator_count
+            game_state.net_latencies = client.net_latencies
+
+        show_netinfo = pygame.key.get_pressed()[pygame.K_TAB] and mode in ("lan_server", "lan_client")
+
         game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on, dt,
-                                   multiplayer=(mode != "local"))
+                                   multiplayer=(mode != "local"),
+                                   show_netinfo=show_netinfo)
 
         if mode == "campaign" and ai_controller is not None and ai_controller.focus_position is not None:
             _draw_ai_focus(game_screen, ai_controller.focus_position)

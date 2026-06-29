@@ -16,20 +16,10 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.network import (
-    LANClient,
-    LANServer,
-    VersionMismatchError,
-    _recv_exactly,
-    _recv_msg,
-    _send_msg,
-)
 
-__all__ = [
-    "LANClient",
-    "LANServer",
-    "VersionMismatchError",
-    "_recv_exactly",
-    "_recv_msg",
-    "_send_msg",
-]
+class VersionMismatchError(ConnectionError):
+    def __init__(self, server_version: str, client_version: str):
+        super().__init__(f"Version mismatch: server={server_version!r}, client={client_version!r}")
+        self.server_version = server_version
+        self.client_version = client_version
+

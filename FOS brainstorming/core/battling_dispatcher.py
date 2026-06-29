@@ -47,6 +47,7 @@ class BattlingDispatcher:
         self._pause_deadline: Optional[float] = None
         self._pause_timer: Optional[threading.Timer] = None
         self._pause_lock = threading.Lock()
+        self.latencies: dict[str, float] = {}
 
     def attach_renderer(self, renderer: "GameRenderer") -> None:
         self._game_renderer = renderer
@@ -61,10 +62,26 @@ class BattlingDispatcher:
         server.on_peer_disconnect = self._on_peer_disconnect
         server.on_peer_reconnect = self._on_peer_reconnect
         server.on_pulse = self._on_pulse
+        server.on_pong = self._on_pong
 
     def attach_client(self, client: "LANClient") -> None:
         self._network = client
         client.on_state_update = self._client_apply_state
+
+    def _on_pong(self, role: str, rtt_ms: float) -> None:
+        if role in ("player1", "player2"):
+            self.latencies[role] = round(rtt_ms, 1)
+
+    def _broadcast_net_info(self) -> None:
+        from core.network_layer import LANServer
+        if not isinstance(self._network, LANServer):
+            return
+        with self._network._lock:
+            roles = [r for _c, r in self._network._clients]
+        latencies = {seat: self.latencies[seat] for seat in ("player1", "player2")
+                     if seat in roles and seat in self.latencies}
+        spectators = sum(1 for r in roles if r in ("spectator", "god"))
+        self._network.broadcast_net_info(spectators, latencies)
 
     def _on_client_connect(self, role: str) -> dict:
         if self._game_state is None:
@@ -75,6 +92,7 @@ class BattlingDispatcher:
     def _on_pulse(self) -> None:
         if self._game_state is not None and self._game_state.paused:
             self._broadcast_state(self._game_state)
+        self._broadcast_net_info()
 
     def _refresh_pause_remaining(self) -> None:
         if self._game_state is None:
@@ -84,6 +102,15 @@ class BattlingDispatcher:
 
     def _on_peer_disconnect(self) -> None:
         if self._game_state is None:
+            return
+        if self.reconnect_timeout == float("inf"):
+            if self._game_state.paused:
+                return
+            self._game_state.paused = True
+            self._game_state.pause_reason = "opponent disconnected"
+            self._game_state.pause_seconds_remaining = float("inf")
+            print("[BattlingDispatcher] paused; waiting indefinitely for reconnect")
+            self._broadcast_state(self._game_state)
             return
         with self._pause_lock:
             if self._pause_timer is not None:

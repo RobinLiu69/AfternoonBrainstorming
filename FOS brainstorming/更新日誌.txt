@@ -1965,3 +1965,59 @@ debug:
 優化:
     現在使用攻擊改在遊戲數據中記錄攻擊次數
 =======================
+2026/06/29-4.1.3.0
+編寫者 Robin
+----------------
+新增:
+    遊戲視窗圖示改用專案圖示
+        原本程式啟動後視窗 / 工作列的小圖示是 pygame 預設 只有 exe 檔案本身的圖示是對的
+        GameScreen.set_window_icon 在建立視窗前以 pygame.display.set_icon 載入 assets/icon.png
+        icon.png / icon.ico 移到 FOS brainstorming/assets/ 打包時一起複製到 exe 旁
+    顯示設定畫面 (主選單新增 settings 按鈕)
+        視窗大小可選 螢幕 60% / 80% / 100% (鎖定 16:10 等比例) 或全螢幕
+        全螢幕使用 pygame SCALED 維持比例 非 16:10 螢幕自動補黑邊不變形
+        選擇存於 exe 旁 display_setting.json (不進版控) 下次啟動沿用 讀到壞值退回預設
+        GameScreen 將 fitting_screen 重構為 apply_display_mode 可即時重算視窗 / block_size / 字型
+    Join 畫面支援貼上 (Ctrl+V) 與長按 Backspace 連續刪除
+        貼上會自動抓出第一組 IPv4 忽略前後空白 / :port / http:// 等雜訊
+        長按刪除以 pygame.key.set_repeat 實作 僅在 Join 畫面生效 離開時還原
+    加入連線改為非阻塞 並顯示 Connecting 動畫頁
+        連線在背景執行緒進行 主畫面顯示 Connecting... (循環點點動畫) 可按 Esc 取消
+        原本 5 秒阻塞連線會凍結整個視窗
+    連線 / 回放相關狀況改為跳說明頁 不再默默彈回主選單
+        連線逾時或被拒顯示 Connection Failed 與原因 版本不符顯示 Version Mismatch
+        主機關閉伺服器後其他玩家自動離開並顯示 Server Closed (讓玩家知道不是自己的連線問題)
+        撥放空的或損毀的回放檔顯示 Empty Replay / Replay Unavailable
+        這些頁進場先清空事件佇列 避免凍結期間累積的點擊把頁面瞬間關掉
+    選牌 / 戰鬥右上角顯示目前觀戰人數 (無人時不顯示)
+        伺服器每秒廣播 net_info (觀戰人數 + 各座位延遲) 主機與客戶端都據此顯示
+    戰鬥中按住 Tab 顯示連線小資訊覆層 (對手延遲 / 自己延遲 / 觀戰人數 / 回合)
+    選牌階段也顯示自己的 role (You: P1 / Spectator 等) 與戰鬥畫面一致
+    房主退出有確認頁防止誤按 (Lobby 與選牌階段皆是)
+    回放支援接管自己操作
+        回放中按 T 從當前局面接手 改為本地操作 (像 local 雙人對戰)
+        打到分出勝負會把這局存成新的回放檔 (含原始 seed 與已播放過的前綴動作 可完整重播) 中途離開則不存
+        按 R 回到重播最開始 (接管中按 R 會放棄尚未存檔的接管並回到觀看)
+    reconnect timeout 新增 unlimited (無限) 選項
+        選 unlimited 後對手斷線只會暫停 不啟動逾時計時器 也不自動判勝 / 取消 等對方回來為止
+修正:
+    旁觀者的時鐘不會走動
+        解釋: 旁觀者原本只在收到封包時更新時鐘 封包之間是凍結的
+        修法: 旁觀者也在本地模擬當前行動方的時鐘 只在收到封包時校正剩餘時間 (符合「本地模擬 收封包同步」)
+    Lobby 多位旁觀者的 ping 會互相覆蓋 / 閃動
+        解釋: latencies 以 role 為 key 而所有旁觀者 role 相同 故彼此覆蓋
+        修法: 依需求改為 Lobby 只顯示觀戰人數 不再顯示旁觀者個別 ping
+    回放按 R 重來時雙方時鐘沒有重設
+        解釋: Player.timer_start 原本只有 countdown 模式會重設 elapsed_time 計時 (timer) 模式會殘留
+        修法: timer 模式也將 elapsed_time 歸零 使 replay 重建與接管都真正重設時鐘
+    主機關閉伺服器時 伺服器端的 client 執行緒因 recv 例外噴出 traceback
+        修法: _client_loop 將 recv 的 OSError / ValueError 視為正常斷線處理 關閉乾淨
+    客戶端在選牌階段 主機退出後會卡在無限重連
+        修法: 玩家偵測到連線被主動拒絕 (主機已關) 立即離開 或超過 reconnect 上限後離開 旁觀者斷線即離開
+優化:
+    network_layer.py 拆分 (原約 690 行)
+        分成 core/network/ 套件: messages (封包框架) / errors (VersionMismatchError) / server (LANServer) / client (LANClient)
+        core/network_layer.py 保留為相容門面重新匯出 既有 import 全部不受影響
+    screens/ 散落的頂層檔整理成子套件
+        menu/ (start_screen, settings_screen)  connect/ (join_screen, connecting_screen)  lobby/ (lobby, lobby_action)  notices/ (各通知頁)
+=======================

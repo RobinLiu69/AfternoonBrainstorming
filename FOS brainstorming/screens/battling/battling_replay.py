@@ -32,6 +32,8 @@ from core.board_block import initialize_board
 from core.battling_dispatcher import BattlingDispatcher
 from core.replay_source import ReplaySource
 from rendering.game_renderer import GameRenderer
+from screens.battling.battling_action import collect_actions
+from screens.notices import notice_screen
 from utils.logger import GameLogger
 from campaign.boss_config import (
     apply_initial_buffs, apply_stage_one_shots, maintain_unit_buffs, apply_per_turn_buffs,
@@ -246,8 +248,59 @@ def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed
         draw_text(warning, game_screen.mid_text_font, RED, x + game_screen.block_size * 1.8, y_top - game_screen.block_size * 0.15, game_screen.surface)
     
 
-    hint = "SPACE pause/play   RIGHT step   UP/DOWN speed   R restart   V toggle anim   ESC exit"
+    hint = "SPACE pause/play   RIGHT step   UP/DOWN speed   R restart   T take over   V anim   ESC exit"
     draw_text(hint, game_screen.mid_text_font, WHITE, x, y_bottom, game_screen.surface)
+
+
+def _draw_takeover_hud(game_screen: GameScreen, controller: str) -> None:
+    x = game_screen.block_size * 0.3
+    y_top = game_screen.block_size * 0.2
+    y_bottom = game_screen.display_height - game_screen.block_size * 0.2
+    draw_text(f"TAKEOVER (live)  -  controlling {controller}",
+              game_screen.mid_text_font, WHITE, x, y_top, game_screen.surface)
+    hint = "A attack   M move   H heal   E end turn   1-9 play   R back to replay   ESC end (save on win)"
+    draw_text(hint, game_screen.mid_text_font, WHITE, x, y_bottom, game_screen.surface)
+
+
+def _collect_prefix_actions(source: ReplaySource, count: int) -> list:
+    saved = source.current_action_index
+    source.reset()
+    actions = []
+    for _ in range(count):
+        action = source.next_action()
+        if action is None:
+            break
+        actions.append(action)
+    source.seek_to_action(saved)
+    return actions
+
+
+def _begin_takeover(source: ReplaySource, game_state: GameState) -> GameLogger:
+    meta = source.metadata
+    logger = GameLogger(enable_file=True, enable_console=False, enable_jsonl=True)
+    logger.info(f"player1 deck {'-'.join(meta.get('player1_deck', []))}")
+    logger.info(f"player2 deck {'-'.join(meta.get('player2_deck', []))}")
+    logger.info(f"timer mode {meta.get('timer_mode', game_state.timer_mode)}")
+    if meta.get("campaign_stage"):
+        logger.info(f"campaign stage {meta['campaign_stage']}")
+    logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
+    logger.info(f"version {VERSION}", version=VERSION)
+    for action in _collect_prefix_actions(source, source.current_action_index):
+        logger.log_action(action, action.player)
+    game_state.game_logger = logger
+    game_state.player1.timer_start(game_state)
+    game_state.player2.timer_start(game_state)
+    return logger
+
+
+def _discard_logger(logger: GameLogger) -> None:
+    logger.close()
+    for path in (logger.log_file, logger._jsonl_path):
+        try:
+            if path is not None and path.exists():
+                path.unlink()
+        except OSError:
+            pass
 
 
 def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
@@ -258,10 +311,12 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
         source = ReplaySource(replay_path)
     except FileNotFoundError as e:
         print(f"[Replay] {e}")
+        notice_screen.main(game_screen, "Replay Unavailable", "file not found")
         return None
 
     if source.total_actions == 0:
         print(f"[Replay] {replay_path.name} contains no actions — nothing to replay")
+        notice_screen.main(game_screen, "Empty Replay", "this recording has no actions to play")
         return None
 
     game_state = _build_replay_game_state(source)
@@ -289,6 +344,11 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
     hint_on: bool = False
     controller: str = "player1"
 
+    taken_over: bool = False
+    takeover_logger: Optional[GameLogger] = None
+    winner: str = "None"
+    card_info: list = ["None", 0]
+
     clock = pygame.time.Clock()
     running: bool = True
 
@@ -296,73 +356,135 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
         dt = clock.tick(60) / 1000.0
         game_screen.render()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    paused = not paused
-                elif event.key == pygame.K_RIGHT:
-                    step_once = True
-                    paused = True
-                elif event.key == pygame.K_UP:
-                    speed = min(speed * 2.0, MAX_SPEED)
-                elif event.key == pygame.K_DOWN:
-                    speed = max(speed / 2.0, MIN_SPEED)
-                elif event.key == pygame.K_r:
-                    _rebuild_and_fast_forward(
-                        source, game_state, game_screen,
-                        game_renderer, dispatcher, 0, buffs,
-                    )
-                    paused = True
-                elif event.key == pygame.K_ESCAPE:
+        if not taken_over:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
                     running = False
-                elif event.key == pygame.K_f:
-                    hint_on = not hint_on
-                elif event.key == pygame.K_v:
-                    import shared.setting as _core_setting
-                    new_val = not game_renderer.combat_animator.enabled
-                    game_renderer.combat_animator.enabled = new_val
-                    _core_setting.COMBAT_ANIMATIONS_ENABLED = new_val
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        paused = not paused
+                    elif event.key == pygame.K_RIGHT:
+                        step_once = True
+                        paused = True
+                    elif event.key == pygame.K_UP:
+                        speed = min(speed * 2.0, MAX_SPEED)
+                    elif event.key == pygame.K_DOWN:
+                        speed = max(speed / 2.0, MIN_SPEED)
+                    elif event.key == pygame.K_r:
+                        _rebuild_and_fast_forward(
+                            source, game_state, game_screen,
+                            game_renderer, dispatcher, 0, buffs,
+                        )
+                        paused = True
+                    elif event.key == pygame.K_t:
+                        takeover_logger = _begin_takeover(source, game_state)
+                        taken_over = True
+                        paused = False
+                        controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
+                    elif event.key == pygame.K_ESCAPE:
+                        running = False
+                    elif event.key == pygame.K_f:
+                        hint_on = not hint_on
+                    elif event.key == pygame.K_v:
+                        import shared.setting as _core_setting
+                        new_val = not game_renderer.combat_animator.enabled
+                        game_renderer.combat_animator.enabled = new_val
+                        _core_setting.COMBAT_ANIMATIONS_ENABLED = new_val
+        else:
+            events = pygame.event.get()
+            if any(e.type == pygame.KEYDOWN and e.key == pygame.K_r for e in events):
+                if takeover_logger is not None:
+                    _discard_logger(takeover_logger)
+                    takeover_logger = None
+                game_state.game_logger = GameLogger(enable_file=False, enable_console=False, enable_jsonl=False)
+                taken_over = False
+                winner = "None"
+                controller = "player1"
+                card_info = ["None", 0]
+                _rebuild_and_fast_forward(
+                    source, game_state, game_screen,
+                    game_renderer, dispatcher, 0, buffs,
+                )
+                paused = True
+            else:
+                for action in collect_actions(controller, card_info, game_state, game_screen, events):
+                    result = dispatcher.dispatch(action, game_state)
+                    if action.action_type == "toggle_hint":
+                        hint_on = not hint_on
+                        continue
+                    if action.action_type == "toggle_animation":
+                        import shared.setting as _core_setting
+                        new_val = not game_renderer.combat_animator.enabled
+                        game_renderer.combat_animator.enabled = new_val
+                        _core_setting.COMBAT_ANIMATIONS_ENABLED = new_val
+                        continue
+                    if result.end_turn:
+                        controller = "player2" if controller == "player1" else "player1"
+                    if result.quit:
+                        if result.message:
+                            winner = result.message
+                        running = False
 
         if buffs is not None:
             buffs.tick(game_state)
 
-        action_hold_remaining = max(0.0, action_hold_remaining - dt * speed)
+        if not taken_over:
+            action_hold_remaining = max(0.0, action_hold_remaining - dt * speed)
 
-        should_advance: bool = False
-        if step_once:
-            should_advance = True
-            step_once = False
-        elif not paused and not source.exhausted:
-            if not game_renderer.combat_animator.is_animating() and action_hold_remaining <= 0.0:
+            should_advance: bool = False
+            if step_once:
                 should_advance = True
+                step_once = False
+            elif not paused and not source.exhausted:
+                if not game_renderer.combat_animator.is_animating() and action_hold_remaining <= 0.0:
+                    should_advance = True
 
-        if should_advance and not source.exhausted:
-            action = source.next_action()
-            while action is not None and action.action_type == "toggle_hint":
+            if should_advance and not source.exhausted:
                 action = source.next_action()
-            if action is not None:
-                dispatcher._execute(action, game_state)
-                controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
-                action_hold_remaining = _ACTION_HOLD
-            else:
-                paused = True
+                while action is not None and action.action_type == "toggle_hint":
+                    action = source.next_action()
+                if action is not None:
+                    dispatcher._execute(action, game_state)
+                    controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
+                    action_hold_remaining = _ACTION_HOLD
+                else:
+                    paused = True
 
-        game_state.player1.logic_update(game_state, game_renderer, False)
-        game_state.player2.logic_update(game_state, game_renderer, False)
-        game_state.neutral.update(game_state, game_renderer)
-        game_state.update()
+        if taken_over:
+            game_state.get_player(controller).logic_update(game_state, game_renderer, True)
+            game_state.get_opponent(controller).logic_update(game_state, game_renderer, False)
+            game_state.neutral.update(game_state, game_renderer)
+            game_state.update()
+            if game_state.player1.time_out:
+                winner = "player2"
+                running = False
+            if game_state.player2.time_out:
+                winner = "player1"
+                running = False
+        else:
+            game_state.player1.logic_update(game_state, game_renderer, False)
+            game_state.player2.logic_update(game_state, game_renderer, False)
+            game_state.neutral.update(game_state, game_renderer)
+            game_state.update()
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        game_renderer.render_frame(controller, controller, mouse_x, mouse_y, to_board_x(mouse_x, game_screen), to_board_y(mouse_y, game_screen), game_state, hint_on, dt * speed)
-        _draw_hud(game_screen, source, paused, speed)
+        render_dt = dt if taken_over else dt * speed
+        game_renderer.render_frame(controller, controller, mouse_x, mouse_y, to_board_x(mouse_x, game_screen), to_board_y(mouse_y, game_screen), game_state, hint_on, render_dt)
+        if taken_over:
+            _draw_takeover_hud(game_screen, controller)
+        else:
+            _draw_hud(game_screen, source, paused, speed)
 
         pygame.display.update()
 
+    if taken_over:
+        if winner not in ("None", ""):
+            return game_state
+        if takeover_logger is not None:
+            _discard_logger(takeover_logger)
+        return None
 
     action = source.next_action()
     if action is None:
         return game_state
-    else:
-        return None
+    return None
