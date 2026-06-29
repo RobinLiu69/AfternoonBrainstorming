@@ -47,6 +47,7 @@ class LANClient:
 
         self.net_spectator_count: int = 0
         self.net_latencies: dict = {}
+        self.my_latency: Optional[float] = None
 
     @property
     def is_connected(self) -> bool:
@@ -168,6 +169,8 @@ class LANClient:
                 elif mtype == "net_info":
                     self.net_spectator_count = msg.get("spectator_count", 0)
                     self.net_latencies = msg.get("latencies", {})
+                elif mtype == "ping_result":
+                    self.my_latency = msg.get("ms")
             except Exception:
                 import traceback, sys
                 try:

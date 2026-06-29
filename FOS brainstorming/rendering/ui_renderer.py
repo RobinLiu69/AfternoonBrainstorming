@@ -250,23 +250,23 @@ class UIRenderer:
         latencies = getattr(game_state, "net_latencies", {}) or {}
         count = getattr(game_state, "net_spectator_count", 0)
 
-        if local_controller in ("player1", "player2"):
-            my_seat = local_controller
-            opp_seat = "player2" if my_seat == "player1" else "player1"
-        else:
-            my_seat = ""
-            opp_seat = ""
+        my_ping = getattr(game_state, "net_my_ping", None)
 
         def fmt(seat: str) -> str:
-            if not seat:
-                return "-"
             ms = latencies.get(seat)
             return f"{ms:.0f} ms" if ms is not None else "host"
 
-        if my_seat:
-            lines = [f"you      : {fmt(my_seat)}", f"opponent : {fmt(opp_seat)}"]
+        you_str = f"{my_ping:.0f} ms (to host)" if my_ping is not None else "local (host)"
+
+        if local_controller in ("player1", "player2"):
+            opp_seat = "player2" if local_controller == "player1" else "player1"
+            lines = [f"you      : {you_str}", f"opponent : {fmt(opp_seat)}"]
         else:
-            lines = [f"player1  : {fmt('player1')}", f"player2  : {fmt('player2')}"]
+            lines = [
+                f"player1  : {fmt('player1')}",
+                f"player2  : {fmt('player2')}",
+                f"you      : {you_str}",
+            ]
         lines.append(f"spectators: {count}")
         lines.append(f"turn: {game_state.turn_number}")
 
@@ -284,3 +284,46 @@ class UIRenderer:
         gs.surface.blit(panel, (int(x), int(y)))
         for i, line in enumerate(lines):
             draw_text(line, font, WHITE, x + pad, y + pad + i * line_h, gs.surface)
+
+    def render_spectator_decks(self, game_state: GameState, local_controller: str) -> None:
+        gs = self.game_screen
+        bs = gs.block_size
+        font = gs.text_font
+        title_font = gs.mid_text_font
+        line_h = font.get_linesize()
+        pad = bs * 0.15
+        is_god = local_controller == "god"
+
+        def deck_lines(player: Player) -> tuple[str, list[str]]:
+            total = len(player.deck)
+            if is_god:
+                cards = sorted(c for c in player.draw_pile if c != "?")
+                return f"deck ({len(player.draw_pile)} left)", (cards or ["(empty)"])
+            known = sorted(player.revealed_deck)
+            unknown = max(0, total - len(known))
+            body = list(known)
+            if unknown:
+                body.append(f"+ {unknown} unknown")
+            return f"deck (known {len(known)}/{total})", (body or ["(empty)"])
+
+        def panel_width(title: str, body: list[str]) -> float:
+            return max([title_font.size(title)[0]] + [font.size(line)[0] for line in body]) + pad * 2
+
+        def draw_panel(title: str, body: list[str], x: float) -> None:
+            width = panel_width(title, body)
+            height = title_font.get_linesize() + line_h * len(body) + pad * 2
+            y = gs.display_height / 2 - height / 2
+            panel = pygame.Surface((int(width), int(height)), pygame.SRCALPHA)
+            panel.fill((0, 0, 0, 200))
+            pygame.draw.rect(panel, WHITE, panel.get_rect(), max(1, int(bs / 70)))
+            gs.surface.blit(panel, (int(x), int(y)))
+            draw_text(title, title_font, WHITE, x + pad, y + pad, gs.surface)
+            ty = y + pad + title_font.get_linesize()
+            for i, line in enumerate(body):
+                draw_text(line, font, WHITE, x + pad, ty + i * line_h, gs.surface)
+
+        p1_title, p1_body = deck_lines(game_state.player1)
+        p2_title, p2_body = deck_lines(game_state.player2)
+        draw_panel(f"P1 {p1_title}", p1_body, bs * 0.3)
+        title2 = f"P2 {p2_title}"
+        draw_panel(title2, p2_body, gs.display_width - panel_width(title2, p2_body) - bs * 0.3)

@@ -277,10 +277,14 @@ class LANServer:
             with self._lock:
                 self._last_seen[conn] = time.monotonic()
             if msg.get("type") == "pong":
+                sent_ts = msg.get("ts", 0.0)
+                rtt_ms = (time.monotonic() - sent_ts) * 1000.0
+                try:
+                    _send_msg(conn, {"type": "ping_result", "ms": round(rtt_ms, 1)})
+                except OSError:
+                    pass
                 if self.on_pong is not None:
                     role = self.find_role(conn)
-                    sent_ts = msg.get("ts", 0.0)
-                    rtt_ms = (time.monotonic() - sent_ts) * 1000.0
                     try:
                         self.on_pong(role, rtt_ms)
                     except Exception as e:
