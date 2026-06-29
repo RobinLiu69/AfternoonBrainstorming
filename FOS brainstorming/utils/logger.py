@@ -71,6 +71,7 @@ class GameLogger:
     _subscribers: List[Callable[[LogEntry], None]] = field(init=False, default_factory=list, repr=False)
     _jsonl_fp: Optional[TextIO] = field(init=False, default=None, repr=False)
     _jsonl_path: Optional[Path] = field(init=False, default=None, repr=False)
+    _file_handler: Optional[logging.Handler] = field(init=False, default=None, repr=False)
     _closed: bool = field(init=False, default=False, repr=False)
     _write_lock: threading.Lock = field(init=False, default_factory=threading.Lock, repr=False)
 
@@ -93,6 +94,7 @@ class GameLogger:
                 file_handler.setLevel(logging.DEBUG)
                 file_handler.setFormatter(formatter)
                 self._logger.addHandler(file_handler)
+                self._file_handler = file_handler
 
         if self.enable_console:
             console_handler = logging.StreamHandler()
@@ -123,7 +125,18 @@ class GameLogger:
                     print(f"[GameLogger] jsonl close failed: {e}")
                 finally:
                     self._jsonl_fp = None
-    
+
+    def detach(self) -> None:
+        self.close()
+        if self._file_handler is not None:
+            try:
+                self._file_handler.close()
+                self._logger.removeHandler(self._file_handler)
+            except Exception as e:
+                print(f"[GameLogger] detach failed: {e}")
+            finally:
+                self._file_handler = None
+
     def log(self, level: LogLevel, category: LogCategory, message: str, **data) -> None:
         entry = LogEntry(
             timestamp=datetime.now(),

@@ -43,6 +43,7 @@ from campaign.boss_config import (
 MIN_SPEED: float = 0.125
 MAX_SPEED: float = 8.0
 _ACTION_HOLD: float = 0.4  # minimum seconds to linger after each action (at 1x speed)
+_MAX_SETTLE_TICKS: int = 64
 
 
 class _CampaignReplayBuffs:
@@ -212,10 +213,14 @@ def _rebuild_and_fast_forward(
             if action is None:
                 break
             dispatcher._execute(action, game_state)
-            game_state.player1.logic_update(game_state, game_renderer, False)
-            game_state.player2.logic_update(game_state, game_renderer, False)
-            game_state.neutral.update(game_state, game_renderer)
-            game_state.update()
+            for _ in range(_MAX_SETTLE_TICKS):
+                game_state.player1.logic_update(game_state, game_renderer, False)
+                game_state.player2.logic_update(game_state, game_renderer, False)
+                game_state.neutral.update(game_state, game_renderer)
+                game_state.update()
+                if (game_state.card_to_draw["player1"] <= 0
+                        and game_state.card_to_draw["player2"] <= 0):
+                    break
         if buffs is not None:
             buffs.tick(game_state)
     finally:
@@ -319,7 +324,18 @@ def _export_replay_log(
             source, game_state, game_screen,
             game_renderer, dispatcher, source.total_actions, buffs,
         )
-        winner = "player1" if game_state.score < 0 else "player2"
+        recorded_version = meta.get("version")
+        if recorded_version is not None and recorded_version != VERSION:
+            logger.warning(
+                f"replay recorded on version {recorded_version}, re-simulated on {VERSION}; "
+                f"results may diverge from the original match"
+            )
+        if game_state.score <= -10:
+            winner = "player1"
+        elif game_state.score >= 10:
+            winner = "player2"
+        else:
+            winner = f"undetermined (re-sim ended at score {game_state.score}, never reached +/-10)"
         logger.info(f"winner {winner}")
         logger.info(f"player1 timer {game_state.player1.time_minutes_and_seconds}")
         logger.info(f"player2 timer {game_state.player2.time_minutes_and_seconds}")
@@ -327,7 +343,7 @@ def _export_replay_log(
         logger.info(f"{game_state.game_statistics.score_history}")
     finally:
         log_path = logger.log_file
-        logger.close()
+        logger.detach()
         game_state.game_logger = prev_logger
     return log_path
 
