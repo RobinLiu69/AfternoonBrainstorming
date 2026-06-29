@@ -93,6 +93,8 @@ class GameRenderer:
 
         if show_netinfo:
             self.ui_renderer.render_netinfo_overlay(local_controller, game_state)
+            if local_controller in ("spectator", "god"):
+                self.ui_renderer.render_spectator_decks(game_state, local_controller)
 
     def _render_pause_overlay(self, game_state: GameState) -> None:
         gs = self.game_screen

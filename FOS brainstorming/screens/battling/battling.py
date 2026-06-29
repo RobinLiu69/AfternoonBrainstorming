@@ -30,7 +30,26 @@ from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from rendering.game_renderer import GameRenderer
 from screens.battling.battling_action import collect_actions
+from screens.notices import server_closed_screen
 from campaign.ai_controller import AIController
+
+
+def _render_quit_confirm(game_screen: GameScreen) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    overlay = pygame.Surface((game_screen.display_width, game_screen.display_height), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 185))
+    game_screen.surface.blit(overlay, (0, 0))
+    lines = [
+        "Leave the match and shut down server?",
+        "all players will be disconnected",
+        "[Y] yes        [N] no",
+    ]
+    offsets = (-bs * 0.7, -bs * 0.05, bs * 0.7)
+    for line, dy in zip(lines, offsets):
+        w = game_screen.mid_text_font.size(line)[0]
+        draw_text(line, game_screen.mid_text_font, WHITE, cx - w / 2, cy + dy, game_screen.surface)
 
 
 def number_key(number: int, mouse_x: int, mouse_y: int,
@@ -151,6 +170,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
     game_state.game_logger.log_turn_start("player1", game_state.turn_number)
  
     winner: str = "None"
+    confirming_quit: bool = False
     clock = pygame.time.Clock()
 
     if is_client and client:
@@ -165,7 +185,10 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             server.pulse()
 
         if is_client and client:
-            if client.is_disconnected and client.role in ("player1", "player2"):
+            if client.is_disconnected:
+                if client.role not in ("player1", "player2"):
+                    server_closed_screen.main(game_screen)
+                    return "None"
                 import time as _time
                 now = _time.monotonic()
                 if now - last_reconnect_attempt > 2.0:
@@ -174,6 +197,9 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                         print("[battling] reconnect succeeded")
                         if client.initial_state:
                             game_state.apply_dict(client.initial_state, game_renderer)
+                if client.reconnect_refused:
+                    server_closed_screen.main(game_screen)
+                    return "None"
 
             game_over = client.consume_pending_game_over()
             if game_over is not None:
@@ -203,6 +229,21 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
         board_x = to_board_x(mouse_x, game_screen)
         board_y = to_board_y(mouse_y, game_screen)
 
+        if confirming_quit:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_y, pygame.K_RETURN):
+                        running = False
+                    elif event.key in (pygame.K_n, pygame.K_ESCAPE):
+                        confirming_quit = False
+            game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y,
+                                       game_state, hint_on, dt, multiplayer=(mode != "local"))
+            _render_quit_confirm(game_screen)
+            pygame.display.update()
+            continue
+
         actions = collect_actions(local_controller, card_info, game_state, game_screen)
 
         if mode == "campaign" and ai_controller is not None:
@@ -215,6 +256,10 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             ))
 
         for action in actions:
+            if is_server and action.action_type == "quit":
+                confirming_quit = True
+                break
+
             result = dispatcher.dispatch(action, game_state)
 
             if action.action_type == "toggle_hint":
@@ -302,9 +347,11 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
         if is_server and server is not None:
             game_state.net_spectator_count = server.count_spectators()
             game_state.net_latencies = dispatcher.latencies
+            game_state.net_my_ping = None
         elif is_client and client is not None:
             game_state.net_spectator_count = client.net_spectator_count
             game_state.net_latencies = client.net_latencies
+            game_state.net_my_ping = client.my_latency
 
         show_netinfo = pygame.key.get_pressed()[pygame.K_TAB] and mode in ("lan_server", "lan_client")
 

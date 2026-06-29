@@ -50,6 +50,7 @@ class Player:
         self.time_out: bool = False
         self.time_minutes_and_seconds: str = "00:00"
         self.selected_card_index: int = -1
+        self.revealed_deck: list[str] = list(self.deck[:6])
 
     def initialize(self, game_state: GameState) -> None:
         match self.name:
@@ -101,6 +102,8 @@ class Player:
                 card_name = self.draw_pile.pop()
                 self.hand.append(card_name)
         if card_name:
+            if self.revealed_deck.count(card_name) < self.deck.count(card_name):
+                self.revealed_deck.append(card_name)
             game_state.game_logger.log_card_drew(self.name, card_name)
         else:
             game_state.game_logger.info(f"{self.name} draw pile is empty, no card to draw")
@@ -264,6 +267,7 @@ class Player:
             "on_board": [c.to_dict() for c in self.on_board],
             "draw_pile": self.draw_pile,
             "discard_pile": self.discard_pile,
+            "revealed_deck": self.revealed_deck,
             "start_time": self.start_time,
             "elapsed_time": self.elapsed_time,
             "time_out": self.time_out
@@ -285,6 +289,7 @@ class Player:
         self.hand = data["hand"]
         self.draw_pile = data["draw_pile"]
         self.discard_pile = data["discard_pile"]
+        self.revealed_deck = data.get("revealed_deck", [])
 
         self.start_time = -1
         self.elapsed_time = data["elapsed_time"]
