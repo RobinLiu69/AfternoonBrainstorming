@@ -102,10 +102,20 @@ class GameScreen:
             percent = int(mode)
             self.display_width, self.display_height = self.fit_16_10(desktop_width * percent / 100,
                                                                      desktop_height * percent / 100)
-            self.surface = pygame.display.set_mode((self.display_width, self.display_height))
+            flags = pygame.NOFRAME if percent >= 100 else 0
+            self.surface = pygame.display.set_mode((self.display_width, self.display_height), flags)
+            self._center_window(desktop_width, desktop_height)
         self.block_size: float = (self.display_width / 8) / 1.2
         self.thickness: int = self.display_width // 400
         self.font_init()
+
+    def _center_window(self, desktop_width: int, desktop_height: int) -> None:
+        x = max(0, (desktop_width - self.display_width) // 2)
+        y = max(0, (desktop_height - self.display_height) // 2)
+        try:
+            pygame.display.set_window_position((x, y))
+        except pygame.error:
+            pass
 
     def font_init(self) -> None:
         self.text_font_size: int = int(self.display_width/1500*16.5)
