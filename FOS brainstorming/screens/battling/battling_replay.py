@@ -43,6 +43,7 @@ from campaign.boss_config import (
 MIN_SPEED: float = 0.125
 MAX_SPEED: float = 8.0
 _ACTION_HOLD: float = 0.4  # minimum seconds to linger after each action (at 1x speed)
+_MAX_SETTLE_TICKS: int = 64
 
 
 class _CampaignReplayBuffs:
@@ -212,10 +213,14 @@ def _rebuild_and_fast_forward(
             if action is None:
                 break
             dispatcher._execute(action, game_state)
-            game_state.player1.logic_update(game_state, game_renderer, False)
-            game_state.player2.logic_update(game_state, game_renderer, False)
-            game_state.neutral.update(game_state, game_renderer)
-            game_state.update()
+            for _ in range(_MAX_SETTLE_TICKS):
+                game_state.player1.logic_update(game_state, game_renderer, False)
+                game_state.player2.logic_update(game_state, game_renderer, False)
+                game_state.neutral.update(game_state, game_renderer)
+                game_state.update()
+                if (game_state.card_to_draw["player1"] <= 0
+                        and game_state.card_to_draw["player2"] <= 0):
+                    break
         if buffs is not None:
             buffs.tick(game_state)
     finally:
@@ -230,7 +235,7 @@ def _rebuild_and_fast_forward(
     game_state._attack_anim_cursor = 0.0
 
 
-def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed: float) -> None:
+def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed: float, save_log: bool) -> None:
     x = game_screen.block_size * 0.3
     y_top = game_screen.block_size * 0.2
     y_bottom = game_screen.display_height - game_screen.block_size * 0.2
@@ -238,7 +243,8 @@ def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed
     status = "PAUSED" if paused else "PLAYING"
     header = (
         f"REPLAY [{status}]  speed={speed:g}x  "
-        f"{source.current_action_index}/{source.total_actions}"
+        f"{source.current_action_index}/{source.total_actions}  "
+        f"log={'ON' if save_log else 'OFF'}"
     )
     draw_text(header, game_screen.mid_text_font, WHITE, x, y_top, game_screen.surface)
 
@@ -246,9 +252,9 @@ def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed
     if replay_version is not None and replay_version != VERSION:
         warning = f"WARNING: Replay version {replay_version} != current {VERSION}, results may differ"
         draw_text(warning, game_screen.mid_text_font, RED, x + game_screen.block_size * 1.8, y_top - game_screen.block_size * 0.15, game_screen.surface)
-    
 
-    hint = "SPACE pause/play   RIGHT step   UP/DOWN speed   R restart   T take over   V anim   ESC exit"
+
+    hint = "SPACE pause/play   RIGHT step   UP/DOWN speed   R restart   T take over   V anim   L save-log   ESC exit"
     draw_text(hint, game_screen.mid_text_font, WHITE, x, y_bottom, game_screen.surface)
 
 
@@ -291,6 +297,55 @@ def _begin_takeover(source: ReplaySource, game_state: GameState) -> GameLogger:
     game_state.player1.timer_start(game_state)
     game_state.player2.timer_start(game_state)
     return logger
+
+
+def _export_replay_log(
+    source: ReplaySource,
+    game_state: GameState,
+    game_screen: GameScreen,
+    game_renderer: GameRenderer,
+    dispatcher: BattlingDispatcher,
+    buffs: "Optional[_CampaignReplayBuffs]",
+) -> Optional[Path]:
+    meta = source.metadata
+    logger = GameLogger(enable_file=True, enable_console=False, enable_jsonl=False)
+    logger.info(f"player1 deck {'-'.join(meta.get('player1_deck', []))}")
+    logger.info(f"player2 deck {'-'.join(meta.get('player2_deck', []))}")
+    logger.info(f"timer mode {meta.get('timer_mode', game_state.timer_mode)}")
+    if meta.get("campaign_stage"):
+        logger.info(f"campaign stage {meta['campaign_stage']}")
+    logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
+    logger.info(f"version {meta.get('version', VERSION)}", version=meta.get('version', VERSION))
+
+    prev_logger = game_state.game_logger
+    game_state.game_logger = logger
+    try:
+        _rebuild_and_fast_forward(
+            source, game_state, game_screen,
+            game_renderer, dispatcher, source.total_actions, buffs,
+        )
+        recorded_version = meta.get("version")
+        if recorded_version is not None and recorded_version != VERSION:
+            logger.warning(
+                f"replay recorded on version {recorded_version}, re-simulated on {VERSION}; "
+                f"results may diverge from the original match"
+            )
+        if game_state.score <= -10:
+            winner = "player1"
+        elif game_state.score >= 10:
+            winner = "player2"
+        else:
+            winner = f"undetermined (re-sim ended at score {game_state.score}, never reached +/-10)"
+        logger.info(f"winner {winner}")
+        logger.info(f"player1 timer {game_state.player1.time_minutes_and_seconds}")
+        logger.info(f"player2 timer {game_state.player2.time_minutes_and_seconds}")
+        logger.info(f"{game_state.game_statistics.export_for_charts()}")
+        logger.info(f"{game_state.game_statistics.score_history}")
+    finally:
+        log_path = logger.log_file
+        logger.detach()
+        game_state.game_logger = prev_logger
+    return log_path
 
 
 def _discard_logger(logger: GameLogger) -> None:
@@ -342,6 +397,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
     step_once: bool = False
     action_hold_remaining: float = 0.0
     hint_on: bool = False
+    save_log: bool = False
     controller: str = "player1"
 
     taken_over: bool = False
@@ -385,6 +441,8 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                         running = False
                     elif event.key == pygame.K_f:
                         hint_on = not hint_on
+                    elif event.key == pygame.K_l:
+                        save_log = not save_log
                     elif event.key == pygame.K_v:
                         import shared.setting as _core_setting
                         new_val = not game_renderer.combat_animator.enabled
@@ -473,7 +531,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
         if taken_over:
             _draw_takeover_hud(game_screen, controller)
         else:
-            _draw_hud(game_screen, source, paused, speed)
+            _draw_hud(game_screen, source, paused, speed, save_log)
 
         pygame.display.update()
 
@@ -484,7 +542,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
             _discard_logger(takeover_logger)
         return None
 
-    action = source.next_action()
-    if action is None:
-        return game_state
-    return None
+    reached_end = source.next_action() is None
+    if save_log:
+        _export_replay_log(source, game_state, game_screen, game_renderer, dispatcher, buffs)
+    return game_state if reached_end else None
