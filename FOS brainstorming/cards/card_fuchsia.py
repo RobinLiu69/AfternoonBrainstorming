@@ -55,6 +55,10 @@ class FuchsiaCard(Card):
             render_objects += shadow.get_render_data()
         return render_objects
     
+    def update(self, game_state: GameState) -> None:
+        for shadow in self.shadows:
+            shadow.update(game_state)
+
     def to_dict(self) -> dict:
         data = super().to_dict()
         data["shadows"] = [s.to_dict() for s in self.shadows]
@@ -228,10 +232,6 @@ class Adc(FuchsiaCard):
                     return True
             return False
 
-    def update(self, game_state: GameState) -> None:
-        for shadow in self.shadows:
-            shadow.update(game_state)
-
 
 class Ap(FuchsiaCard):
     def __init__(self, owner: str, board_x: int, board_y: int,
@@ -253,10 +253,6 @@ class Ap(FuchsiaCard):
     def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
         return True
-
-    def update(self, game_state: GameState) -> None:
-        for shadow in self.shadows:
-            shadow.update(game_state)
 
     def on_refresh(self, game_state: GameState) -> int:
         for shadow in self.shadows:
@@ -365,10 +361,6 @@ class Lf(FuchsiaCard):
             self.hit_cards.clear()
             return True
         return False
-    
-    def update(self, game_state: GameState) -> None:
-        for shadow in self.shadows:
-            shadow.update(game_state)
 
 
 class Ass(FuchsiaCard):
@@ -384,7 +376,7 @@ class Ass(FuchsiaCard):
             yield from shadow.attack_areas(shadow.board_x, shadow.board_y, shadow.attack_types, game_state)
 
     def killed(self, victim: Card, game_state: GameState) -> bool:
-        self.spawn_shadow(self.owner, victim.board_x, victim.board_y)
+        self.spawn_shadow(self.owner, victim.board_x, victim.board_y, False)
         return False
     
     def die(self, game_state: GameState) -> bool:
@@ -410,10 +402,6 @@ class Ass(FuchsiaCard):
                     return True
             del temp_shadow_list
             return False
-    
-    def update(self, game_state: GameState) -> None:
-        for shadow in self.shadows:
-            shadow.update(game_state)
 
 
 class Apt(FuchsiaCard):
@@ -427,10 +415,6 @@ class Apt(FuchsiaCard):
         if self.owner != "display":
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
             self.spawn_shadow(self.owner, board_x, board_y)
-    
-    def update(self, game_state: GameState) -> None:
-        for shadow in self.shadows:
-            shadow.update(game_state)
 
     def on_field_effect_trigger(self, victim: Card, value: int, attacker: Card, game_state: GameState) -> tuple[int, int, Callable[[Card, int, Card, GameState], None] | None] | None:
         for shadow in self.shadows:
