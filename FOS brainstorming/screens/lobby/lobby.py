@@ -49,6 +49,10 @@ def _is_spectator(role: str) -> bool:
     return role in ("spectator", "god")
 
 
+def _room_has_others(state: LobbyState) -> bool:
+    return state.peer_connected or state.spectator_count > 0
+
+
 def _make_buttons(gs: GameScreen) -> dict[str, Button]:
     bs = gs.block_size
     cx = gs.display_width / 2
@@ -290,7 +294,7 @@ def main(game_screen: GameScreen, mode: str,
                         confirming_quit = False
                     continue
                 if event.key == pygame.K_ESCAPE:
-                    if mode == "lan_server":
+                    if mode == "lan_server" and _room_has_others(state):
                         confirming_quit = True
                     else:
                         return LobbyExit(kind="quit")
