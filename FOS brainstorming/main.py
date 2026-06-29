@@ -28,7 +28,11 @@ from core.player import Player
 from core.neutral import Neutral
 from core.scene_exit import DraftExitReason
 
-from screens import start_screen, join_screen, replay_select, lobby, version_mismatch_screen
+from screens import replay_select
+from screens.menu import start_screen, settings_screen
+from screens.connect import join_screen, connecting_screen
+from screens.lobby import lobby
+from screens.notices import version_mismatch_screen, connection_failed_screen
 from screens.draft import draft
 from screens.end_game import end_game
 from screens.battling import battling, battling_replay
@@ -49,6 +53,14 @@ CardFactory.register_all()
 
 
 DEFAULT_PORT = 5555
+
+
+def _connect_failure_reason(error: Exception) -> str:
+    if isinstance(error, TimeoutError):
+        return "Connection timed out (host unreachable?)"
+    if isinstance(error, ConnectionRefusedError):
+        return "Connection refused (no game hosted there?)"
+    return "Could not reach the host"
 
 
 def _build_game_state_from_draft(draft_state: DraftState) -> GameState:
@@ -128,6 +140,9 @@ def main() -> None:
         server: Optional[LANServer] = None
         client: Optional[LANClient] = None
         match mode:
+            case "settings":
+                settings_screen.main(game_screen)
+                continue
             case "local":
                 exit_reason: DraftExitReason = draft.main(game_screen, mode="local")
                 if exit_reason.kind != "finished" or exit_reason.draft_state is None:
@@ -181,13 +196,15 @@ def main() -> None:
                     if not host_ip:
                         continue
                     client = LANClient(VERSION, host_ip, port=DEFAULT_PORT)
-                    try:
-                        client.connect(intent="play")
-                    except VersionMismatchError as e:
-                        version_mismatch_screen.main(game_screen, e.server_version, e.client_version)
+                    status, error = connecting_screen.main(game_screen, client, host_ip)
+                    if status == "canceled":
                         continue
-                    except (ConnectionRefusedError, RuntimeError, ConnectionError, OSError) as e:
-                        print(f"[main] Failed to join {host_ip}: {e}")
+                    if status == "version_mismatch" and isinstance(error, VersionMismatchError):
+                        version_mismatch_screen.main(game_screen, error.server_version, error.client_version)
+                        continue
+                    if status == "failed" and error is not None:
+                        print(f"[main] Failed to join {host_ip}: {error}")
+                        connection_failed_screen.main(game_screen, host_ip, _connect_failure_reason(error))
                         continue
 
                     if client.scene == "lobby":

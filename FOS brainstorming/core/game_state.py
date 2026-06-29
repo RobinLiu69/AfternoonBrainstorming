@@ -86,6 +86,9 @@ class GameState:
     pause_reason: str = ""
     pause_seconds_remaining: float = 0.0
 
+    net_spectator_count: int = 0
+    net_latencies: dict[str, float] = field(default_factory=dict)
+
     def __post_init__(self) -> None:
         self.rng = _py_random.Random(self.rng_seed)
 

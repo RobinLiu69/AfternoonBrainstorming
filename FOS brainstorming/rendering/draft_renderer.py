@@ -37,17 +37,44 @@ class DraftRenderer:
         self.card_renderer = CardRenderer(game_screen)
         self.board_renderer = BoardRenderer(game_screen)
 
-    def render_frame(self, page: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], draft_state: DraftState, hint_on: bool = False) -> None:
+    def render_frame(self, page: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], draft_state: DraftState, hint_on: bool = False,
+                     multiplayer: bool = False) -> None:
         self.game_screen.render()
 
         self._render_cards(page)
         self._render_boards(draft_state)
         self._render_deck_displays(draft_state)
         self._render_status_labels(draft_state)
+        self._render_spectator_count(draft_state)
+        if multiplayer:
+            self._render_identity_label(draft_state.local_player)
         self._render_hint(page, mouse_board_x, mouse_board_y, hint_on)
 
         if draft_state.paused:
             self._render_pause_overlay(draft_state)
+
+    def _render_identity_label(self, local_player: str) -> None:
+        label_map = {
+            "player1": "You: P1",
+            "player2": "You: P2",
+            "spectator": "Spectator",
+            "god": "God View",
+        }
+        label = label_map.get(local_player, local_player)
+        gs = self.game_screen
+        draw_text(label, gs.text_font, WHITE,
+                  gs.block_size * 0.2, gs.block_size * 0.2, gs.surface)
+
+    def _render_spectator_count(self, draft_state: DraftState) -> None:
+        count = getattr(draft_state, "net_spectator_count", 0)
+        if not count or count <= 0:
+            return
+        gs = self.game_screen
+        text = f"spectators: {count}"
+        width = gs.text_font.size(text)[0]
+        draw_text(text, gs.text_font, WHITE,
+                  gs.display_width - width - gs.block_size * 0.3,
+                  gs.block_size * 0.2, gs.surface)
 
     def _render_pause_overlay(self, draft_state: DraftState) -> None:
         gs = self.game_screen
@@ -58,13 +85,20 @@ class DraftRenderer:
         bs = gs.block_size
         cx = gs.display_width / 2
         cy = gs.display_height / 2
-        seconds = max(0, int(draft_state.pause_seconds_remaining))
+        remaining = draft_state.pause_seconds_remaining
         reason = draft_state.pause_reason or "opponent disconnected"
+
+        if remaining == float("inf"):
+            window_line = "reconnect window: unlimited"
+            note_line = "(waiting for opponent)"
+        else:
+            window_line = f"reconnect window: {max(0, int(remaining))}s"
+            note_line = "(match cancels on timeout)"
 
         lines = [
             reason,
-            f"reconnect window: {seconds}s",
-            "(match cancels on timeout)",
+            window_line,
+            note_line,
         ]
         offsets = (-bs * 0.6, 0.0, bs * 0.6)
         for line, dy in zip(lines, offsets):

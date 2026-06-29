@@ -22,8 +22,9 @@ from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text
 
 
-def main(game_screen: GameScreen, server_version: str, client_version: str) -> None:
+def main(game_screen: GameScreen, title: str, message: str = "") -> None:
     clock = pygame.time.Clock()
+    pygame.event.clear()
 
     while True:
         game_screen.render()
@@ -40,21 +41,14 @@ def main(game_screen: GameScreen, server_version: str, client_version: str) -> N
         cy = game_screen.display_height / 2
         bs = game_screen.block_size
 
-        draw_text("Version Mismatch",
-                  game_screen.big_text_font, WHITE,
-                  cx - bs * 2.5, cy - bs * 1.4, game_screen.surface)
+        rows = [(title, game_screen.big_text_font, -bs * 1.0)]
+        if message:
+            rows.append((message, game_screen.mid_text_font, 0.0))
+        rows.append(("Press any key to go back", game_screen.text_font, bs * 1.2))
 
-        draw_text(f"Server version :  {server_version}",
-                  game_screen.mid_text_font, WHITE,
-                  cx - bs * 2.0, cy - bs * 0.4, game_screen.surface)
-
-        draw_text(f"Your version   :  {client_version}",
-                  game_screen.mid_text_font, WHITE,
-                  cx - bs * 2.0, cy + bs * 0.2, game_screen.surface)
-
-        draw_text("Press any key to go back",
-                  game_screen.text_font, WHITE,
-                  cx - bs * 1.3, cy + bs * 1.2, game_screen.surface)
+        for text, font, dy in rows:
+            w = font.size(text)[0]
+            draw_text(text, font, WHITE, cx - w / 2, cy + dy, game_screen.surface)
 
         pygame.display.update()
         clock.tick(60)

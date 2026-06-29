@@ -19,6 +19,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import pygame
+
 from core.game_state import GameState
 from shared.setting import WHITE, GREEN, DARKGREEN, CYAN, BLUE, RED
 from core.game_screen import GameScreen, draw_text
@@ -230,3 +232,55 @@ class UIRenderer:
 
     def render_hint(self, mouse_x: int, mouse_y: int, card_or_name: "Card | str") -> None:
         self._hint_box.update(mouse_x, mouse_y, card_or_name, self.game_screen)
+
+    def render_spectator_count(self, game_state: GameState) -> None:
+        count = getattr(game_state, "net_spectator_count", 0)
+        if not count or count <= 0:
+            return
+        gs = self.game_screen
+        text = f"spectators: {count}"
+        width = gs.text_font.size(text)[0]
+        draw_text(text, gs.text_font, WHITE,
+                  gs.display_width - width - gs.block_size * 0.3,
+                  gs.block_size * 0.2, gs.surface)
+
+    def render_netinfo_overlay(self, local_controller: str, game_state: GameState) -> None:
+        gs = self.game_screen
+        bs = gs.block_size
+        latencies = getattr(game_state, "net_latencies", {}) or {}
+        count = getattr(game_state, "net_spectator_count", 0)
+
+        if local_controller in ("player1", "player2"):
+            my_seat = local_controller
+            opp_seat = "player2" if my_seat == "player1" else "player1"
+        else:
+            my_seat = ""
+            opp_seat = ""
+
+        def fmt(seat: str) -> str:
+            if not seat:
+                return "-"
+            ms = latencies.get(seat)
+            return f"{ms:.0f} ms" if ms is not None else "host"
+
+        if my_seat:
+            lines = [f"you      : {fmt(my_seat)}", f"opponent : {fmt(opp_seat)}"]
+        else:
+            lines = [f"player1  : {fmt('player1')}", f"player2  : {fmt('player2')}"]
+        lines.append(f"spectators: {count}")
+        lines.append(f"turn: {game_state.turn_number}")
+
+        font = gs.text_font
+        pad = bs * 0.2
+        line_h = font.get_linesize()
+        width = max(font.size(line)[0] for line in lines) + pad * 2
+        height = line_h * len(lines) + pad * 2
+        x = gs.display_width - width - bs * 0.3
+        y = bs * 0.6
+
+        panel = pygame.Surface((int(width), int(height)), pygame.SRCALPHA)
+        panel.fill((0, 0, 0, 190))
+        pygame.draw.rect(panel, WHITE, panel.get_rect(), max(1, int(bs / 60)))
+        gs.surface.blit(panel, (int(x), int(y)))
+        for i, line in enumerate(lines):
+            draw_text(line, font, WHITE, x + pad, y + pad + i * line_h, gs.surface)

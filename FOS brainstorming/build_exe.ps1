@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $root = $PSScriptRoot
 $python = Join-Path $root "..\.venv\Scripts\python.exe"
-$icon = Join-Path $root "..\icon.ico"
+$icon = Join-Path $root "assets\icon.ico"
 $dist = Join-Path $root "dist\AfternoonBrainstorming"
 
 if (-not (Test-Path $python)) { throw "Python venv not found at $python" }
@@ -32,9 +32,10 @@ try {
     Write-Host "[3/4] Building exe with PyInstaller..." -ForegroundColor Cyan
     & $python -m PyInstaller --noconfirm --onedir --windowed --name AfternoonBrainstorming --icon $icon main.py
 
-    Write-Host "[4/4] Copying config and fonts next to the exe..." -ForegroundColor Cyan
+    Write-Host "[4/4] Copying config, fonts and assets next to the exe..." -ForegroundColor Cyan
     Copy-Item -Recurse -Force (Join-Path $root "config") $dist
     Copy-Item -Recurse -Force (Join-Path $root "fonts") $dist
+    Copy-Item -Recurse -Force (Join-Path $root "assets") $dist
 
     Write-Host "Done. Output folder:" -ForegroundColor Green
     Write-Host "  $dist"

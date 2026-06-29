@@ -17,12 +17,14 @@
 # -----------------------------------------------------------------
 
 from __future__ import annotations
+import os
 import json
 from typing import Sequence, TextIO, Optional, cast
 
 import pygame
 
 from shared.setting import FOLDER_PATH
+from core.display_config import load_display_mode
 
 
 with open(f"{FOLDER_PATH}/config/setting.json", "r", encoding="utf-8") as file:
@@ -66,36 +68,44 @@ class GameScreen:
     def __init__(self) -> None:
         pygame.init()
         pygame.display.set_caption("AfternoonBrainstorming")
-        self.display_width: int = pygame.display.get_desktop_sizes()[0][0]
-        self.display_height: int = pygame.display.get_desktop_sizes()[0][1]
-        # if self.display_width == 2880 and self.display_height == 1800:
-        #     self.display_width = 1920
-        #     self.display_height = 1080
-        print(self.display_width, self.display_height)
-        self.surface, self.block_size = self.fitting_screen()
-        print(self.display_width, self.display_height)
-        self.thickness = self.display_width // 400
-        self.font_init()
+        self.set_window_icon()
         self.playback: TextIO | None = None
+        self.display_mode: str = load_display_mode()
+        self.apply_display_mode(self.display_mode)
 
-    def fitting_screen(self) -> tuple[pygame.surface.Surface, float]:
-        if self.display_width/self.display_height == 1.6:
-            surface = pygame.display.set_mode((self.display_width, self.display_height))
-            block_size = (self.display_width/8) / 1.2
+    def set_window_icon(self) -> None:
+        icon_path = f"{FOLDER_PATH}/assets/icon.png"
+        if os.path.isfile(icon_path):
+            try:
+                pygame.display.set_icon(pygame.image.load(icon_path))
+            except pygame.error:
+                pass
+
+    @staticmethod
+    def fit_16_10(width: float, height: float) -> tuple[int, int]:
+        if width / height > 1.6:
+            fitted_height = int(height)
+            fitted_width = int(fitted_height * 1.6)
         else:
-            maxvalue = [0, 0]
-            for H in range(self.display_height, 0, -1):
-                for W in range(self.display_width, 0, -1):
-                    if W/H == 1.6:
-                        maxvalue = [W, H]
-                        break
-                if maxvalue != [0, 0]:
-                    break
-            self.display_width = maxvalue[0]
-            self.display_height = maxvalue[1]
-            surface = pygame.display.set_mode((self.display_width, self.display_height))
-            block_size = (self.display_width/8) / 1.2
-        return surface, block_size
+            fitted_width = int(width)
+            fitted_height = int(fitted_width / 1.6)
+        return fitted_width, fitted_height
+
+    def apply_display_mode(self, mode: str) -> None:
+        self.display_mode = mode
+        desktop_width, desktop_height = pygame.display.get_desktop_sizes()[0]
+        if mode == "fullscreen":
+            self.display_width, self.display_height = self.fit_16_10(desktop_width, desktop_height)
+            self.surface = pygame.display.set_mode((self.display_width, self.display_height),
+                                                   pygame.FULLSCREEN | pygame.SCALED)
+        else:
+            percent = int(mode)
+            self.display_width, self.display_height = self.fit_16_10(desktop_width * percent / 100,
+                                                                     desktop_height * percent / 100)
+            self.surface = pygame.display.set_mode((self.display_width, self.display_height))
+        self.block_size: float = (self.display_width / 8) / 1.2
+        self.thickness: int = self.display_width // 400
+        self.font_init()
 
     def font_init(self) -> None:
         self.text_font_size: int = int(self.display_width/1500*16.5)

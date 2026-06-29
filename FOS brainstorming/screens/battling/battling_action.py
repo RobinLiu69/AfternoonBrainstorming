@@ -16,6 +16,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+from typing import Optional
+
 import pygame
 
 from core.game_state import GameState
@@ -27,15 +29,18 @@ from utils.controls import key_pressed
 SPECTATOR_ALLOWED: tuple[str, ...] = ("toggle_hint", "toggle_animation", "quit")
 
 
-def collect_actions(controller: str, card_info: list, game_state: GameState, game_screen: GameScreen) -> list[GameAction]:
+def collect_actions(controller: str, card_info: list, game_state: GameState, game_screen: GameScreen,
+                    events: Optional[list] = None) -> list[GameAction]:
     actions: list[GameAction] = []
     is_spectator = controller in ("spectator", "god")
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
     board_x = to_board_x(mouse_x, game_screen)
     board_y = to_board_y(mouse_y, game_screen)
-    
-    for event in pygame.event.get():
+
+    if events is None:
+        events = pygame.event.get()
+    for event in events:
         if event.type == pygame.MOUSEBUTTONDOWN and not is_spectator:
             match event.button:
                 case 1:

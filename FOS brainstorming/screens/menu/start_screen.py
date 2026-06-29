@@ -55,6 +55,10 @@ def main(game_screen: GameScreen) -> str:
                         bs * 0.2, bs * 0.07,
                         box_width=box_width, font=game_screen.big_big_text_font, text="playback")
 
+    settings_button = Button(bs * 1.25, bs * 0.55, bs, game_screen.display_height - bs * 1,
+                        bs * 0.35, bs * 0.175,
+                        box_width=box_width, font=game_screen.mid_text_font, text="settings")
+
     state = "quit"
 
     clock = pygame.time.Clock()
@@ -86,6 +90,9 @@ def main(game_screen: GameScreen) -> str:
                 if playback_button.touch(mouse_x, mouse_y):
                     running = False
                     state = "playback"
+                if settings_button.touch(mouse_x, mouse_y):
+                    running = False
+                    state = "settings"
 
             if event.type == pygame.QUIT:
                 running = False
@@ -100,6 +107,7 @@ def main(game_screen: GameScreen) -> str:
         host_button.update(game_screen)
         join_button.update(game_screen)
         playback_button.update(game_screen)
+        settings_button.update(game_screen)
 
         draw_text(f"version: {VERSION}", game_screen.mid_text_font, WHITE,
                 game_screen.display_width - bs * 2,

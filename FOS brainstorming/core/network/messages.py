@@ -16,20 +16,34 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.network import (
-    LANClient,
-    LANServer,
-    VersionMismatchError,
-    _recv_exactly,
-    _recv_msg,
-    _send_msg,
-)
+import json
+import socket
+import struct
+from typing import Optional
 
-__all__ = [
-    "LANClient",
-    "LANServer",
-    "VersionMismatchError",
-    "_recv_exactly",
-    "_recv_msg",
-    "_send_msg",
-]
+
+def _recv_exactly(sock: socket.socket, n: int) -> Optional[bytes]:
+    buf = b""
+    while len(buf) < n:
+        chunk = sock.recv(n - len(buf))
+        if not chunk:
+            return None
+        buf += chunk
+    return buf
+
+
+def _send_msg(sock: socket.socket, payload: dict) -> None:
+    data = json.dumps(payload).encode()
+    sock.sendall(struct.pack(">I", len(data)) + data)
+
+
+def _recv_msg(sock: socket.socket) -> Optional[dict]:
+    raw_len = _recv_exactly(sock, 4)
+    if raw_len is None:
+        return None
+    length = struct.unpack(">I", raw_len)[0]
+    raw_data = _recv_exactly(sock, length)
+    if raw_data is None:
+        return None
+    return json.loads(raw_data.decode())
+

@@ -44,6 +44,9 @@ class DraftState:
     pause_reason: str = ""
     pause_seconds_remaining: float = 0.0
 
+    net_spectator_count: int = 0
+    net_latencies: dict = field(default_factory=dict)
+
     def get_visible_deck(self, viewer: str, owner: str) -> range:
         deck = self.player1_deck if owner == "player1" else self.player2_deck
         if viewer == owner or viewer == "god":

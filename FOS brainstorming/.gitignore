@@ -2,6 +2,7 @@ __pycache__/
 imgs/
 battle_records/
 campaign_progress.json
+display_setting.json
 build/
 dist/
 *.spec

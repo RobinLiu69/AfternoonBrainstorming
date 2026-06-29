@@ -26,7 +26,8 @@ from core.lobby_dispatcher import LobbyDispatcher
 from core.network_layer import LANServer, LANClient
 from core.game_screen import GameScreen, draw_text
 from core.UI import Button
-from screens.lobby_action import LobbyAction
+from screens.lobby.lobby_action import LobbyAction
+from screens.notices import server_closed_screen
 from shared.setting import WHITE
 
 
@@ -82,11 +83,15 @@ def _make_buttons(gs: GameScreen) -> dict[str, Button]:
     }
 
 
+def _format_timeout(timeout: float) -> str:
+    return "unlimited" if timeout == float("inf") else f"{int(timeout)}s"
+
+
 def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: str) -> None:
     buttons["god_view"].text = f"god view: {'on' if state.god_view else 'off'}"
     buttons["timer_mode"].text = f"timer mode: {state.timer_mode}"
     buttons["file_auto_delete"].text = f"auto-delete log: {'yes' if state.file_auto_delete else 'no'}"
-    buttons["reconnect_timeout"].text = f"reconnect timeout: {int(state.reconnect_timeout)}s"
+    buttons["reconnect_timeout"].text = f"reconnect timeout: {_format_timeout(state.reconnect_timeout)}"
     buttons["swap_seats"].text = f"host plays: {state.host_seat}"
 
     buttons["start_match"].text = "START MATCH" if state.peer_connected else "(waiting for player)"
@@ -114,7 +119,7 @@ def _render_settings_labels(gs: GameScreen, state: LobbyState) -> None:
         f"god view: {'on' if state.god_view else 'off'}",
         f"timer mode: {state.timer_mode}",
         f"auto-delete log: {'yes' if state.file_auto_delete else 'no'}",
-        f"reconnect timeout: {int(state.reconnect_timeout)}s",
+        f"reconnect timeout: {_format_timeout(state.reconnect_timeout)}",
         f"host plays: {state.host_seat}",
     ]
     for label, y_off in zip(labels, y_offsets):
@@ -147,13 +152,12 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
     def you_marker(r: str) -> str:
         return "  <-- you" if role == r else ""
 
-    spectator_lat = lat_str("spectator") or lat_str("god")
     spectator_you = you_marker("spectator") or you_marker("god")
 
     lines = [
         f"{host_seat}: host{you_marker('host')}",
         f"{peer_seat}: {peer_status}{lat_str(peer_seat)}{you_marker(peer_seat)}",
-        f"spectators: {state.spectator_count}{spectator_lat}{spectator_you}",
+        f"spectators: {state.spectator_count}{spectator_you}",
     ]
     for i, line in enumerate(lines):
         draw_text(line, gs.text_font, WHITE,
@@ -162,6 +166,24 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
     if state.god_view:
         draw_text("(spectators see all decks)", gs.mid_text_font, WHITE,
                   right_x, cy + bs * 0.20, gs.surface)
+
+
+def _render_quit_confirm(gs: GameScreen) -> None:
+    bs = gs.block_size
+    cx = gs.display_width / 2
+    cy = gs.display_height / 2
+    overlay = pygame.Surface((gs.display_width, gs.display_height), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 185))
+    gs.surface.blit(overlay, (0, 0))
+    lines = [
+        "Shut down server and leave?",
+        "all players will be disconnected",
+        "[Y] yes        [N] no",
+    ]
+    offsets = (-bs * 0.7, -bs * 0.05, bs * 0.7)
+    for line, dy in zip(lines, offsets):
+        w = gs.mid_text_font.size(line)[0]
+        draw_text(line, gs.mid_text_font, WHITE, cx - w / 2, cy + dy, gs.surface)
 
 
 def _render_help(gs: GameScreen, role: str) -> None:
@@ -239,9 +261,13 @@ def main(game_screen: GameScreen, mode: str,
 
     buttons = _make_buttons(game_screen)
     clock = pygame.time.Clock()
+    confirming_quit = False
 
     while True:
         if mode == "lan_client" and client is not None:
+            if client.is_disconnected:
+                server_closed_screen.main(game_screen)
+                return LobbyExit(kind="quit")
             if client.pending_scene is not None:
                 return LobbyExit(kind="start_match", state=state)
             if state.local_role:
@@ -256,9 +282,19 @@ def main(game_screen: GameScreen, mode: str,
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return LobbyExit(kind="quit")
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                return LobbyExit(kind="quit")
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if event.type == pygame.KEYDOWN:
+                if confirming_quit:
+                    if event.key in (pygame.K_y, pygame.K_RETURN):
+                        return LobbyExit(kind="quit")
+                    if event.key in (pygame.K_n, pygame.K_ESCAPE):
+                        confirming_quit = False
+                    continue
+                if event.key == pygame.K_ESCAPE:
+                    if mode == "lan_server":
+                        confirming_quit = True
+                    else:
+                        return LobbyExit(kind="quit")
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not confirming_quit:
                 mx, my = pygame.mouse.get_pos()
                 _click_dispatch(buttons, mx, my, state, state.local_role, dispatcher)
 
@@ -283,5 +319,7 @@ def main(game_screen: GameScreen, mode: str,
                           game_screen.surface)
 
         _render_help(game_screen, state.local_role)
+        if confirming_quit:
+            _render_quit_confirm(game_screen)
         pygame.display.update()
         clock.tick(60)

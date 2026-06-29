@@ -210,6 +210,8 @@ class Player:
         match game_state.timer_mode:
             case "countdown":
                 self.elapsed_time = game_state.coutdown_time
+            case "timer":
+                self.elapsed_time = 0
         self._update_timer_logic(game_state.timer_mode)
     
     def logic_update(self, game_state: GameState, game_renderer: GameRenderer, update_timer: bool) -> None:

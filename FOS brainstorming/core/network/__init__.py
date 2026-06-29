@@ -16,14 +16,10 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.network import (
-    LANClient,
-    LANServer,
-    VersionMismatchError,
-    _recv_exactly,
-    _recv_msg,
-    _send_msg,
-)
+from core.network.client import LANClient
+from core.network.errors import VersionMismatchError
+from core.network.messages import _recv_exactly, _recv_msg, _send_msg
+from core.network.server import LANServer
 
 __all__ = [
     "LANClient",

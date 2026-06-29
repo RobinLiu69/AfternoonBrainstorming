@@ -45,7 +45,8 @@ class GameRenderer:
     
     def render_frame(self, local_controller: str, controller: str, mouse_x: int, mouse_y: int,
                      mouse_board_x: int | None, mouse_board_y: int | None, game_state: GameState, hint_on: bool = False,
-                     dt: float = 0.0, multiplayer: bool = False) -> None:
+                     dt: float = 0.0, multiplayer: bool = False,
+                     show_netinfo: bool = False) -> None:
         self.game_screen.render()
     
         self._ingest_combat_events(game_state)
@@ -80,6 +81,7 @@ class GameRenderer:
         self.ui_renderer.render_coins(game_state)
         self.ui_renderer.render_deck_info(game_state)
         self.ui_renderer.render_timers(game_state)
+        self.ui_renderer.render_spectator_count(game_state)
 
         self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state, hint_on)
 
@@ -88,6 +90,9 @@ class GameRenderer:
 
         if game_state.paused:
             self._render_pause_overlay(game_state)
+
+        if show_netinfo:
+            self.ui_renderer.render_netinfo_overlay(local_controller, game_state)
 
     def _render_pause_overlay(self, game_state: GameState) -> None:
         gs = self.game_screen
@@ -98,13 +103,20 @@ class GameRenderer:
         bs = gs.block_size
         cx = gs.display_width / 2
         cy = gs.display_height / 2
-        seconds = max(0, int(game_state.pause_seconds_remaining))
+        remaining = game_state.pause_seconds_remaining
         reason = game_state.pause_reason or "opponent disconnected"
+
+        if remaining == float("inf"):
+            window_line = "reconnect window: unlimited"
+            note_line = "(waiting for opponent)"
+        else:
+            window_line = f"reconnect window: {max(0, int(remaining))}s"
+            note_line = "(declares win on timeout)"
 
         draft_text_lines = [
             reason,
-            f"reconnect window: {seconds}s",
-            "(declares win on timeout)",
+            window_line,
+            note_line,
         ]
         offsets = (-bs * 0.6, 0.0, bs * 0.6)
         for line, dy in zip(draft_text_lines, offsets):

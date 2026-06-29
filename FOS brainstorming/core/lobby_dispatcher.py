@@ -21,7 +21,7 @@ from dataclasses import dataclass
 
 from core.lobby_state import LobbyState, RECONNECT_TIMEOUT_OPTIONS
 from core.network_layer import LANServer, LANClient
-from screens.lobby_action import LobbyAction
+from screens.lobby.lobby_action import LobbyAction
 
 
 @dataclass

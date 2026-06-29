@@ -16,20 +16,31 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.network import (
-    LANClient,
-    LANServer,
-    VersionMismatchError,
-    _recv_exactly,
-    _recv_msg,
-    _send_msg,
-)
+from __future__ import annotations
+import os
+import json
 
-__all__ = [
-    "LANClient",
-    "LANServer",
-    "VersionMismatchError",
-    "_recv_exactly",
-    "_recv_msg",
-    "_send_msg",
-]
+from shared.setting import FOLDER_PATH
+
+DISPLAY_SETTING_PATH = os.path.join(FOLDER_PATH, "display_setting.json")
+VALID_MODES: tuple[str, ...] = ("60", "80", "100", "fullscreen")
+DEFAULT_MODE = "100"
+
+
+def load_display_mode() -> str:
+    try:
+        with open(DISPLAY_SETTING_PATH, "r", encoding="utf-8") as file:
+            mode = json.loads(file.read()).get("display_mode", DEFAULT_MODE)
+    except (OSError, ValueError):
+        return DEFAULT_MODE
+    return mode if mode in VALID_MODES else DEFAULT_MODE
+
+
+def save_display_mode(mode: str) -> None:
+    if mode not in VALID_MODES:
+        mode = DEFAULT_MODE
+    try:
+        with open(DISPLAY_SETTING_PATH, "w", encoding="utf-8") as file:
+            file.write(json.dumps({"display_mode": mode}, indent=4))
+    except OSError:
+        pass
