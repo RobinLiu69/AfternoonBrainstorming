@@ -30,6 +30,7 @@ from cards.base import Card
 from screens.draft.exhibit_registry import ExhibitRegistry
 from screens.draft.draft_action import DraftAction
 from rendering.draft_renderer import DraftRenderer
+from core.setting_config import load_setting
 
 from campaign.ai_decks import STAGE_ORDER, STAGE_AI_DECKS, STAGE_PLAYER_DECKS
 
@@ -183,7 +184,7 @@ def main(game_screen: GameScreen, stage: str, cleared: set[str]) -> Optional[lis
     renderer = DraftRenderer(game_screen, registry)  # type: ignore[arg-type]
 
     page = 0
-    hint_on = False
+    hint_on = load_setting("hint_on")
     clock = pygame.time.Clock()
     confirmed: Optional[list[str]] = None
     running = True
