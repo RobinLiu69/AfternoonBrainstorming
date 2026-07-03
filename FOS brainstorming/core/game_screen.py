@@ -25,7 +25,7 @@ import pygame
 from pygame._sdl2.video import Window
 
 from shared.setting import FOLDER_PATH
-from core.display_config import load_display_mode
+from core.setting_config import load_setting
 
 
 with open(f"{FOLDER_PATH}/config/setting.json", "r", encoding="utf-8") as file:
@@ -72,7 +72,7 @@ class GameScreen:
         self.set_window_icon()
         self.playback: TextIO | None = None
         self._sdl_window: Window | None = None
-        self.display_mode: str = load_display_mode()
+        self.display_mode: str = load_setting("display_mode")
         self.apply_display_mode(self.display_mode)
 
     def set_window_icon(self) -> None:

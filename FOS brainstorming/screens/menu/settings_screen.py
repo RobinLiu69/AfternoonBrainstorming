@@ -108,7 +108,7 @@ def main(game_screen: GameScreen) -> None:
     tab_buttons = _build_tab_buttons(game_screen, active_tab)
     option_buttons, display_back_button = _build_display_buttons(game_screen)
 
-    hint_on = bool(load_setting("hint_on"))
+    hint_on = load_setting("hint_on")
     hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
 
     running = True
@@ -135,7 +135,9 @@ def main(game_screen: GameScreen) -> None:
                         if button.touch(mouse_x, mouse_y) and mode != game_screen.display_mode:
                             save_setting("display_mode", mode)
                             game_screen.apply_display_mode(mode)
+                            tab_buttons = _build_tab_buttons(game_screen, active_tab)
                             option_buttons, display_back_button = _build_display_buttons(game_screen)
+                            hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
                             break
                     if display_back_button.touch(mouse_x, mouse_y):
                         running = False

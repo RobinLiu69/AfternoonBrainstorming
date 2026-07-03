@@ -27,17 +27,17 @@ SETTING_PATH = os.path.join(FOLDER_PATH, "data/user_setting.json")
 
 SETTING_NAMES = Literal["display_mode", "hint_on"]
 
-VALID_SETTING: dict[str, tuple[str, ...]] = {
+VALID_SETTING: dict[str, tuple] = {
     "display_mode" : ("60", "80", "100", "fullscreen"),
-    "hint_on" : ("False", "True"),
+    "hint_on" : (False, True),
 }
 
-DEFAULT_SETTING: dict[str, str] = {
+DEFAULT_SETTING: dict[str, ] = {
     "display_mode" : "100",
-    "hint_on" : "False",
+    "hint_on" : False,
 }
 
-def load_setting(request: SETTING_NAMES) -> str:
+def load_setting(request: SETTING_NAMES):
     if request in VALID_SETTING:
         try:
             with open(SETTING_PATH, "r", encoding="utf-8") as file:
@@ -49,7 +49,7 @@ def load_setting(request: SETTING_NAMES) -> str:
         print("REQUEST INVALID") #If there are any error handling functions, paste here
 
 
-def save_setting(setting_name: SETTING_NAMES, setting_data: str) -> None:
+def save_setting(setting_name: SETTING_NAMES, setting_data) -> None:
     if setting_name not in VALID_SETTING:
         print("SETTING NAME INVALID, SAVE UNSUCCESSFUL") #If there are any error handling functions, paste here
     try:
