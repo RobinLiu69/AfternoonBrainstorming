@@ -22,9 +22,10 @@ import json
 from typing import Sequence, TextIO, Optional, cast
 
 import pygame
+from pygame._sdl2.video import Window
 
 from shared.setting import FOLDER_PATH
-from core.setting_config import load_setting
+from core.display_config import load_display_mode
 
 
 with open(f"{FOLDER_PATH}/config/setting.json", "r", encoding="utf-8") as file:
@@ -70,7 +71,8 @@ class GameScreen:
         pygame.display.set_caption("AfternoonBrainstorming")
         self.set_window_icon()
         self.playback: TextIO | None = None
-        self.display_mode: str = load_setting("display_mode")
+        self._sdl_window: Window | None = None
+        self.display_mode: str = load_display_mode()
         self.apply_display_mode(self.display_mode)
 
     def set_window_icon(self) -> None:
@@ -93,6 +95,13 @@ class GameScreen:
 
     def apply_display_mode(self, mode: str) -> None:
         self.display_mode = mode
+        self._sdl_window = None
+
+        pygame.display.quit()
+        pygame.display.init()
+        pygame.display.set_caption("AfternoonBrainstorming")
+        self.set_window_icon()
+
         desktop_width, desktop_height = pygame.display.get_desktop_sizes()[0]
         if mode == "fullscreen":
             self.display_width, self.display_height = self.fit_16_10(desktop_width, desktop_height)
@@ -114,8 +123,13 @@ class GameScreen:
         y = max(0, (desktop_height - self.display_height) // 2)
         try:
             pygame.display.set_window_position((x, y))
-        except pygame.error:
+            return
+        except AttributeError:
             pass
+
+        if self._sdl_window is None:
+            self._sdl_window = Window.from_display_module()
+        self._sdl_window.position = (x, y)
 
     def font_init(self) -> None:
         self.text_font_size: int = int(self.display_width/1500*16.5)
