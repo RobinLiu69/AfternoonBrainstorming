@@ -121,11 +121,6 @@ class GameScreen:
     def _center_window(self, desktop_width: int, desktop_height: int) -> None:
         x = max(0, (desktop_width - self.display_width) // 2)
         y = max(0, (desktop_height - self.display_height) // 2)
-        try:
-            pygame.display.set_window_position((x, y))
-            return
-        except AttributeError:
-            pass
 
         if self._sdl_window is None:
             self._sdl_window = Window.from_display_module()
