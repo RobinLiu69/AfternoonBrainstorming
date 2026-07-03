@@ -21,7 +21,7 @@ import pygame
 from shared.setting import WHITE, CYAN
 from core.game_screen import GameScreen, draw_text
 from core.UI import Button
-from core.display_config import save_display_mode
+from core.setting_config import save_setting, load_setting
 from utils.controls import key_pressed
 
 
@@ -32,8 +32,34 @@ OPTIONS: list[tuple[str, str]] = [
     ("fullscreen", "fullscreen"),
 ]
 
+TABS: list[tuple[str, str]] = [
+    ("display", "display"),
+    ("gameplay", "gameplay"),
+]
 
-def _build_buttons(game_screen: GameScreen) -> tuple[list[tuple[str, Button]], Button]:
+
+def _build_tab_buttons(game_screen: GameScreen, active_tab: str) -> list[tuple[str, Button]]:
+    bs = game_screen.block_size
+    box_width = int(bs / 30)
+    cx = game_screen.display_width / 2
+
+    btn_w, btn_h = bs * 1.6, bs * 0.5
+    total_w = btn_w * len(TABS) + bs * 0.3 * (len(TABS) - 1)
+    start_x = cx - total_w / 2
+    tab_y = game_screen.display_height / 2 - bs * 2.6
+
+    tab_buttons: list[tuple[str, Button]] = []
+    for index, (tab_id, label) in enumerate(TABS):
+        color = CYAN if tab_id == active_tab else WHITE
+        button = Button(btn_w, btn_h, start_x + index * (btn_w + bs * 0.3), tab_y,
+                        bs * 0.2, bs * 0.14,
+                        box_color=color, box_width=box_width, text_color=color,
+                        font=game_screen.big_text_font, text=label)
+        tab_buttons.append((tab_id, button))
+    return tab_buttons
+
+
+def _build_display_buttons(game_screen: GameScreen) -> tuple[list[tuple[str, Button]], Button]:
     bs = game_screen.block_size
     box_width = int(bs / 30)
     cx = game_screen.display_width / 2
@@ -57,8 +83,33 @@ def _build_buttons(game_screen: GameScreen) -> tuple[list[tuple[str, Button]], B
     return option_buttons, back_button
 
 
+def _build_gameplay_buttons(game_screen: GameScreen, hint_on: bool) -> tuple[Button, Button]:
+    bs = game_screen.block_size
+    box_width = int(bs / 30)
+    cx = game_screen.display_width / 2
+
+    btn_w, btn_h = bs * 2.6, bs * 0.7
+    btn_x = cx - btn_w / 2
+    top_y = game_screen.display_height / 2 - bs * 1.8
+
+    hint_button = Button(btn_w, btn_h, btn_x, top_y,
+                         bs * 0.25, bs * 0.18,
+                         box_width=box_width, font=game_screen.big_big_text_font,
+                         text=f"Hint on : {hint_on}")
+
+    back_button = Button(btn_w, btn_h, btn_x, top_y + bs * 0.9 + bs * 0.35,
+                         bs * 1.0, bs * 0.18,
+                         box_width=box_width, font=game_screen.big_big_text_font, text="back")
+    return hint_button, back_button
+
+
 def main(game_screen: GameScreen) -> None:
-    option_buttons, back_button = _build_buttons(game_screen)
+    active_tab = "display"
+    tab_buttons = _build_tab_buttons(game_screen, active_tab)
+    option_buttons, display_back_button = _build_display_buttons(game_screen)
+
+    hint_on = bool(load_setting("hint_on"))
+    hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
 
     running = True
     clock = pygame.time.Clock()
@@ -73,27 +124,48 @@ def main(game_screen: GameScreen) -> None:
                 if key_pressed(keys) == pygame.K_ESCAPE:
                     running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                for mode, button in option_buttons:
-                    if button.touch(mouse_x, mouse_y) and mode != game_screen.display_mode:
-                        save_display_mode(mode)
-                        game_screen.apply_display_mode(mode)
-                        option_buttons, back_button = _build_buttons(game_screen)
+                for tab_id, button in tab_buttons:
+                    if button.touch(mouse_x, mouse_y) and tab_id != active_tab:
+                        active_tab = tab_id
+                        tab_buttons = _build_tab_buttons(game_screen, active_tab)
                         break
-                if back_button.touch(mouse_x, mouse_y):
-                    running = False
+
+                if active_tab == "display":
+                    for mode, button in option_buttons:
+                        if button.touch(mouse_x, mouse_y) and mode != game_screen.display_mode:
+                            save_setting("display_mode", mode)
+                            game_screen.apply_display_mode(mode)
+                            option_buttons, display_back_button = _build_display_buttons(game_screen)
+                            break
+                    if display_back_button.touch(mouse_x, mouse_y):
+                        running = False
+                elif active_tab == "gameplay":
+                    if hint_button.touch(mouse_x, mouse_y):
+                        hint_on = not hint_on
+                        save_setting("hint_on", hint_on)
+                        hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
+                    if gameplay_back_button.touch(mouse_x, mouse_y):
+                        running = False
             if event.type == pygame.QUIT:
                 running = False
 
         bs = game_screen.block_size
         cx = game_screen.display_width / 2
-        title = "display settings"
+        title = "settings"
         title_width = game_screen.title_text_font.size(title)[0]
         draw_text(title, game_screen.title_text_font, WHITE,
-                  cx - title_width / 2, game_screen.display_height / 2 - bs * 2.7, game_screen.surface)
+                  cx - title_width / 2, game_screen.display_height / 2 - bs * 3.4, game_screen.surface)
 
-        for _mode, button in option_buttons:
+        for _tab_id, button in tab_buttons:
             button.update(game_screen)
-        back_button.update(game_screen)
+
+        if active_tab == "display":
+            for _mode, button in option_buttons:
+                button.update(game_screen)
+            display_back_button.update(game_screen)
+        elif active_tab == "gameplay":
+            hint_button.update(game_screen)
+            gameplay_back_button.update(game_screen)
 
         pygame.display.update()
         clock.tick(60)
