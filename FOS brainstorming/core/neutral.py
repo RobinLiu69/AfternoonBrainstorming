@@ -63,5 +63,5 @@ class Neutral:
                 fresh = CardFactory.from_dict(card_data)
                 new_on_board.append(fresh)
                 all_cards_by_iid[iid] = fresh
- 
+    
         self.on_board = new_on_board

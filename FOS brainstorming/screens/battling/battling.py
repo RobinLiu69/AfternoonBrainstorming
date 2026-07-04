@@ -32,6 +32,7 @@ from rendering.game_renderer import GameRenderer
 from screens.battling.battling_action import collect_actions
 from screens.notices import server_closed_screen
 from campaign.ai_controller import AIController
+from core.setting_config import load_setting
 
 
 def _render_quit_confirm(game_screen: GameScreen) -> None:
@@ -164,7 +165,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
     game_state.player2.timer_start(game_state)
 
     controller: str = "player1"
-    hint_on = False
+    hint_on = load_setting("hint_on")
     card_info = ["None", 0]
  
     game_state.game_logger.log_turn_start("player1", game_state.turn_number)
