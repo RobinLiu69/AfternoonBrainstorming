@@ -69,6 +69,7 @@ class GameState:
 
     score: int = 0
     turn_number: int = 0
+    win_threshold: int = 10
 
     players_luck: dict[str, int] = field(default_factory=lambda: {"player1": 50, "player2": 50, "neutral": 50})
     how_many_token_to_draw_a_card: int = int(SETTING["how_many_token_to_draw_a_card"])

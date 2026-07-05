@@ -297,7 +297,7 @@ class BattlingDispatcher:
                 opponent = game_state.get_opponent_name(action.player)
                 game_state.get_player(action.player).turn_end(game_state)
                 game_state.game_statistics.add_score_record(game_state.score)
-                if abs(game_state.score) >= 10:
+                if abs(game_state.score) >= game_state.win_threshold:
                     winner = "player1" if game_state.score < 0 else "player2"
                     return ActionResult(True, message=winner, quit=True)
                 game_state.get_player(opponent).turn_start(game_state)

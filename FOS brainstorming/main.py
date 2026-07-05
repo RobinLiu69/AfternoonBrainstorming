@@ -49,6 +49,8 @@ from campaign import campaign_save
 from campaign.campaign_manager import build_campaign_game_state
 from campaign.ai_controller import AIController
 
+from endless import run_loop as endless_run_loop
+
 CardFactory.register_all()
 
 
@@ -141,7 +143,9 @@ def main() -> None:
         client: Optional[LANClient] = None
         match mode:
             case "settings":
-                settings_screen.main(game_screen)
+                settings_result = settings_screen.main(game_screen)
+                if settings_result == "endless":
+                    endless_run_loop.main(game_screen)
                 continue
             case "local":
                 exit_reason: DraftExitReason = draft.main(game_screen, mode="local")
