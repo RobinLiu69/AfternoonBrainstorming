@@ -24,7 +24,7 @@ from shared.setting import FOLDER_PATH
 from campaign.ai_decks import STAGE_ORDER
 
 
-SAVE_PATH: str = os.path.join(FOLDER_PATH, "campaign_progress.json")
+SAVE_PATH: str = os.path.join(FOLDER_PATH, "data/campaign_progress.json")
 
 
 def _default_state() -> dict:

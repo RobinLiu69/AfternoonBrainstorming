@@ -32,6 +32,7 @@ from screens.draft.exhibit_registry import ExhibitRegistry
 from screens.notices import server_closed_screen
 from rendering.draft_renderer import DraftRenderer
 from shared.setting import WHITE
+from core.setting_config import load_setting
 
 
 def _render_quit_confirm(gs: GameScreen) -> None:
@@ -122,7 +123,7 @@ def main(game_screen: GameScreen, mode: str = "local",
     renderer = DraftRenderer(game_screen, registry)
 
     page = 0
-    hint_on = False
+    hint_on = load_setting("hint_on")
     last_phase = draft_state.phase
     clock = pygame.time.Clock()
 

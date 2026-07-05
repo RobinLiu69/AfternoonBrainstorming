@@ -28,8 +28,10 @@ from campaign.ai_strategies.blue import BlueStrategy
 from campaign.ai_strategies.green import GreenStrategy
 from campaign.ai_strategies.orange import OrangeStrategy
 from campaign.ai_strategies.boss import BossStrategy
+from campaign.ai_strategies.claude import ClaudeStrategy
 from campaign.boss_config import apply_per_turn_buffs, apply_initial_buffs, apply_stage_one_shots, maintain_unit_buffs
 from campaign.config_loader import CAMPAIGN_SETTINGS
+from shared.setting import CARD_SETTING
 
 if TYPE_CHECKING:
     from core.game_state import GameState
@@ -42,6 +44,7 @@ STRATEGY_REGISTRY: dict[str, type[Strategy]] = {
     "green":  GreenStrategy,
     "orange": OrangeStrategy,
     "boss":   BossStrategy,
+    "claude": ClaudeStrategy,
 }
 
 
@@ -87,11 +90,12 @@ class AIController:
         self._last_turn_seen: int = -1
         self._initialized: bool = False
         self._buffed_unit_ids: set[str] = set()
+        self._pending_upgrade_play: Optional[tuple[int, int, int]] = None
         self.focus_position: tuple[int, int] | None = None
 
     def tick(self, gs: "GameState", now_ms: int, renderer_busy: bool = False) -> list[GameAction]:
         self._ensure_initialized(gs)
-        maintain_unit_buffs(self.stage, gs, self._buffed_unit_ids)
+        self._maintain_units(gs)
 
         current = "player1" if gs.turn_number % 2 == 0 else "player2"
         if current != self.player_name:
@@ -103,7 +107,7 @@ class AIController:
         if self._last_turn_seen != gs.turn_number:
             self._last_turn_seen = gs.turn_number
             self._next_release_ms = now_ms + AI_TURN_START_DELAY_MS
-            apply_per_turn_buffs(self.stage, gs)
+            self._per_turn(gs)
             return []
 
         if now_ms < self._next_release_ms:
@@ -139,9 +143,21 @@ class AIController:
         player2 = gs.player2
         if not (player2.hand or player2.draw_pile or player2.discard_pile):
             return
-        apply_stage_one_shots(self.stage, gs)
-        apply_initial_buffs(self.stage, gs)
+        self._apply_one_shots(gs)
+        self._apply_initial(gs)
         self._initialized = True
+
+    def _maintain_units(self, gs: "GameState") -> None:
+        maintain_unit_buffs(self.stage, gs, self._buffed_unit_ids)
+
+    def _per_turn(self, gs: "GameState") -> None:
+        apply_per_turn_buffs(self.stage, gs)
+
+    def _apply_one_shots(self, gs: "GameState") -> None:
+        apply_stage_one_shots(self.stage, gs)
+
+    def _apply_initial(self, gs: "GameState") -> None:
+        apply_initial_buffs(self.stage, gs)
 
     def _effective_attack_min(self, gs: "GameState") -> float:
         base = float(self.strategy.attack_min_score)
@@ -151,6 +167,13 @@ class AIController:
         return max(MIN_PANIC_THRESHOLD, base - (deficit - _PANIC_NO_DROP_BELOW) * _PANIC_DROP_PER_STEP)
 
     def _decide_next(self, gs: "GameState") -> Optional[GameAction]:
+        if self._pending_upgrade_play is not None:
+            pending = self._pending_upgrade_play
+            self._pending_upgrade_play = None
+            finish = self._finish_upgrade_play(gs, pending)
+            if finish is not None:
+                return finish
+
         move = self._best_move_action(gs)
         if move is not None:
             return move
@@ -191,13 +214,48 @@ class AIController:
         if heal_action is not None:
             return heal_action
 
-        if play_action is not None:
+        if play_action is not None and play is not None:
+            toggle = self._maybe_toggle_upgrade(gs, play)
+            if toggle is not None:
+                return toggle
             return play_action
 
         if attack_action is not None:
             return attack_action
 
         return GameAction(player=self.player_name, action_type="end_turn")
+
+    def _maybe_toggle_upgrade(self, gs: "GameState", play) -> Optional[GameAction]:
+        hand = gs.get_player(self.player_name).hand
+        if not (0 <= play.hand_index < len(hand)):
+            return None
+        name = hand[play.hand_index]
+        if name.endswith(" (+)") or not name.endswith("C"):
+            return None
+        job = name[:-1]
+        if job not in CARD_SETTING["Cyan"]:
+            return None
+        if gs.players_coin.get(self.player_name, 0) < self._cyan_upgrade_price(gs, job):
+            return None
+        self._pending_upgrade_play = (play.hand_index, play.x, play.y)
+        return GameAction(player=self.player_name, action_type="toggle_upgrade", hand_index=play.hand_index)
+
+    def _finish_upgrade_play(self, gs: "GameState", pending: tuple[int, int, int]) -> Optional[GameAction]:
+        idx, x, y = pending
+        hand = gs.get_player(self.player_name).hand
+        if not (0 <= idx < len(hand) and hand[idx].endswith(" (+)")):
+            return None
+        if not gs.board_config.is_valid_position(x, y) or gs.board_dict[(x, y)].occupy:
+            return GameAction(player=self.player_name, action_type="toggle_upgrade", hand_index=idx)
+        return GameAction(player=self.player_name, action_type="play_card", board_x=x, board_y=y, hand_index=idx)
+
+    def _cyan_upgrade_price(self, gs: "GameState", job: str) -> int:
+        settings = CARD_SETTING["Cyan"]
+        upgraded_sp = sum(
+            1 for c in gs.get_player(self.player_name).on_board
+            if c.job_and_color == "SPC" and getattr(c, "upgrade", False)
+        )
+        return settings[job]["cost"] - settings["SP"]["coin_reduced"] * upgraded_sp
 
     def _best_heal(self, gs: "GameState") -> Optional[GameAction]:
         if gs.number_of_heals.get(self.player_name, 0) <= 0:
