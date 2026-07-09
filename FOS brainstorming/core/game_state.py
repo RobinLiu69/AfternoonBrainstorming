@@ -77,7 +77,8 @@ class GameState:
     players_totem: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0, "neutral": 0})
     players_coin: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
     card_to_draw: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
-    
+    skip_turn_draw: dict[str, bool] = field(default_factory=lambda: {"player1": False, "player2": False})
+
     number_of_attacks: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
     number_of_movings: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
     number_of_cubes: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
@@ -149,6 +150,7 @@ class GameState:
             "players_totem": self.players_totem,
             "players_coin": self.players_coin,
             "card_to_draw": self.card_to_draw,
+            "skip_turn_draw": self.skip_turn_draw,
             "number_of_attacks": self.number_of_attacks,
             "number_of_movings": self.number_of_movings,
             "number_of_cubes": self.number_of_cubes,
@@ -184,6 +186,7 @@ class GameState:
         self.players_totem = data["players_totem"]
         self.players_coin = data["players_coin"]
         self.card_to_draw = data["card_to_draw"]
+        self.skip_turn_draw = data.get("skip_turn_draw", {"player1": False, "player2": False})
         self.number_of_attacks = data["number_of_attacks"]
         self.number_of_movings = data["number_of_movings"]
         self.number_of_cubes = data.get("number_of_cubes", data.get("number_of_cudes", {"player1": 0, "player2": 0}))

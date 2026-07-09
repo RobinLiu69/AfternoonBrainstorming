@@ -5,4 +5,5 @@ campaign_progress.json
 display_setting.json
 build/
 dist/
+data/
 *.spec

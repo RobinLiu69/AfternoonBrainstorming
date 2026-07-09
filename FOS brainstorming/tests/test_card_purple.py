@@ -61,7 +61,7 @@ class TestPurpleTank:
 
         before = enemy.health
         tank.move_broadcast(enemy, gs)
-        assert enemy.health == before - S["TANK"]["movement_damage"]
+        assert enemy.health == before - S["TANK"]["move_strike_damage"]
 
     def test_move_broadcast_does_not_damage_ally(self) -> None:
         gs = make_game_state()

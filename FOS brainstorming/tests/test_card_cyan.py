@@ -46,7 +46,7 @@ class TestCyanAdc:
 
         before = gs.players_coin["player1"]
         do_attack(adc, gs)
-        assert gs.players_coin["player1"] >= before + S["ADC"]["coin_gets"]
+        assert gs.players_coin["player1"] >= before + S["ADC"]["coin_gain"]
 
 
 class TestCyanAp:
@@ -66,7 +66,7 @@ class TestCyanAp:
 
         before = gs.players_coin["player1"]
         do_attack(ap, gs)
-        assert gs.players_coin["player1"] >= before + S["AP"]["coin_gets"]
+        assert gs.players_coin["player1"] >= before + S["AP"]["coin_gain"]
 
 
 class TestCyanTank:
@@ -77,7 +77,7 @@ class TestCyanTank:
 
         before = gs.players_coin["player1"]
         tank.been_attacked(enemy, 1, gs)
-        assert gs.players_coin["player1"] == before + S["TANK"]["coin_gets"]
+        assert gs.players_coin["player1"] == before + S["TANK"]["coin_gain"]
 
     def test_upgrade_damage_block_absorbs_hit(self) -> None:
         gs = make_game_state()
@@ -98,7 +98,7 @@ class TestCyanHf:
 
         before = gs.players_coin["player1"]
         do_attack(hf, gs)
-        assert gs.players_coin["player1"] >= before + S["HF"]["coin_gets"]
+        assert gs.players_coin["player1"] >= before + S["HF"]["coin_gain"]
 
     def test_upgrade_been_killed_sets_anger_and_boosts_damage(self) -> None:
         gs = make_game_state()
@@ -152,7 +152,7 @@ class TestCyanLf:
 
         before = gs.players_coin["player1"]
         do_attack(lf, gs)
-        assert gs.players_coin["player1"] >= before + S["LF"]["coin_gets"]
+        assert gs.players_coin["player1"] >= before + S["LF"]["coin_gain"]
 
 
 class TestCyanAss:
@@ -164,7 +164,7 @@ class TestCyanAss:
 
         before = gs.players_coin["player1"]
         do_attack(ass, gs)
-        assert gs.players_coin["player1"] >= before + S["ASS"]["coin_gets"]
+        assert gs.players_coin["player1"] >= before + S["ASS"]["coin_gain"]
 
     def test_damage_bonus_adds_extra_damage(self) -> None:
         gs = make_game_state()
@@ -181,6 +181,7 @@ class TestCyanApt:
     def test_damage_reduce_by_coins(self) -> None:
         gs = make_game_state()
         apt = place_card(gs, Apt, "player1", 0, 0)
+        apt.upgrade = True
         gs.players_coin["player1"] = 10
 
         result = apt.damage_reduce(5, gs)
@@ -189,7 +190,23 @@ class TestCyanApt:
     def test_damage_reduce_capped_at_maximum(self) -> None:
         gs = make_game_state()
         apt = place_card(gs, Apt, "player1", 0, 0)
+        apt.upgrade = True
         gs.players_coin["player1"] = 50
 
         result = apt.damage_reduce(10, gs)
         assert result == 10 - S["APT"]["maximum_damage_resistance"]
+
+    def test_no_damage_reduce_without_upgrade(self) -> None:
+        gs = make_game_state()
+        apt = place_card(gs, Apt, "player1", 0, 0)
+        gs.players_coin["player1"] = 50
+
+        assert apt.damage_reduce(10, gs) == 10
+
+    def test_gains_coins_on_refresh(self) -> None:
+        gs = make_game_state()
+        apt = place_card(gs, Apt, "player1", 0, 0)
+
+        before = gs.players_coin["player1"]
+        apt.on_refresh(gs)
+        assert gs.players_coin["player1"] == before + S["APT"]["coin_gain"]

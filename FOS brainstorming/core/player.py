@@ -64,7 +64,10 @@ class Player:
     
     def turn_start(self, game_state: GameState) -> None:
         game_state.game_logger.log_turn_start(self.name, game_state.turn_number)
-        self.draw_card(game_state)
+        if game_state.skip_turn_draw[self.name]:
+            game_state.skip_turn_draw[self.name] = False
+        else:
+            self.draw_card(game_state)
         game_state.number_of_attacks[self.name] += 1
         for card in self.on_board:
             game_state.game_statistics.increment(StatType.ROUNDS_SURVIVED, f"{card.owner}_{card.job_and_color}", 1)
@@ -85,7 +88,7 @@ class Player:
             for card in self.on_board:
                 if card.board_x == board_x and card.board_y == board_y:
                     if card.attack(game_state):
-                        game_state.number_of_attacks[self.name] -= card.attack_uses            
+                        game_state.number_of_attacks[self.name] = max(0, game_state.number_of_attacks[self.name] - card.attack_uses)
                         game_state.game_statistics.add_hit(card.get_uid(), 1)
                         break
 

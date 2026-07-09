@@ -41,7 +41,7 @@ class CardFactory:
         cls._all_registered = True
         from cards import (
             base, card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
-            card_green, card_orange, card_purple, card_white,
+            card_green, card_orange, card_purple, card_white, card_brown,
         )
 
     @overload

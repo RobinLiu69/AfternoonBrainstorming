@@ -66,7 +66,7 @@ class TestGreenAss:
         before_opponent = gs.players_luck["player2"]
         do_attack(ass, gs)
         assert gs.players_luck["player1"] == before_own + 5
-        assert gs.players_luck["player2"] == before_opponent - S["ASS"]["luck_increase"]
+        assert gs.players_luck["player2"] == before_opponent - S["ASS"]["enemy_luck_loss"]
 
 
 class TestGreenApt:
