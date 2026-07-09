@@ -55,13 +55,12 @@ def main(game_screen: GameScreen, run: dict, title: str) -> Optional[tuple[str, 
         label = code if source == "deck" else f"{code} *"
         color = WHITE if source == "deck" else TEMP_COLOR
         btn = Button(btn_w, btn_h, start_x + col * (btn_w + bs * 0.15), start_y + row * (btn_h + bs * 0.1),
-                     bs * 0.15, bs * 0.1,
+                     position="Left", padding=bs * 0.15,
                      box_width=box_width, font=game_screen.text_font,
                      text=label, text_color=color, box_color=color)
         buttons.append((btn, source, i))
 
     cancel_button = Button(bs * 1.5, bs * 0.6, bs * 0.5, bs * 0.5,
-                           bs * 0.45, bs * 0.2,
                            box_width=box_width, font=game_screen.big_text_font, text="cancel")
 
     selected: Optional[tuple[str, int]] = None

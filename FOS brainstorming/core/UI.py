@@ -19,7 +19,7 @@
 from __future__ import annotations
 import random
 from dataclasses import dataclass, field
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import Literal, Optional, Sequence, TYPE_CHECKING
 
 import pygame
 
@@ -60,10 +60,15 @@ class HighLightBox(BasicUI):
                 pygame.draw.rect(game_screen.surface, self.box_color, (self.x, self.y, self.box_width, self.box_height), width=self.line_width)
 
 
+TextPosition = Literal["Left", "Middle", "Right"]
+
+
 class Button:
-    def __init__(self, width: float, height: float, x: float, y: float, text_x: float, text_y: float,
-                 has_box: bool=True, box_color: Sequence[int]=WHITE, box_width: int=0, text_color: Sequence[int]=WHITE,
-                 text: str="", font: pygame.font.Font|None=None):
+    def __init__(self, width: float, height: float, x: float, y: float,
+        position: TextPosition = "Middle", padding: float = 10,
+        has_box: bool=True, box_color: Sequence[int]=WHITE,
+        box_width: int=0, text_color: Sequence[int]=WHITE,
+        text: str="", font: pygame.font.Font|None=None):
         self.height = height
         self.width = width
         self.has_box = has_box
@@ -72,27 +77,38 @@ class Button:
         self.text_color = text_color
         self.x = x
         self.y = y
-        self.text_x = text_x
-        self.text_y = text_y
+        self.position = position
+        self.padding = padding
         self.text = text
         self.font = font
         self.surface = pygame.Surface((width, height))
         self.been_pressed: bool = False
-    
+
     def update(self, game_screen: GameScreen):
         self.display(game_screen)
 
     def touch(self, mouse_x: float, mouse_y: float) -> bool:
-        return self.x<mouse_x<self.x+self.width and self.y<mouse_y<self.y+self.height
-    
+        return self.x < mouse_x < self.x+self.width and self.y < mouse_y < self.y+self.height
+
     def display(self, game_screen: GameScreen):
         self.surface.fill((0, 0, 0, 0))
         if self.has_box:
             pygame.draw.rect(self.surface, self.box_color, (0, 0, self.width, self.height), self.box_width, border_radius=self.box_width*4)
 
         if self.font:
-            draw_text(self.text, self.font, self.text_color, self.text_x, self.text_y, self.surface)
-        
+            text_w, text_h = self.font.size(self.text)
+
+            if self.position == "Left":
+                tx = self.padding
+            elif self.position == "Right":
+                tx = self.width - text_w - self.padding
+            else:  # "Middle"
+                tx = (self.width - text_w) / 2
+
+            ty = (self.height - text_h) / 2
+
+            draw_text(self.text, self.font, self.text_color, tx, ty, self.surface)
+
         game_screen.surface.blit(self.surface, (self.x, self.y))
 
 

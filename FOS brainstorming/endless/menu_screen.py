@@ -45,18 +45,15 @@ def main(game_screen: GameScreen, state: dict) -> Optional[str]:
     if run:
         label = f"continue  (floor {run['floor']})"
         buttons.append(("continue", Button(btn_w, btn_h, btn_x, y,
-                                           bs * 0.25, bs * 0.15,
                                            box_width=box_width, font=game_screen.big_text_font,
                                            text=label, text_color=CYAN, box_color=CYAN)))
         y += btn_h + bs * 0.2
     new_label = "new climb" if not run else "new climb  (abandon current)"
     buttons.append(("new", Button(btn_w, btn_h, btn_x, y,
-                                  bs * 0.25, bs * 0.15,
                                   box_width=box_width, font=game_screen.big_text_font,
                                   text=new_label)))
 
     back_button = Button(bs * 1.5, bs * 0.6, bs * 0.5, bs * 0.5,
-                         bs * 0.55, bs * 0.2,
                          box_width=box_width, font=game_screen.big_text_font, text="back")
 
     selected: Optional[str] = None

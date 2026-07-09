@@ -68,12 +68,12 @@ def _make_buttons(gs: GameScreen) -> dict[str, Button]:
 
     def left_btn(y_offset: float, text: str) -> Button:
         return Button(left_btn_w, btn_h, left_x, cy + bs * y_offset,
-                      bs * 0.15, bs * 0.10,
+                      position="Left", padding=bs * 0.15,
                       box_width=box_width, font=gs.mid_text_font, text=text)
 
     def action_btn(y_offset: float, text: str) -> Button:
         return Button(action_btn_w, btn_h, action_x, cy + bs * y_offset,
-                      bs * 0.15, bs * 0.10,
+                      position="Left", padding=bs * 0.15,
                       box_width=box_width, font=gs.mid_text_font, text=text)
 
     return {
