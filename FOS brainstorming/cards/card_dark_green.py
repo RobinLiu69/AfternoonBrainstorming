@@ -90,8 +90,11 @@ class Hf(DarkGreenCard):
         self.heal(1, game_state)
         return True
     
+    def update(self, game_state: GameState) -> None:
+        self.extra_damage = card_settings["HF"]["damage_bonus"] if self.health < 4 else 0
+
     def on_refresh(self, game_state: GameState) -> int:
-        self.damage_calculate(2, self, game_state, False)
+        self.damage_calculate(card_settings["HF"]["turn_start_health_loss"], self, game_state, False)
         self.engraved_totem(card_settings["HF"]["engraved_totem"], game_state)
         return 0
 
@@ -107,6 +110,10 @@ class Lf(DarkGreenCard):
         for target in self.detection("small_cross", tuple(filter(lambda card: card.health > 0, game_state.get_side_cards(self.owner, True))), game_state):
             target.damage_calculate(game_state.players_totem[self.owner]//4, self, game_state)
     
+    def on_refresh(self, game_state: GameState) -> int:
+        self.damage_calculate(card_settings["LF"]["turn_start_health_loss"], self, game_state, False)
+        return 0
+
     def ability(self, target: Card, game_state: GameState) -> bool:
         self.engraved_totem(card_settings["LF"]["engraved_totem"], game_state)
         return True
@@ -119,6 +126,9 @@ class Ass(DarkGreenCard):
         
         super().__init__(owner=owner, job_and_color="ASSDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
+    def update(self, game_state: GameState) -> None:
+        self.extra_damage = game_state.players_totem[self.owner] // card_settings["ASS"]["damage_divisor"]
+
     def killed(self, victim: Card, game_state: GameState) -> bool:
         self.health = 0
         game_state.pending_combat_events.append(

@@ -57,7 +57,7 @@ class CyanCard(Card):
         if not self.upgrade:
             return True
         cyan_cards: filter[CyanCard] = filter(lambda card: isinstance(card, CyanCard), game_state.get_both_player_cards()) # pyright: ignore[reportAssignmentType]
-        price = card_settings[self.job]["cost"] - (card_settings["SP"]["coin_reduced"] * len(tuple(filter(lambda card: card.job_and_color == "SPC" and card.upgrade and card.owner == self.owner, cyan_cards))))
+        price = card_settings[self.job]["cost"] - (card_settings["SP"]["cost_reduction"] * len(tuple(filter(lambda card: card.job_and_color == "SPC" and card.upgrade and card.owner == self.owner, cyan_cards))))
         if game_state.players_coin[self.owner] >= price:
             game_state.players_coin[self.owner] -= price
             return True
@@ -95,7 +95,7 @@ class Adc(CyanCard):
             return False
     
     def ability(self, target: Card, game_state: GameState) -> bool:
-        self.get_coins(card_settings["ADC"]["coin_gets"], game_state)
+        self.get_coins(card_settings["ADC"]["coin_gain"], game_state)
         return True
 
 
@@ -129,7 +129,7 @@ class Ap(CyanCard):
 
     def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
-        self.get_coins(card_settings["AP"]["coin_gets"], game_state)
+        self.get_coins(card_settings["AP"]["coin_gain"], game_state)
         return True
     
 
@@ -156,7 +156,7 @@ class Tank(CyanCard):
             return False
         
     def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
-        self.get_coins(card_settings["TANK"]["coin_gets"], game_state)
+        self.get_coins(card_settings["TANK"]["coin_gain"], game_state)
         return True
 
 
@@ -174,7 +174,7 @@ class Hf(CyanCard):
         self.upgrade = upgrade
         
     def ability(self, target: Card, game_state: GameState) -> bool:
-        self.get_coins(card_settings["HF"]["coin_gets"], game_state)
+        self.get_coins(card_settings["HF"]["coin_gain"], game_state)
         return True
 
     def been_killed(self, attacker: Card, game_state: GameState) -> bool:
@@ -224,7 +224,7 @@ class Lf(CyanCard):
         self.upgrade = upgrade
 
     def ability(self, target: Card, game_state: GameState) -> bool:
-        self.get_coins(card_settings["LF"]["coin_gets"], game_state)
+        self.get_coins(card_settings["LF"]["coin_gain"], game_state)
         return True
 
     def on_refresh(self, game_state: GameState) -> int:
@@ -256,7 +256,7 @@ class Ass(CyanCard):
         return value
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
-        self.get_coins(card_settings["ASS"]["coin_gets"], game_state)
+        self.get_coins(card_settings["ASS"]["coin_gain"], game_state)
         return True
 
 
@@ -270,12 +270,12 @@ class Apt(CyanCard):
         self.upgrade = upgrade
 
     def damage_reduce(self, value: int, game_state: GameState) -> int:
-        value -= game_state.players_coin[self.owner]//card_settings["APT"]["coin_per_damage_resistance"] if game_state.players_coin[self.owner]//card_settings["APT"]["coin_per_damage_resistance"] <= card_settings["APT"]["maximum_damage_resistance"] else card_settings["APT"]["maximum_damage_resistance"]
-        return value if value > 0 else 0
+        if self.upgrade:
+           value -= game_state.players_coin[self.owner]//card_settings["APT"]["coin_per_damage_resistance"] if game_state.players_coin[self.owner]//card_settings["APT"]["coin_per_damage_resistance"] <= card_settings["APT"]["maximum_damage_resistance"] else card_settings["APT"]["maximum_damage_resistance"]
+        return max(value, 0)
     
     def on_refresh(self, game_state: GameState) -> int:
-        if self.upgrade:
-            self.get_coins(card_settings["APT"]["coin_gets"], game_state)
+        self.get_coins(card_settings["APT"]["coin_gain"], game_state)
         return 0
 
 
@@ -292,7 +292,7 @@ class Sp(CyanCard):
         self.upgrade = upgrade
 
     def deploy(self, game_state: GameState) -> None:
-        self.get_coins(card_settings["SP"]["coin_gets"], game_state)
+        self.get_coins(card_settings["SP"]["coin_gain"], game_state)
 
 
 CardFactory.register("ADC" + color_code, Adc)

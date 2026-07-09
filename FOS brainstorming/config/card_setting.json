@@ -10,7 +10,7 @@
         },
         "AP": {
             "health": 4,
-            "damage": 3
+            "damage": 4
         },
         "TANK": {
             "health": 15,
@@ -90,32 +90,31 @@
         "ADC": {
             "health": 3,
             "damage": 3,
-            "chance_to_spawn_luckyblock": 50
+            "luckyblock_spawn_chance": 50
         },
         "AP": {
             "health": 3,
             "damage": 2
         },
         "TANK": {
-            "health": 9,
-            "damage": 1
+            "health": 8,
+            "damage": 2
         },
         "HF": {
             "health": 8,
-            "damage": 1,
+            "damage": 2,
             "luck_increase": 5
         },
         "LF": {
             "health": 6,
             "damage": 3,
-            "chance_to_get_attack_count_increase": 25,
-            "number_of_attack_count_increase_from_killed_luckyblock": 1
+            "attack_gain_chance": 25,
+            "attack_gain_per_luckyblock_kill": 1
         },
         "ASS": {
             "health": 2,
             "damage": 4,
-            "luck_increase": 5,
-            "luck_decrease": 5
+            "enemy_luck_loss": 5
         },
         "APT": {
             "health": 5,
@@ -126,24 +125,24 @@
             "health": 1,
             "damage": 5,
             "luck_increase": 10,
-            "spawn_luckyblock_requires_minimum_luck": 50
+            "min_luck_to_spawn": 50
         }
     },
     "Blue": {
         "ADC": {
             "health": 4,
             "damage": 1,
-            "token_gets": 2
+            "token_gain": 2
         },
         "AP": {
-            "health": 4,
+            "health": 3,
             "damage": 2,
-            "token_gets": 2
+            "token_gain": 2
         },
         "TANK": {
-            "health": 10,
+            "health": 9,
             "damage": 1,
-            "token_gets": 1
+            "token_gain": 1
         },
         "HF": {
             "health": 8,
@@ -152,16 +151,16 @@
         "LF": {
             "health": 7,
             "damage": 3,
-            "token_gets": 1
+            "token_gain": 1
         },
         "ASS": {
             "health": 2,
             "damage": 4,
-            "token_gets": 2
+            "token_gain": 2
         },
         "APT": {
-            "health": 5,
-            "damage": 3,
+            "health": 6,
+            "damage": 0,
             "token_from_armor_divisor": 3
         },
         "SP": {
@@ -180,33 +179,32 @@
             "damage": 2
         },
         "TANK": {
-            "health": 10,
+            "health": 9,
             "damage": 1
         },
         "HF": {
             "health": 9,
             "damage": 1,
-            "extra_damage_from_moving": 1
+            "move_damage_gain": 1
         },
         "LF": {
-            "health": 6,
-            "damage": 3,
-            "extra_damage_from_moving": 1
+            "health": 7,
+            "damage": 2
         },
         "ASS": {
             "health": 2,
             "damage": 3,
-            "number_of_attack_increase_from_killed": 1
+            "attack_gain_per_kill": 1
         },
         "APT": {
             "health": 6,
             "damage": 0,
-            "armor_get_from_moving": 1
+            "move_armor_gain": 1
         },
         "SP": {
             "health": 1,
             "damage": 5,
-            "movement_damage": 3
+            "move_strike_damage": 3
         }
     },
     "DarkGreen": {
@@ -223,21 +221,25 @@
         "TANK": {
             "health": 9,
             "damage": 1,
-            "engraved_totem": 2
+            "engraved_totem": 3
         },
         "HF": {
             "health": 8,
-            "damage": 2,
-            "engraved_totem": 2
+            "damage": 1,
+            "turn_start_health_loss": 2,
+            "engraved_totem": 2,
+            "damage_bonus": 2
         },
         "LF": {
             "health": 6,
             "damage": 3,
+            "turn_start_health_loss": 2,
             "engraved_totem": 1
         },
         "ASS": {
             "health": 2,
-            "damage": 4,
+            "damage": 3,
+            "damage_divisor": 8,
             "engraved_totem": 7
         },
         "APT": {
@@ -257,15 +259,15 @@
             "cost": 6,
             "upgrade_health": 5,
             "upgrade_damage": 3,
-            "coin_gets": 2
+            "coin_gain": 2
         },
         "AP": {
-            "health": 3,
+            "health": 2,
             "damage": 1,
             "cost": 6,
-            "upgrade_health": 5,
+            "upgrade_health": 3,
             "upgrade_damage": 3,
-            "coin_gets": 3,
+            "coin_gain": 3,
             "number_of_attack": 2
         },
         "TANK": {
@@ -274,7 +276,7 @@
             "cost": 4,
             "upgrade_health": 11,
             "upgrade_damage": 1,
-            "coin_gets": 2
+            "coin_gain": 2
         },
         "HF": {
             "health": 7,
@@ -282,7 +284,7 @@
             "cost": 6,
             "upgrade_health": 9,
             "upgrade_damage": 2,
-            "coin_gets": 2,
+            "coin_gain": 2,
             "damage_bonus": 2
         },
         "LF": {
@@ -291,7 +293,7 @@
             "cost": 4,
             "upgrade_health": 7,
             "upgrade_damage": 4,
-            "coin_gets": 2
+            "coin_gain": 2
         },
         "ASS": {
             "health": 1,
@@ -299,7 +301,7 @@
             "cost": 4,
             "upgrade_health": 2,
             "upgrade_damage": 4,
-            "coin_gets": 6,
+            "coin_gain": 6,
             "damage_bonus": 2
         },
         "APT": {
@@ -308,7 +310,7 @@
             "cost": 6,
             "upgrade_health": 7,
             "upgrade_damage": 2,
-            "coin_gets": 4,
+            "coin_gain": 4,
             "coin_per_damage_resistance": 5,
             "maximum_damage_resistance": 3
         },
@@ -318,8 +320,8 @@
             "cost": 6,
             "upgrade_health": 2,
             "upgrade_damage": 5,
-            "coin_gets": 10,
-            "coin_reduced": 2
+            "coin_gain": 10,
+            "cost_reduction": 2
         }
     },
     "Fuchsia": {
@@ -328,11 +330,11 @@
             "damage": 2
         },
         "AP": {
-            "health": 4,
+            "health": 3,
             "damage": 1
         },
         "TANK": {
-            "health": 10,
+            "health": 9,
             "damage": 1
         },
         "HF": {
@@ -357,6 +359,53 @@
             "damage": 5
         }
     },
+    "Brown": {
+        "ADC": {
+            "health": 6,
+            "damage": 6
+        },
+        "AP": {
+            "health": 5,
+            "damage": 9,
+            "on_attack_enemy_draw": 1
+        },
+        "TANK": {
+            "health": 20,
+            "damage": 1,
+            "turn_start_health_loss": 4
+        },
+        "HF": {
+            "health": 11,
+            "damage": 5,
+            "attack_uses": 2
+        },
+        "LF": {
+            "health": 8,
+            "damage": 8,
+            "on_kill_enemy_points": 2
+        },
+        "ASS": {
+            "health": 2,
+            "damage": 9
+        },
+        "APT": {
+            "health": 10,
+            "damage": 3,
+            "on_play_enemy_shield": 2,
+            "on_attack_buff_nearest_ally": {
+                "atk": 1,
+                "armor": 1
+            },
+            "bonus_if_giant": {
+                "atk": 1,
+                "armor": 1
+            }
+        },
+        "SP": {
+            "health": 1,
+            "damage": 5
+        }
+    },
     "Purple": {
         "ADC": {
             "health": 0,
@@ -369,7 +418,7 @@
         "TANK": {
             "health": 9,
             "damage": 1,
-            "movement_damage": 2
+            "move_strike_damage": 2
         },
         "HF": {
             "health": 8,

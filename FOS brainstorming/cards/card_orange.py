@@ -98,7 +98,7 @@ class Hf(OrangeCard):
             return False
         
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        self.extra_damage += card_settings["HF"]["extra_damage_from_moving"]
+        self.extra_damage += card_settings["HF"]["move_damage_gain"]
         self.anger = True
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
@@ -149,7 +149,7 @@ class Ass(OrangeCard):
     def killed(self, victim: Card, game_state: GameState) -> bool:
         self.moving = True
         if self.anger:
-            game_state.number_of_attacks[self.owner] += card_settings["ASS"]["number_of_attack_increase_from_killed"]
+            game_state.number_of_attacks[self.owner] += card_settings["ASS"]["attack_gain_per_kill"]
             self.anger = False
         return True
     
@@ -172,7 +172,7 @@ class Apt(OrangeCard):
         super().__init__(owner=owner, job_and_color="APTO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        self.armor += card_settings["APT"]["armor_get_from_moving"]
+        self.armor += card_settings["APT"]["move_armor_gain"]
         value = self.armor // 2
         if value > 0:
             self.damage += value
@@ -180,8 +180,8 @@ class Apt(OrangeCard):
 
     def move_broadcast(self, target: Card, game_state: GameState) -> bool:
         if target.owner == self.owner and target != self:
-            target.armor += card_settings["APT"]["armor_get_from_moving"]
-            self.armor += card_settings["APT"]["armor_get_from_moving"]
+            target.armor += card_settings["APT"]["move_armor_gain"]
+            self.armor += card_settings["APT"]["move_armor_gain"]
         return True
     
 
@@ -193,7 +193,7 @@ class Sp(OrangeCard):
     def move_broadcast(self, target: Card, game_state: GameState) -> bool:
         if target.owner == self.owner:
             for card in self.detection("farthest", game_state.get_side_cards(self.owner, True), game_state):
-                card.damage_calculate(card_settings["SP"]["movement_damage"], self, game_state)
+                card.damage_calculate(card_settings["SP"]["move_strike_damage"], self, game_state)
         return True
 
 

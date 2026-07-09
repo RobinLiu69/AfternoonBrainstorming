@@ -8,6 +8,7 @@
         "DKG": "DarkGreen",
         "C": "Cyan",
         "F": "Fuchsia",
+        "BR": "Brown",
         "P": "Purple"
     },
 
@@ -20,6 +21,7 @@
       "DarkGreen": "85, 107, 47",
       "Cyan": "0, 238, 238",
       "Fuchsia": "159, 0, 80",
+      "Brown": "139, 69, 19",
       "Purple": "128, 0, 255",
       "Black": "0, 0, 0"
     },

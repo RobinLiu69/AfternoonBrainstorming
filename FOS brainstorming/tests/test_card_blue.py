@@ -35,7 +35,7 @@ class TestBlueAdc:
         victim.health = 1
         second = place_card(gs, RedTank, "player2", 0, 2)
 
-        gs.players_token["player1"] = TOKEN_THRESHOLD - S["ADC"]["token_gets"]
+        gs.players_token["player1"] = TOKEN_THRESHOLD - S["ADC"]["token_gain"]
 
         before = second.health
         adc.attack(gs)
@@ -52,7 +52,7 @@ class TestBlueAdc:
 
         before = gs.players_token["player1"]
         do_attack(adc, gs)
-        assert gs.players_token["player1"] >= before + S["ADC"]["token_gets"]
+        assert gs.players_token["player1"] >= before + S["ADC"]["token_gain"]
 
     def test_kill_triggers_draw_at_threshold(self) -> None:
         gs = make_game_state()
@@ -60,7 +60,7 @@ class TestBlueAdc:
         enemy = place_card(gs, RedAdc, "player2", 2, 0)
         enemy.health = 1
 
-        gs.players_token["player1"] = TOKEN_THRESHOLD - S["ADC"]["token_gets"]
+        gs.players_token["player1"] = TOKEN_THRESHOLD - S["ADC"]["token_gain"]
         before_draw = gs.card_to_draw["player1"]
         do_attack(adc, gs)
         assert gs.card_to_draw["player1"] > before_draw
@@ -99,7 +99,7 @@ class TestBlueAp:
 
         before = gs.players_token["player1"]
         do_attack(ap, gs)
-        assert gs.players_token["player1"] >= before + S["AP"]["token_gets"]
+        assert gs.players_token["player1"] >= before + S["AP"]["token_gain"]
 
 
 class TestBlueTank:
@@ -110,7 +110,7 @@ class TestBlueTank:
 
         before = gs.players_token["player1"]
         tank.damage_calculate(1, enemy, gs, ability=False)
-        assert gs.players_token["player1"] == before + S["TANK"]["token_gets"]
+        assert gs.players_token["player1"] == before + S["TANK"]["token_gain"]
 
 
 class TestBlueHf:
@@ -142,7 +142,7 @@ class TestBlueLf:
 
         before = gs.players_token["player1"]
         do_attack(lf, gs)
-        assert gs.players_token["player1"] >= before + S["LF"]["token_gets"]
+        assert gs.players_token["player1"] >= before + S["LF"]["token_gain"]
 
 
 class TestBlueAss:
@@ -154,7 +154,7 @@ class TestBlueAss:
 
         before = gs.players_token["player1"]
         do_attack(ass, gs)
-        assert gs.players_token["player1"] >= before + S["ASS"]["token_gets"]
+        assert gs.players_token["player1"] >= before + S["ASS"]["token_gain"]
 
     def test_no_tokens_without_kill(self) -> None:
         gs = make_game_state()
@@ -182,6 +182,7 @@ class TestBlueApt:
 
         divisor = S["APT"]["token_from_armor_divisor"]
         apt.armor = divisor * 2
+        apt.update(gs)
 
         before = gs.players_token["player1"]
         do_attack(apt, gs)

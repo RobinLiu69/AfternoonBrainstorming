@@ -47,7 +47,7 @@ with open(f"{FOLDER_PATH}/config/card_hints.json", "r", encoding="utf-8") as fil
 with open(f"{FOLDER_PATH}/config/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
-VERSION = "4.2.0.0"
+VERSION = "4.3.0.0"
 
 ANIM_LUNGE_STEP: float = 0.32
 COMBAT_ANIMATIONS_ENABLED = True
@@ -62,3 +62,4 @@ PURPLE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DIC
 DARKGREEN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["DarkGreen"].split(", "))))
 CYAN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Cyan"].split(", "))))
 FUCHSIA: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Fuchsia"].split(", "))))
+BROWN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Brown"].split(", "))))

@@ -87,7 +87,7 @@ class TestOrangeHf:
 
         before = hf.extra_damage
         hf.after_movement(1, 0, gs)
-        assert hf.extra_damage == before + S["HF"]["extra_damage_from_moving"]
+        assert hf.extra_damage == before + S["HF"]["move_damage_gain"]
         assert hf.anger is True
 
     def test_damage_bonus_adds_extra_damage(self) -> None:
@@ -137,7 +137,7 @@ class TestOrangeAss:
 
         before = gs.number_of_attacks["player1"]
         do_attack(ass, gs)
-        assert gs.number_of_attacks["player1"] == before + S["ASS"]["number_of_attack_increase_from_killed"]
+        assert gs.number_of_attacks["player1"] == before + S["ASS"]["attack_gain_per_kill"]
 
     def test_kill_without_anger_no_attack_count_increase(self) -> None:
         gs = make_game_state()
@@ -170,8 +170,8 @@ class TestOrangeApt:
         before_apt = apt.armor
         before_ally = ally.armor
         apt.move_broadcast(ally, gs)
-        assert apt.armor == before_apt + S["APT"]["armor_get_from_moving"]
-        assert ally.armor == before_ally + S["APT"]["armor_get_from_moving"]
+        assert apt.armor == before_apt + S["APT"]["move_armor_gain"]
+        assert ally.armor == before_ally + S["APT"]["move_armor_gain"]
 
 
 class TestOrangeSp:

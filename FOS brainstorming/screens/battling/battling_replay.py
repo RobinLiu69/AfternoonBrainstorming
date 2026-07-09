@@ -174,7 +174,8 @@ def _rebuild_and_fast_forward(
     game_state.players_totem = {"player1": 0, "player2": 0, "neutral": 0}
     game_state.players_coin = {"player1": 0, "player2": 0}
     game_state.card_to_draw = {"player1": 0, "player2": 0}
-    
+    game_state.skip_turn_draw = {"player1": False, "player2": False}
+
     game_state.number_of_attacks = {"player1": 0, "player2": 0}
     game_state.number_of_movings = {"player1": 0, "player2": 0}
     game_state.number_of_cubes = {"player1": 0, "player2": 0}

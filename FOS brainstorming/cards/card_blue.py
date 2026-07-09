@@ -65,7 +65,7 @@ class Adc(BlueCard):
         super().__init__(owner=owner, job_and_color="ADCB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
-        game_state.players_token[self.owner] += card_settings["ADC"]["token_gets"]
+        game_state.players_token[self.owner] += card_settings["ADC"]["token_gain"]
         self.got_token(game_state)
         return True
     
@@ -86,8 +86,8 @@ class Ap(BlueCard):
     
     def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
-        game_state.players_token[self.owner] += card_settings["AP"]["token_gets"]
-        for i in range(card_settings["AP"]["token_gets"]): self.got_token(game_state)
+        game_state.players_token[self.owner] += card_settings["AP"]["token_gain"]
+        for i in range(card_settings["AP"]["token_gain"]): self.got_token(game_state)
         return True
 
 
@@ -99,8 +99,8 @@ class Tank(BlueCard):
         super().__init__(owner=owner, job_and_color="TANKB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
-        game_state.players_token[self.owner] += card_settings["TANK"]["token_gets"]
-        for _ in range(card_settings["TANK"]["token_gets"]): self.got_token(game_state)
+        game_state.players_token[self.owner] += card_settings["TANK"]["token_gain"]
+        for _ in range(card_settings["TANK"]["token_gain"]): self.got_token(game_state)
         return True
 
 
@@ -126,8 +126,8 @@ class Lf(BlueCard):
         super().__init__(owner=owner, job_and_color="LFB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, game_state: GameState) -> bool:
-        game_state.players_token[self.owner] += card_settings["LF"]["token_gets"]
-        for _ in range(card_settings["LF"]["token_gets"]): self.got_token(game_state)
+        game_state.players_token[self.owner] += card_settings["LF"]["token_gain"]
+        for _ in range(card_settings["LF"]["token_gain"]): self.got_token(game_state)
         return True
 
 
@@ -139,8 +139,8 @@ class Ass(BlueCard):
         super().__init__(owner=owner, job_and_color="ASSB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def killed(self, victim: Card, game_state: GameState) -> bool:
-        game_state.players_token[self.owner] += card_settings["ASS"]["token_gets"]
-        for _ in range(card_settings["ASS"]["token_gets"]): self.got_token(game_state)
+        game_state.players_token[self.owner] += card_settings["ASS"]["token_gain"]
+        for _ in range(card_settings["ASS"]["token_gain"]): self.got_token(game_state)
         return True
 
 
@@ -151,9 +151,12 @@ class Apt(BlueCard):
 
         super().__init__(owner=owner, job_and_color="APTB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def ability(self, target: Card, game_state: GameState) -> bool:
-        game_state.players_token[self.owner] += self.armor//card_settings["APT"]["token_from_armor_divisor"]
-        for _ in range(self.armor//card_settings["APT"]["token_from_armor_divisor"]): self.got_token(game_state)
+    def update(self, game_state: GameState) -> None:
+        self.extra_damage = self.armor//card_settings["APT"]["token_from_armor_divisor"]
+    
+    def after_damage_calculated(self, target: Card, value: int, game_state: GameState) -> bool:
+        game_state.players_token[self.owner] += value
+        for _ in range(value): self.got_token(game_state)
         return True
 
     def after_token(self, game_state: GameState) -> bool:

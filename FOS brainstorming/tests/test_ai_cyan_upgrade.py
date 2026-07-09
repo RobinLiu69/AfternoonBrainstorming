@@ -97,4 +97,4 @@ def test_upgraded_spc_discounts_price():
     spc = place_card(gs, "SPC", "player2", 0, 0)
     spc.upgrade = True
     discounted = ai._cyan_upgrade_price(gs, "ADC")
-    assert discounted == base_price - CARD_SETTING["Cyan"]["SP"]["coin_reduced"]
+    assert discounted == base_price - CARD_SETTING["Cyan"]["SP"]["cost_reduction"]

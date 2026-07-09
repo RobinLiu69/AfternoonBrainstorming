@@ -80,7 +80,7 @@ class Tank(PurpleCard):
     
     def move_broadcast(self, target: Card, game_state: GameState) -> bool:
         if target.owner != self.owner:
-            target.damage_calculate(card_settings["TANK"]["movement_damage"], self, game_state)
+            target.damage_calculate(card_settings["TANK"]["move_strike_damage"], self, game_state)
             return True
         return False
 

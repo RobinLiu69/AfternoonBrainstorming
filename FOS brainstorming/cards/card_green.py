@@ -161,7 +161,7 @@ class Adc(GreenCard):
     def ability(self, target: Card, game_state: GameState) -> bool:
         for board in game_state.board_dict.values():
             if (board.board_x == self.board_x or board.board_y == self.board_y) and not board.occupy:
-                if game_state.rng.randint(1, 100) <= card_settings["ADC"]["chance_to_spawn_luckyblock"]:
+                if game_state.rng.randint(1, 100) <= card_settings["ADC"]["luckyblock_spawn_chance"]:
                     game_state.neutral.on_board.append(LuckyBlock("None", board.board_x, board.board_y))
                     board.occupy = True
         return True
@@ -223,8 +223,8 @@ class Lf(GreenCard):
             for card in self.detection("nearest", filter(lambda card: card.health >= 0, game_state.get_opponent_cards(self.owner)), game_state):
                 card.damage_calculate(self.damage, self, game_state, False)
             
-            if game_state.rng.randint(1, 100) <= card_settings["LF"]["chance_to_get_attack_count_increase"]:
-                game_state.number_of_attacks[self.owner] += card_settings["LF"]["number_of_attack_count_increase_from_killed_luckyblock"]
+            if game_state.rng.randint(1, 100) <= card_settings["LF"]["attack_gain_chance"]:
+                game_state.number_of_attacks[self.owner] += card_settings["LF"]["attack_gain_per_luckyblock_kill"]
         return True
 
 
@@ -239,9 +239,9 @@ class Ass(GreenCard):
         game_state.players_luck[self.owner] += 5
         match self.owner:
             case "player1":
-                game_state.players_luck["player2"] -= card_settings["ASS"]["luck_increase"]
+                game_state.players_luck["player2"] -= card_settings["ASS"]["enemy_luck_loss"]
             case "player2":
-                game_state.players_luck["player1"] -= card_settings["ASS"]["luck_decrease"]
+                game_state.players_luck["player1"] -= card_settings["ASS"]["enemy_luck_loss"]
         return True
 
 
@@ -286,10 +286,10 @@ class Sp(GreenCard):
         )
         if board_list:
             game_state.rng.shuffle(board_list)
-            if game_state.players_luck[self.owner] > card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"]:
+            if game_state.players_luck[self.owner] > card_settings["SP"]["min_luck_to_spawn"]:
                 for i in range(
                     min(
-                        (game_state.players_luck[self.owner]-card_settings["SP"]["spawn_luckyblock_requires_minimum_luck"]) // 10,
+                        (game_state.players_luck[self.owner]-card_settings["SP"]["min_luck_to_spawn"]) // 10,
                         len(board_list)
                     )
                 ):

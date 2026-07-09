@@ -255,7 +255,7 @@ class AIController:
             1 for c in gs.get_player(self.player_name).on_board
             if c.job_and_color == "SPC" and getattr(c, "upgrade", False)
         )
-        return settings[job]["cost"] - settings["SP"]["coin_reduced"] * upgraded_sp
+        return settings[job]["cost"] - settings["SP"]["cost_reduction"] * upgraded_sp
 
     def _best_heal(self, gs: "GameState") -> Optional[GameAction]:
         if gs.number_of_heals.get(self.player_name, 0) <= 0:
