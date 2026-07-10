@@ -255,7 +255,7 @@ def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed
         draw_text(warning, game_screen.mid_text_font, RED, x + game_screen.block_size * 1.8, y_top - game_screen.block_size * 0.15, game_screen.surface)
 
 
-    hint = "SPACE pause/play   RIGHT step   UP/DOWN speed   R restart   T take over   V anim   L save-log   ESC exit"
+    hint = "SPACE pause/play   LEFT prev   RIGHT next   UP/DOWN speed   R restart   T take over   V anim   L save-log   ESC exit"
     draw_text(hint, game_screen.mid_text_font, WHITE, x, y_bottom, game_screen.surface)
 
 
@@ -280,6 +280,25 @@ def _collect_prefix_actions(source: ReplaySource, count: int) -> list:
         actions.append(action)
     source.seek_to_action(saved)
     return actions
+
+
+def _collect_action_types(source: ReplaySource) -> list[str]:
+    saved = source.current_action_index
+    source.reset()
+    types: list[str] = []
+    action = source.next_action()
+    while action is not None:
+        types.append(action.action_type)
+        action = source.next_action()
+    source.seek_to_action(saved)
+    return types
+
+
+def _prev_real_action_index(action_types: list[str], cursor: int) -> int:
+    for j in range(min(cursor, len(action_types)) - 1, -1, -1):
+        if action_types[j] != "toggle_hint":
+            return j
+    return 0
 
 
 def _begin_takeover(source: ReplaySource, game_state: GameState) -> GameLogger:
@@ -382,6 +401,8 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
     campaign_stage = source.metadata.get("campaign_stage")
     buffs = _CampaignReplayBuffs(campaign_stage) if campaign_stage else None
 
+    action_types = _collect_action_types(source)
+
     game_renderer = GameRenderer(game_screen)
     dispatcher = BattlingDispatcher(game_state=game_state, mode="local")
     dispatcher.attach_renderer(game_renderer)
@@ -422,6 +443,13 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                         paused = not paused
                     elif event.key == pygame.K_RIGHT:
                         step_once = True
+                        paused = True
+                    elif event.key == pygame.K_LEFT:
+                        target = _prev_real_action_index(action_types, source.current_action_index)
+                        _rebuild_and_fast_forward(
+                            source, game_state, game_screen,
+                            game_renderer, dispatcher, target, buffs,
+                        )
                         paused = True
                     elif event.key == pygame.K_UP:
                         speed = min(speed * 2.0, MAX_SPEED)
