@@ -91,7 +91,7 @@ class Hf(DarkGreenCard):
         return True
     
     def update(self, game_state: GameState) -> None:
-        self.extra_damage = card_settings["HF"]["damage_bonus"] if self.health < 4 else 0
+        self.extra_damage = card_settings["HF"]["damage_bonus"] if self.health <= 4 else 0
 
     def on_refresh(self, game_state: GameState) -> int:
         self.damage_calculate(card_settings["HF"]["turn_start_health_loss"], self, game_state, False)
