@@ -90,7 +90,7 @@ class Tank(BrownCard):
     def on_refresh(self, game_state: GameState) -> int:
         super().on_refresh(game_state)
         if not self.attacked_this_turn and not self.effects_off():
-            self.damage_calculate(card_settings["TANK"]["self_health_loss"], self, game_state, False)
+            self.damage_calculate(card_settings["TANK"]["turn_start_health_loss"], self, game_state, False)
         self.attacked_this_turn = False
         return 0
 
