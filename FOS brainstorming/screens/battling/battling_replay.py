@@ -235,6 +235,8 @@ def _rebuild_and_fast_forward(
 
     game_state._attack_anim_cursor = 0.0
 
+    _skip_toggle_hints(source)
+
 
 def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed: float, save_log: bool) -> None:
     x = game_screen.block_size * 0.3
@@ -292,6 +294,13 @@ def _collect_action_types(source: ReplaySource) -> list[str]:
         action = source.next_action()
     source.seek_to_action(saved)
     return types
+
+
+def _skip_toggle_hints(source: ReplaySource) -> None:
+    next = source.peek_action()
+    while next is not None and next.action_type == "toggle_hint":
+        source.next_action()
+        next = source.peek_action()
 
 
 def _prev_real_action_index(action_types: list[str], cursor: int) -> int:
@@ -414,6 +423,8 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
     game_state.player1.start_time = -1
     game_state.player2.start_time = -1
 
+    _skip_toggle_hints(source)
+
     paused: bool = True
     speed: float = 1.0
     step_once: bool = False
@@ -534,6 +545,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                     dispatcher._execute(action, game_state)
                     controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
                     action_hold_remaining = _ACTION_HOLD
+                    _skip_toggle_hints(source)
                 else:
                     paused = True
 
