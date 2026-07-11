@@ -40,12 +40,10 @@ def main(game_screen: GameScreen, stage: str) -> Optional[str]:
 
     start_button = Button(
         bs * 1.5, bs * 0.6, cx - bs * 0.75, cy + bs * 2,
-        bs * 0.4, bs * 0.15,
         box_width=box_width, font=game_screen.big_big_text_font, text="start",
     )
     back_button = Button(
         bs * 1.5, bs * 0.6, bs * 0.5, bs * 0.5,
-        bs * 0.55, bs * 0.2,
         box_width=box_width, font=game_screen.big_text_font, text="back",
     )
 

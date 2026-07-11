@@ -47,9 +47,6 @@ def main(game_screen: GameScreen) -> Optional[str]:
 
     main_w, main_h = bs * 3.5, bs * 0.6
     main_x = cx - main_w / 2
-    text_x = bs * 0.25
-    text_y = bs * 0.15
-
     buttons: list[tuple[Button, str, bool]] = []
     start_y = cy - bs * 1.8
     for i, stage in enumerate(STAGE_ORDER):
@@ -65,7 +62,7 @@ def main(game_screen: GameScreen) -> Optional[str]:
             color = CLEARED_COLOR
         btn = Button(
             main_w, main_h, main_x, start_y + i * (main_h + bs * 0.15),
-            text_x, text_y,
+            position="Left", padding=bs * 0.25,
             box_width=box_width, font=game_screen.big_text_font,
             text=label, text_color=color, box_color=color,
         )
@@ -73,7 +70,6 @@ def main(game_screen: GameScreen) -> Optional[str]:
 
     back_button = Button(
         bs * 1.5, bs * 0.6, bs * 0.5, bs * 0.5,
-        bs * 0.55, bs * 0.2,
         box_width=box_width, font=game_screen.big_text_font, text="back",
     )
 

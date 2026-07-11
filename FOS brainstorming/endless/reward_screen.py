@@ -64,7 +64,6 @@ def main(game_screen: GameScreen, run: dict, options: list[dict], pending: dict)
                 pass
 
     skip_button = Button(bs * 2.2, bs * 0.55, cx - bs * 1.1, cy + bs * 2.1,
-                         bs * 0.3, bs * 0.13,
                          box_width=box_width, font=game_screen.big_text_font,
                          text="skip  (+10 coins)")
 

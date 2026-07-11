@@ -71,13 +71,11 @@ def main(game_screen: GameScreen, run: dict, spec: dict) -> None:
         built: list[tuple[str, Button]] = []
         if done:
             built.append(("continue", Button(btn_w, btn_h, btn_x, cy + bs * 0.6,
-                                             bs * 0.3, bs * 0.15,
                                              box_width=box_width, font=game_screen.big_text_font,
                                              text="continue")))
             return built
         for i, (choice_id, label) in enumerate(_choices_for(event_name, run)):
             built.append((choice_id, Button(btn_w, btn_h, btn_x, cy - bs * 0.4 + i * (btn_h + bs * 0.2),
-                                            bs * 0.25, bs * 0.15,
                                             box_width=box_width, font=game_screen.big_text_font,
                                             text=label)))
         return built
