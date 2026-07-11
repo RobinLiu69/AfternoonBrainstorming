@@ -28,6 +28,8 @@ from utils.controls import key_pressed
 from campaign.ai_decks import STAGE_ORDER, STAGE_LABELS
 from campaign import campaign_save
 
+from collections import deque
+
 
 LOCKED_COLOR: tuple[int, int, int] = (90, 90, 90)
 CLEARED_COLOR: tuple[int, int, int] = (255, 215, 0)
@@ -36,6 +38,12 @@ CLEARED_COLOR: tuple[int, int, int] = (255, 215, 0)
 def main(game_screen: GameScreen) -> Optional[str]:
     running = True
     box_width: int = int(game_screen.block_size / 30)
+    
+    target = [pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
+              pygame.K_LEFT, pygame.K_RIGHT, pygame.K_LEFT, pygame.K_RIGHT, 
+              pygame.K_b, pygame.K_a]
+    
+    buffer = deque(maxlen=len(target))
 
     bs = game_screen.block_size
     cx = game_screen.display_width / 2
@@ -82,9 +90,14 @@ def main(game_screen: GameScreen) -> Optional[str]:
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
+                buffer.append(event.key)
                 keys = pygame.key.get_pressed()
                 if key_pressed(keys) == pygame.K_ESCAPE:
                     running = False
+                if list(buffer) == target:
+                    for i, stage in enumerate(STAGE_ORDER):
+                        campaign_save.mark_cleared(stage)
+                    return None
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if back_button.touch(mouse_x, mouse_y):
                     running = False
