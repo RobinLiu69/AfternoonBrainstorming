@@ -38,6 +38,8 @@ def main(game_screen: GameScreen) -> Optional[Path]:
 
     selected: int = 0
     scroll_top: int = 0
+    renaming: bool = False
+    rename_text: str = ""
     clock = pygame.time.Clock()
     running: bool = True
     chosen: Optional[Path] = None
@@ -51,7 +53,27 @@ def main(game_screen: GameScreen) -> Optional[Path]:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+                if renaming:
+                    if event.key == pygame.K_RETURN:
+                        new_path = _commit_rename(replays[selected], rename_text)
+                        if new_path is not None:
+                            replays[selected] = new_path
+                        renaming = False
+                        pygame.key.set_repeat()
+                    elif event.key == pygame.K_ESCAPE:
+                        renaming = False
+                        pygame.key.set_repeat()
+                    elif event.key == pygame.K_BACKSPACE:
+                        rename_text = rename_text[:-1]
+                    elif event.key == pygame.K_c and event.mod & (pygame.KMOD_CTRL | pygame.KMOD_META):
+                        _clipboard_put(rename_text)
+                    elif event.key == pygame.K_v and event.mod & (pygame.KMOD_CTRL | pygame.KMOD_META):
+                        rename_text += _clipboard_get()
+                    elif event.mod & (pygame.KMOD_CTRL | pygame.KMOD_META):
+                        pass
+                    elif event.unicode and event.unicode.isprintable():
+                        rename_text += event.unicode
+                elif event.key == pygame.K_ESCAPE:
                     running = False
                 elif event.key == pygame.K_UP:
                     selected = max(0, selected - 1)
@@ -60,6 +82,12 @@ def main(game_screen: GameScreen) -> Optional[Path]:
                 elif event.key == pygame.K_RETURN:
                     chosen = replays[selected]
                     running = False
+                elif event.key == pygame.K_r:
+                    renaming = True
+                    rename_text = replays[selected].stem
+                    pygame.key.set_repeat(400, 40)
+            elif renaming:
+                pass
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 clicked_idx = _row_at(mouse_y, scroll_top, game_screen)
                 if clicked_idx is not None and 0 <= clicked_idx < len(replays):
@@ -76,11 +104,12 @@ def main(game_screen: GameScreen) -> Optional[Path]:
         elif selected >= scroll_top + VISIBLE_ROWS:
             scroll_top = selected - VISIBLE_ROWS + 1
 
-        _draw(game_screen, replays, selected, scroll_top)
+        _draw(game_screen, replays, selected, scroll_top, renaming, rename_text)
 
         pygame.display.update()
         clock.tick(60)
 
+    pygame.key.set_repeat()
     return chosen
 
 
@@ -95,8 +124,46 @@ def _row_at(mouse_y: int, scroll_top: int, game_screen: GameScreen) -> Optional[
     return scroll_top + offset
 
 
+def _clipboard_get() -> str:
+    try:
+        if hasattr(pygame.scrap, "get_text"):
+            text = pygame.scrap.get_text()
+        else:
+            if not pygame.scrap.get_init():
+                pygame.scrap.init()
+            data = pygame.scrap.get(pygame.SCRAP_TEXT)
+            text = data.decode("utf-8", "ignore") if data else ""
+        return "".join(c for c in text if c.isprintable())
+    except Exception:
+        return ""
+
+
+def _clipboard_put(text: str) -> None:
+    try:
+        if hasattr(pygame.scrap, "put_text"):
+            pygame.scrap.put_text(text)
+        else:
+            if not pygame.scrap.get_init():
+                pygame.scrap.init()
+            pygame.scrap.put(pygame.SCRAP_TEXT, text.encode("utf-8"))
+    except Exception:
+        pass
+
+
+def _commit_rename(path: Path, new_name: str) -> Optional[Path]:
+    new_name = "".join(c for c in new_name.strip() if c not in '\\/:*?"<>|')
+    if not new_name or new_name == path.stem:
+        return None
+    new_path = path.with_name(new_name + path.suffix)
+    if new_path.exists():
+        return None
+    path.rename(new_path)
+    return new_path
+
+
 def _draw(game_screen: GameScreen, replays: list[Path],
-          selected: int, scroll_top: int) -> None:
+          selected: int, scroll_top: int,
+          renaming: bool, rename_text: str) -> None:
     cx = game_screen.display_width / 2
     top = game_screen.display_height / 2 - game_screen.block_size * 2.3
 
@@ -111,13 +178,17 @@ def _draw(game_screen: GameScreen, replays: list[Path],
         path = replays[i]
         is_selected = (i == selected)
         prefix = "> " if is_selected else "  "
-        label = f"{prefix}{path.stem}"
+        if is_selected and renaming:
+            cursor = "|" if pygame.time.get_ticks() // 500 % 2 == 0 else " "
+            label = f"{prefix}{rename_text}{cursor}"
+        else:
+            label = f"{prefix}{path.stem}"
         y = list_top + (i - scroll_top) * row_h
         draw_text(label, game_screen.mid_text_font, WHITE,
                   cx - game_screen.block_size * 2.5, y, game_screen.surface)
 
     footer_y = game_screen.display_height - game_screen.block_size * 0.5
-    draw_text("UP/DOWN select    ENTER confirm    ESC back",
+    draw_text("UP/DOWN select    ENTER confirm    R rename    ESC back",
               game_screen.mid_text_font, WHITE,
               cx - game_screen.block_size * 2.5, footer_y, game_screen.surface)
 
