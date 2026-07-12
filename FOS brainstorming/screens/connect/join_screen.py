@@ -17,6 +17,8 @@
 # -----------------------------------------------------------------
 
 import re
+import subprocess
+import sys
 
 import pygame
 
@@ -30,6 +32,21 @@ def main(game_screen: GameScreen, default: str = "") -> str:
         return _input_loop(game_screen, default)
     finally:
         pygame.key.set_repeat()
+
+
+def _clipboard_get() -> str:
+    try:
+        if sys.platform == "darwin":
+            text = subprocess.run(["pbpaste"], capture_output=True,
+                                  text=True, timeout=2).stdout
+        else:
+            if not pygame.scrap.get_init():
+                pygame.scrap.init()
+            data = pygame.scrap.get(pygame.SCRAP_TEXT)
+            text = data.decode("utf-8", "ignore") if data else ""
+        return "".join(c for c in text if c.isprintable())
+    except Exception:
+        return ""
 
 
 def _input_loop(game_screen: GameScreen, default: str = "") -> str:
@@ -54,11 +71,8 @@ def _input_loop(game_screen: GameScreen, default: str = "") -> str:
                 if event.key == pygame.K_BACKSPACE:
                     text = text[:-1]
                     continue
-                if event.key == pygame.K_v and (event.mod & pygame.KMOD_CTRL):
-                    try:
-                        pasted = pygame.scrap.get_text() or ""
-                    except pygame.error:
-                        pasted = ""
+                if event.key == pygame.K_v and event.mod & (pygame.KMOD_CTRL | pygame.KMOD_META):
+                    pasted = _clipboard_get()
                     match = re.search(r"\d{1,3}(?:\.\d{1,3}){3}", pasted)
                     if match:
                         text = match.group(0)
