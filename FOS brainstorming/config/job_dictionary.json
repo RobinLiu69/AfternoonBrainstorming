@@ -1,29 +1,40 @@
 {
     "colors_dict": {
         "W": "White",
-        "R": "Red",
+        "R": "Red", "BR": "Brown",
         "G": "Green",
         "B": "Blue",
         "O": "Orange",
         "DKG": "DarkGreen",
         "C": "Cyan",
         "F": "Fuchsia",
-        "BR": "Brown",
         "P": "Purple"
     },
 
+    "colors_array": [
+        [{"W": "White"}],
+        [{"R": "Red"}, {"BR": "Brown"}],
+        [{"G": "Green"}],
+        [{"B": "Blue"}],
+        [{"O": "Orange"}],
+        [{"DKG": "DarkGreen"}],
+        [{"C": "Cyan"}],
+        [{"F": "Fuchsia"}],
+        [{"P": "Purple"}]
+    ],
+
     "RGB_colors": {
-      "White": "255, 255, 255",
-      "Red": "255, 0, 0",
-      "Green": "51, 255, 51",
-      "Blue": "60, 100, 225",
-      "Orange": "255, 69, 0",
-      "DarkGreen": "85, 107, 47",
-      "Cyan": "0, 238, 238",
-      "Fuchsia": "159, 0, 80",
-      "Brown": "139, 69, 19",
-      "Purple": "128, 0, 255",
-      "Black": "0, 0, 0"
+      "White": [255, 255, 255],
+      "Red": [255, 0, 0],
+      "Green": [51, 255, 51],
+      "Blue": [60, 100, 225],
+      "Orange": [255, 69, 0],
+      "DarkGreen": [85, 107, 47],
+      "Cyan": [0, 238, 238],
+      "Fuchsia": [159, 0, 80],
+      "Brown": [139, 69, 19],
+      "Purple": [128, 0, 255],
+      "Black": [0, 0, 0]
     },
 
     "attack_type_tags": {

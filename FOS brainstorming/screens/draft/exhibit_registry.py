@@ -35,19 +35,24 @@ class ExhibitRegistry:
 
     def _build_pages(self) -> list[list[Card]]:
         pages = []
-        for color_tag, color_name in JOB_DICTIONARY["colors_dict"].items():
-            available = CARD_SETTING.get(color_name, {}).keys()
-            page: list[Card] = []
-            for job, pos in zip(_JOB_ORDER, _POSITIONS):
-                key = job + color_tag
-                if job not in available:
-                    continue
-                if key not in CardFactory._registry:
-                    continue
-                try:
-                    page.append(CardFactory.create(key, "display", *pos))
-                except ValueError:
-                    pass
+        for page_array in JOB_DICTIONARY["colors_array"]:
+            page: list[list[Card]] = []
+            for color_dict in page_array:
+                color: list[Card] = []
+                for color_tag, color_name in color_dict.items():
+                    available = CARD_SETTING.get(color_name, {}).keys()
+                    for job, pos in zip(_JOB_ORDER, _POSITIONS):
+                        key = job + color_tag
+                        if job not in available:
+                            continue
+                        if key not in CardFactory._registry:
+                            continue
+                        try:
+                            color.append(CardFactory.create(key, "display", *pos))
+                        except ValueError:
+                            pass
+                if color:
+                    page.append(color)
             if page:
                 pages.append(page)
         return pages
@@ -63,17 +68,26 @@ class ExhibitRegistry:
 
     def page_count(self) -> int:
         return len(self._pages)
+    
+    def index_count(self, page: int) -> int:
+        return len(self._pages[page]) if page < len(self._pages) else 0
 
-    def get_page(self, page: int) -> list[Card]:
-        return self._pages[page] if page < len(self._pages) else []
+    def get_page(self, page: int, index: int) -> list[Card]:
+        return self._pages[page][index] if page < len(self._pages) and index < len(self._pages[page]) else []
 
+    def get_page_colors(self, page: int) -> list[tuple[int, int, int]]:
+        color_names: list[str] = []
+        for color_tag, color_name in JOB_DICTIONARY["colors_array"][page].items():
+            color_names.append(tuple(JOB_DICTIONARY["RGB_colors"][color_name]))
+        return color_names
+                
     def get_magic_row(self) -> list[Card]:
         return self._magic_row
 
-    def card_name_at(self, page: int, board_x: Optional[int], board_y: Optional[int]) -> str:
+    def card_name_at(self, page: int, index: int, board_x: Optional[int], board_y: Optional[int]) -> str:
         if board_x is None or board_y is None:
             return "None"
-        for card in self.get_page(page):
+        for card in self.get_page(page, index):
             if card.board_x == board_x and card.board_y == board_y:
                 return card.job_and_color
         for card in self._magic_row:

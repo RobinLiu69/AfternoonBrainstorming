@@ -211,7 +211,7 @@ class Card(ABC):
     @final
     def get_RGB_color(self) -> tuple[int, int, int]:
         if not self.color_name: raise ValueError("color_name must be string.")
-        return cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"][self.color_name].split(", "))))
+        return tuple(JOB_DICTIONARY["RGB_colors"][self.color_name])
     
     def _compute_shape_points(self) -> tuple[tuple[float, float], ...]:
         match self.job:
