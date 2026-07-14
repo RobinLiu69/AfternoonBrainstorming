@@ -371,6 +371,9 @@ class Card(ABC):
             attacker.after_damage_calculated(self, value, game_state)
         return True
     
+    def set_nullify(self, nullify: bool, game_state: GameState) -> None:
+        self.nullify = nullify
+    
     def heal(self, value: int, game_state: GameState) -> bool:
         if self.health+value <= self.max_health:
             self.health += value

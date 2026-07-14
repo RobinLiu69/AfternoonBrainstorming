@@ -97,8 +97,8 @@
             "damage": 2
         },
         "TANK": {
-            "health": 8,
-            "damage": 2
+            "health": 9,
+            "damage": 1
         },
         "HF": {
             "health": 8,

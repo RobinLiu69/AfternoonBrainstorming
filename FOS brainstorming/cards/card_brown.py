@@ -39,11 +39,11 @@ class BrownCard(Card):
 
     def effects_off(self) -> bool:
         return self.effects_disabled
-
-    def on_refresh(self, game_state: GameState) -> int:
-        if not any(card for card in game_state.get_player_cards(self.owner) if card.job_and_color == "SPBR"):
-            self.effects_disabled = False
-        return 0
+    
+    def deploy(self, game_state: GameState) -> None:
+        if any(card for card in game_state.get_player_cards(self.owner) if card.job_and_color == "SPBR" and card.anger):
+            self.effects_disabled = True
+        return
 
 
 class Adc(BrownCard):
@@ -149,14 +149,19 @@ class Apt(BrownCard):
                  damage: int = card_settings["APT"]["damage"]) -> None:
 
         super().__init__(owner=owner, job_and_color="APTBR", health=health, damage=damage, board_x=board_x, board_y=board_y)
-
+        
     def deploy(self, game_state: GameState) -> None:
+        super().deploy(game_state)
+        if self.effects_off():
+            return
         shield = card_settings["APT"]["on_play_enemy_shield"]
         for card in game_state.get_opponent_cards(self.owner):
             if card.health > 0:
                 card.armor += shield
                 
     def on_refresh(self, game_state: GameState) -> int:
+        if self.effects_off():
+            return 0
         shield = card_settings["APT"]["on_refresh_enemy_shield"]
         for card in game_state.get_opponent_cards(self.owner):
             if card.health > 0:
@@ -164,8 +169,6 @@ class Apt(BrownCard):
         return 0
 
     def ability(self, target: Card, game_state: GameState) -> bool:
-        if self.effects_off():
-            return False
         buff = card_settings["APT"]["on_attack_buff_nearest_ally"]
         bonus = card_settings["APT"]["bonus_if_giant"]
         for ally in self.detection(
@@ -190,6 +193,19 @@ class Sp(BrownCard):
 
     def ability(self, target: Card, game_state: GameState) -> bool:
         self.anger = True
+        for card in game_state.get_player_cards(self.owner):
+            if card is not self and isinstance(card, BrownCard):
+                card.effects_disabled = True
+        return True
+    
+    def set_nullify(self, nullify: bool, game_state: GameState) -> None:
+        if nullify:
+            for card in game_state.get_player_cards(self.owner):
+                if card is not self and isinstance(card, BrownCard):
+                    card.effects_disabled = True
+        return
+    
+    def been_killed(self, attacker: Card, game_state: GameState) -> bool:
         for card in game_state.get_player_cards(self.owner):
             if card is not self and isinstance(card, BrownCard):
                 card.effects_disabled = True
