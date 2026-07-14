@@ -36,18 +36,18 @@ class BlueCard(Card):
     def got_token(self, game_state: GameState) -> None:
         cards = game_state.get_player_cards(self.owner)
         for card in cards:
-            if isinstance(card, BlueCard):
+            if isinstance(card, BlueCard) and not card.nullify:
                 card.after_token(game_state)
-        
+
         if game_state.players_token[self.owner] // game_state.how_many_token_to_draw_a_card >= 1:
             game_state.players_token[self.owner] -= game_state.how_many_token_to_draw_a_card
             game_state.card_to_draw[self.owner] += 1
             game_state.game_statistics.increment(StatType.TOKEN_USE, self.owner, 1)
             self.draw_card_effect(game_state)
-        
+
     def draw_card_effect(self, game_state: GameState) -> None:
         for card in game_state.get_player_cards(self.owner):
-            if isinstance(card, BlueCard):
+            if isinstance(card, BlueCard) and not card.nullify:
                 card.token_draw(game_state)
 
     def token_draw(self, game_state: GameState) -> bool:
@@ -110,8 +110,8 @@ class Hf(BlueCard):
                  damage:int = card_settings["HF"]["damage"]) -> None:
         
         super().__init__(owner=owner, job_and_color="HFB", health=health, damage=damage, board_x=board_x, board_y=board_y)
-    
-    def update(self, game_state: GameState) -> None:
+
+    def on_update(self, game_state: GameState) -> None:
         self.extra_damage = game_state.players_token[self.owner]
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
@@ -151,7 +151,7 @@ class Apt(BlueCard):
 
         super().__init__(owner=owner, job_and_color="APTB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def update(self, game_state: GameState) -> None:
+    def on_update(self, game_state: GameState) -> None:
         self.extra_damage = self.armor//card_settings["APT"]["token_from_armor_divisor"]
     
     def after_damage_calculated(self, target: Card, value: int, game_state: GameState) -> bool:

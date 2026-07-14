@@ -111,7 +111,7 @@ class Hf(RedCard):
             card.damage += card_settings["HF"]["damage_increase"]
         return True
 
-    def can_be_killed(self, game_state: GameState) -> bool:
+    def on_can_be_killed(self, game_state: GameState) -> bool:
         if self.anger:
             return False
         else:

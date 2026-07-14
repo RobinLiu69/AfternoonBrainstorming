@@ -53,7 +53,7 @@ class Adc(BrownCard):
 
         super().__init__(owner=owner, job_and_color="ADCBR", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         attacked = self.launch_attack(self.attack_types, game_state)
         self.hit_cards.clear()
         if attacked and not self.effects_off():
@@ -74,7 +74,6 @@ class Ap(BrownCard):
         game_state.card_to_draw[game_state.get_opponent_name(self.owner)] += card_settings["AP"]["on_attack_enemy_draw"]
         return True
 
-
 class Tank(BrownCard):
     def __init__(self, owner: str, board_x: int, board_y: int,
                  health: int = card_settings["TANK"]["health"],
@@ -82,17 +81,16 @@ class Tank(BrownCard):
 
         super().__init__(owner=owner, job_and_color="TANKBR", health=health, damage=damage, board_x=board_x, board_y=board_y)
         self.attacked_this_turn = False
-
+    
     def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
-        self.attacked_this_turn = True
+        if not self.effects_off():
+            for card in self.detection(
+                "nearest", filter(
+                    lambda card: card != self, game_state.get_player_cards(self.owner)
+                ), game_state
+            ):
+                card.numbness = True
         return True
-
-    def on_refresh(self, game_state: GameState) -> int:
-        super().on_refresh(game_state)
-        if not self.attacked_this_turn and not self.effects_off():
-            self.damage_calculate(card_settings["TANK"]["turn_start_health_loss"], self, game_state, False)
-        self.attacked_this_turn = False
-        return 0
 
 
 class Hf(BrownCard):
@@ -103,8 +101,8 @@ class Hf(BrownCard):
         super().__init__(owner=owner, job_and_color="HFBR", health=health, damage=damage, board_x=board_x, board_y=board_y)
         self.attack_uses = card_settings["HF"]["attack_uses"]
 
-    def attack(self, game_state: GameState) -> bool:
-        attack_success = super().attack(game_state)
+    def on_attack(self, game_state: GameState) -> bool:
+        attack_success = super().on_attack(game_state)
         if self.effects_disabled:
             self.attack_uses = 1
         else:
@@ -157,6 +155,13 @@ class Apt(BrownCard):
         for card in game_state.get_opponent_cards(self.owner):
             if card.health > 0:
                 card.armor += shield
+                
+    def on_refresh(self, game_state: GameState) -> int:
+        shield = card_settings["APT"]["on_refresh_enemy_shield"]
+        for card in game_state.get_opponent_cards(self.owner):
+            if card.health > 0:
+                card.armor += shield
+        return 0
 
     def ability(self, target: Card, game_state: GameState) -> bool:
         if self.effects_off():

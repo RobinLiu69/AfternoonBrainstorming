@@ -85,7 +85,7 @@ class Adc(CyanCard):
                          board_x=board_x, board_y=board_y)
         self.upgrade = upgrade
         
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             if self.upgrade:
                 self.launch_attack(self.attack_types, game_state)
@@ -183,7 +183,7 @@ class Hf(CyanCard):
             self.damage += card_settings["HF"]["damage_bonus"]
         return True
     
-    def can_be_killed(self, game_state: GameState) -> bool:
+    def on_can_be_killed(self, game_state: GameState) -> bool:
         if self.anger:
             return False
         else:

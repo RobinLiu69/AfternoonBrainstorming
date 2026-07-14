@@ -45,7 +45,7 @@ class Adc(DarkGreenCard):
 
         super().__init__(owner=owner, job_and_color="ADCDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def update(self, game_state: GameState) -> None:
+    def on_update(self, game_state: GameState) -> None:
         self.extra_damage = game_state.players_totem[self.owner] // card_settings["ADC"]["damage_divisor"]
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
@@ -90,7 +90,7 @@ class Hf(DarkGreenCard):
         self.heal(1, game_state)
         return True
     
-    def update(self, game_state: GameState) -> None:
+    def on_update(self, game_state: GameState) -> None:
         self.extra_damage = card_settings["HF"]["damage_bonus"] if self.health <= 4 else 0
 
     def on_refresh(self, game_state: GameState) -> int:
@@ -126,7 +126,7 @@ class Ass(DarkGreenCard):
         
         super().__init__(owner=owner, job_and_color="ASSDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def update(self, game_state: GameState) -> None:
+    def on_update(self, game_state: GameState) -> None:
         self.extra_damage = game_state.players_totem[self.owner] // card_settings["ASS"]["damage_divisor"]
 
     def killed(self, victim: Card, game_state: GameState) -> bool:
@@ -145,7 +145,7 @@ class Apt(DarkGreenCard):
         
         super().__init__(owner=owner, job_and_color="APTDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def update(self, game_state: GameState) -> None:
+    def on_update(self, game_state: GameState) -> None:
         self.extra_damage = game_state.players_totem[self.owner] // 2
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:

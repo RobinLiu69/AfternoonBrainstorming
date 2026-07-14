@@ -252,7 +252,7 @@ class Apt(GreenCard):
         
         super().__init__(owner=owner, job_and_color="APTG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         return False
 
     def on_refresh(self, game_state: GameState) -> int:

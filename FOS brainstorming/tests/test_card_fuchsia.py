@@ -167,4 +167,6 @@ class TestFuchsiaApt:
         before = apt.armor
         result = apt.on_field_effect_trigger(ally, 10, attacker, gs)
         assert result is not None
+        priority, apply = result
+        assert apply(10) == 5
         assert apt.armor == before + 5

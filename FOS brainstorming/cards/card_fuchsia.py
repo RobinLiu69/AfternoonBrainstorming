@@ -18,9 +18,9 @@
 
 from __future__ import annotations
 import math
-from typing import Callable, Iterable, Optional, TYPE_CHECKING
+from typing import Iterable, Optional, TYPE_CHECKING
 
-from cards.base import CardRenderData
+from cards.base import CardRenderData, FieldEffect, FIELD_EFFECT_NORMAL
 from shared.setting import CARD_SETTING, ANIM_LUNGE_STEP
 from cards.factory import CardFactory
 from cards.base import Card
@@ -55,7 +55,7 @@ class FuchsiaCard(Card):
             render_objects += shadow.get_render_data()
         return render_objects
     
-    def update(self, game_state: GameState) -> None:
+    def on_update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
 
@@ -158,6 +158,7 @@ class Shadow(FuchsiaCard):
                 owner=self.owner,
                 shape_type="circle" if self.job == "AP" else "polygon",
                 shape_points=shape_points,
+                nullify=self.nullify,
                 use_sprite=False,
                 sprite_key=self.job_and_color,
                 sprite_alpha=255,
@@ -165,7 +166,7 @@ class Shadow(FuchsiaCard):
                 show_stats=False
         )]
     
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.linker.job_and_color == "LFF":
             candidates = game_state.get_opponent_cards(self.owner)
         else:
@@ -215,7 +216,7 @@ class Adc(FuchsiaCard):
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
             self.spawn_shadow(self.owner, board_x, board_y)
 
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             for shadow in self.shadows:
                 shadow.attack(game_state)
@@ -276,7 +277,7 @@ class Tank(FuchsiaCard):
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
             self.spawn_shadow(self.owner, board_x, board_y)
             
-    def update(self, game_state: GameState) -> None:
+    def on_update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             game_state.board_dict[shadow.board_x, shadow.board_y].occupy = True
             shadow.update(game_state)
@@ -311,7 +312,7 @@ class Hf(FuchsiaCard):
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
             self.spawn_shadow(self.owner, board_x, board_y)
 
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             for shadow in self.shadows:
                 shadow.attack(game_state)
@@ -328,7 +329,7 @@ class Hf(FuchsiaCard):
                     return True
             return False
 
-    def update(self, game_state: GameState) -> None:
+    def on_update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
 
@@ -346,7 +347,7 @@ class Lf(FuchsiaCard):
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
             self.spawn_shadow(self.owner, board_x, board_y)
 
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             body_hits = list(self.hit_cards)
             for shadow in self.shadows:
@@ -384,7 +385,7 @@ class Ass(FuchsiaCard):
             shadow.die(game_state)
         return False
     
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         temp_shadow_list = self.shadows.copy()
         if self.launch_attack(self.attack_types, game_state):
             for shadow in temp_shadow_list:
@@ -416,11 +417,13 @@ class Apt(FuchsiaCard):
             board_x, board_y = game_state.board_config.get_symmetric_pos(self.board_x, self.board_y)
             self.spawn_shadow(self.owner, board_x, board_y)
 
-    def on_field_effect_trigger(self, victim: Card, value: int, attacker: Card, game_state: GameState) -> tuple[int, int, Callable[[Card, int, Card, GameState], None] | None] | None:
+    def on_field_effect_trigger(self, victim: Card, value: int, attacker: Card, game_state: GameState) -> Optional[FieldEffect]:
         for shadow in self.shadows:
             if (self.health > 0 and victim.owner == self.owner and shadow.is_same_location(victim) and victim != self):
-                self.armor += math.floor(value * 0.5)
-                return (20, math.ceil(value * 0.5), None)
+                def absorb_half(current: int) -> int:
+                    self.armor += math.floor(current * 0.5)
+                    return math.ceil(current * 0.5)
+                return (FIELD_EFFECT_NORMAL, absorb_half)
         return None
 
 
