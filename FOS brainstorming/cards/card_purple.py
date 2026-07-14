@@ -68,6 +68,8 @@ class Ap(PurpleCard):
         target.numbness = True
         target.armor = 0
         target.damage = target.original_damage
+        target.extra_damage = 0
+        target.nullify = True
         return True
 
 

@@ -49,6 +49,12 @@ def reset_instance_counter() -> None:
 Elements = TypeVar("Elements")
 CardType = TypeVar("CardType", bound="Card")
 
+FieldEffect = tuple[int, Callable[[int], int]]
+
+FIELD_EFFECT_EARLY = 10
+FIELD_EFFECT_NORMAL = 20
+FIELD_EFFECT_LATE = 30
+
 
 def most_frequent_elements(lst: list[Elements], min_count: int = 0) -> list[Elements]:
     unique_elements: list[Elements] = []
@@ -91,6 +97,7 @@ class CardRenderData:
     owner: str
     shape_type: str
     shape_points: tuple
+    nullify: bool
     
     use_sprite: bool = True
     sprite_key: str = ""
@@ -119,6 +126,7 @@ class Card(ABC):
     moving: bool = field(init=False, default=False)
     mouse_selected: bool = field(init=False, default=False)
     been_targeted: bool = field(init=False, default=False)
+    nullify: bool = field(init=False, default=False)
     
     armor: int = 0
     attack_uses: int = 1
@@ -272,13 +280,15 @@ class Card(ABC):
                 )
             )
 
-            self.after_movement(board_x, board_y, game_state)
-            
+            if not self.nullify:
+                self.after_movement(board_x, board_y, game_state)
+
             for card in game_state.get_all_cards():
-                card.move_broadcast(self, game_state)
-            
+                if not card.nullify:
+                    card.move_broadcast(self, game_state)
+
             return True
-        self.moving = False
+        self.moving = True
         return False
 
     def custom_move(self, board_x: int, board_y: int, game_state: GameState) -> bool:
@@ -287,134 +297,79 @@ class Card(ABC):
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
         pass
 
-    def special_damage_interceptor(self, value: int, attacker: "Card", game_state: GameState) -> int:
-        modifiers: list[tuple[int, int, Optional[Callable[["Card", int, "Card", GameState], None]]]] = []
-
+    @final
+    def apply_field_effects(self, value: int, attacker: "Card", game_state: GameState) -> int:
+        effects: list[FieldEffect] = []
         for source in game_state.get_all_cards():
-            res = source.on_field_effect_trigger(self, value, attacker, game_state)
-            if res:
-                modifiers.append(res)
-        
-        modifiers.sort(key=lambda x: x[0])
+            if source.nullify:
+                continue
+            effect = source.on_field_effect_trigger(self, value, attacker, game_state)
+            if effect:
+                effects.append(effect)
 
-        final_value = value
-        for priority, modified_val, feedback_function in modifiers:
-            final_value = modified_val
-            if feedback_function:
-                feedback_function(self, final_value, attacker, game_state)
-        
-        return final_value
+        effects.sort(key=lambda effect: effect[0])
+
+        for _, apply in effects:
+            value = apply(value)
+
+        return value
 
     @final
     def damage_calculate(self, value: int, attacker: "Card", game_state: GameState, ability: bool = True, anim_delay: float = 0.0) -> bool:
         if self.health <= 0: return False
         attacker.hit_cards.append(self)
-        if self.damage_block(value, attacker, game_state): return False
-        
-        if ability:
-            if attacker.ability(self, game_state):
-                game_state.game_statistics.increment(StatType.ABILITY, attacker.get_uid(), 1)
-                attacker.ability_signal(self, game_state)
-        
-        value = attacker.damage_bonus(value, self, game_state)
-        
-        value = self.damage_reduce(value, game_state)
-        
-        value = self.special_damage_interceptor(value, attacker, game_state)
-        
-        if self.armor > 0 and self.armor >= value:
-            game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
-            game_state.game_statistics.add_damage_taken(self.get_uid(), value)
-            game_state.game_logger.log_attack(attacker.get_uid(),attacker.get_position(),
-                                              self.get_uid(), self.get_position(), value)
-            self.armor -= value
+        if not self.nullify and self.damage_block(value, attacker, game_state): return False
 
-            game_state.pending_combat_events.append(
-                CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
-            )
-            game_state.pending_combat_events.append(
-                CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
-            )
+        if ability and not attacker.nullify and attacker.ability(self, game_state):
+            game_state.game_statistics.increment(StatType.ABILITY, attacker.get_uid(), 1)
 
+        if attacker.nullify:
+            value = value + attacker.extra_damage
+        else:
+            value = attacker.damage_bonus(value, self, game_state)
+
+        if not self.nullify:
+            value = self.damage_reduce(value, game_state)
+
+        value = self.apply_field_effects(value, attacker, game_state)
+
+        value = min(value, self.armor + self.health)
+        absorbed = min(self.armor, value)
+        self.armor -= absorbed
+        self.health -= value - absorbed
+
+        game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
+        game_state.game_statistics.add_damage_taken(self.get_uid(), value)
+        game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
+                                          self.get_uid(), self.get_position(), value)
+
+        game_state.pending_combat_events.append(
+            CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
+        )
+        game_state.pending_combat_events.append(
+            CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
+        )
+
+        if not self.nullify:
             self.been_attacked(attacker, value, game_state)
-            self.been_attacked_signal(game_state)
-            attacker.after_damage_calculated(self, value, game_state)
-            return True
-        elif self.armor > 0 and self.armor < value:
-            if self.armor + self.health > value:
-                overflow_value = -(self.armor-value)
-                self.armor = 0
-                self.health -= overflow_value
-            else:
-                value = self.armor + self.health
-                self.armor = 0
-                self.health = 0
-            
-            game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
-            game_state.game_statistics.add_damage_taken(self.get_uid(), value)
-            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
-                                              self.get_uid(), self.get_position(), value)
 
-            game_state.pending_combat_events.append(
-                CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
-            )
-            game_state.pending_combat_events.append(
-                CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
-            )
-
-            self.been_attacked(attacker, value, game_state)
-            self.been_attacked_signal(game_state)
-            
-            if self.health == 0:
-                game_state.game_statistics.add_kill(attacker.get_uid())
-                game_state.game_statistics.add_death(self.get_uid())
+        if self.health == 0:
+            game_state.game_statistics.add_kill(attacker.get_uid())
+            game_state.game_statistics.add_death(self.get_uid())
+            if not attacker.nullify:
                 attacker.killed(self, game_state)
-                attacker.killed_signal(self, game_state)
+            if not self.nullify:
                 self.been_killed(attacker, game_state)
-                self.been_killed_signal(attacker, game_state)
 
-                if self.can_be_killed(game_state):
-                    self.pending_death = True
-                    game_state.pending_combat_events.append(
-                        CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
-                    )
-                
+            if self.can_be_killed(game_state):
+                self.pending_death = True
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
+                )
+
+        if not attacker.nullify:
             attacker.after_damage_calculated(self, value, game_state)
-            return True
-        elif self.armor == 0:
-            if self.health < value:
-                value = self.health
-            game_state.game_statistics.add_damage_dealt(attacker.get_uid(), value)
-            game_state.game_statistics.add_damage_taken(self.get_uid(), value)
-            game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
-                                              self.get_uid(), self.get_position(), value)
-            self.health -= value
-
-            game_state.pending_combat_events.append(
-                CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
-            )
-            game_state.pending_combat_events.append(
-                CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
-            )
-            
-            self.been_attacked(attacker, value, game_state)
-            self.been_attacked_signal(game_state)
-            attacker.after_damage_calculated(self, value, game_state)
-            if self.health == 0:
-                game_state.game_statistics.add_kill(attacker.get_uid())
-                game_state.game_statistics.add_death(self.get_uid())
-                attacker.killed(self, game_state)
-                attacker.killed_signal(self, game_state)
-                self.been_killed(attacker, game_state)
-                self.been_killed_signal(attacker, game_state)
-
-                if self.can_be_killed(game_state):
-                    self.pending_death = True
-                    game_state.pending_combat_events.append(
-                        CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
-                    )
-            return True
-        return False
+        return True
     
     def heal(self, value: int, game_state: GameState) -> bool:
         if self.health+value <= self.max_health:
@@ -451,15 +406,22 @@ class Card(ABC):
             owner=self.owner,
             shape_type="circle" if self.job == "AP" else "polygon",
             shape_points=self._compute_shape_points(),
+            nullify=self.nullify,
             use_sprite=False,
             sprite_key=self.job_and_color,
             sprite_alpha=255,
             render_shape=True if self.job != "CUBES" else False
         )]
 
+    @final
     def update(self, game_state: GameState) -> None:
+        if self.nullify:
+            return
+        self.on_update(game_state)
+
+    def on_update(self, game_state: GameState) -> None:
         return
-        
+
     def deploy(self, game_state: GameState) -> None:
         return
 
@@ -468,11 +430,8 @@ class Card(ABC):
     
     def ability(self, target: "Card", game_state: GameState) -> bool:
         return False
-    
-    def ability_signal(self, target: "Card", game_state: GameState) -> bool:
-        return False
 
-    def on_field_effect_trigger(self, victim: "Card", value: int, attacker: "Card", game_state: GameState) -> Optional[tuple[int, int, Optional[Callable[["Card", int, "Card", GameState], None]]]]:
+    def on_field_effect_trigger(self, victim: "Card", value: int, attacker: "Card", game_state: GameState) -> Optional[FieldEffect]:
         return None
     
     def after_damage_calculated(self, target: "Card", value: int, game_state: GameState) -> bool:
@@ -481,22 +440,13 @@ class Card(ABC):
     def killed(self, victim: "Card", game_state: GameState) -> bool:
         return False
 
-    def killed_signal(self, victim: "Card", game_state: GameState) -> bool:
-        return False
-
     def move_broadcast(self, target: "Card", game_state: GameState) -> bool:
         return False
 
     def been_attacked(self, attacker: "Card", value: int, game_state: GameState) -> bool:
         return False
 
-    def been_attacked_signal(self, game_state: GameState) -> bool:
-        return False
-
     def been_killed(self, attacker: "Card", game_state: GameState) -> bool:
-        return False
-
-    def been_killed_signal(self, victim: "Card", game_state: GameState) -> bool:
         return False
 
     def die(self, game_state: GameState) -> bool:
@@ -508,7 +458,13 @@ class Card(ABC):
     def damage_reduce(self, value: int, game_state: GameState) -> int:
         return value
 
+    @final
     def can_be_killed(self, game_state: GameState) -> bool:
+        if self.nullify:
+            return True
+        return self.on_can_be_killed(game_state)
+
+    def on_can_be_killed(self, game_state: GameState) -> bool:
         return True
     
     @final
@@ -626,7 +582,13 @@ class Card(ABC):
             use_ability=use_ability,
         ))
 
+    @final
     def attack(self, game_state: GameState) -> bool:
+        if self.nullify:
+            return Card.on_attack(self, game_state)
+        return self.on_attack(game_state)
+
+    def on_attack(self, game_state: GameState) -> bool:
         attack_success = self.launch_attack(self.attack_types, game_state)
         self.hit_cards.clear()
         return attack_success
@@ -694,7 +656,8 @@ class Card(ABC):
                 #     card.before_attack_broadcast(self, target, game_state)
                 if target.damage_calculate(self.damage, self, game_state, use_ability, anim_delay=hurt_delay):
                     for card in game_state.get_both_player_cards():
-                        card.after_attack_broadcast(self, target, game_state)
+                        if not card.nullify:
+                            card.after_attack_broadcast(self, target, game_state)
                 
                 game_state._attack_anim_cursor = base_delay + len(target_tuple) * ANIM_LUNGE_STEP
             return True
@@ -704,6 +667,8 @@ class Card(ABC):
     @final
     def refresh(self, game_state: GameState) -> None:
         self.moving = False
+        if self.nullify:
+            return
         self.on_refresh(game_state)
     
     @final
@@ -741,6 +706,7 @@ class Card(ABC):
             "moving": self.moving,
             "mouse_selected": self.mouse_selected,
             "been_targeted": self.been_targeted,
+            "nullify": self.nullify,
             "armor": self.armor,
             "attack_uses": self.attack_uses,
             "extra_damage": self.extra_damage,
@@ -773,6 +739,7 @@ class Card(ABC):
         self.moving = data["moving"]
         self.mouse_selected = data["mouse_selected"]
         self.been_targeted = data["been_targeted"]
+        self.nullify = data.get("nullify", False)
         self.armor = data["armor"]
         self.attack_uses = data["attack_uses"]
         self.extra_damage = data["extra_damage"]

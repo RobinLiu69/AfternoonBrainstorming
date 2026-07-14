@@ -42,7 +42,7 @@ class Adc(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="ADCO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             self.moving = True
             self.hit_cards.clear()
@@ -89,7 +89,7 @@ class Hf(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="HFO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             self.moving = True
             self.hit_cards.clear()
@@ -123,7 +123,7 @@ class Lf(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="LFO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             self.moving = True
             self.hit_cards.clear()

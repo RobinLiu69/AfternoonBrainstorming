@@ -17,7 +17,7 @@
             "damage": 1
         },
         "HF": {
-            "health": 9,
+            "health": 10,
             "damage": 2
         },
         "LF": {
@@ -362,7 +362,7 @@
     "Brown": {
         "ADC": {
             "health": 6,
-            "damage": 6
+            "damage": 5
         },
         "AP": {
             "health": 5,
@@ -370,12 +370,12 @@
             "on_attack_enemy_draw": 1
         },
         "TANK": {
-            "health": 20,
+            "health": 22,
             "damage": 1,
             "turn_start_health_loss": 4
         },
         "HF": {
-            "health": 11,
+            "health": 9,
             "damage": 5,
             "attack_uses": 2
         },
@@ -391,7 +391,8 @@
         "APT": {
             "health": 10,
             "damage": 3,
-            "on_play_enemy_shield": 2,
+            "on_play_enemy_shield": 1,
+            "on_refresh_enemy_shield": 1,
             "on_attack_buff_nearest_ally": {
                 "atk": 1,
                 "armor": 1
