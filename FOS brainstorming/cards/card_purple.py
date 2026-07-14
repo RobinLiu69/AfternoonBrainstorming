@@ -69,7 +69,7 @@ class Ap(PurpleCard):
         target.armor = 0
         target.damage = target.original_damage
         target.extra_damage = 0
-        target.nullify = True
+        target.set_nullify(True, game_state)
         return True
 
 
