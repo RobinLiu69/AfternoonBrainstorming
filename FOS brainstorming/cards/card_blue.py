@@ -64,7 +64,7 @@ class Adc(BlueCard):
         
         super().__init__(owner=owner, job_and_color="ADCB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         game_state.players_token[self.owner] += card_settings["ADC"]["token_gain"]
         self.got_token(game_state)
         return True
@@ -98,7 +98,7 @@ class Tank(BlueCard):
         
         super().__init__(owner=owner, job_and_color="TANKB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
+    def on_attacked_by(self, attacker: Card, value: int, game_state: GameState) -> bool:
         game_state.players_token[self.owner] += card_settings["TANK"]["token_gain"]
         for _ in range(card_settings["TANK"]["token_gain"]): self.got_token(game_state)
         return True
@@ -138,7 +138,7 @@ class Ass(BlueCard):
         
         super().__init__(owner=owner, job_and_color="ASSB", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         game_state.players_token[self.owner] += card_settings["ASS"]["token_gain"]
         for _ in range(card_settings["ASS"]["token_gain"]): self.got_token(game_state)
         return True

@@ -17,6 +17,7 @@
 # -----------------------------------------------------------------
 
 from __future__ import annotations
+import threading
 from abc import ABC
 from dataclasses import dataclass, field
 from typing import TypeVar, cast, Generator, Iterable, Optional, Callable, TYPE_CHECKING, final
@@ -33,17 +34,20 @@ if TYPE_CHECKING:
 COLOR_TAG_LIST: list[str] = sorted(JOB_DICTIONARY["colors_dict"].keys(), key=len, reverse=True)
 
 _instance_counter: int = 0
+_instance_counter_lock = threading.Lock()
 
- 
+
 def _next_instance_id() -> str:
     global _instance_counter
-    _instance_counter += 1
-    return f"c{_instance_counter}"
- 
- 
+    with _instance_counter_lock:
+        _instance_counter += 1
+        return f"c{_instance_counter}"
+
+
 def reset_instance_counter() -> None:
     global _instance_counter
-    _instance_counter = 0
+    with _instance_counter_lock:
+        _instance_counter = 0
 
 
 Elements = TypeVar("Elements")
@@ -285,7 +289,7 @@ class Card(ABC):
 
             for card in game_state.get_all_cards():
                 if not card.nullify:
-                    card.move_broadcast(self, game_state)
+                    card.on_card_moved(self, game_state)
 
             return True
         self.moving = True
@@ -351,15 +355,15 @@ class Card(ABC):
         )
 
         if not self.nullify:
-            self.been_attacked(attacker, value, game_state)
+            self.on_attacked_by(attacker, value, game_state)
 
         if self.health == 0:
             game_state.game_statistics.add_kill(attacker.get_uid())
             game_state.game_statistics.add_death(self.get_uid())
             if not attacker.nullify:
-                attacker.killed(self, game_state)
+                attacker.on_kill(self, game_state)
             if not self.nullify:
-                self.been_killed(attacker, game_state)
+                self.on_killed_by(attacker, game_state)
 
             if self.can_be_killed(game_state):
                 self.pending_death = True
@@ -440,19 +444,19 @@ class Card(ABC):
     def after_damage_calculated(self, target: "Card", value: int, game_state: GameState) -> bool:
         return False
     
-    def killed(self, victim: "Card", game_state: GameState) -> bool:
+    def on_kill(self, victim: "Card", game_state: GameState) -> bool:
         return False
 
-    def move_broadcast(self, target: "Card", game_state: GameState) -> bool:
+    def on_card_moved(self, target: "Card", game_state: GameState) -> bool:
         return False
 
-    def been_attacked(self, attacker: "Card", value: int, game_state: GameState) -> bool:
+    def on_attacked_by(self, attacker: "Card", value: int, game_state: GameState) -> bool:
         return False
 
-    def been_killed(self, attacker: "Card", game_state: GameState) -> bool:
+    def on_killed_by(self, attacker: "Card", game_state: GameState) -> bool:
         return False
 
-    def die(self, game_state: GameState) -> bool:
+    def on_death(self, game_state: GameState) -> bool:
         return False
 
     def damage_bonus(self, value: int, victim: "Card", game_state: GameState) -> int:
@@ -596,7 +600,7 @@ class Card(ABC):
         self.hit_cards.clear()
         return attack_success
     
-    def after_attack_broadcast(self, attacker: "Card", target: "Card", game_state: GameState) -> bool:
+    def on_attack_landed(self, attacker: "Card", target: "Card", game_state: GameState) -> bool:
         return False
 
     @final
@@ -660,7 +664,7 @@ class Card(ABC):
                 if target.damage_calculate(self.damage, self, game_state, use_ability, anim_delay=hurt_delay):
                     for card in game_state.get_both_player_cards():
                         if not card.nullify:
-                            card.after_attack_broadcast(self, target, game_state)
+                            card.on_attack_landed(self, target, game_state)
                 
                 game_state._attack_anim_cursor = base_delay + len(target_tuple) * ANIM_LUNGE_STEP
             return True

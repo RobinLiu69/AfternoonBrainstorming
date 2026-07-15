@@ -21,6 +21,7 @@ from dataclasses import dataclass
 
 from core.lobby_state import LobbyState, RECONNECT_TIMEOUT_OPTIONS
 from core.network_layer import LANServer, LANClient
+from core.network.messages import _send_msg
 from screens.lobby.lobby_action import LobbyAction
 
 
@@ -101,6 +102,8 @@ class LobbyDispatcher:
 
     def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
         payload = {k: v for k, v in envelope.items() if k != "type"}
+        if not self._sender_matches(payload.get("player"), sender_conn):
+            return
         try:
             action = LobbyAction(**payload)
         except TypeError as e:
@@ -109,6 +112,16 @@ class LobbyDispatcher:
         result = self._execute(action, sender_conn=sender_conn)
         if result.success:
             self._broadcast()
+
+    def _sender_matches(self, claimed_player, sender_conn) -> bool:
+        if sender_conn is None or not isinstance(self._network, LANServer):
+            return True
+        sender_role = self._network.find_role(sender_conn)
+        if not sender_role or claimed_player != sender_role:
+            print(f"[LobbyDispatcher] dropped action from {sender_role!r} "
+                  f"claiming to be {claimed_player!r}")
+            return False
+        return True
 
     def _send_to_server(self, action: LobbyAction) -> None:
         if not isinstance(self._network, LANClient):
@@ -172,6 +185,10 @@ class LobbyDispatcher:
                 new_role = "god" if self._network.god_view else "spectator"
                 self._network.reassign_role(conn, new_role)
                 self._network._peer_token = None
+                try:
+                    _send_msg(conn, {"type": "token", "token": ""})
+                except OSError:
+                    pass
                 self._refresh_roster()
                 return LobbyResult(True)
 
@@ -188,6 +205,10 @@ class LobbyDispatcher:
                 self._network._peer_token = new_token
                 peer_seat = self._network.peer_seat()
                 self._network.reassign_role(conn, peer_seat)
+                try:
+                    _send_msg(conn, {"type": "token", "token": new_token})
+                except OSError:
+                    pass
                 self._refresh_roster()
                 return LobbyResult(True)
 

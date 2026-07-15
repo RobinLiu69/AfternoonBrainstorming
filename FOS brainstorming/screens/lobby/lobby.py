@@ -139,6 +139,10 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
     draw_text("LOBBY", gs.title_text_font, WHITE,
               cx - bs * 0.7, cy - bs * 2.8, gs.surface)
 
+    if state.room_code:
+        draw_text(f"room: {state.room_code}", gs.text_font, WHITE,
+                  right_x, cy - bs * 2.35, gs.surface)
+
     draw_text("Settings", gs.text_font, WHITE,
               cx - bs * 3.3, cy - bs * 1.85, gs.surface)
 
@@ -274,7 +278,7 @@ def main(game_screen: GameScreen, mode: str,
                 return LobbyExit(kind="quit")
             if client.pending_scene is not None:
                 return LobbyExit(kind="start_match", state=state)
-            if state.local_role:
+            if state.local_role and client.pending_scene is None:
                 client.role = state.local_role
 
         if mode == "lan_server" and server is not None:

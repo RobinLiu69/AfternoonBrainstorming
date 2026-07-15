@@ -180,7 +180,7 @@ class Player:
         to_remove = []
         for card in self.on_board:
             if card.health <= 0 and card.can_be_killed(game_state):
-                card.die(game_state)
+                card.on_death(game_state)
                 game_renderer.dying_cards.append(card)
                 self.discard_pile.append(card.job_and_color)
                 game_state.board_dict[card.board_x, card.board_y].occupy = False

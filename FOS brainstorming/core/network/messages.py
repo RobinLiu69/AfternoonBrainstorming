@@ -22,6 +22,9 @@ import struct
 from typing import Optional
 
 
+MAX_MESSAGE_BYTES = 16 * 1024 * 1024
+
+
 def _recv_exactly(sock: socket.socket, n: int) -> Optional[bytes]:
     buf = b""
     while len(buf) < n:
@@ -42,6 +45,8 @@ def _recv_msg(sock: socket.socket) -> Optional[dict]:
     if raw_len is None:
         return None
     length = struct.unpack(">I", raw_len)[0]
+    if length > MAX_MESSAGE_BYTES:
+        raise ValueError(f"message too large: {length} bytes")
     raw_data = _recv_exactly(sock, length)
     if raw_data is None:
         return None

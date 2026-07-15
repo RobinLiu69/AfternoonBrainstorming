@@ -166,6 +166,7 @@ class GameState:
         data = self.to_dict()
         data["player1"] = self.player1.to_dict_for(viewer)
         data["player2"] = self.player2.to_dict_for(viewer)
+        data.pop("rng_seed", None)
         return data
 
     def apply_dict(self, data: dict, game_renderer: GameRenderer) -> None:

@@ -183,6 +183,8 @@ class BattlingDispatcher:
 
     def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
         payload = {k: v for k, v in envelope.items() if k != "type"}
+        if not self._sender_matches(payload.get("player"), sender_conn):
+            return
         try:
             action = GameAction(**payload)
         except TypeError as e:
@@ -195,6 +197,17 @@ class BattlingDispatcher:
             if result.quit and result.message:
                 self._broadcast_game_over(result.message, self._game_state)
                 self.pending_winner = result.message
+
+    def _sender_matches(self, claimed_player, sender_conn) -> bool:
+        from core.network_layer import LANServer
+        if sender_conn is None or not isinstance(self._network, LANServer):
+            return True
+        sender_role = self._network.find_role(sender_conn)
+        if not sender_role or claimed_player != sender_role:
+            print(f"[BattlingDispatcher] dropped action from {sender_role!r} "
+                  f"claiming to be {claimed_player!r}")
+            return False
+        return True
 
     def _send_to_server(self, action: GameAction) -> None:
         from core.network_layer import LANClient

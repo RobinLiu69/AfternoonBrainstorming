@@ -62,6 +62,13 @@ def _connect_failure_reason(error: Exception) -> str:
         return "Connection timed out (host unreachable?)"
     if isinstance(error, ConnectionRefusedError):
         return "Connection refused (no game hosted there?)"
+    message = str(error)
+    if "room_not_found" in message:
+        return "Room not found (wrong room number?)"
+    if "room_full" in message:
+        return "Room is full"
+    if "server_full" in message:
+        return "Server is full (no free rooms)"
     return "Could not reach the host"
 
 
@@ -76,10 +83,7 @@ def _build_game_state_from_draft(draft_state: DraftState) -> GameState:
     game_state.timer_mode = draft_state.timer_mode
     game_state.file_auto_delete = draft_state.file_auto_delete
 
-    game_state.game_logger.info(f"player1 deck {'-'.join(player1.deck)}")
-    game_state.game_logger.info(f"player2 deck {'-'.join(player2.deck)}")
     game_state.game_logger.info(f"timer mode {game_state.timer_mode}")
-    game_state.game_logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
     game_state.game_logger.info(f"version {VERSION}", version=VERSION)
     return game_state
 
@@ -196,10 +200,10 @@ def main() -> None:
                         server.stop()
             case "join":
                 try:
-                    host_ip = join_screen.main(game_screen)
+                    host_ip, room_code = join_screen.main(game_screen)
                     if not host_ip:
                         continue
-                    client = LANClient(VERSION, host_ip, port=DEFAULT_PORT)
+                    client = LANClient(VERSION, host_ip, port=DEFAULT_PORT, room=room_code)
                     status, error = connecting_screen.main(game_screen, client, host_ip)
                     if status == "canceled":
                         continue

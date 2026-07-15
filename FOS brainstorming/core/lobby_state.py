@@ -35,6 +35,7 @@ class LobbyState:
     spectator_count: int = 0
     latencies: dict = field(default_factory=dict)
 
+    room_code: str = ""
     local_role: str = ""
 
     def peer_seat(self) -> str:
@@ -50,6 +51,7 @@ class LobbyState:
             "peer_connected": self.peer_connected,
             "spectator_count": self.spectator_count,
             "latencies": dict(self.latencies),
+            "room_code": self.room_code,
         }
 
     def to_dict_for(self, viewer_role: str) -> dict:
@@ -66,6 +68,7 @@ class LobbyState:
         self.peer_connected = data["peer_connected"]
         self.spectator_count = data["spectator_count"]
         self.latencies = data.get("latencies", {})
+        self.room_code = data.get("room_code", self.room_code)
         new_role = data.get("your_role", "")
         if new_role:
             self.local_role = new_role

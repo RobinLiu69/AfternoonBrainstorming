@@ -168,6 +168,8 @@ class DraftDispatcher:
 
     def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
         payload = {k: v for k, v in envelope.items() if k != "type"}
+        if not self._sender_matches(payload.get("player"), sender_conn):
+            return
         try:
             action = DraftAction(**payload)
         except TypeError as e:
@@ -177,6 +179,16 @@ class DraftDispatcher:
         result = self._execute(action, self._draft_state)
         if result.success:
             self._broadcast(self._draft_state)
+
+    def _sender_matches(self, claimed_player, sender_conn) -> bool:
+        if sender_conn is None or not isinstance(self._network, LANServer):
+            return True
+        sender_role = self._network.find_role(sender_conn)
+        if not sender_role or claimed_player != sender_role:
+            print(f"[DraftDispatcher] dropped action from {sender_role!r} "
+                  f"claiming to be {claimed_player!r}")
+            return False
+        return True
 
     def _send_to_server(self, action: DraftAction) -> None:
         if not isinstance(self._network, LANClient):

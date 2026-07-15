@@ -70,7 +70,7 @@ class TestDarkGreenTank:
         enemy = place_card(gs, RedAdc, "player2", 2, 1)
 
         before = gs.players_totem["player1"]
-        tank.been_attacked(enemy, 1, gs)
+        tank.on_attacked_by(enemy, 1, gs)
         assert gs.players_totem["player1"] == before + S["TANK"]["engraved_totem"]
 
 

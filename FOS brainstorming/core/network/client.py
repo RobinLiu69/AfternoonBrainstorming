@@ -25,10 +25,11 @@ from core.network.messages import _recv_msg, _send_msg
 
 
 class LANClient:
-    def __init__(self, version: str, host: str, port: int = 5555):
+    def __init__(self, version: str, host: str, port: int = 5555, room: str = ""):
         self.version = version
         self.host = host
         self.port = port
+        self.room = room
         self.on_state_update: Optional[Callable[[dict], None]] = None
 
         self._sock: Optional[socket.socket] = None
@@ -73,6 +74,8 @@ class LANClient:
             return False
         except (OSError, RuntimeError, ConnectionError) as e:
             print(f"[LANClient] reconnect failed: {e}")
+            if isinstance(e, ConnectionError) and "room_not_found" in str(e):
+                self.reconnect_refused = True
             return False
         self.reconnect_refused = False
         return role in ("player1", "player2")
@@ -83,7 +86,8 @@ class LANClient:
         sock.connect((self.host, self.port))
         sock.settimeout(None)
 
-        hello = {"type": "hello", "intent": intent, "version": self.version}
+        hello = {"type": "hello", "intent": intent, "version": self.version,
+                 "room": self.room}
         if token:
             hello["token"] = token
         try:
@@ -126,6 +130,9 @@ class LANClient:
         new_token = welcome.get("token", "")
         if new_token:
             self.token = new_token
+        new_room = welcome.get("room", "")
+        if new_room:
+            self.room = new_room
         self.is_disconnected = False
 
         threading.Thread(target=self._recv_loop, daemon=True).start()
@@ -153,8 +160,11 @@ class LANClient:
                     if self.on_state_update is not None:
                         self.on_state_update(msg["state"])
                 elif mtype == "scene":
-                    self.pending_scene = msg["scene"]
                     self.pending_scene_state = msg.get("state", {})
+                    self.pending_scene = msg["scene"]
+                    new_role = msg.get("role", "")
+                    if new_role:
+                        self.role = new_role
                 elif mtype == "game_over":
                     self.pending_winner = msg["winner"]
                     self.pending_statistics = msg.get("statistics", {})
@@ -166,6 +176,8 @@ class LANClient:
                         _send_msg(sock, {"type": "pong", "ts": ts})
                     except OSError:
                         pass
+                elif mtype == "token":
+                    self.token = msg.get("token", "")
                 elif mtype == "net_info":
                     self.net_spectator_count = msg.get("spectator_count", 0)
                     self.net_latencies = msg.get("latencies", {})
@@ -226,9 +238,13 @@ class LANClient:
                 print(f"[LANClient] failed to save {key}: {e}")
 
     def send_action(self, action_dict: dict) -> None:
-        if self._sock is None:
+        sock = self._sock
+        if sock is None:
             return
-        _send_msg(self._sock, {"type": "action", **action_dict})
+        try:
+            _send_msg(sock, {"type": "action", **action_dict})
+        except OSError as e:
+            print(f"[LANClient] send_action failed (connection lost?): {e}")
 
     def disconnect(self) -> None:
         sock = self._sock

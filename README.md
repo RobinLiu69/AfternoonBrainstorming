@@ -316,6 +316,29 @@ See [LICENSE.txt](./LICENSE.txt) for the full license text.
 > **Note:** Game assets (images, fonts, sounds) are © 2024 Robin Liu / Five O'clock Shadow Studio.
 > All rights reserved unless otherwise stated.
 
+# 專用伺服器（多房間連線）
+
+除了區網直連（host / join），也可以架設專用伺服器，讓玩家透過公開固定 IP 連線對戰或觀戰。
+
+**架設伺服器**（在 `FOS brainstorming` 資料夾內執行）：
+
+```bash
+python server_main.py --port 5555
+```
+
+伺服器支援多個房間同時進行，每個房間由伺服器同步運算。
+
+**玩家連線方式**：
+
+1. 在主選單選擇 **join**，輸入伺服器 IP
+2. **房號留空**按 Enter → 建立新房間，成為房主（房號會顯示在 lobby 畫面）
+3. 把房號告訴其他人，他們輸入**同一 IP + 房號**即可加入：第一位加入者成為對手，之後加入的自動成為觀戰者（可在 lobby 中切換身分）
+4. 對局中斷線可自動重連回原席位；對局中加入的觀戰者會直接進入戰局畫面
+
+> [!NOTE]
+> 伺服器機器需開放所選的 TCP 連接埠（預設 5555），且遊戲版本需與伺服器一致。
+> 戰報記錄檔會保存在伺服器的 `battle_records` 資料夾，賽後也會自動傳送給所有玩家。
+
 # 外部連結
 [巴哈規則](https://home.gamer.com.tw/artwork.php?sn=5702820)
 > [!CAUTION]

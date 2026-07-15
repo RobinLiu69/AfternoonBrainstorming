@@ -56,22 +56,20 @@ class ReplaySource:
                     self._action_indices.append(idx)
     
     def _extract_metadata(self) -> None:
-        first_action_idx = self._action_indices[0] if self._action_indices else len(self._entries)
-        
-        for entry in self._entries[:first_action_idx]:
+        for entry in self._entries:
             msg: str = entry.get("message", "")
-            
+
             if "rng_seed" in entry:
                 self.metadata["rng_seed"] = entry["rng_seed"]
-            
+
             if "version" in entry:
                 self.metadata["version"] = entry["version"]
 
             if msg.startswith("player1 deck "):
                 self.metadata["player1_deck"] = msg[len("player1 deck "):].split("-") if msg[len("player1 deck "):] else []
             elif msg.startswith("player2 deck "):
-                self.metadata["player2_deck"] = msg[len("player2 deck "):].split("-") if msg[len("player1 deck "):] else []
-            
+                self.metadata["player2_deck"] = msg[len("player2 deck "):].split("-") if msg[len("player2 deck "):] else []
+
             if msg.startswith("timer mode "):
                 self.metadata["timer_mode"] = msg[len("timer mode "):].strip()
 

@@ -72,7 +72,7 @@ class Tank(DarkGreenCard):
         
         super().__init__(owner=owner, job_and_color="TANKDKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def been_attacked(self, attacker: "Card", value: int, game_state: GameState) -> bool:
+    def on_attacked_by(self, attacker: "Card", value: int, game_state: GameState) -> bool:
         self.engraved_totem(card_settings["TANK"]["engraved_totem"], game_state)
         return True
 
@@ -129,7 +129,7 @@ class Ass(DarkGreenCard):
     def on_update(self, game_state: GameState) -> None:
         self.extra_damage = game_state.players_totem[self.owner] // card_settings["ASS"]["damage_divisor"]
 
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         self.health = 0
         game_state.pending_combat_events.append(
             CombatEvent(kind="hurt", board_x=self.board_x, board_y=self.board_y, post_health=0)
