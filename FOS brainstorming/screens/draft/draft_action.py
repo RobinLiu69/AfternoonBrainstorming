@@ -110,7 +110,7 @@ def collect_draft_actions(current_editor: str, page: int, index: int, registry: 
                 case pygame.K_a | pygame.K_LEFT:
                     actions.append(DraftAction(current_editor, "page_prev"))
                 case pygame.K_s:
-                    card = registry.card_name_at(page, mouse_board_x, mouse_board_y)
+                    card = registry.card_name_at(page, index, mouse_board_x, mouse_board_y)
                     if card != "None":
                         actions.append(DraftAction(current_editor, "add_card", card))
                 case pygame.K_c:

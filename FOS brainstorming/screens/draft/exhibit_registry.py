@@ -38,8 +38,8 @@ class ExhibitRegistry:
         self._magic_row = self._build_magic()
         self.switch_rects = self._create_switch_rects()
 
-    def _build_pages(self) -> list[list[Card]]:
-        pages = []
+    def _build_pages(self) -> list[list[list[Card]]]:
+        pages: list[list[list[Card]]] = []
         for page_array in JOB_DICTIONARY["colors_array"]:
             page: list[list[Card]] = []
             for color_tag, color_name in page_array.items():
@@ -80,10 +80,11 @@ class ExhibitRegistry:
         return self._pages[page][index] if page < len(self._pages) and index < len(self._pages[page]) else []
 
     def get_page_colors(self, page: int) -> list[tuple[int, int, int]]:
-        color_names: list[str] = []
-        for color_tag, color_name in JOB_DICTIONARY["colors_array"][page].items():
-            color_names.append(tuple(JOB_DICTIONARY["RGB_colors"][color_name]))
-        return color_names
+        colors: list[tuple[int, int, int]] = []
+        for color_name in JOB_DICTIONARY["colors_array"][page].values():
+            r, g, b = JOB_DICTIONARY["RGB_colors"][color_name]
+            colors.append((r, g, b))
+        return colors
                 
     def get_magic_row(self) -> list[Card]:
         return self._magic_row

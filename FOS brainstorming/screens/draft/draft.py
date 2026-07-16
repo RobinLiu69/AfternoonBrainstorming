@@ -169,7 +169,9 @@ def main(game_screen: GameScreen, mode: str = "local",
                             return DraftExitReason(kind="quit")
                         if client.initial_state:
                             draft_state.apply_dict(client.initial_state)
-                if client.reconnect_refused or now - disconnect_since > reconnect_timeout:
+                if disconnect_since is not None and (
+                    client.reconnect_refused or now - disconnect_since > reconnect_timeout
+                ):
                     print("[draft] host gone; leaving draft")
                     server_closed_screen.main(game_screen)
                     return DraftExitReason(kind="quit")
