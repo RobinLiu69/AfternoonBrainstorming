@@ -30,7 +30,8 @@ from core.neutral import Neutral
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from core.battling_dispatcher import BattlingDispatcher
-from core.replay_source import ReplaySource
+from core.lobby_state import TIME_CONTROL_OPTIONS
+from core.replay_source import ReplaySource, ReplayClock
 from rendering.game_renderer import GameRenderer
 from screens.battling.battling_action import collect_actions
 from screens.notices import notice_screen
@@ -116,6 +117,12 @@ def _build_replay_game_state(source: ReplaySource) -> GameState:
     if "timer_mode" in meta:
         game_state.timer_mode = meta["timer_mode"]
 
+    time_control = meta.get("time_control", "")
+    if time_control in TIME_CONTROL_OPTIONS:
+        countdown, increment = TIME_CONTROL_OPTIONS[time_control]
+        game_state.countdown_time = countdown
+        game_state.turn_increment_seconds = increment
+
     game_state.game_logger = GameLogger(
         enable_file=False,
         enable_console=False,
@@ -140,6 +147,7 @@ def _rebuild_and_fast_forward(
     dispatcher: BattlingDispatcher,
     target_action_index: int,
     buffs: "Optional[_CampaignReplayBuffs]" = None,
+    replay_clock: Optional[ReplayClock] = None,
 ) -> None:
     import random as _py_random
     from cards.base import reset_instance_counter
@@ -191,10 +199,13 @@ def _rebuild_and_fast_forward(
     game_state.board_dict = initialize_board(game_screen, game_state.board_config)
     _initialize_players(game_state)
 
-    game_state.player1.time_display = "--:--"
-    game_state.player2.time_display = "--:--"
-    game_state.player1.start_time = -1
-    game_state.player2.start_time = -1
+    if replay_clock is not None:
+        replay_clock.reset()
+    else:
+        game_state.player1.time_display = "--:--"
+        game_state.player2.time_display = "--:--"
+        game_state.player1.start_time = -1
+        game_state.player2.start_time = -1
 
     import shared.setting as _core_setting
     prev_anim_setting = _core_setting.COMBAT_ANIMATIONS_ENABLED
@@ -210,9 +221,12 @@ def _rebuild_and_fast_forward(
         for _ in range(target_action_index):
             if buffs is not None:
                 buffs.tick(game_state)
+            action_index = source.current_action_index
             action = source.next_action()
             if action is None:
                 break
+            if replay_clock is not None:
+                replay_clock.before_action(action_index)
             dispatcher._execute(action, game_state)
             for _ in range(_MAX_SETTLE_TICKS):
                 game_state.player1.logic_update(game_state, game_renderer, False)
@@ -316,6 +330,8 @@ def _begin_takeover(source: ReplaySource, game_state: GameState) -> GameLogger:
     logger.info(f"player1 deck {'-'.join(meta.get('player1_deck', []))}")
     logger.info(f"player2 deck {'-'.join(meta.get('player2_deck', []))}")
     logger.info(f"timer mode {meta.get('timer_mode', game_state.timer_mode)}")
+    if meta.get("time_control"):
+        logger.info(f"time control {meta['time_control']}")
     if meta.get("campaign_stage"):
         logger.info(f"campaign stage {meta['campaign_stage']}")
     logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
@@ -323,8 +339,8 @@ def _begin_takeover(source: ReplaySource, game_state: GameState) -> GameLogger:
     for action in _collect_prefix_actions(source, source.current_action_index):
         logger.log_action(action, action.player)
     game_state.game_logger = logger
-    game_state.player1.timer_start(game_state)
-    game_state.player2.timer_start(game_state)
+    game_state.player1.start_time = -1
+    game_state.player2.start_time = -1
     return logger
 
 
@@ -335,12 +351,15 @@ def _export_replay_log(
     game_renderer: GameRenderer,
     dispatcher: BattlingDispatcher,
     buffs: "Optional[_CampaignReplayBuffs]",
+    replay_clock: Optional[ReplayClock] = None,
 ) -> Optional[Path]:
     meta = source.metadata
     logger = GameLogger(enable_file=True, enable_console=False, enable_jsonl=False)
     logger.info(f"player1 deck {'-'.join(meta.get('player1_deck', []))}")
     logger.info(f"player2 deck {'-'.join(meta.get('player2_deck', []))}")
     logger.info(f"timer mode {meta.get('timer_mode', game_state.timer_mode)}")
+    if meta.get("time_control"):
+        logger.info(f"time control {meta['time_control']}")
     if meta.get("campaign_stage"):
         logger.info(f"campaign stage {meta['campaign_stage']}")
     logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
@@ -351,7 +370,7 @@ def _export_replay_log(
     try:
         _rebuild_and_fast_forward(
             source, game_state, game_screen,
-            game_renderer, dispatcher, source.total_actions, buffs,
+            game_renderer, dispatcher, source.total_actions, buffs, replay_clock,
         )
         recorded_version = meta.get("version")
         if recorded_version is not None and recorded_version != VERSION:
@@ -418,10 +437,8 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
 
     _initialize_players(game_state)
 
-    game_state.player1.time_display = "--:--"
-    game_state.player2.time_display = "--:--"
-    game_state.player1.start_time = -1
-    game_state.player2.start_time = -1
+    replay_clock = ReplayClock(source, game_state)
+    replay_clock.reset()
 
     _skip_toggle_hints(source)
 
@@ -459,7 +476,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                         target = _prev_real_action_index(action_types, source.current_action_index)
                         _rebuild_and_fast_forward(
                             source, game_state, game_screen,
-                            game_renderer, dispatcher, target, buffs,
+                            game_renderer, dispatcher, target, buffs, replay_clock,
                         )
                         paused = True
                     elif event.key == pygame.K_UP:
@@ -469,7 +486,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                     elif event.key == pygame.K_r:
                         _rebuild_and_fast_forward(
                             source, game_state, game_screen,
-                            game_renderer, dispatcher, 0, buffs,
+                            game_renderer, dispatcher, 0, buffs, replay_clock,
                         )
                         paused = True
                     elif event.key == pygame.K_t:
@@ -501,7 +518,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                 picked_hand_card = ["None", 0]
                 _rebuild_and_fast_forward(
                     source, game_state, game_screen,
-                    game_renderer, dispatcher, 0, buffs,
+                    game_renderer, dispatcher, 0, buffs, replay_clock,
                 )
                 paused = True
             else:
@@ -538,11 +555,15 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                     should_advance = True
 
             if should_advance and not source.exhausted:
+                action_index = source.current_action_index
                 action = source.next_action()
                 while action is not None and action.action_type == "toggle_hint":
+                    action_index = source.current_action_index
                     action = source.next_action()
                 if action is not None:
+                    replay_clock.before_action(action_index)
                     dispatcher._execute(action, game_state)
+                    replay_clock.after_action()
                     controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
                     action_hold_remaining = _ACTION_HOLD
                     _skip_toggle_hints(source)
@@ -585,5 +606,5 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
 
     reached_end = source.next_action() is None
     if save_log:
-        _export_replay_log(source, game_state, game_screen, game_renderer, dispatcher, buffs)
+        _export_replay_log(source, game_state, game_screen, game_renderer, dispatcher, buffs, replay_clock)
     return game_state if reached_end else None
