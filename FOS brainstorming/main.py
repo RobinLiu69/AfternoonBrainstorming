@@ -183,6 +183,9 @@ def main() -> None:
                     if exit_reason.kind != "finished" or exit_reason.draft_state is None:
                         continue
                     game_state = _build_game_state_from_draft(exit_reason.draft_state)
+                    game_state.coutdown_time = lobby_state.countdown_seconds()
+                    game_state.turn_increment_seconds = lobby_state.increment_seconds()
+                    game_state.game_logger.info(f"time control {lobby_state.time_control}")
                     winner = battling.main(
                         game_state, game_screen,
                         mode="lan_server", server=server,

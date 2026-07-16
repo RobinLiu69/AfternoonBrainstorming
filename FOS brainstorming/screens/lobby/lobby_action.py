@@ -23,6 +23,7 @@ from typing import Literal, Optional
 LobbyActionType = Literal[
     "set_god_view",
     "set_timer_mode",
+    "set_time_control",
     "set_file_auto_delete",
     "set_reconnect_timeout",
     "swap_seats",

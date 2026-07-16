@@ -22,12 +22,24 @@ from dataclasses import dataclass, field
 INFINITE_RECONNECT: float = float("inf")
 RECONNECT_TIMEOUT_OPTIONS: tuple[float, ...] = (30.0, 60.0, 120.0, 300.0, INFINITE_RECONNECT)
 
+TIME_CONTROL_OPTIONS: dict[str, tuple[int, int]] = {
+    "5min": (300, 0),
+    "10min": (600, 0),
+    "15min": (900, 0),
+    "20min": (1200, 0),
+    "5+5": (300, 5),
+    "10+10": (600, 10),
+    "15+10": (900, 10),
+}
+DEFAULT_TIME_CONTROL: str = "10min"
+
 
 @dataclass
 class LobbyState:
     host_seat: str = "player1"
     god_view: bool = False
     timer_mode: str = "timer"
+    time_control: str = DEFAULT_TIME_CONTROL
     file_auto_delete: bool = False
     reconnect_timeout: float = 60.0
 
@@ -40,11 +52,18 @@ class LobbyState:
     def peer_seat(self) -> str:
         return "player2" if self.host_seat == "player1" else "player1"
 
+    def countdown_seconds(self) -> int:
+        return TIME_CONTROL_OPTIONS.get(self.time_control, TIME_CONTROL_OPTIONS[DEFAULT_TIME_CONTROL])[0]
+
+    def increment_seconds(self) -> int:
+        return TIME_CONTROL_OPTIONS.get(self.time_control, TIME_CONTROL_OPTIONS[DEFAULT_TIME_CONTROL])[1]
+
     def to_dict(self) -> dict:
         return {
             "host_seat": self.host_seat,
             "god_view": self.god_view,
             "timer_mode": self.timer_mode,
+            "time_control": self.time_control,
             "file_auto_delete": self.file_auto_delete,
             "reconnect_timeout": self.reconnect_timeout,
             "peer_connected": self.peer_connected,
@@ -61,6 +80,7 @@ class LobbyState:
         self.host_seat = data["host_seat"]
         self.god_view = data["god_view"]
         self.timer_mode = data["timer_mode"]
+        self.time_control = data.get("time_control", self.time_control)
         self.file_auto_delete = data["file_auto_delete"]
         self.reconnect_timeout = data["reconnect_timeout"]
         self.peer_connected = data["peer_connected"]

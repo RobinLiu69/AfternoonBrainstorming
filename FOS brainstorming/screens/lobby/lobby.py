@@ -21,7 +21,7 @@ from typing import Optional
 
 import pygame
 
-from core.lobby_state import LobbyState, RECONNECT_TIMEOUT_OPTIONS
+from core.lobby_state import LobbyState, RECONNECT_TIMEOUT_OPTIONS, TIME_CONTROL_OPTIONS
 from core.lobby_dispatcher import LobbyDispatcher
 from core.network_layer import LANServer, LANClient
 from core.game_screen import GameScreen, draw_text
@@ -78,10 +78,11 @@ def _make_buttons(gs: GameScreen) -> dict[str, Button]:
 
     return {
         "god_view":          left_btn(-1.30, "god view: off"),
-        "timer_mode":        left_btn(-0.75, "timer mode: timer"),
-        "file_auto_delete":  left_btn(-0.20, "auto-delete log: no"),
-        "reconnect_timeout": left_btn(0.35, "reconnect timeout: 60s"),
-        "swap_seats":        left_btn(0.90, "host plays: player1"),
+        "timer_mode":        left_btn(-0.85, "timer mode: timer"),
+        "time_control":      left_btn(-0.40, "time: 10min"),
+        "file_auto_delete":  left_btn(0.05, "auto-delete log: no"),
+        "reconnect_timeout": left_btn(0.50, "reconnect timeout: 60s"),
+        "swap_seats":        left_btn(0.95, "host plays: player1"),
         "switch_role":       action_btn(1.70, "switch role"),
         "start_match":       action_btn(2.35, "START MATCH"),
     }
@@ -94,6 +95,7 @@ def _format_timeout(timeout: float) -> str:
 def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: str) -> None:
     buttons["god_view"].text = f"god view: {'on' if state.god_view else 'off'}"
     buttons["timer_mode"].text = f"timer mode: {state.timer_mode}"
+    buttons["time_control"].text = f"time: {state.time_control}"
     buttons["file_auto_delete"].text = f"auto-delete log: {'yes' if state.file_auto_delete else 'no'}"
     buttons["reconnect_timeout"].text = f"reconnect timeout: {_format_timeout(state.reconnect_timeout)}"
     buttons["swap_seats"].text = f"host plays: {state.host_seat}"
@@ -118,10 +120,11 @@ def _render_settings_labels(gs: GameScreen, state: LobbyState) -> None:
     cx = gs.display_width / 2
     cy = gs.display_height / 2
     x = cx - bs * 3.15
-    y_offsets = [-1.30, -0.75, -0.20, 0.35, 0.90]
+    y_offsets = [-1.30, -0.85, -0.40, 0.05, 0.50, 0.95]
     labels = [
         f"god view: {'on' if state.god_view else 'off'}",
         f"timer mode: {state.timer_mode}",
+        f"time: {state.time_control}",
         f"auto-delete log: {'yes' if state.file_auto_delete else 'no'}",
         f"reconnect timeout: {_format_timeout(state.reconnect_timeout)}",
         f"host plays: {state.host_seat}",
@@ -211,6 +214,15 @@ def _click_dispatch(buttons: dict[str, Button], mouse_x: float, mouse_y: float,
         if buttons["timer_mode"].touch(mouse_x, mouse_y):
             new_mode = "countdown" if state.timer_mode == "timer" else "timer"
             dispatcher.dispatch(LobbyAction("host", "set_timer_mode", str_value=new_mode))
+            return
+        if buttons["time_control"].touch(mouse_x, mouse_y):
+            labels = list(TIME_CONTROL_OPTIONS)
+            try:
+                idx = labels.index(state.time_control)
+            except ValueError:
+                idx = 0
+            new_tc = labels[(idx + 1) % len(labels)]
+            dispatcher.dispatch(LobbyAction("host", "set_time_control", str_value=new_tc))
             return
         if buttons["file_auto_delete"].touch(mouse_x, mouse_y):
             dispatcher.dispatch(LobbyAction("host", "set_file_auto_delete", bool_value=not state.file_auto_delete))
@@ -309,7 +321,7 @@ def main(game_screen: GameScreen, mode: str,
         _refresh_button_labels(buttons, state, state.local_role)
 
         if _is_host(state.local_role):
-            for key in ("god_view", "timer_mode", "file_auto_delete", "reconnect_timeout", "swap_seats", "start_match"):
+            for key in ("god_view", "timer_mode", "time_control", "file_auto_delete", "reconnect_timeout", "swap_seats", "start_match"):
                 buttons[key].update(game_screen)
         else:
             _render_settings_labels(game_screen, state)

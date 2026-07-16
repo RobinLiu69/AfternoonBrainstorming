@@ -237,6 +237,11 @@ class Player:
                 return self.hand[i], i
         return "None", 0
 
+    def _refresh_time_display(self) -> None:
+        time_minutes = str(int(self.elapsed_time//60)) if len(str(int(self.elapsed_time//60))) > 1 else "0"+str(int(self.elapsed_time//60))
+        time_seconds = str(int(self.elapsed_time%60)) if len(str(int(self.elapsed_time%60))) > 1 else "0"+str(int(self.elapsed_time%60))
+        self.time_minutes_and_seconds = time_minutes+":"+time_seconds
+
     def _update_timer_logic(self, timer_mode: str) -> None:
         match timer_mode:
             case "countdown":
@@ -246,9 +251,7 @@ class Player:
                 if current_time - self.start_time > 1:
                     self.start_time = -1
                     self.elapsed_time -= 1
-                time_minutes = str(int(self.elapsed_time//60)) if len(str(int(self.elapsed_time//60))) > 1 else "0"+str(int(self.elapsed_time//60))
-                time_seconds = str(int(self.elapsed_time%60)) if len(str(int(self.elapsed_time%60))) > 1 else "0"+str(int(self.elapsed_time%60))
-                self.time_minutes_and_seconds = time_minutes+":"+time_seconds
+                self._refresh_time_display()
                 if self.elapsed_time <= 0:
                     self.time_out = True
             case "timer":
@@ -258,9 +261,7 @@ class Player:
                 if current_time - self.start_time > 1:
                     self.start_time = -1
                     self.elapsed_time += 1
-                time_minutes = str(int(self.elapsed_time//60)) if len(str(int(self.elapsed_time//60))) > 1 else "0"+str(int(self.elapsed_time//60))
-                time_seconds = str(int(self.elapsed_time%60)) if len(str(int(self.elapsed_time%60))) > 1 else "0"+str(int(self.elapsed_time%60))
-                self.time_minutes_and_seconds = time_minutes+":"+time_seconds
+                self._refresh_time_display()
 
     def to_dict(self) -> dict:
         return {
@@ -273,7 +274,8 @@ class Player:
             "revealed_deck": self.revealed_deck,
             "start_time": self.start_time,
             "elapsed_time": self.elapsed_time,
-            "time_out": self.time_out
+            "time_out": self.time_out,
+            "time_display": self.time_minutes_and_seconds
         }
 
     def to_dict_for(self, viewer: str) -> dict:
@@ -297,6 +299,7 @@ class Player:
         self.start_time = -1
         self.elapsed_time = data["elapsed_time"]
         self.time_out = data["time_out"]
+        self.time_minutes_and_seconds = data.get("time_display", self.time_minutes_and_seconds)
         minutes = int(self.elapsed_time // 60)
         seconds = int(self.elapsed_time % 60)
         self.time_minutes_and_seconds = f"{minutes:02d}:{seconds:02d}"
