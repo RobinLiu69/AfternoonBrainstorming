@@ -82,7 +82,7 @@ class Tank(BrownCard):
         super().__init__(owner=owner, job_and_color="TANKBR", health=health, damage=damage, board_x=board_x, board_y=board_y)
         self.attacked_this_turn = False
     
-    def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
+    def on_attacked_by(self, attacker: Card, value: int, game_state: GameState) -> bool:
         if not self.effects_off():
             for card in self.detection(
                 "nearest", filter(
@@ -117,7 +117,7 @@ class Lf(BrownCard):
 
         super().__init__(owner=owner, job_and_color="LFBR", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         if self.effects_off():
             return False
         points = card_settings["LF"]["on_kill_enemy_points"]
@@ -135,7 +135,7 @@ class Ass(BrownCard):
 
         super().__init__(owner=owner, job_and_color="ASSBR", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         if self.effects_off():
             return False
         
@@ -205,7 +205,7 @@ class Sp(BrownCard):
                     card.effects_disabled = True
         return
     
-    def been_killed(self, attacker: Card, game_state: GameState) -> bool:
+    def on_killed_by(self, attacker: Card, game_state: GameState) -> bool:
         for card in game_state.get_player_cards(self.owner):
             if card is not self and isinstance(card, BrownCard):
                 card.effects_disabled = True

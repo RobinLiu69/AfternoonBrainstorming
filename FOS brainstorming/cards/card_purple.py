@@ -80,7 +80,7 @@ class Tank(PurpleCard):
         
         super().__init__(owner=owner, job_and_color="TANKP", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def move_broadcast(self, target: Card, game_state: GameState) -> bool:
+    def on_card_moved(self, target: Card, game_state: GameState) -> bool:
         if target.owner != self.owner:
             target.damage_calculate(card_settings["TANK"]["move_strike_damage"], self, game_state)
             return True
@@ -116,7 +116,7 @@ class Ass(PurpleCard):
         
         super().__init__(owner=owner, job_and_color="ASSP", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         count: int = min(len(game_state.get_player_cards(victim.owner))-len(game_state.get_player_cards(self.owner))-card_settings["ASS"]["unit_gap"], card_settings["ASS"]["maximum_card_draw_from_killed"])
         for _ in range(count):
             game_state.card_to_draw[self.owner] += 1

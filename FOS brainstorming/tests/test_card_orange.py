@@ -75,7 +75,7 @@ class TestOrangeTank:
         enemy = place_card(gs, RedAdc, "player2", 2, 1)
 
         before = len(gs.get_player("player1").hand)
-        tank.been_attacked(enemy, 1, gs)
+        tank.on_attacked_by(enemy, 1, gs)
         assert len(gs.get_player("player1").hand) == before + 1
         assert gs.get_player("player1").hand[-1] == "MOVEO"
 
@@ -169,7 +169,7 @@ class TestOrangeApt:
 
         before_apt = apt.armor
         before_ally = ally.armor
-        apt.move_broadcast(ally, gs)
+        apt.on_card_moved(ally, gs)
         assert apt.armor == before_apt + S["APT"]["move_armor_gain"]
         assert ally.armor == before_ally + S["APT"]["move_armor_gain"]
 
@@ -182,5 +182,5 @@ class TestOrangeSp:
         enemy = place_card(gs, RedAdc, "player2", 3, 3)
 
         before = enemy.health
-        sp.move_broadcast(ally, gs)
+        sp.on_card_moved(ally, gs)
         assert enemy.health < before

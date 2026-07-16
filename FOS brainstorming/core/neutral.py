@@ -35,7 +35,7 @@ class Neutral:
         to_remove = []
         for card in self.on_board:
             if card.health <= 0 and card.can_be_killed(game_state):
-                card.die(game_state)
+                card.on_death(game_state)
                 game_renderer.dying_cards.append(card)
                 game_state.board_dict[card.board_x, card.board_y].occupy = False
                 game_state.game_logger.log_card_recycled(self.name, card.job_and_color, (card.board_x, card.board_y))

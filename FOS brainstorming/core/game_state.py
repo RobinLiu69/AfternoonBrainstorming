@@ -57,7 +57,7 @@ class GameState:
     player_timer: dict[str, str] = field(default_factory=lambda: {"player1": "0", "player2": "0"})
     timer_mode: str = "timer"
         
-    coutdown_time = int(SETTING["countdown_time"])
+    countdown_time = int(SETTING["countdown_time"])
     turn_increment_seconds: int = 0
     rng_seed: int = field(default_factory=lambda: _seed_random())
     
@@ -142,7 +142,7 @@ class GameState:
             },
             "player_timer": self.player_timer,
             "timer_mode": self.timer_mode,
-            "countdown_time": self.coutdown_time,
+            "countdown_time": self.countdown_time,
             "file_auto_delete": self.file_auto_delete,
             "score": self.score,
             "turn_number": self.turn_number,
@@ -179,7 +179,7 @@ class GameState:
 
         self.player_timer = data["player_timer"]
         self.timer_mode = data["timer_mode"]
-        self.coutdown_time = data.get("countdown_time", self.coutdown_time)
+        self.countdown_time = data.get("countdown_time", self.countdown_time)
         self.file_auto_delete = data["file_auto_delete"]
         self.score = data["score"]
         self.turn_number = data["turn_number"]

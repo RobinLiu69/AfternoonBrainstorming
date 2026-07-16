@@ -75,7 +75,7 @@ class Tank(RedCard):
         
         super().__init__(owner=owner, job_and_color="TANKR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
+    def on_attacked_by(self, attacker: Card, value: int, game_state: GameState) -> bool:
         for card in self.detection(
             "nearest", filter(
                 lambda card: card != self, game_state.get_player_cards(self.owner)
@@ -152,7 +152,7 @@ class Ass(RedCard):
         
         super().__init__(owner=owner, job_and_color="ASSR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_player(self.owner).on_board), game_state):
             card.damage += card_settings["ASS"]["damage_increase"]
 

@@ -155,7 +155,7 @@ class Tank(CyanCard):
         else:
             return False
         
-    def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
+    def on_attacked_by(self, attacker: Card, value: int, game_state: GameState) -> bool:
         self.get_coins(card_settings["TANK"]["coin_gain"], game_state)
         return True
 
@@ -177,7 +177,7 @@ class Hf(CyanCard):
         self.get_coins(card_settings["HF"]["coin_gain"], game_state)
         return True
 
-    def been_killed(self, attacker: Card, game_state: GameState) -> bool:
+    def on_killed_by(self, attacker: Card, game_state: GameState) -> bool:
         if self.upgrade == True:
             self.anger = True
             self.damage += card_settings["HF"]["damage_bonus"]
@@ -255,7 +255,7 @@ class Ass(CyanCard):
         self.extra_damage = 0
         return value
     
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         self.get_coins(card_settings["ASS"]["coin_gain"], game_state)
         return True
 

@@ -87,7 +87,7 @@ def test_end_turn_adds_increment_to_ending_player():
     result = dispatcher.dispatch(GameAction("player1", "end_turn"), game_state)
     assert result.success is True
     assert game_state.player1.elapsed_time == 305
-    assert game_state.player1.time_minutes_and_seconds == "05:05"
+    assert game_state.player1.time_display == "05:05"
     assert game_state.player2.elapsed_time == 300
 
     result = dispatcher.dispatch(GameAction("player2", "end_turn"), game_state)
@@ -118,13 +118,36 @@ def test_time_display_synced_over_wire():
 
     receiver = make_game_state()
     receiver.player1.apply_dict(data, {}, {}, None)
-    assert receiver.player1.time_minutes_and_seconds == "07:05"
+    assert receiver.player1.time_display == "07:05"
     assert receiver.player1.elapsed_time == 425
+
+
+def test_draft_cannot_override_lobby_timer_in_lan():
+    from core.draft_state import DraftState
+    from core.draft_dispatcher import DraftDispatcher
+    from screens.draft.draft_action import DraftAction
+
+    draft_state = DraftState()
+    draft_state.timer_mode = "countdown"
+    dispatcher = DraftDispatcher(draft_state, mode="lan_server")
+
+    result = dispatcher.dispatch(DraftAction("player1", "toggle_timer"), draft_state)
+    assert result.success is False
+    assert draft_state.timer_mode == "countdown"
+
+    result = dispatcher.dispatch(DraftAction("player1", "toggle_file_save"), draft_state)
+    assert result.success is False
+
+    local_state = DraftState()
+    local_dispatcher = DraftDispatcher(local_state, mode="local")
+    result = local_dispatcher.dispatch(DraftAction("player1", "toggle_timer"), local_state)
+    assert result.success is True
+    assert local_state.timer_mode == "countdown"
 
 
 def test_countdown_time_synced_over_wire():
     game_state = make_game_state()
-    game_state.coutdown_time = 300
+    game_state.countdown_time = 300
     data = game_state.to_dict()
     assert data["countdown_time"] == 300
 

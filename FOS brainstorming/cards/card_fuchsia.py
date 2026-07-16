@@ -119,7 +119,7 @@ class Shadow(FuchsiaCard):
             self.linker.armor += value//2
         return False
     
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         match self.linker.job_and_color:
             case "ASSF":
                 self.linker.spawn_shadow(self.owner, victim.board_x, victim.board_y)
@@ -127,7 +127,7 @@ class Shadow(FuchsiaCard):
             case _:
                 return False
     
-    def die(self, game_state: GameState) -> bool:
+    def on_death(self, game_state: GameState) -> bool:
         cards = tuple(filter(lambda card: card.health > 0 and
                              self.board_x == card.board_x and
                              self.board_y == card.board_y, game_state.get_all_cards()))
@@ -282,9 +282,9 @@ class Tank(FuchsiaCard):
             game_state.board_dict[shadow.board_x, shadow.board_y].occupy = True
             shadow.update(game_state)
     
-    def die(self, game_state: GameState) -> bool:
+    def on_death(self, game_state: GameState) -> bool:
         for shadow in self.shadows:
-            shadow.die(game_state)
+            shadow.on_death(game_state)
         return False
 
     
@@ -376,13 +376,13 @@ class Ass(FuchsiaCard):
         for shadow in self.shadows:
             yield from shadow.attack_areas(shadow.board_x, shadow.board_y, shadow.attack_types, game_state)
 
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         self.spawn_shadow(self.owner, victim.board_x, victim.board_y, False)
         return False
     
-    def die(self, game_state: GameState) -> bool:
+    def on_death(self, game_state: GameState) -> bool:
         for shadow in self.shadows:
-            shadow.die(game_state)
+            shadow.on_death(game_state)
         return False
     
     def on_attack(self, game_state: GameState) -> bool:

@@ -29,7 +29,7 @@ from utils.controls import key_pressed
 SPECTATOR_ALLOWED: tuple[str, ...] = ("toggle_hint", "toggle_animation", "quit")
 
 
-def collect_actions(controller: str, card_info: list, game_state: GameState, game_screen: GameScreen,
+def collect_actions(controller: str, picked_hand_card: list, game_state: GameState, game_screen: GameScreen,
                     events: Optional[list] = None) -> list[GameAction]:
     actions: list[GameAction] = []
     is_spectator = controller in ("spectator", "god")
@@ -54,16 +54,16 @@ def collect_actions(controller: str, card_info: list, game_state: GameState, gam
                                 hand_index=game_state.get_player(controller).selected_card_index
                             ))
                             game_state.get_player(controller).selected_card_index = -1
-                            card_info = []
+                            picked_hand_card = []
                     if (mouse_x < game_screen.display_width/2 - game_screen.block_size*2) if controller == "player1" else (mouse_x > game_screen.display_width/2+game_screen.block_size*2):
-                        card_info = list(game_state.get_player(controller).get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen))
-                    if card_info and card_info[0] != "None" and isinstance(card_info[1], int):
-                        game_state.get_player(controller).selecte_card_from_hand(card_info[1])
+                        picked_hand_card = list(game_state.get_player(controller).get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen))
+                    if picked_hand_card and picked_hand_card[0] != "None" and isinstance(picked_hand_card[1], int):
+                        game_state.get_player(controller).select_card_from_hand(picked_hand_card[1])
                         if game_state.get_player(controller).selected_card_index == -1:
-                            card_info[0] = "None"
+                            picked_hand_card[0] = "None"
                 case 3:
                     game_state.get_player(controller).selected_card_index = -1
-                    card_info[0] = "None"
+                    picked_hand_card[0] = "None"
         if event.type == pygame.KEYDOWN:
             keys = pygame.key.get_pressed()
             match key_pressed(keys):

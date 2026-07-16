@@ -76,7 +76,7 @@ class TestCyanTank:
         enemy = place_card(gs, RedAdc, "player2", 2, 1)
 
         before = gs.players_coin["player1"]
-        tank.been_attacked(enemy, 1, gs)
+        tank.on_attacked_by(enemy, 1, gs)
         assert gs.players_coin["player1"] == before + S["TANK"]["coin_gain"]
 
     def test_upgrade_damage_block_absorbs_hit(self) -> None:
@@ -107,7 +107,7 @@ class TestCyanHf:
         enemy = place_card(gs, RedAdc, "player2", 1, 0)
 
         before_damage = hf.damage
-        hf.been_killed(enemy, gs)
+        hf.on_killed_by(enemy, gs)
         assert hf.anger is True
         assert hf.damage == before_damage + S["HF"]["damage_bonus"]
 

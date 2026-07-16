@@ -156,6 +156,16 @@ def main(game_screen: GameScreen, mode: str = "local",
                     if client.try_reconnect():
                         print("[draft] reconnect succeeded")
                         disconnect_since = None
+                        if client.scene == "battling":
+                            print("[draft] host moved on to battle, handing off")
+                            return DraftExitReason(
+                                kind="scene_handoff",
+                                next_scene_state=client.initial_state,
+                            )
+                        if client.scene != "draft":
+                            print(f"[draft] host is no longer drafting (scene={client.scene!r}), leaving")
+                            server_closed_screen.main(game_screen)
+                            return DraftExitReason(kind="quit")
                         if client.initial_state:
                             draft_state.apply_dict(client.initial_state)
                 if client.reconnect_refused or now - disconnect_since > reconnect_timeout:
