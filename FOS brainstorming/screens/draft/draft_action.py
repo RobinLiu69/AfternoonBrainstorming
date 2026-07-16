@@ -42,6 +42,8 @@ DraftActionType = Literal[
     "confirm_start",
     "quit",
     "change_index",
+    "index_next",
+    "index_prev",
 ]
 
 
@@ -106,9 +108,15 @@ def collect_draft_actions(current_editor: str, page: int, index: int, registry: 
                 case pygame.K_ESCAPE:
                     actions.append(DraftAction(current_editor, "quit"))
                 case pygame.K_SPACE | pygame.K_d | pygame.K_RIGHT:
-                    actions.append(DraftAction(current_editor, "page_next"))
+                    if keys[pygame.K_LSHIFT]:
+                        actions.append(DraftAction(current_editor, "index_next"))
+                    else:
+                        actions.append(DraftAction(current_editor, "page_next"))
                 case pygame.K_a | pygame.K_LEFT:
-                    actions.append(DraftAction(current_editor, "page_prev"))
+                    if keys[pygame.K_LSHIFT]:
+                        actions.append(DraftAction(current_editor, "index_prev"))
+                    else:
+                        actions.append(DraftAction(current_editor, "page_prev"))
                 case pygame.K_s:
                     card = registry.card_name_at(page, index, mouse_board_x, mouse_board_y)
                     if card != "None":

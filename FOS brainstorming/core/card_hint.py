@@ -31,7 +31,7 @@ def get_job_and_color(card_type: str) -> tuple[str, tuple[int, int, int]]:
     for tag in COLOR_TAG_LIST:
         if card_type.endswith(tag):
             color_name = JOB_DICTIONARY["colors_dict"][tag]
-            color = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"][color_name].split(", "))))
+            color = tuple(JOB_DICTIONARY["RGB_colors"][color_name])
             if card_type.count(tag) > 1:
                 return card_type[::-1].replace(tag, "", 1)[::-1], color
             else:

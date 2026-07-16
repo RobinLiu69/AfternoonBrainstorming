@@ -245,6 +245,13 @@ def main(game_screen: GameScreen, mode: str = "local",
             
             if action.action_type == "change_index":
                 index = action.data
+                continue
+            
+            if action.action_type == "index_next":
+                index = ((index + 1) + len(registry.get_page_colors(page))) % len(registry.get_page_colors(page))
+
+            if action.action_type == "index_prev":
+                index = ((index - 1) + len(registry.get_page_colors(page))) % len(registry.get_page_colors(page))
 
             dispatcher.dispatch(action, draft_state)
 
