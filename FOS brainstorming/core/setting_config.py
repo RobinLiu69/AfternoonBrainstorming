@@ -25,16 +25,18 @@ from shared.setting import FOLDER_PATH
 
 SETTING_PATH = os.path.join(FOLDER_PATH, "data/user_setting.json")
 
-SETTING_NAMES = Literal["display_mode", "hint_on"]
+SETTING_NAMES = Literal["display_mode", "hint_on", "last_join_ip"]
 
-VALID_SETTING: dict[str, tuple] = {
+VALID_SETTING: dict[str, tuple | None] = {
     "display_mode" : ("60", "80", "100", "fullscreen"),
     "hint_on" : (False, True),
+    "last_join_ip" : None,
 }
 
 DEFAULT_SETTING: dict[str, ] = {
     "display_mode" : "100",
     "hint_on" : False,
+    "last_join_ip" : "",
 }
 
 def load_setting(request: SETTING_NAMES):
@@ -44,7 +46,10 @@ def load_setting(request: SETTING_NAMES):
                 response = json.loads(file.read()).get(request, DEFAULT_SETTING[request])
         except (OSError, ValueError):
             return DEFAULT_SETTING[request]
-        return response if response in VALID_SETTING[request] else DEFAULT_SETTING[request]
+        allowed = VALID_SETTING[request]
+        if allowed is None:
+            return response if isinstance(response, str) else DEFAULT_SETTING[request]
+        return response if response in allowed else DEFAULT_SETTING[request]
     else:
         print("REQUEST INVALID") #If there are any error handling functions, paste here
 
@@ -52,12 +57,17 @@ def load_setting(request: SETTING_NAMES):
 def save_setting(setting_name: SETTING_NAMES, setting_data) -> None:
     if setting_name not in VALID_SETTING:
         print("SETTING NAME INVALID, SAVE UNSUCCESSFUL") #If there are any error handling functions, paste here
+        return
     try:
         with open(SETTING_PATH, "r", encoding="utf-8") as file:
             data = json.load(file)
-        
-        data[setting_name] = setting_data
+    except (OSError, ValueError):
+        data = {}
 
+    data[setting_name] = setting_data
+
+    try:
+        os.makedirs(os.path.dirname(SETTING_PATH), exist_ok=True)
         with open(SETTING_PATH, "w", encoding="utf-8") as file:
             json.dump(data, file, indent=4)
     except OSError:

@@ -58,6 +58,9 @@ DEFAULT_PORT = 5555
 
 
 def _connect_failure_reason(error: Exception) -> str:
+    import socket
+    if isinstance(error, socket.gaierror):
+        return "Invalid host IP"
     if isinstance(error, TimeoutError):
         return "Connection timed out (host unreachable?)"
     if isinstance(error, ConnectionRefusedError):
