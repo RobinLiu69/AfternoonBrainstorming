@@ -71,6 +71,7 @@ def _validate_run(run: dict) -> dict | None:
 
 def save(state: dict) -> None:
     try:
+        os.makedirs(os.path.dirname(SAVE_PATH), exist_ok=True)
         with open(SAVE_PATH, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2)
     except OSError:
