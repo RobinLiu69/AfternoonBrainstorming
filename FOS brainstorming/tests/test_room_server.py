@@ -185,6 +185,8 @@ def test_full_match_flow(room_server):
     joiner.connect()
 
     _send_lobby(creator, "set_file_auto_delete", bool_value=True)
+    _send_lobby(creator, "set_timer_mode", str_value="countdown")
+    _send_lobby(creator, "set_time_control", str_value="5+5")
     _send_lobby(creator, "start_match")
     wait_until(lambda: creator.pending_scene == "draft")
     wait_until(lambda: joiner.pending_scene == "draft")
@@ -207,11 +209,15 @@ def test_full_match_flow(room_server):
     assert battle_state["player2"]["deck"] == ["?"] * 12
     assert "rng_seed" not in battle_state
     assert battle_state["player2"]["draw_pile"] == ["?"] * len(battle_state["player2"]["draw_pile"])
+    assert battle_state["timer_mode"] == "countdown"
+    assert battle_state["countdown_time"] == 300
+    assert battle_state["player1"]["elapsed_time"] == 300
 
     creator_collector = StateCollector(creator)
     _send_battle(creator, "end_turn", "player1")
     wait_until(lambda: creator_collector.last is not None
                and creator_collector.last.get("turn_number") == 1)
+    assert 303 <= creator_collector.last["player1"]["elapsed_time"] <= 305
 
     _send_battle(joiner, "end_turn", "player2")
     wait_until(lambda: creator_collector.last.get("turn_number") == 2)

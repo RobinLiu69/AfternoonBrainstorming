@@ -256,12 +256,17 @@ class Room:
         game_state = GameState(player1, player2, neutral, BoardConfig(),
                                game_logger=logger)
         game_state.timer_mode = draft_state.timer_mode
+        game_state.countdown_time = self.lobby_state.countdown_seconds()
+        game_state.turn_increment_seconds = self.lobby_state.increment_seconds()
         game_state.file_auto_delete = draft_state.file_auto_delete
         game_state.board_dict = make_board_dict(game_state.board_config)
         self.game_state = game_state
 
+        effective_tc = (self.lobby_state.time_control
+                        if game_state.timer_mode == "countdown" else "unlimited")
         logger.info(f"room {self.code}")
         logger.info(f"timer mode {game_state.timer_mode}")
+        logger.info(f"time control {effective_tc}")
         logger.info(f"version {VERSION}", version=VERSION)
 
         self.battle_dispatcher = BattlingDispatcher(
@@ -274,14 +279,13 @@ class Room:
 
         player1.initialize(game_state)
         player2.initialize(game_state)
+        player1.timer_start(game_state)
+        player2.timer_start(game_state)
 
         self.scene = "battling"
         self._last_snapshot = None
         print(f"[Room {self.code}] draft finished, battle starting")
         self.channel.broadcast_scene_for("battling", game_state.to_dict_for)
-
-        player1.timer_start(game_state)
-        player2.timer_start(game_state)
         game_state.game_logger.log_turn_start("player1", game_state.turn_number)
 
     @staticmethod
@@ -346,13 +350,13 @@ class Room:
         assert self.game_state is not None
         game_state = self.game_state
         self._log_match_secrets()
-        game_state.player_timer["player1"] = game_state.player1.time_minutes_and_seconds
-        game_state.player_timer["player2"] = game_state.player2.time_minutes_and_seconds
+        game_state.player_timer["player1"] = game_state.player1.time_display
+        game_state.player_timer["player2"] = game_state.player2.time_display
 
         logger = game_state.game_logger
         logger.info(f"winner {winner}")
-        logger.info(f"player1 timer {game_state.player1.time_minutes_and_seconds}")
-        logger.info(f"player2 timer {game_state.player2.time_minutes_and_seconds}")
+        logger.info(f"player1 timer {game_state.player1.time_display}")
+        logger.info(f"player2 timer {game_state.player2.time_display}")
         logger.info(f"{game_state.game_statistics.export_for_charts()}")
         logger.info(f"{game_state.game_statistics.score_history}")
 
