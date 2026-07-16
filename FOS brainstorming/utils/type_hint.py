@@ -21,7 +21,7 @@ from typing import TypedDict
 
 class JobDictionary(TypedDict):
     colors_dict: dict[str, str]
-    colors_array: list[list[dict[str, str]]]
+    colors_array: list[dict[str, str]]
     RGB_colors: dict[str, tuple[int, int, int]]
     attack_type_tags: dict[str, str]
 

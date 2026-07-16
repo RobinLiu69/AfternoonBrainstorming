@@ -31,12 +31,12 @@ from screens.draft.exhibit_registry import ExhibitRegistry
 
 class DraftRenderer:
     def __init__(self, game_screen: GameScreen, exhibit_registry: ExhibitRegistry):
-        self.debugcnt = 0
         self.game_screen = game_screen
         self.exhibit_registry = exhibit_registry
         self._hint_box = HintBox(width=int(game_screen.block_size*3), height=int(game_screen.block_size))
         self.card_renderer = CardRenderer(game_screen)
         self.board_renderer = BoardRenderer(game_screen)
+        self.switch_rects = self.exhibit_registry.switch_rects
 
     def render_frame(self, page: int, index: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], draft_state: DraftState, hint_on: bool = False,
                      multiplayer: bool = False) -> None:
@@ -107,13 +107,11 @@ class DraftRenderer:
             draw_text(line, gs.big_text_font, WHITE, cx - bs * 2.0, cy + dy, gs.surface)
 
     def _render_colors(self, page: int) -> None:
-        for color in self.exhibit_registry.get_page_colors(page):
-            
+        for i, color in enumerate(self.exhibit_registry.get_page_colors(page)):
+            pygame.draw.rect(self.game_screen.surface, color, self.switch_rects[i])
 
     def _render_cards(self, page: int, index: int) -> None:
         for card in self.exhibit_registry.get_page(page, index):
-            if self.debugcnt == 0:
-                self.debugcnt += 1
             for render_object in card.get_render_data():
                 self.card_renderer.render(render_object)
         for card in self.exhibit_registry.get_magic_row():

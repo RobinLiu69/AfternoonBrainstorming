@@ -80,7 +80,7 @@ def main(game_screen: GameScreen, mode: str = "local",
          reconnect_timeout: float = 60.0,
          timer_mode: str = "timer",
          file_auto_delete: bool = False) -> DraftExitReason:
-    registry = ExhibitRegistry()
+    registry = ExhibitRegistry(game_screen)
     if draft_state is None:
         draft_state = DraftState()
     draft_state.board_config = BoardConfig(4, 3)
@@ -206,7 +206,7 @@ def main(game_screen: GameScreen, mode: str = "local",
             continue
 
         actions = collect_draft_actions(
-            draft_state.local_player, page, registry,
+            draft_state.local_player, page, index, registry,
             mouse_board_x, mouse_board_y,
         )
 
@@ -230,6 +230,9 @@ def main(game_screen: GameScreen, mode: str = "local",
                 page = _turn_page(page, -1, registry.page_count())
                 index = registry.index_count(page) - 1
                 continue
+            
+            if action.action_type == "change_index":
+                index = action.data
 
             dispatcher.dispatch(action, draft_state)
 

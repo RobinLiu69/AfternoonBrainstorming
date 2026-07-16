@@ -158,8 +158,7 @@ class Card(ABC):
                 self.attack_types = self.get_attack_type()
 
         if self.color_name:
-            rgb_str = JOB_DICTIONARY["RGB_colors"][self.color_name]
-            self.color = cast(tuple[int, int, int], tuple(map(int, rgb_str.split(", "))))
+            self.color = tuple(JOB_DICTIONARY["RGB_colors"][self.color_name])
             self.text_color = self.color
         
         if self.job == "ASS" and self.owner != "display":

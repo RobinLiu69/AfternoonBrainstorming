@@ -12,15 +12,14 @@
     },
 
     "colors_array": [
-        [{"W": "White"}],
-        [{"R": "Red"}, {"BR": "Brown"}],
-        [{"G": "Green"}],
-        [{"B": "Blue"}],
-        [{"O": "Orange"}],
-        [{"DKG": "DarkGreen"}],
-        [{"C": "Cyan"}],
-        [{"F": "Fuchsia"}],
-        [{"P": "Purple"}]
+        {"W": "White"},
+        {"R": "Red", "BR": "Brown"},
+        {"G": "Green"},
+        {"B": "Blue"},
+        {"DKG": "DarkGreen"},
+        {"C": "Cyan"},
+        {"F": "Fuchsia"},
+        {"P": "Purple"}
     ],
 
     "RGB_colors": {

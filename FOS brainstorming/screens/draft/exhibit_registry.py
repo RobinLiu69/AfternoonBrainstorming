@@ -21,6 +21,9 @@ from typing import Optional
 from shared.setting import JOB_DICTIONARY, CARD_SETTING
 from cards.base import Card
 from cards.factory import CardFactory
+from core.game_screen import GameScreen
+
+import pygame
 
 
 _JOB_ORDER = ["ADC", "AP", "TANK", "HF", "LF", "ASS", "APT", "SP"]
@@ -29,28 +32,29 @@ _MAGIC_DEFS = [("CUBES", 0, 2), ("HEAL", 1, 2), ("MOVE", 2, 2)]
 
 
 class ExhibitRegistry:
-    def __init__(self) -> None:
+    def __init__(self, game_screen: GameScreen) -> None:
+        self.game_screen = game_screen
         self._pages     = self._build_pages()
         self._magic_row = self._build_magic()
+        self.switch_rects = self._create_switch_rects()
 
     def _build_pages(self) -> list[list[Card]]:
         pages = []
         for page_array in JOB_DICTIONARY["colors_array"]:
             page: list[list[Card]] = []
-            for color_dict in page_array:
+            for color_tag, color_name in page_array.items():
                 color: list[Card] = []
-                for color_tag, color_name in color_dict.items():
-                    available = CARD_SETTING.get(color_name, {}).keys()
-                    for job, pos in zip(_JOB_ORDER, _POSITIONS):
-                        key = job + color_tag
-                        if job not in available:
-                            continue
-                        if key not in CardFactory._registry:
-                            continue
-                        try:
-                            color.append(CardFactory.create(key, "display", *pos))
-                        except ValueError:
-                            pass
+                available = CARD_SETTING.get(color_name, {}).keys()
+                for job, pos in zip(_JOB_ORDER, _POSITIONS):
+                    key = job + color_tag
+                    if job not in available:
+                        continue
+                    if key not in CardFactory._registry:
+                        continue
+                    try:
+                        color.append(CardFactory.create(key, "display", *pos))
+                    except ValueError:
+                        pass
                 if color:
                     page.append(color)
             if page:
@@ -94,3 +98,19 @@ class ExhibitRegistry:
             if card.board_x == board_x and card.board_y == board_y:
                 return card.job_and_color
         return "None"
+    
+    def _create_switch_rects(self):
+        RECT_NUM = 10
+        
+        TOP_LEFT = (self.game_screen.display_width / 2 - self.game_screen.block_size * 1.95, self.game_screen.display_height / 2 - self.game_screen.block_size * 1.9)
+        WIDTH = self.game_screen.block_size / 8
+        HEIGHT = self.game_screen.block_size / 8
+        
+        GAP = self.game_screen.block_size / 5
+        
+        switch_rects_pos = []
+        
+        for i in range(RECT_NUM):
+            switch_rects_pos.append(pygame.Rect(TOP_LEFT[0] + i * GAP, TOP_LEFT[1], WIDTH, HEIGHT))
+        
+        return switch_rects_pos
