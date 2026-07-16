@@ -46,14 +46,7 @@ FOLDER_PATH: str = _get_base()
 with open(f"{FOLDER_PATH}/config/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
-BLACK: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Black"].split(", "))))
-WHITE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["White"].split(", "))))
-BLUE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Blue"].split(", "))))
-RED: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Red"].split(", "))))
-GREEN: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Green"].split(", "))))
-ORANGE: tuple[int, int, int] = cast(tuple[int, int, int], tuple(map(int, JOB_DICTIONARY["RGB_colors"]["Orange"].split(", "))))
-
-COLORS_DICT: dict[str, tuple[float, float, float]] = dict(zip(JOB_DICTIONARY["colors_dict"].keys(), (cast(tuple[float, float, float], tuple(map(lambda RGB_color: float(RGB_color)/255, RGB_colors.split(", ")))) for RGB_colors in JOB_DICTIONARY["RGB_colors"].values())))
+COLORS_DICT: dict[str, tuple[float, float, float]] = dict(zip(JOB_DICTIONARY["colors_dict"].keys(), tuple(tuple(v) for v in JOB_DICTIONARY["RGB_colors"].values())))
 
 font_file_path = FOLDER_PATH+"/fonts/8bitOperatorPlus-Bold.ttf"
 

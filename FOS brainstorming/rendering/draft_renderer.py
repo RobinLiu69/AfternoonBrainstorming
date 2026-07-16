@@ -36,19 +36,21 @@ class DraftRenderer:
         self._hint_box = HintBox(width=int(game_screen.block_size*3), height=int(game_screen.block_size))
         self.card_renderer = CardRenderer(game_screen)
         self.board_renderer = BoardRenderer(game_screen)
+        self.switch_rects = self.exhibit_registry.switch_rects
 
-    def render_frame(self, page: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], draft_state: DraftState, hint_on: bool = False,
+    def render_frame(self, page: int, index: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], draft_state: DraftState, hint_on: bool = False,
                      multiplayer: bool = False) -> None:
         self.game_screen.render()
 
-        self._render_cards(page)
+        self._render_colors(page)
+        self._render_cards(page, index)
         self._render_boards(draft_state)
         self._render_deck_displays(draft_state)
         self._render_status_labels(draft_state)
         self._render_spectator_count(draft_state)
         if multiplayer:
             self._render_identity_label(draft_state.local_player)
-        self._render_hint(page, mouse_board_x, mouse_board_y, hint_on)
+        self._render_hint(page, index, mouse_board_x, mouse_board_y, hint_on)
 
         if draft_state.paused:
             self._render_pause_overlay(draft_state)
@@ -104,8 +106,12 @@ class DraftRenderer:
         for line, dy in zip(lines, offsets):
             draw_text(line, gs.big_text_font, WHITE, cx - bs * 2.0, cy + dy, gs.surface)
 
-    def _render_cards(self, page: int) -> None:
-        for card in self.exhibit_registry.get_page(page):
+    def _render_colors(self, page: int) -> None:
+        for i, color in enumerate(self.exhibit_registry.get_page_colors(page)):
+            pygame.draw.rect(self.game_screen.surface, color, self.switch_rects[i])
+
+    def _render_cards(self, page: int, index: int) -> None:
+        for card in self.exhibit_registry.get_page(page, index):
             for render_object in card.get_render_data():
                 self.card_renderer.render(render_object)
         for card in self.exhibit_registry.get_magic_row():
@@ -161,13 +167,13 @@ class DraftRenderer:
             self.game_screen.surface
         )
 
-    def _render_hint(self, page: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], hint_on: bool) -> None:
+    def _render_hint(self, page: int, index: int, mouse_board_x: Optional[int], mouse_board_y: Optional[int], hint_on: bool) -> None:
         self._hint_box.turn_on = hint_on
         if not hint_on:
             return
         if mouse_board_x is None or mouse_board_y is None:
             return
-        card_name = self.exhibit_registry.card_name_at(page, mouse_board_x, mouse_board_y)
+        card_name = self.exhibit_registry.card_name_at(page, index, mouse_board_x, mouse_board_y)
         if card_name == "None":
             return
         mouse_x, mouse_y = pygame.mouse.get_pos()

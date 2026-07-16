@@ -80,7 +80,7 @@ def main(game_screen: GameScreen, mode: str = "local",
          reconnect_timeout: float = 60.0,
          timer_mode: str = "timer",
          file_auto_delete: bool = False) -> DraftExitReason:
-    registry = ExhibitRegistry()
+    registry = ExhibitRegistry(game_screen)
     if draft_state is None:
         draft_state = DraftState()
     draft_state.board_config = BoardConfig(4, 3)
@@ -123,6 +123,7 @@ def main(game_screen: GameScreen, mode: str = "local",
     renderer = DraftRenderer(game_screen, registry)
 
     page = 0
+    index = 0
     hint_on = load_setting("hint_on")
     last_phase = draft_state.phase
     clock = pygame.time.Clock()
@@ -182,6 +183,7 @@ def main(game_screen: GameScreen, mode: str = "local",
 
         if draft_state.phase != last_phase:
             page = 0
+            index = 0
             last_phase = draft_state.phase
 
         if draft_state.phase == "done" and mode != "lan_client":
@@ -207,14 +209,14 @@ def main(game_screen: GameScreen, mode: str = "local",
                         return DraftExitReason(kind="quit")
                     if event.key in (pygame.K_n, pygame.K_ESCAPE):
                         confirming_quit = False
-            renderer.render_frame(page, mouse_board_x, mouse_board_y, draft_state, hint_on, multiplayer=True)
+            renderer.render_frame(page, index, mouse_board_x, mouse_board_y, draft_state, hint_on, multiplayer=True)
             _render_quit_confirm(game_screen)
             pygame.display.update()
             clock.tick(60)
             continue
 
         actions = collect_draft_actions(
-            draft_state.local_player, page, registry,
+            draft_state.local_player, page, index, registry,
             mouse_board_x, mouse_board_y,
         )
 
@@ -231,15 +233,20 @@ def main(game_screen: GameScreen, mode: str = "local",
 
             if action.action_type == "page_next":
                 page = _turn_page(page, 1, registry.page_count())
+                index = registry.index_count(page) - 1
                 continue
 
             if action.action_type == "page_prev":
                 page = _turn_page(page, -1, registry.page_count())
+                index = registry.index_count(page) - 1
                 continue
+            
+            if action.action_type == "change_index":
+                index = action.data
 
             dispatcher.dispatch(action, draft_state)
 
-        renderer.render_frame(page, mouse_board_x, mouse_board_y, draft_state, hint_on,
+        renderer.render_frame(page, index, mouse_board_x, mouse_board_y, draft_state, hint_on,
                               multiplayer=mode in ("lan_server", "lan_client"))
         pygame.display.update()
         clock.tick(60)
