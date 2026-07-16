@@ -19,7 +19,7 @@
 from __future__ import annotations
 import os
 import json
-from typing import Sequence, TextIO, Optional, cast
+from typing import Sequence, TextIO, Optional
 
 import pygame
 from pygame._sdl2.video import Window
@@ -34,10 +34,9 @@ with open(f"{FOLDER_PATH}/config/setting.json", "r", encoding="utf-8") as file:
 BASIC_FONT = FOLDER_PATH+SETTING["basic_font"]
 CHINESE_FONT = FOLDER_PATH+SETTING["chinese_font"]
 
-KETYS_TO_DISPLAY = SETTING["keys_to_display"]
+KEYS_TO_DISPLAY = SETTING["keys_to_display"]
 KEYS_TO_CHECK = SETTING["keys_to_check"]
 PIE_TITLE_TEXTS = SETTING["pie_title_texts"]
-BOARD_SIZE: tuple[int, int] = cast(tuple[int, int], tuple(map(int, SETTING["board_size"])))
 
 
 def draw_text(text: str, font: pygame.font.Font, text_color: Sequence[int], x: float, y: float, surface: pygame.surface.Surface) -> None:

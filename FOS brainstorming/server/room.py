@@ -266,7 +266,9 @@ class Room:
                         if game_state.timer_mode == "countdown" else "unlimited")
         logger.info(f"room {self.code}")
         logger.info(f"timer mode {game_state.timer_mode}")
-        logger.info(f"time control {effective_tc}")
+        logger.info(f"time control {effective_tc}",
+                    countdown_seconds=game_state.countdown_time,
+                    increment_seconds=game_state.turn_increment_seconds)
         logger.info(f"version {VERSION}", version=VERSION)
 
         self.battle_dispatcher = BattlingDispatcher(

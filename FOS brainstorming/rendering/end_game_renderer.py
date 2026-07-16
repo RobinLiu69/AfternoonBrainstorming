@@ -22,7 +22,7 @@ import pygame
 
 from shared.setting import BLACK, WHITE
 from core.game_state import GameState
-from core.game_screen import GameScreen, draw_text, KEYS_TO_CHECK, KETYS_TO_DISPLAY
+from core.game_screen import GameScreen, draw_text, KEYS_TO_CHECK, KEYS_TO_DISPLAY
 from screens.end_game.data_prep import set_all_invisible, init_datas, making_image, display_chart
 
 
@@ -30,7 +30,7 @@ def display_raw_data(display_player1_data: list[list[int]], display_player2_data
                      display_player1_name: list[str], display_player2_name: list[str], game_screen: GameScreen) -> None:
 
     for i in range(len(KEYS_TO_CHECK)):
-        draw_text(KETYS_TO_DISPLAY[i], game_screen.mid_text_font, WHITE,
+        draw_text(KEYS_TO_DISPLAY[i], game_screen.mid_text_font, WHITE,
                   game_screen.display_width/2 + game_screen.block_size*(-3.3+0.75*i),
                   game_screen.display_height/2 + game_screen.block_size*(-2.25), game_screen.surface)
     
@@ -188,7 +188,7 @@ class EndGameRenderer:
         p1_name, p2_name = self._display_p1_name, self._display_p2_name
 
         for i in range(len(KEYS_TO_CHECK)):
-            draw_text(KETYS_TO_DISPLAY[i], gs.mid_text_font, WHITE,
+            draw_text(KEYS_TO_DISPLAY[i], gs.mid_text_font, WHITE,
                       gs.display_width/2 + gs.block_size*(-3.3 + 0.75*i),
                       gs.display_height/2 + gs.block_size*(-2.25), gs.surface)
 

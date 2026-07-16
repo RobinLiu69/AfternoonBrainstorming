@@ -39,8 +39,8 @@ class BlueCard(Card):
             if isinstance(card, BlueCard) and not card.nullify:
                 card.after_token(game_state)
 
-        if game_state.players_token[self.owner] // game_state.how_many_token_to_draw_a_card >= 1:
-            game_state.players_token[self.owner] -= game_state.how_many_token_to_draw_a_card
+        if game_state.players_token[self.owner] // game_state.tokens_to_draw_a_card >= 1:
+            game_state.players_token[self.owner] -= game_state.tokens_to_draw_a_card
             game_state.card_to_draw[self.owner] += 1
             game_state.game_statistics.increment(StatType.TOKEN_USE, self.owner, 1)
             self.draw_card_effect(game_state)

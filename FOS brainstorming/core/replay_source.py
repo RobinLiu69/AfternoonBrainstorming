@@ -94,6 +94,10 @@ class ReplaySource:
 
             if msg.startswith("time control "):
                 self.metadata["time_control"] = msg[len("time control "):].strip()
+                if "countdown_seconds" in entry:
+                    self.metadata["countdown_seconds"] = entry["countdown_seconds"]
+                if "increment_seconds" in entry:
+                    self.metadata["increment_seconds"] = entry["increment_seconds"]
 
             if msg.startswith("campaign stage "):
                 self.metadata["campaign_stage"] = msg[len("campaign stage "):].strip()

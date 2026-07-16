@@ -229,7 +229,7 @@ def test_apb_swing_with_armed_adcb_gets_chain_bonus():
     s = BlueStrategy()
     gs = make_game_state()
     gs.players_token["player2"] = 1
-    gs.how_many_token_to_draw_a_card = 3
+    gs.tokens_to_draw_a_card = 3
     apb = place_card(gs, "APB", "player2", 1, 1)
     apb.numbness = False
     place_card(gs, "ADCW", "player1", 1, 2)
@@ -245,7 +245,7 @@ def test_numb_adcb_doesnt_arm_token_draw_chain():
     s = BlueStrategy()
     gs = make_game_state()
     gs.players_token["player2"] = 1
-    gs.how_many_token_to_draw_a_card = 3
+    gs.tokens_to_draw_a_card = 3
     apb = place_card(gs, "APB", "player2", 1, 1)
     apb.numbness = False
     place_card(gs, "ADCW", "player1", 1, 2)

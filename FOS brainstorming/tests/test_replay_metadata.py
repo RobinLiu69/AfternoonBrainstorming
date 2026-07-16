@@ -75,7 +75,8 @@ def _timed_replay_source(tmp_path):
     t0 = datetime(2026, 1, 1, 12, 0, 0)
     entries = [
         {"timestamp": t0.isoformat(), "message": "timer mode countdown"},
-        {"timestamp": t0.isoformat(), "message": "time control 5+5"},
+        {"timestamp": t0.isoformat(), "message": "time control 5+5",
+         "countdown_seconds": 300, "increment_seconds": 5},
         {"timestamp": (t0 + timedelta(seconds=30)).isoformat(), "message": "action",
          "is_action": True, "action_player": "player1", "action_type": "end_turn"},
         {"timestamp": (t0 + timedelta(seconds=50)).isoformat(), "message": "action",
@@ -89,6 +90,8 @@ def _timed_replay_source(tmp_path):
 def test_time_control_metadata_and_timestamps(tmp_path):
     source, t0 = _timed_replay_source(tmp_path)
     assert source.metadata["time_control"] == "5+5"
+    assert source.metadata["countdown_seconds"] == 300
+    assert source.metadata["increment_seconds"] == 5
     assert source.start_timestamp == t0.timestamp()
     assert source.action_timestamps == [
         t0.timestamp() + 30,

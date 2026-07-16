@@ -18,20 +18,29 @@
 
 from dataclasses import dataclass, field
 
+from shared.setting import SETTING
+
 
 INFINITE_RECONNECT: float = float("inf")
 RECONNECT_TIMEOUT_OPTIONS: tuple[float, ...] = (30.0, 60.0, 120.0, 300.0, INFINITE_RECONNECT)
 
-TIME_CONTROL_OPTIONS: dict[str, tuple[int, int]] = {
-    "5min": (300, 0),
-    "10min": (600, 0),
-    "15min": (900, 0),
-    "20min": (1200, 0),
-    "5+5": (300, 5),
-    "10+10": (600, 10),
-    "15+10": (900, 10),
-}
-DEFAULT_TIME_CONTROL: str = "10min"
+
+def _load_time_control_options() -> dict[str, tuple[int, int]]:
+    options: dict[str, tuple[int, int]] = {}
+    for label, value in SETTING.get("time_control_options", {}).items():
+        try:
+            options[str(label)] = (int(value[0]), int(value[1]))
+        except (TypeError, ValueError, IndexError):
+            print(f"[lobby_state] ignoring bad time control option {label!r}: {value!r}")
+    if not options:
+        options = {"10min": (600, 0)}
+    return options
+
+
+TIME_CONTROL_OPTIONS: dict[str, tuple[int, int]] = _load_time_control_options()
+DEFAULT_TIME_CONTROL: str = str(SETTING.get("default_time_control", ""))
+if DEFAULT_TIME_CONTROL not in TIME_CONTROL_OPTIONS:
+    DEFAULT_TIME_CONTROL = next(iter(TIME_CONTROL_OPTIONS))
 
 
 @dataclass

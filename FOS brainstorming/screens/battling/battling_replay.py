@@ -118,7 +118,10 @@ def _build_replay_game_state(source: ReplaySource) -> GameState:
         game_state.timer_mode = meta["timer_mode"]
 
     time_control = meta.get("time_control", "")
-    if time_control in TIME_CONTROL_OPTIONS:
+    if "countdown_seconds" in meta:
+        game_state.countdown_time = int(meta["countdown_seconds"])
+        game_state.turn_increment_seconds = int(meta.get("increment_seconds", 0))
+    elif time_control in TIME_CONTROL_OPTIONS:
         countdown, increment = TIME_CONTROL_OPTIONS[time_control]
         game_state.countdown_time = countdown
         game_state.turn_increment_seconds = increment
@@ -331,7 +334,9 @@ def _begin_takeover(source: ReplaySource, game_state: GameState) -> GameLogger:
     logger.info(f"player2 deck {'-'.join(meta.get('player2_deck', []))}")
     logger.info(f"timer mode {meta.get('timer_mode', game_state.timer_mode)}")
     if meta.get("time_control"):
-        logger.info(f"time control {meta['time_control']}")
+        logger.info(f"time control {meta['time_control']}",
+                    countdown_seconds=game_state.countdown_time,
+                    increment_seconds=game_state.turn_increment_seconds)
     if meta.get("campaign_stage"):
         logger.info(f"campaign stage {meta['campaign_stage']}")
     logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
@@ -359,7 +364,9 @@ def _export_replay_log(
     logger.info(f"player2 deck {'-'.join(meta.get('player2_deck', []))}")
     logger.info(f"timer mode {meta.get('timer_mode', game_state.timer_mode)}")
     if meta.get("time_control"):
-        logger.info(f"time control {meta['time_control']}")
+        logger.info(f"time control {meta['time_control']}",
+                    countdown_seconds=game_state.countdown_time,
+                    increment_seconds=game_state.turn_increment_seconds)
     if meta.get("campaign_stage"):
         logger.info(f"campaign stage {meta['campaign_stage']}")
     logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
