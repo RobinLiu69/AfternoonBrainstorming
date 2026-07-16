@@ -191,8 +191,8 @@ def _rebuild_and_fast_forward(
     game_state.board_dict = initialize_board(game_screen, game_state.board_config)
     _initialize_players(game_state)
 
-    game_state.player1.time_minutes_and_seconds = "--:--"
-    game_state.player2.time_minutes_and_seconds = "--:--"
+    game_state.player1.time_display = "--:--"
+    game_state.player2.time_display = "--:--"
     game_state.player1.start_time = -1
     game_state.player2.start_time = -1
 
@@ -366,8 +366,8 @@ def _export_replay_log(
         else:
             winner = f"undetermined (re-sim ended at score {game_state.score}, never reached +/-10)"
         logger.info(f"winner {winner}")
-        logger.info(f"player1 timer {game_state.player1.time_minutes_and_seconds}")
-        logger.info(f"player2 timer {game_state.player2.time_minutes_and_seconds}")
+        logger.info(f"player1 timer {game_state.player1.time_display}")
+        logger.info(f"player2 timer {game_state.player2.time_display}")
         logger.info(f"{game_state.game_statistics.export_for_charts()}")
         logger.info(f"{game_state.game_statistics.score_history}")
     finally:
@@ -418,8 +418,8 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
 
     _initialize_players(game_state)
 
-    game_state.player1.time_minutes_and_seconds = "--:--"
-    game_state.player2.time_minutes_and_seconds = "--:--"
+    game_state.player1.time_display = "--:--"
+    game_state.player2.time_display = "--:--"
     game_state.player1.start_time = -1
     game_state.player2.start_time = -1
 
@@ -436,7 +436,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
     taken_over: bool = False
     takeover_logger: Optional[GameLogger] = None
     winner: str = "None"
-    card_info: list = ["None", 0]
+    picked_hand_card: list = ["None", 0]
 
     clock = pygame.time.Clock()
     running: bool = True
@@ -498,14 +498,14 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
                 taken_over = False
                 winner = "None"
                 controller = "player1"
-                card_info = ["None", 0]
+                picked_hand_card = ["None", 0]
                 _rebuild_and_fast_forward(
                     source, game_state, game_screen,
                     game_renderer, dispatcher, 0, buffs,
                 )
                 paused = True
             else:
-                for action in collect_actions(controller, card_info, game_state, game_screen, events):
+                for action in collect_actions(controller, picked_hand_card, game_state, game_screen, events):
                     result = dispatcher.dispatch(action, game_state)
                     if action.action_type == "toggle_hint":
                         hint_on = not hint_on

@@ -306,6 +306,10 @@ class BattlingDispatcher:
                 return ActionResult(True)
 
             case "end_turn":
+                if game_state.timer_mode == "countdown" and game_state.turn_increment_seconds > 0:
+                    ending_player = game_state.get_player(action.player)
+                    ending_player.elapsed_time += game_state.turn_increment_seconds
+                    ending_player._refresh_time_display()
                 game_state.turn_number += 1
                 opponent = game_state.get_opponent_name(action.player)
                 game_state.get_player(action.player).turn_end(game_state)

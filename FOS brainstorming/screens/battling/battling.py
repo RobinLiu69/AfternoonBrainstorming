@@ -53,33 +53,6 @@ def _render_quit_confirm(game_screen: GameScreen) -> None:
         draw_text(line, game_screen.mid_text_font, WHITE, cx - w / 2, cy + dy, game_screen.surface)
 
 
-def number_key(number: int, mouse_x: int, mouse_y: int,
-               mouse_board_x: int | None, mouse_board_y: int | None,
-               controller: str, game_state: GameState) -> None:
-    if mouse_board_x is not None and mouse_board_y is not None:
-        match controller:
-            case "player1":
-                game_state.player1.play_card(mouse_board_x, mouse_board_y, number-1, game_state)
-            case "player2":
-                game_state.player2.play_card(mouse_board_x, mouse_board_y, number-1, game_state)
-    # elif mouse_x < game_screen.display_width/2-game_screen.block_size*2 or mouse_x > game_screen.display_width/2+game_screen.block_size*2:
-    #     if mouse_x < game_screen.display_width/2 and controller == "player1":
-    #         name, i = game_state.player1.get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen)
-    #         if number-1 != i: return
-    #         if name != "None":
-    #             if game_state.player1.hand[i].endswith(" (+)"):
-    #                 game_state.player1.hand[i] = game_state.player1.hand[i].replace(" (+)", "")
-    #             else:
-    #                 game_state.player1.hand[i] += " (+)"
-    #     elif mouse_x > game_screen.display_width/2 and controller == "player2":
-    #         name, i = game_state.player2.get_hand_name_by_mouse_pos(mouse_x, mouse_y, game_screen)
-    #         if number-1 != i: return
-    #         if name != "None":
-    #             if game_state.player2.hand[i].endswith(" (+)"):
-    #                 game_state.player2.hand[i] = game_state.player2.hand[i].replace(" (+)", "")
-    #             else:
-    #                 game_state.player2.hand[i] += " (+)"
-
 def _sweep_dead_cards_visually(game_state: GameState, game_renderer: GameRenderer) -> None:
     anim_positions = game_renderer.combat_animator.get_active_positions()
 
@@ -99,12 +72,6 @@ def _sweep_dead_cards_visually(game_state: GameState, game_renderer: GameRendere
             else:
                 survivors.append(card)
         container[:] = survivors
-
-
-def display_controller(controller: str, game_screen: GameScreen) -> None:
-    draw_text(f"Ture: {controller}", game_screen.big_text_font,
-              WHITE, game_screen.display_width/2 - game_screen.block_size*0.6,
-              game_screen.display_height/2 - game_screen.block_size*2.1, game_screen.surface)
 
 
 def _draw_ai_focus(game_screen: GameScreen, focus: tuple[int, int]) -> None:
@@ -157,16 +124,15 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
     if not is_client:
         game_state.player1.initialize(game_state)
         game_state.player2.initialize(game_state)
+        game_state.player1.timer_start(game_state)
+        game_state.player2.timer_start(game_state)
 
     if is_server and server:
         server.broadcast_scene_for("battling", game_state.to_dict_for)
 
-    game_state.player1.timer_start(game_state)
-    game_state.player2.timer_start(game_state)
-
     controller: str = "player1"
     hint_on = load_setting("hint_on")
-    card_info = ["None", 0]
+    picked_hand_card = ["None", 0]
  
     game_state.game_logger.log_turn_start("player1", game_state.turn_number)
  
@@ -196,6 +162,10 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                     last_reconnect_attempt = now
                     if client.try_reconnect():
                         print("[battling] reconnect succeeded")
+                        if client.scene != "battling":
+                            print(f"[battling] host is no longer in battle (scene={client.scene!r}), leaving")
+                            server_closed_screen.main(game_screen)
+                            return "None"
                         if client.initial_state:
                             game_state.apply_dict(client.initial_state, game_renderer)
                 if client.reconnect_refused:
@@ -245,7 +215,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             pygame.display.update()
             continue
 
-        actions = collect_actions(local_controller, card_info, game_state, game_screen)
+        actions = collect_actions(local_controller, picked_hand_card, game_state, game_screen)
 
         if mode == "campaign" and ai_controller is not None:
             renderer_busy = bool(

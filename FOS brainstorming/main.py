@@ -121,12 +121,12 @@ def _broadcast_log_backup(game_state: GameState, server: LANServer) -> None:
 
 
 def _finalize_battle(game_state: GameState, game_screen: GameScreen, winner: str, server: Optional[LANServer] = None) -> None:
-    game_state.player_timer["player1"] = game_state.player1.time_minutes_and_seconds
-    game_state.player_timer["player2"] = game_state.player2.time_minutes_and_seconds
+    game_state.player_timer["player1"] = game_state.player1.time_display
+    game_state.player_timer["player2"] = game_state.player2.time_display
 
     game_state.game_logger.info(f"winner {winner}")
-    game_state.game_logger.info(f"player1 timer {game_state.player1.time_minutes_and_seconds}")
-    game_state.game_logger.info(f"player2 timer {game_state.player2.time_minutes_and_seconds}")
+    game_state.game_logger.info(f"player1 timer {game_state.player1.time_display}")
+    game_state.game_logger.info(f"player2 timer {game_state.player2.time_display}")
     game_state.game_logger.info(f"{game_state.game_statistics.export_for_charts()}")
     game_state.game_logger.info(f"{game_state.game_statistics.score_history}")
 
@@ -190,6 +190,11 @@ def main() -> None:
                     if exit_reason.kind != "finished" or exit_reason.draft_state is None:
                         continue
                     game_state = _build_game_state_from_draft(exit_reason.draft_state)
+                    game_state.countdown_time = lobby_state.countdown_seconds()
+                    game_state.turn_increment_seconds = lobby_state.increment_seconds()
+                    effective_tc = (lobby_state.time_control
+                                    if game_state.timer_mode == "countdown" else "unlimited")
+                    game_state.game_logger.info(f"time control {effective_tc}")
                     winner = battling.main(
                         game_state, game_screen,
                         mode="lan_server", server=server,
