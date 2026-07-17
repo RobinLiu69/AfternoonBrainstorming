@@ -2193,3 +2193,61 @@ debug:
     card_blue 頂層誤入超出頂層套件的相對匯入 (會使遊戲啟動即 ImportError) 已移除
     測試: APTC 減傷測試改進化限定 新增未進化不減傷/基礎給錢兩測試 APTB 測試補 update() 共274通過
 ----------------
+=======================
+2026/07/17-4.4.0.0
+編寫者 Anemois, Robin
+----------------
+新增:
+    專用多房間伺服器 (server/ 新套件)
+        server_main.py 無頭啟動 一台伺服器同時開多個房間 各房間獨立走完 lobby/選卡/對戰
+        協議強化: 訊息驗證與防呆 log 加入戰爭迷霧 (不再記錄對手未公開的資訊)
+        tests/test_room_server.py 房間全流程測試
+    時間控制 (西洋棋鐘)
+        setting.json time_control_options 資料驅動預設:
+            純讀秒 5min/10min/15min/20min 與加秒制 5+5/10+10/15+10 (基礎秒數+每回合增量) 預設 10min
+        lobby 房主選定後鎖定 選卡與對戰全程沿用
+        回放從動作時間戳重建雙方時鐘
+        tests/test_time_control.py
+    選卡畫面色列切換
+        每頁依顏色分列 上方色點鈕滑鼠點擊直接跳到該色
+        鍵盤 Shift+A/D/←/→/Space 切換色列 不含 Shift 維持原本翻頁
+    加入畫面重做
+        IP 格式驗證 預設 localhost 自動記住上次連線 IP (last_join_ip)
+        支援剪貼簿貼上 (含 mac pbpaste) 新增房間欄位 欄位視覺改無框
+    回放檔案管理: 重新命名/複製/刪除 log 檔與 .jsonl 同步處理
+    回放操作: ← 回上一步 (原本只能往前)
+    戰役選關畫面 Konami 密技 (上上下下左右左右BA) 解鎖關卡
+    README 卡牌介紹自動生成 (tools/update_readme.py)
+        從 card_hints/card_setting 直出 AUTO-CARDS 標記區塊 標記外手寫內容不動 --check 供 CI 驗證過期
+平衡性調整:
+    HFW 9/2 -> 10/2
+    TANKG 8/2 -> 9/1
+    ADCBR 6/6 -> 6/5
+    TANKBR 20/1 -> 22/1 效果重做: 受到攻擊時麻痺最近隊友 (原: 本回合沒被攻擊則回合開始-4生命)
+    HFBR 11/5 -> 9/5
+    APTBR 進場所有對手+2護盾 -> 進場及自身回合開始時所有對手+1護盾 (攻擊buff最近友方不變)
+    APP 效果重做: 進場及攻擊時使最近敵方單位失去護甲/額外攻擊/效果 攻擊附帶麻痺
+        (原: 進場對最近單位破甲並將攻擊力降為該單位原本攻擊力) 效果剝奪補 tests/test_nullify.py
+    APC(+) 進場攻擊改由可攻擊之隨機友方最近/最遠單位執行
+    APO 提示補註: 回合開始獲得的移動魔法牌不被麻痺無效化
+    以上卡片提示與 README(中英) 同步
+修改:
+    setting.json 清理: countdown_time 移除(由時間控制取代) how_many_token_to_draw_a_card -> tokens_to_draw_a_card board_size 移除
+    data/ 不再進版控 (user_setting.json / endless_progress.json 移出 repo 遊戲會自動重建)
+優化:
+    按鈕渲染改 left/middle/right 錨點自動計算含 padding 並以實際字框計算垂直置中
+    lobby 畫面簡化 選卡設定鎖定為 lobby 所選
+    卡牌 hook 重新命名 cards/base.py 整理
+    Pylance 型別修正: load_setting 依設定名回傳精確型別(overload) 無效名稱改拋 ValueError 呼叫端 cast 移除
+修正:
+    戰役牌組編輯器開啟即崩潰 (選卡色列改版後未同步)
+        解釋: ExhibitRegistry 改為必填 game_screen _pages 改三層色列結構 renderer 介面新增 index 與 switch_rects campaign 包裝層皆未跟上
+        修法: 包裝層攤平色列補齊新介面 campaign 維持一頁一色的原有操作 附測試修復 共313通過
+    lan_client 斷線重連成功的同一幀崩潰
+        解釋: 重連成功把 disconnect_since 設回 None 同幀後續 host-gone 逾時判斷仍執行 now - None 拋 TypeError
+        修法: 逾時判斷加 disconnect_since is not None 防護
+    選卡 S 鍵加卡在非首色列會抓錯卡 (card_name_at 未帶色列 index)
+    斷線重連後的場景交接判定
+    回放第一步被吞 與 上一步/下一步落在同一動作
+    endless 存檔在 data/ 資料夾不存在時默默失敗 (fresh clone) 存檔前自動建目錄
+----------------

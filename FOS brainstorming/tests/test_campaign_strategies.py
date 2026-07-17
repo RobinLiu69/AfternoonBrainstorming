@@ -16,6 +16,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+from typing import Any
+
 import pytest
 
 from cards.factory import CardFactory
@@ -543,10 +545,18 @@ def test_deck_builder_unlock_progression():
     assert set(deck_builder._unlocked_color_codes("boss", set())) == {"W", "R", "B", "G", "O"}
 
 
+def _stub_screen() -> Any:
+    class _Screen:
+        display_width = 800
+        display_height = 600
+        block_size = 100
+    return _Screen()
+
+
 def test_deck_builder_registry_filters_pages_by_unlock():
     from campaign import deck_builder
     from screens.draft.exhibit_registry import ExhibitRegistry
-    base = ExhibitRegistry()
+    base = ExhibitRegistry(_stub_screen())
 
     white_only = deck_builder._CampaignExhibitRegistry(base, ["W"])
     page_colors = {
@@ -568,7 +578,7 @@ def test_deck_builder_registry_filters_pages_by_unlock():
 def test_deck_builder_magic_row_always_available():
     from campaign import deck_builder
     from screens.draft.exhibit_registry import ExhibitRegistry
-    base = ExhibitRegistry()
+    base = ExhibitRegistry(_stub_screen())
     registry = deck_builder._CampaignExhibitRegistry(base, ["W"])
     names = {c.job_and_color for c in registry.get_magic_row()}
     assert {"HEAL", "MOVE", "CUBES"}.issubset(names)
