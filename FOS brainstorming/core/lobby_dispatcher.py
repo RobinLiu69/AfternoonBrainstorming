@@ -90,6 +90,8 @@ class LobbyDispatcher:
 
     def dispatch(self, action: LobbyAction) -> LobbyResult:
         match self.mode:
+            case "local":
+                return self._execute(action)
             case "lan_server":
                 result = self._execute(action)
                 if result.success:
@@ -220,7 +222,7 @@ class LobbyDispatcher:
                 return LobbyResult(True)
 
             case "start_match":
-                if not self._state.peer_connected:
+                if self.mode != "local" and not self._state.peer_connected:
                     return LobbyResult(False, message="no peer")
                 self.start_signal = True
                 return LobbyResult(True)
