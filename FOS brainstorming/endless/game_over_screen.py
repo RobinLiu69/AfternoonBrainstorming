@@ -37,7 +37,6 @@ def main(game_screen: GameScreen, run: dict, state: dict, floors_cleared: int, n
     box_width: int = int(bs / 30)
 
     continue_button = Button(bs * 1.5, bs * 0.6, cx - bs * 0.75, cy + bs * 2.2,
-                             bs * 0.3, bs * 0.15,
                              box_width=box_width, font=game_screen.big_text_font, text="continue")
 
     relic_names = ", ".join(RELICS[r]["label"] for r in run.get("relics", []) if r in RELICS)

@@ -24,6 +24,7 @@ from collections import deque
 
 from shared.setting import SETTING
 from shared.attack_request import AttackRequest
+from core.lobby_state import TIME_CONTROL_OPTIONS, DEFAULT_TIME_CONTROL
 from core.game_statistics import GameStatistics
 from core.player import Player
 from shared.combat_event import CombatEvent
@@ -57,7 +58,8 @@ class GameState:
     player_timer: dict[str, str] = field(default_factory=lambda: {"player1": "0", "player2": "0"})
     timer_mode: str = "timer"
         
-    coutdown_time = int(SETTING["countdown_time"])
+    countdown_time: int = TIME_CONTROL_OPTIONS[DEFAULT_TIME_CONTROL][0]
+    turn_increment_seconds: int = TIME_CONTROL_OPTIONS[DEFAULT_TIME_CONTROL][1]
     rng_seed: int = field(default_factory=lambda: _seed_random())
     
     pending_combat_events: list[CombatEvent] = field(default_factory=list)
@@ -72,7 +74,7 @@ class GameState:
     win_threshold: int = 10
 
     players_luck: dict[str, int] = field(default_factory=lambda: {"player1": 50, "player2": 50, "neutral": 50})
-    how_many_token_to_draw_a_card: int = int(SETTING["how_many_token_to_draw_a_card"])
+    tokens_to_draw_a_card: int = int(SETTING["tokens_to_draw_a_card"])
     players_token: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0, "neutral": 0})
     players_totem: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0, "neutral": 0})
     players_coin: dict[str, int] = field(default_factory=lambda: {"player1": 0, "player2": 0})
@@ -141,7 +143,7 @@ class GameState:
             },
             "player_timer": self.player_timer,
             "timer_mode": self.timer_mode,
-            "countdown_time": self.coutdown_time,
+            "countdown_time": self.countdown_time,
             "file_auto_delete": self.file_auto_delete,
             "score": self.score,
             "turn_number": self.turn_number,
@@ -166,6 +168,7 @@ class GameState:
         data = self.to_dict()
         data["player1"] = self.player1.to_dict_for(viewer)
         data["player2"] = self.player2.to_dict_for(viewer)
+        data.pop("rng_seed", None)
         return data
 
     def apply_dict(self, data: dict, game_renderer: GameRenderer) -> None:
@@ -178,6 +181,7 @@ class GameState:
 
         self.player_timer = data["player_timer"]
         self.timer_mode = data["timer_mode"]
+        self.countdown_time = data.get("countdown_time", self.countdown_time)
         self.file_auto_delete = data["file_auto_delete"]
         self.score = data["score"]
         self.turn_number = data["turn_number"]

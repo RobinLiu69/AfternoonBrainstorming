@@ -35,6 +35,7 @@ class LANServer:
         self.god_view = god_view
         self.host_seat = host_seat
         self.scene: str = ""
+        self.room_code: str = ""
 
         self.heartbeat_interval = heartbeat_interval
         self.heartbeat_timeout = heartbeat_timeout
@@ -182,7 +183,7 @@ class LANServer:
                 conn.settimeout(5.0)
                 hello = _recv_msg(conn)
                 conn.settimeout(None)
-            except OSError:
+            except (OSError, ValueError):
                 conn.close()
                 continue
 
@@ -191,57 +192,61 @@ class LANServer:
                 conn.close()
                 continue
 
-            client_version = hello.get("version", "")
-            if client_version != self.version:
-                try:
-                    _send_msg(conn, {
-                        "type": "rejected",
-                        "reason": "version_mismatch",
-                        "server_version": self.version,
-                        "client_version": client_version,
-                    })
-                except OSError:
-                    pass
-                conn.close()
-                print(f"[LANServer] Rejected {addr}: version mismatch (client={client_version!r}, server={self.version!r})")
-                continue
+            self.handle_connection(conn, addr, hello)
 
-            intent = hello.get("intent", "play")
-            token = hello.get("token")
-            role, issued_token = self._decide_role(intent, token)
-            is_reconnect = (role in ("player1", "player2")
-                            and token is not None and token == issued_token)
-            peer_joined = role in ("player1", "player2")
-
-            if peer_joined and self.on_peer_reconnect is not None:
-                try:
-                    self.on_peer_reconnect()
-                except Exception as e:
-                    print(f"[LANServer] on_peer_reconnect raised: {e}")
-
-            state = self.on_client_connect(role) if self.on_client_connect is not None else {}
-
+    def handle_connection(self, conn: socket.socket, addr, hello: dict) -> None:
+        client_version = hello.get("version", "")
+        if client_version != self.version:
             try:
                 _send_msg(conn, {
-                    "type": "welcome",
-                    "role": role,
-                    "state": state,
-                    "version": self.version,
-                    "scene": self.scene,
-                    "token": issued_token,
+                    "type": "rejected",
+                    "reason": "version_mismatch",
+                    "server_version": self.version,
+                    "client_version": client_version,
                 })
             except OSError:
-                conn.close()
-                continue
+                pass
+            conn.close()
+            print(f"[LANServer] Rejected {addr}: version mismatch (client={client_version!r}, server={self.version!r})")
+            return
 
-            with self._lock:
-                self._clients.append((conn, role))
-                self._last_seen[conn] = time.monotonic()
-            print(f"[LANServer] Assigned role={role} to {addr} (reconnect={is_reconnect})")
+        intent = hello.get("intent", "play")
+        token = hello.get("token")
+        role, issued_token = self._decide_role(intent, token)
+        is_reconnect = (role in ("player1", "player2")
+                        and token is not None and token == issued_token)
+        peer_joined = role in ("player1", "player2")
 
-            threading.Thread(
-                target=self._client_loop, args=(conn, addr), daemon=True
-            ).start()
+        if peer_joined and self.on_peer_reconnect is not None:
+            try:
+                self.on_peer_reconnect()
+            except Exception as e:
+                print(f"[LANServer] on_peer_reconnect raised: {e}")
+
+        state = self.on_client_connect(role) if self.on_client_connect is not None else {}
+
+        try:
+            _send_msg(conn, {
+                "type": "welcome",
+                "role": role,
+                "state": state,
+                "version": self.version,
+                "scene": self.scene,
+                "token": issued_token,
+                "room": self.room_code,
+            })
+        except OSError:
+            conn.close()
+            return
+
+        with self._lock:
+            self._clients.append((conn, role))
+            self._last_seen[conn] = time.monotonic()
+        print(f"[LANServer] Assigned role={role} to {addr} (reconnect={is_reconnect})")
+
+        threading.Thread(
+            target=self._client_loop, args=(conn, addr), daemon=True
+        ).start()
 
     def _client_loop(self, conn: socket.socket, addr) -> None:
         while True:
@@ -361,6 +366,7 @@ class LANServer:
             "type": "scene",
             "scene": scene,
             "state": state_for(role),
+            "role": role,
         })
 
     def broadcast_game_over(self, winner: str, statistics: dict) -> None:
@@ -421,6 +427,17 @@ class LANServer:
             return
         self._running = False
 
+        if self._server_sock:
+            try:
+                self._server_sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            try:
+                self._server_sock.close()
+            except OSError:
+                pass
+            self._server_sock = None
+
         if self._accept_thread is not None:
             self._accept_thread.join(timeout=2.0)
             self._accept_thread = None
@@ -433,19 +450,4 @@ class LANServer:
                     pass
             self._clients.clear()
             self._last_seen.clear()
-
-        if self._server_sock:
-            try:
-                self._server_sock.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
-            try:
-                self._server_sock.close()
-            except OSError:
-                pass
-            self._server_sock = None
- 
-        if self._accept_thread is not None:
-            self._accept_thread.join(timeout=0.3)
-            self._accept_thread = None
 

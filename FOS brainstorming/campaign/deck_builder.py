@@ -77,22 +77,27 @@ class _CampaignExhibitRegistry:
     def __init__(self, base: ExhibitRegistry, unlocked_codes: list[str]):
         self._pages: list[list[Card]] = []
         for page in base._pages:
-            if not page:
-                continue
-            if _color_code_of(page[0].job_and_color) in unlocked_codes:
-                self._pages.append(page)
+            for color_row in page:
+                if not color_row:
+                    continue
+                if _color_code_of(color_row[0].job_and_color) in unlocked_codes:
+                    self._pages.append(color_row)
         self._magic_row: list[Card] = list(base.get_magic_row())
+        self.switch_rects = base.switch_rects
 
     def page_count(self) -> int:
         return len(self._pages)
 
-    def get_page(self, page: int) -> list[Card]:
+    def get_page(self, page: int, index: int = 0) -> list[Card]:
         return self._pages[page] if 0 <= page < len(self._pages) else []
+
+    def get_page_colors(self, page: int) -> list[tuple[int, int, int]]:
+        return []
 
     def get_magic_row(self) -> list[Card]:
         return self._magic_row
 
-    def card_name_at(self, page: int, board_x: Optional[int], board_y: Optional[int]) -> str:
+    def card_name_at(self, page: int, index: int, board_x: Optional[int], board_y: Optional[int]) -> str:
         if board_x is None or board_y is None:
             return "None"
         for card in self.get_page(page):
@@ -131,7 +136,7 @@ def _collect_actions(page: int, registry: _CampaignExhibitRegistry,
             actions.append(DraftAction("player1", "page_next" if event.y > 0 else "page_prev"))
             continue
         if event.type == pygame.MOUSEBUTTONDOWN:
-            card = registry.card_name_at(page, mouse_board_x, mouse_board_y)
+            card = registry.card_name_at(page, 0, mouse_board_x, mouse_board_y)
             if event.button == 1 and card != "None":
                 actions.append(DraftAction("player1", "add_card", card))
             elif event.button == 3:
@@ -149,7 +154,7 @@ def _collect_actions(page: int, registry: _CampaignExhibitRegistry,
                 case pygame.K_a | pygame.K_LEFT:
                     actions.append(DraftAction("player1", "page_prev"))
                 case pygame.K_s:
-                    card = registry.card_name_at(page, mouse_board_x, mouse_board_y)
+                    card = registry.card_name_at(page, 0, mouse_board_x, mouse_board_y)
                     if card != "None":
                         actions.append(DraftAction("player1", "add_card", card))
                 case pygame.K_c:
@@ -170,7 +175,7 @@ def _can_add(deck: list[str], card: str) -> bool:
 
 def main(game_screen: GameScreen, stage: str, cleared: set[str]) -> Optional[list[str]]:
     unlocked = _unlocked_color_codes(stage, cleared)
-    base_registry = ExhibitRegistry()
+    base_registry = ExhibitRegistry(game_screen)
     registry = _CampaignExhibitRegistry(base_registry, unlocked)
 
     draft_state = DraftState()
@@ -218,7 +223,7 @@ def main(game_screen: GameScreen, stage: str, cleared: set[str]) -> Optional[lis
                     confirmed = list(draft_state.player1_deck)
                     running = False
 
-        renderer.render_frame(page, bx, by, draft_state, hint_on)
+        renderer.render_frame(page, 0, bx, by, draft_state, hint_on)
         _draw_help(game_screen, draft_state.player1_deck)
         pygame.display.update()
         clock.tick(60)

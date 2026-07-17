@@ -80,7 +80,7 @@ def main(game_screen: GameScreen, mode: str = "local",
          reconnect_timeout: float = 60.0,
          timer_mode: str = "timer",
          file_auto_delete: bool = False) -> DraftExitReason:
-    registry = ExhibitRegistry()
+    registry = ExhibitRegistry(game_screen)
     if draft_state is None:
         draft_state = DraftState()
     draft_state.board_config = BoardConfig(4, 3)
@@ -123,6 +123,7 @@ def main(game_screen: GameScreen, mode: str = "local",
     renderer = DraftRenderer(game_screen, registry)
 
     page = 0
+    index = 0
     hint_on = load_setting("hint_on")
     last_phase = draft_state.phase
     clock = pygame.time.Clock()
@@ -156,9 +157,21 @@ def main(game_screen: GameScreen, mode: str = "local",
                     if client.try_reconnect():
                         print("[draft] reconnect succeeded")
                         disconnect_since = None
+                        if client.scene == "battling":
+                            print("[draft] host moved on to battle, handing off")
+                            return DraftExitReason(
+                                kind="scene_handoff",
+                                next_scene_state=client.initial_state,
+                            )
+                        if client.scene != "draft":
+                            print(f"[draft] host is no longer drafting (scene={client.scene!r}), leaving")
+                            server_closed_screen.main(game_screen)
+                            return DraftExitReason(kind="quit")
                         if client.initial_state:
                             draft_state.apply_dict(client.initial_state)
-                if client.reconnect_refused or now - disconnect_since > reconnect_timeout:
+                if disconnect_since is not None and (
+                    client.reconnect_refused or now - disconnect_since > reconnect_timeout
+                ):
                     print("[draft] host gone; leaving draft")
                     server_closed_screen.main(game_screen)
                     return DraftExitReason(kind="quit")
@@ -172,6 +185,7 @@ def main(game_screen: GameScreen, mode: str = "local",
 
         if draft_state.phase != last_phase:
             page = 0
+            index = 0
             last_phase = draft_state.phase
 
         if draft_state.phase == "done" and mode != "lan_client":
@@ -197,14 +211,14 @@ def main(game_screen: GameScreen, mode: str = "local",
                         return DraftExitReason(kind="quit")
                     if event.key in (pygame.K_n, pygame.K_ESCAPE):
                         confirming_quit = False
-            renderer.render_frame(page, mouse_board_x, mouse_board_y, draft_state, hint_on, multiplayer=True)
+            renderer.render_frame(page, index, mouse_board_x, mouse_board_y, draft_state, hint_on, multiplayer=True)
             _render_quit_confirm(game_screen)
             pygame.display.update()
             clock.tick(60)
             continue
 
         actions = collect_draft_actions(
-            draft_state.local_player, page, registry,
+            draft_state.local_player, page, index, registry,
             mouse_board_x, mouse_board_y,
         )
 
@@ -221,15 +235,27 @@ def main(game_screen: GameScreen, mode: str = "local",
 
             if action.action_type == "page_next":
                 page = _turn_page(page, 1, registry.page_count())
+                index = registry.index_count(page) - 1
                 continue
 
             if action.action_type == "page_prev":
                 page = _turn_page(page, -1, registry.page_count())
+                index = registry.index_count(page) - 1
                 continue
+            
+            if action.action_type == "change_index":
+                index = action.data
+                continue
+            
+            if action.action_type == "index_next":
+                index = ((index + 1) + len(registry.get_page_colors(page))) % len(registry.get_page_colors(page))
+
+            if action.action_type == "index_prev":
+                index = ((index - 1) + len(registry.get_page_colors(page))) % len(registry.get_page_colors(page))
 
             dispatcher.dispatch(action, draft_state)
 
-        renderer.render_frame(page, mouse_board_x, mouse_board_y, draft_state, hint_on,
+        renderer.render_frame(page, index, mouse_board_x, mouse_board_y, draft_state, hint_on,
                               multiplayer=mode in ("lan_server", "lan_client"))
         pygame.display.update()
         clock.tick(60)

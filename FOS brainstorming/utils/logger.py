@@ -76,25 +76,24 @@ class GameLogger:
     _write_lock: threading.Lock = field(init=False, default_factory=threading.Lock, repr=False)
 
     def __post_init__(self) -> None:
-        self._logger = logging.getLogger('FOC_Game_Logger')
-        self._logger.setLevel(logging.DEBUG)
-        self._logger.handlers.clear()
-        
+        self._logger = logging.Logger(f'FOC_Game_Logger_{id(self)}', logging.DEBUG)
+        self._logger.propagate = False
+
         formatter = logging.Formatter(
             '%(asctime)s - [%(category)s] - %(levelname)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S'
         )
-        
+
         if self.enable_file:
             if self.log_file is None:
                 self.log_file = Path(f"{FOLDER_PATH}/battle_records/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log")
-        
-                self.log_file.parent.mkdir(parents=True, exist_ok=True)
-                file_handler = logging.FileHandler(self.log_file, encoding='utf-8')
-                file_handler.setLevel(logging.DEBUG)
-                file_handler.setFormatter(formatter)
-                self._logger.addHandler(file_handler)
-                self._file_handler = file_handler
+
+            self.log_file.parent.mkdir(parents=True, exist_ok=True)
+            file_handler = logging.FileHandler(self.log_file, encoding='utf-8')
+            file_handler.setLevel(logging.DEBUG)
+            file_handler.setFormatter(formatter)
+            self._logger.addHandler(file_handler)
+            self._file_handler = file_handler
 
         if self.enable_console:
             console_handler = logging.StreamHandler()
@@ -136,6 +135,10 @@ class GameLogger:
                 print(f"[GameLogger] detach failed: {e}")
             finally:
                 self._file_handler = None
+        try:
+            atexit.unregister(self.close)
+        except Exception:
+            pass
 
     def log(self, level: LogLevel, category: LogCategory, message: str, **data) -> None:
         entry = LogEntry(

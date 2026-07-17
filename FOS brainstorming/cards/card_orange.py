@@ -42,7 +42,7 @@ class Adc(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="ADCO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             self.moving = True
             self.hit_cards.clear()
@@ -77,7 +77,7 @@ class Tank(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="TANKO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
+    def on_attacked_by(self, attacker: Card, value: int, game_state: GameState) -> bool:
         game_state.get_player(self.owner).hand.append("MOVEO")
         return True
 
@@ -89,7 +89,7 @@ class Hf(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="HFO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             self.moving = True
             self.hit_cards.clear()
@@ -123,7 +123,7 @@ class Lf(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="LFO", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             self.moving = True
             self.hit_cards.clear()
@@ -146,7 +146,7 @@ class Ass(OrangeCard):
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
         self.anger = True
     
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         self.moving = True
         if self.anger:
             game_state.number_of_attacks[self.owner] += card_settings["ASS"]["attack_gain_per_kill"]
@@ -178,7 +178,7 @@ class Apt(OrangeCard):
             self.damage += value
             self.armor = self.armor % 2
 
-    def move_broadcast(self, target: Card, game_state: GameState) -> bool:
+    def on_card_moved(self, target: Card, game_state: GameState) -> bool:
         if target.owner == self.owner and target != self:
             target.armor += card_settings["APT"]["move_armor_gain"]
             self.armor += card_settings["APT"]["move_armor_gain"]
@@ -190,7 +190,7 @@ class Sp(OrangeCard):
         
         super().__init__(owner=owner, job_and_color="SPO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def move_broadcast(self, target: Card, game_state: GameState) -> bool:
+    def on_card_moved(self, target: Card, game_state: GameState) -> bool:
         if target.owner == self.owner:
             for card in self.detection("farthest", game_state.get_side_cards(self.owner, True), game_state):
                 card.damage_calculate(card_settings["SP"]["move_strike_damage"], self, game_state)

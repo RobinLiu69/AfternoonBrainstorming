@@ -183,6 +183,8 @@ class BattlingDispatcher:
 
     def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
         payload = {k: v for k, v in envelope.items() if k != "type"}
+        if not self._sender_matches(payload.get("player"), sender_conn):
+            return
         try:
             action = GameAction(**payload)
         except TypeError as e:
@@ -195,6 +197,17 @@ class BattlingDispatcher:
             if result.quit and result.message:
                 self._broadcast_game_over(result.message, self._game_state)
                 self.pending_winner = result.message
+
+    def _sender_matches(self, claimed_player, sender_conn) -> bool:
+        from core.network_layer import LANServer
+        if sender_conn is None or not isinstance(self._network, LANServer):
+            return True
+        sender_role = self._network.find_role(sender_conn)
+        if not sender_role or claimed_player != sender_role:
+            print(f"[BattlingDispatcher] dropped action from {sender_role!r} "
+                  f"claiming to be {claimed_player!r}")
+            return False
+        return True
 
     def _send_to_server(self, action: GameAction) -> None:
         from core.network_layer import LANClient
@@ -293,6 +306,10 @@ class BattlingDispatcher:
                 return ActionResult(True)
 
             case "end_turn":
+                if game_state.timer_mode == "countdown" and game_state.turn_increment_seconds > 0:
+                    ending_player = game_state.get_player(action.player)
+                    ending_player.elapsed_time += game_state.turn_increment_seconds
+                    ending_player._refresh_time_display()
                 game_state.turn_number += 1
                 opponent = game_state.get_opponent_name(action.player)
                 game_state.get_player(action.player).turn_end(game_state)

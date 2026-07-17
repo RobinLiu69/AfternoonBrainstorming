@@ -18,9 +18,29 @@
 
 from dataclasses import dataclass, field
 
+from shared.setting import SETTING
+
 
 INFINITE_RECONNECT: float = float("inf")
 RECONNECT_TIMEOUT_OPTIONS: tuple[float, ...] = (30.0, 60.0, 120.0, 300.0, INFINITE_RECONNECT)
+
+
+def _load_time_control_options() -> dict[str, tuple[int, int]]:
+    options: dict[str, tuple[int, int]] = {}
+    for label, value in SETTING.get("time_control_options", {}).items():
+        try:
+            options[str(label)] = (int(value[0]), int(value[1]))
+        except (TypeError, ValueError, IndexError):
+            print(f"[lobby_state] ignoring bad time control option {label!r}: {value!r}")
+    if not options:
+        options = {"10min": (600, 0)}
+    return options
+
+
+TIME_CONTROL_OPTIONS: dict[str, tuple[int, int]] = _load_time_control_options()
+DEFAULT_TIME_CONTROL: str = str(SETTING.get("default_time_control", ""))
+if DEFAULT_TIME_CONTROL not in TIME_CONTROL_OPTIONS:
+    DEFAULT_TIME_CONTROL = next(iter(TIME_CONTROL_OPTIONS))
 
 
 @dataclass
@@ -28,6 +48,7 @@ class LobbyState:
     host_seat: str = "player1"
     god_view: bool = False
     timer_mode: str = "timer"
+    time_control: str = DEFAULT_TIME_CONTROL
     file_auto_delete: bool = False
     reconnect_timeout: float = 60.0
 
@@ -35,21 +56,30 @@ class LobbyState:
     spectator_count: int = 0
     latencies: dict = field(default_factory=dict)
 
+    room_code: str = ""
     local_role: str = ""
 
     def peer_seat(self) -> str:
         return "player2" if self.host_seat == "player1" else "player1"
+
+    def countdown_seconds(self) -> int:
+        return TIME_CONTROL_OPTIONS.get(self.time_control, TIME_CONTROL_OPTIONS[DEFAULT_TIME_CONTROL])[0]
+
+    def increment_seconds(self) -> int:
+        return TIME_CONTROL_OPTIONS.get(self.time_control, TIME_CONTROL_OPTIONS[DEFAULT_TIME_CONTROL])[1]
 
     def to_dict(self) -> dict:
         return {
             "host_seat": self.host_seat,
             "god_view": self.god_view,
             "timer_mode": self.timer_mode,
+            "time_control": self.time_control,
             "file_auto_delete": self.file_auto_delete,
             "reconnect_timeout": self.reconnect_timeout,
             "peer_connected": self.peer_connected,
             "spectator_count": self.spectator_count,
             "latencies": dict(self.latencies),
+            "room_code": self.room_code,
         }
 
     def to_dict_for(self, viewer_role: str) -> dict:
@@ -61,11 +91,13 @@ class LobbyState:
         self.host_seat = data["host_seat"]
         self.god_view = data["god_view"]
         self.timer_mode = data["timer_mode"]
+        self.time_control = data.get("time_control", self.time_control)
         self.file_auto_delete = data["file_auto_delete"]
         self.reconnect_timeout = data["reconnect_timeout"]
         self.peer_connected = data["peer_connected"]
         self.spectator_count = data["spectator_count"]
         self.latencies = data.get("latencies", {})
+        self.room_code = data.get("room_code", self.room_code)
         new_role = data.get("your_role", "")
         if new_role:
             self.local_role = new_role

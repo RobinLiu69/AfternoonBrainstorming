@@ -137,7 +137,7 @@ class LuckyBlock(GreenCard):
     #     if self.text_color:
     #         draw_text("?", game_state.game_screen.info_text_font, self.text_color, (game_state.game_screen.block_size*0.47), (game_state.game_screen.block_size*0.43), self.surface)
     
-    def been_killed(self, attacker: Card, game_state: GameState) -> bool:
+    def on_killed_by(self, attacker: Card, game_state: GameState) -> bool:
         self.lucky_effects(attacker, game_state)
         for card in filter(lambda card: card.job_and_color == "APTG", game_state.get_player_cards(attacker.owner)):
             card.armor += 1
@@ -188,7 +188,7 @@ class Tank(GreenCard):
         
         super().__init__(owner=owner, job_and_color="TANKG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
+    def on_attacked_by(self, attacker: Card, value: int, game_state: GameState) -> bool:
         self.lucky_effects(attacker, game_state, TANK=True)
         return True
 
@@ -218,7 +218,7 @@ class Lf(GreenCard):
         
         super().__init__(owner=owner, job_and_color="LFG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         if victim.job_and_color == "LUCKYBLOCK":
             for card in self.detection("nearest", filter(lambda card: card.health >= 0, game_state.get_opponent_cards(self.owner)), game_state):
                 card.damage_calculate(self.damage, self, game_state, False)
@@ -235,7 +235,7 @@ class Ass(GreenCard):
         
         super().__init__(owner=owner, job_and_color="ASSG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         game_state.players_luck[self.owner] += 5
         match self.owner:
             case "player1":
@@ -252,7 +252,7 @@ class Apt(GreenCard):
         
         super().__init__(owner=owner, job_and_color="APTG", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         return False
 
     def on_refresh(self, game_state: GameState) -> int:

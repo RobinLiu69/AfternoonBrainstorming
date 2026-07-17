@@ -144,7 +144,7 @@ The second player starts their turn with four cards in hand and one attack oppor
 - **Triangle (ADC) - 5/4 - Large Cross**
 - **Circle (AP) - 4/4 - Nearest Target** / Attack includes paralysis.
 - **Square (TANK) - 15/1 - Small Cross**
-- **Trapezoid (HF) - 9/2 - Nine Grid**
+- **Trapezoid (HF) - 10/2 - Nine Grid**
 - **Double Diamond (LF) - 7/4 - Small Cross**
 - **Assassin (ASS) - 2/5 - Diagonal Cross**
 - **Hexagon (APT) - 8/2 - Nearest Target** / When attacking, grants itself and the nearest ally a shield equal to its own attack value.
@@ -256,10 +256,10 @@ The second player starts their turn with four cards in hand and one attack oppor
 
 ## Brown Faction (Giant Faction)
 
-- **Triangle (ADC) - 6/6 - Large Cross** / Becomes paralyzed after attacking.
+- **Triangle (ADC) - 6/5 - Large Cross** / Becomes paralyzed after attacking.
 - **Circle (AP) - 5/9 - Nearest Target** / Attacks make the opponent draw one card.
-- **Square (TANK) - 20/1 - Small Cross** / If it was not attacked this turn, loses 4 HP at the start of the turn.
-- **Trapezoid (HF) - 11/5 - Nine Grid** / Each attack consumes two attack opportunities; it cannot attack with fewer than two.
+- **Square (TANK) - 22/1 - Small Cross** / If it was not attacked this turn, loses 4 HP at the start of the turn.
+- **Trapezoid (HF) - 9/5 - Nine Grid** / Each attack consumes two attack opportunities; it cannot attack with fewer than two.
 - **Double Diamond (LF) - 8/8 - Small Cross** / Kills grant the opponent +2 points.
 - **Assassin (ASS) - 2/9 - Diagonal Cross** / After a kill, it does not auto-draw a card at the start of its next turn.
 - **Hexagon (APT) - 10/3 - Nearest Target** / When placed, all opposing units gain +2 shield. Attacks grant the nearest ally +1/+1, and an additional +1/+1 if that ally is a Giant.

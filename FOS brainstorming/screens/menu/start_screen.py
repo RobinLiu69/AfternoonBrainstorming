@@ -38,25 +38,19 @@ def main(game_screen: GameScreen) -> str:
     main_text_y = bs * 0.2
 
     local_button = Button(main_w, main_h, main_x, cy - bs * 1.7,
-                        main_text_x, main_text_y,
                         box_width=box_width, font=game_screen.big_big_text_font, text="local")
     campaign_button = Button(main_w, main_h, main_x, cy - bs * 0.8,
-                        bs * 0.15, main_text_y,
                         box_width=box_width, font=game_screen.big_big_text_font, text="campaign")
     host_button = Button(main_w, main_h, main_x, cy + bs * 0.1,
-                        main_text_x, main_text_y,
                         box_width=box_width, font=game_screen.big_big_text_font, text="host")
     join_button = Button(main_w, main_h, main_x, cy + bs * 1.0,
-                        bs * 0.45, main_text_y,
                         box_width=box_width, font=game_screen.big_big_text_font, text="join")
 
     playback_h = bs * 0.45
     playback_button = Button(main_w, playback_h, main_x, cy + bs * 1.9,
-                        bs * 0.2, bs * 0.07,
                         box_width=box_width, font=game_screen.big_big_text_font, text="playback")
 
     settings_button = Button(bs * 1.25, bs * 0.55, bs, game_screen.display_height - bs * 1,
-                        bs * 0.35, bs * 0.175,
                         box_width=box_width, font=game_screen.mid_text_font, text="settings")
 
     state = "quit"

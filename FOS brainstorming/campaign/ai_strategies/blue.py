@@ -82,7 +82,7 @@ class BlueStrategy(Strategy):
         expected = expected_tokens_from_attack(attacker, gs)
         bonus += expected * TOKEN_VALUE
 
-        threshold = gs.how_many_token_to_draw_a_card
+        threshold = gs.tokens_to_draw_a_card
         if tokens + expected >= threshold:
             has_armed_adcb = any(
                 c.job_and_color == "ADCB" and not c.numbness and c.health > 0

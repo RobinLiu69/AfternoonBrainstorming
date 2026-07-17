@@ -85,7 +85,7 @@ class Adc(CyanCard):
                          board_x=board_x, board_y=board_y)
         self.upgrade = upgrade
         
-    def attack(self, game_state: GameState) -> bool:
+    def on_attack(self, game_state: GameState) -> bool:
         if self.launch_attack(self.attack_types, game_state):
             if self.upgrade:
                 self.launch_attack(self.attack_types, game_state)
@@ -155,7 +155,7 @@ class Tank(CyanCard):
         else:
             return False
         
-    def been_attacked(self, attacker: Card, value: int, game_state: GameState) -> bool:
+    def on_attacked_by(self, attacker: Card, value: int, game_state: GameState) -> bool:
         self.get_coins(card_settings["TANK"]["coin_gain"], game_state)
         return True
 
@@ -177,13 +177,13 @@ class Hf(CyanCard):
         self.get_coins(card_settings["HF"]["coin_gain"], game_state)
         return True
 
-    def been_killed(self, attacker: Card, game_state: GameState) -> bool:
+    def on_killed_by(self, attacker: Card, game_state: GameState) -> bool:
         if self.upgrade == True:
             self.anger = True
             self.damage += card_settings["HF"]["damage_bonus"]
         return True
     
-    def can_be_killed(self, game_state: GameState) -> bool:
+    def on_can_be_killed(self, game_state: GameState) -> bool:
         if self.anger:
             return False
         else:
@@ -255,7 +255,7 @@ class Ass(CyanCard):
         self.extra_damage = 0
         return value
     
-    def killed(self, victim: Card, game_state: GameState) -> bool:
+    def on_kill(self, victim: Card, game_state: GameState) -> bool:
         self.get_coins(card_settings["ASS"]["coin_gain"], game_state)
         return True
 

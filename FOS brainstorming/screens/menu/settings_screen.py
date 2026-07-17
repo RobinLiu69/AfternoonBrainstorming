@@ -54,7 +54,6 @@ def _build_tab_buttons(game_screen: GameScreen, active_tab: str) -> list[tuple[s
     for index, (tab_id, label) in enumerate(TABS):
         color = CYAN if tab_id == active_tab else WHITE
         button = Button(btn_w, btn_h, start_x + index * (btn_w + bs * 0.3), tab_y,
-                        bs * 0.2, bs * 0.14,
                         box_color=color, box_width=box_width, text_color=color,
                         font=game_screen.big_text_font, text=label)
         tab_buttons.append((tab_id, button))
@@ -74,13 +73,12 @@ def _build_display_buttons(game_screen: GameScreen) -> tuple[list[tuple[str, But
     for index, (mode, label) in enumerate(OPTIONS):
         color = CYAN if mode == game_screen.display_mode else WHITE
         button = Button(btn_w, btn_h, btn_x, top_y + index * bs * 0.9,
-                        bs * 0.25, bs * 0.18,
+                        position="Left", padding=bs * 0.25,
                         box_color=color, box_width=box_width, text_color=color,
                         font=game_screen.big_big_text_font, text=label)
         option_buttons.append((mode, button))
 
     back_button = Button(btn_w, btn_h, btn_x, top_y + len(OPTIONS) * bs * 0.9 + bs * 0.35,
-                         bs * 1.0, bs * 0.18,
                          box_width=box_width, font=game_screen.big_big_text_font, text="back")
     return option_buttons, back_button
 
@@ -95,12 +93,11 @@ def _build_gameplay_buttons(game_screen: GameScreen, hint_on: bool) -> tuple[But
     top_y = game_screen.display_height / 2 - bs * 1.8
 
     hint_button = Button(btn_w, btn_h, btn_x, top_y,
-                         bs * 0.25, bs * 0.18,
+                         position="Left", padding=bs * 0.25,
                          box_width=box_width, font=game_screen.big_big_text_font,
                          text=f"Hint on : {hint_on}")
 
     back_button = Button(btn_w, btn_h, btn_x, top_y + bs * 0.9 + bs * 0.35,
-                         bs * 1.0, bs * 0.18,
                          box_width=box_width, font=game_screen.big_big_text_font, text="back")
     return hint_button, back_button
 
@@ -110,7 +107,6 @@ def _build_tower_button(game_screen: GameScreen) -> Button:
     dim = (55, 55, 55)
     return Button(bs * 0.45, bs * 0.4,
                   game_screen.display_width - bs * 0.65, game_screen.display_height - bs * 0.55,
-                  bs * 0.16, bs * 0.08,
                   box_width=1, font=game_screen.text_font,
                   text="^", text_color=dim, box_color=dim)
 

@@ -223,7 +223,7 @@ class UIRenderer:
     def render_timers(self, game_state: GameState) -> None:
         for player in (game_state.player1, game_state.player2):
             draw_text(
-                f"{player.short_name}Clock: {player.time_minutes_and_seconds}",
+                f"{player.short_name}Clock: {player.time_display}",
                 self.game_screen.text_font, WHITE,
                 self.game_screen.display_width/2 - (self.game_screen.display_width/6)*_PLAYER_OFFSETS[player.name]["clock"],
                 self.game_screen.display_height / 6.4,

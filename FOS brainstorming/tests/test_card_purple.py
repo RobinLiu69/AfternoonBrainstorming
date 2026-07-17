@@ -60,7 +60,7 @@ class TestPurpleTank:
         enemy = place_card(gs, RedAdc, "player2", 1, 0)
 
         before = enemy.health
-        tank.move_broadcast(enemy, gs)
+        tank.on_card_moved(enemy, gs)
         assert enemy.health == before - S["TANK"]["move_strike_damage"]
 
     def test_move_broadcast_does_not_damage_ally(self) -> None:
@@ -69,7 +69,7 @@ class TestPurpleTank:
         ally = place_card(gs, RedAdc, "player1", 0, 1)
 
         before = ally.health
-        result = tank.move_broadcast(ally, gs)
+        result = tank.on_card_moved(ally, gs)
         assert result is False
         assert ally.health == before
 

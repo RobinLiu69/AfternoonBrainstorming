@@ -16,6 +16,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+from typing import Any
+
 import pytest
 
 from cards.factory import CardFactory
@@ -229,7 +231,7 @@ def test_apb_swing_with_armed_adcb_gets_chain_bonus():
     s = BlueStrategy()
     gs = make_game_state()
     gs.players_token["player2"] = 1
-    gs.how_many_token_to_draw_a_card = 3
+    gs.tokens_to_draw_a_card = 3
     apb = place_card(gs, "APB", "player2", 1, 1)
     apb.numbness = False
     place_card(gs, "ADCW", "player1", 1, 2)
@@ -245,7 +247,7 @@ def test_numb_adcb_doesnt_arm_token_draw_chain():
     s = BlueStrategy()
     gs = make_game_state()
     gs.players_token["player2"] = 1
-    gs.how_many_token_to_draw_a_card = 3
+    gs.tokens_to_draw_a_card = 3
     apb = place_card(gs, "APB", "player2", 1, 1)
     apb.numbness = False
     place_card(gs, "ADCW", "player1", 1, 2)
@@ -543,10 +545,18 @@ def test_deck_builder_unlock_progression():
     assert set(deck_builder._unlocked_color_codes("boss", set())) == {"W", "R", "B", "G", "O"}
 
 
+def _stub_screen() -> Any:
+    class _Screen:
+        display_width = 800
+        display_height = 600
+        block_size = 100
+    return _Screen()
+
+
 def test_deck_builder_registry_filters_pages_by_unlock():
     from campaign import deck_builder
     from screens.draft.exhibit_registry import ExhibitRegistry
-    base = ExhibitRegistry()
+    base = ExhibitRegistry(_stub_screen())
 
     white_only = deck_builder._CampaignExhibitRegistry(base, ["W"])
     page_colors = {
@@ -568,7 +578,7 @@ def test_deck_builder_registry_filters_pages_by_unlock():
 def test_deck_builder_magic_row_always_available():
     from campaign import deck_builder
     from screens.draft.exhibit_registry import ExhibitRegistry
-    base = ExhibitRegistry()
+    base = ExhibitRegistry(_stub_screen())
     registry = deck_builder._CampaignExhibitRegistry(base, ["W"])
     names = {c.job_and_color for c in registry.get_magic_row()}
     assert {"HEAL", "MOVE", "CUBES"}.issubset(names)

@@ -19,7 +19,7 @@
 from __future__ import annotations
 import json
 from dataclasses import dataclass
-from typing import Literal, Optional, TYPE_CHECKING
+from typing import Any, Literal, Optional, TYPE_CHECKING
 
 import pygame
 
@@ -41,6 +41,9 @@ DraftActionType = Literal[
     "toggle_hint",
     "confirm_start",
     "quit",
+    "change_index",
+    "index_next",
+    "index_prev",
 ]
 
 
@@ -49,6 +52,7 @@ class DraftAction:
     player: str
     action_type: DraftActionType
     card_name: Optional[str] = None
+    data: Any = None
 
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
@@ -68,7 +72,7 @@ class DraftResult:
 SPECTATOR_ALLOWED: tuple[str, ...] = ("page_next", "page_prev", "toggle_hint", "quit")
 
 
-def collect_draft_actions(current_editor: str, page: int, registry: ExhibitRegistry,
+def collect_draft_actions(current_editor: str, page: int, index: int, registry: ExhibitRegistry,
                           mouse_board_x: Optional[int], mouse_board_y: Optional[int]) -> list[DraftAction]:
     actions: list[DraftAction] = []
     is_spectator = current_editor in ("spectator", "god")
@@ -84,17 +88,19 @@ def collect_draft_actions(current_editor: str, page: int, registry: ExhibitRegis
             continue
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            card = registry.card_name_at(page, mouse_board_x, mouse_board_y)
+            card = registry.card_name_at(page, index, mouse_board_x, mouse_board_y)
             match event.button:
                 case 1:
                     if card != "None":
                         actions.append(DraftAction(current_editor, "add_card", card))
+                    for i, color in enumerate(registry.get_page_colors(page)):
+                        if registry.switch_rects[i].collidepoint(event.pos):
+                            actions.append(DraftAction(current_editor, "change_index", data=i))
                 case 3:
                     if card != "None":
                         actions.append(DraftAction(current_editor, "remove_card", card))
                     else:
                         actions.append(DraftAction(current_editor, "remove_last_card"))
-            continue
 
         if event.type == pygame.KEYDOWN:
             keys = pygame.key.get_pressed()
@@ -102,11 +108,17 @@ def collect_draft_actions(current_editor: str, page: int, registry: ExhibitRegis
                 case pygame.K_ESCAPE:
                     actions.append(DraftAction(current_editor, "quit"))
                 case pygame.K_SPACE | pygame.K_d | pygame.K_RIGHT:
-                    actions.append(DraftAction(current_editor, "page_next"))
+                    if keys[pygame.K_LSHIFT]:
+                        actions.append(DraftAction(current_editor, "index_next"))
+                    else:
+                        actions.append(DraftAction(current_editor, "page_next"))
                 case pygame.K_a | pygame.K_LEFT:
-                    actions.append(DraftAction(current_editor, "page_prev"))
+                    if keys[pygame.K_LSHIFT]:
+                        actions.append(DraftAction(current_editor, "index_prev"))
+                    else:
+                        actions.append(DraftAction(current_editor, "page_prev"))
                 case pygame.K_s:
-                    card = registry.card_name_at(page, mouse_board_x, mouse_board_y)
+                    card = registry.card_name_at(page, index, mouse_board_x, mouse_board_y)
                     if card != "None":
                         actions.append(DraftAction(current_editor, "add_card", card))
                 case pygame.K_c:

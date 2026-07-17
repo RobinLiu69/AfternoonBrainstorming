@@ -58,10 +58,20 @@ DEFAULT_PORT = 5555
 
 
 def _connect_failure_reason(error: Exception) -> str:
+    import socket
+    if isinstance(error, socket.gaierror):
+        return "Invalid host IP"
     if isinstance(error, TimeoutError):
         return "Connection timed out (host unreachable?)"
     if isinstance(error, ConnectionRefusedError):
         return "Connection refused (no game hosted there?)"
+    message = str(error)
+    if "room_not_found" in message:
+        return "Room not found (wrong room number?)"
+    if "room_full" in message:
+        return "Room is full"
+    if "server_full" in message:
+        return "Server is full (no free rooms)"
     return "Could not reach the host"
 
 
@@ -76,10 +86,7 @@ def _build_game_state_from_draft(draft_state: DraftState) -> GameState:
     game_state.timer_mode = draft_state.timer_mode
     game_state.file_auto_delete = draft_state.file_auto_delete
 
-    game_state.game_logger.info(f"player1 deck {'-'.join(player1.deck)}")
-    game_state.game_logger.info(f"player2 deck {'-'.join(player2.deck)}")
     game_state.game_logger.info(f"timer mode {game_state.timer_mode}")
-    game_state.game_logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
     game_state.game_logger.info(f"version {VERSION}", version=VERSION)
     return game_state
 
@@ -114,12 +121,12 @@ def _broadcast_log_backup(game_state: GameState, server: LANServer) -> None:
 
 
 def _finalize_battle(game_state: GameState, game_screen: GameScreen, winner: str, server: Optional[LANServer] = None) -> None:
-    game_state.player_timer["player1"] = game_state.player1.time_minutes_and_seconds
-    game_state.player_timer["player2"] = game_state.player2.time_minutes_and_seconds
+    game_state.player_timer["player1"] = game_state.player1.time_display
+    game_state.player_timer["player2"] = game_state.player2.time_display
 
     game_state.game_logger.info(f"winner {winner}")
-    game_state.game_logger.info(f"player1 timer {game_state.player1.time_minutes_and_seconds}")
-    game_state.game_logger.info(f"player2 timer {game_state.player2.time_minutes_and_seconds}")
+    game_state.game_logger.info(f"player1 timer {game_state.player1.time_display}")
+    game_state.game_logger.info(f"player2 timer {game_state.player2.time_display}")
     game_state.game_logger.info(f"{game_state.game_statistics.export_for_charts()}")
     game_state.game_logger.info(f"{game_state.game_statistics.score_history}")
 
@@ -183,6 +190,14 @@ def main() -> None:
                     if exit_reason.kind != "finished" or exit_reason.draft_state is None:
                         continue
                     game_state = _build_game_state_from_draft(exit_reason.draft_state)
+                    game_state.countdown_time = lobby_state.countdown_seconds()
+                    game_state.turn_increment_seconds = lobby_state.increment_seconds()
+                    effective_tc = (lobby_state.time_control
+                                    if game_state.timer_mode == "countdown" else "unlimited")
+                    game_state.game_logger.info(
+                        f"time control {effective_tc}",
+                        countdown_seconds=game_state.countdown_time,
+                        increment_seconds=game_state.turn_increment_seconds)
                     winner = battling.main(
                         game_state, game_screen,
                         mode="lan_server", server=server,
@@ -196,10 +211,10 @@ def main() -> None:
                         server.stop()
             case "join":
                 try:
-                    host_ip = join_screen.main(game_screen)
+                    host_ip, room_code = join_screen.main(game_screen)
                     if not host_ip:
                         continue
-                    client = LANClient(VERSION, host_ip, port=DEFAULT_PORT)
+                    client = LANClient(VERSION, host_ip, port=DEFAULT_PORT, room=room_code)
                     status, error = connecting_screen.main(game_screen, client, host_ip)
                     if status == "canceled":
                         continue

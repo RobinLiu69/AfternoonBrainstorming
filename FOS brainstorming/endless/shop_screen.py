@@ -72,7 +72,7 @@ def main(game_screen: GameScreen, state: dict, run: dict, stock: dict) -> str:
                 if item["kind"] == "card":
                     color = GOLD
             btn = Button(btn_w, btn_h, x, y,
-                         bs * 0.12, bs * 0.12,
+                         position="Left", padding=bs * 0.12,
                          box_width=box_width, font=game_screen.text_font,
                          text=label, text_color=color, box_color=color)
             buttons.append((btn, item))
@@ -80,15 +80,12 @@ def main(game_screen: GameScreen, state: dict, run: dict, stock: dict) -> str:
 
     def service_buttons() -> tuple[Button, Button, Button]:
         remove_btn = Button(bs * 2.2, bs * 0.55, cx - bs * 3.5, cy + 2.4 * bs,
-                            bs * 0.15, bs * 0.15,
                             box_width=box_width, font=game_screen.text_font,
                             text=f"remove a card  [{int(_remove_price(run) * discount)}]")
         reroll_btn = Button(bs * 2.0, bs * 0.55, cx - bs * 1.1, cy + 2.4 * bs,
-                            bs * 0.15, bs * 0.15,
                             box_width=box_width, font=game_screen.text_font,
                             text=f"reroll stock  [{int(_reroll_price(stock) * discount)}]")
         leave_btn = Button(bs * 1.6, bs * 0.55, cx + bs * 1.1, cy + 2.4 * bs,
-                           bs * 0.45, bs * 0.15,
                            box_width=box_width, font=game_screen.big_text_font, text="leave")
         return remove_btn, reroll_btn, leave_btn
 
