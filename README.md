@@ -9,7 +9,7 @@
 
 每一個場上未被麻痺的手下使你獲得一分，雙方的分數會互相抵消，最先領先對手10分的玩家即獲得勝利。
 ## 遊戲開始前
-![Screenshot_20241007_214036](https://github.com/user-attachments/assets/2c5819b8-a59d-4ed5-9383-99700cbd5b8c)
+<img width="1638" height="869" alt="Untitled" src="https://github.com/user-attachments/assets/a2dd1868-c4ef-40f5-995e-8e2d6752d02c" />
 
 組建你的12張牌，每種手下最多攜帶兩張，法術最多攜帶三張。
 優先玩家選取好6張牌後交由下一位玩家選取(透過**E**鍵兩段式切換)12張牌，再輪回第一位玩家選取，再選取階段你只能看到對手的前六張牌。
@@ -17,7 +17,9 @@
 > [!TIP]
 > - **S**與滑鼠位置來選牌。
 >
-> - **A**、**D**上一頁及下一頁;**空白鍵**也可以用來下一頁。
+> - **A**、**D**上一頁及下一頁;**空白鍵**也可以用來下一頁。<img width="720" height="360" alt="Untitled - Copy" src="https://github.com/user-attachments/assets/12e83545-56c4-4d9e-9371-7d111dab1d4e" />
+<img width="720" height="360" alt="Untitled - Copy" src="https://github.com/user-attachments/assets/faa3fedb-8ea8-499d-8808-5b506f4b5108" />
+
 >
 > - **C**來清除最後選擇的牌。
 >
@@ -135,7 +137,7 @@
 
 # 派系介紹
 
-![Screenshot_20241007_215700](https://github.com/user-attachments/assets/192971d8-e20d-4e2c-8b89-e6352705c007)
+<img width="720" height="360" alt="Copy" src="https://github.com/user-attachments/assets/0afed4ac-7871-44d5-a649-fbb35166ff56" />
 
 ## 白色派系
 
