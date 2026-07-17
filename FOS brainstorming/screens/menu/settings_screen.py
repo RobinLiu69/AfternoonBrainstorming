@@ -166,13 +166,6 @@ def main(game_screen: GameScreen) -> Optional[str]:
             if event.type == pygame.QUIT:
                 running = False
 
-        bs = game_screen.block_size
-        cx = game_screen.display_width / 2
-        title = "settings"
-        title_width = game_screen.title_text_font.size(title)[0]
-        draw_text(title, game_screen.title_text_font, WHITE,
-                  cx - title_width / 2, game_screen.display_height / 2 - bs * 3.4, game_screen.surface)
-
         for _tab_id, button in tab_buttons:
             button.update(game_screen)
 
