@@ -16,8 +16,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from typing import Optional
-
 import pygame
 
 from shared.setting import WHITE, CYAN
@@ -102,25 +100,14 @@ def _build_gameplay_buttons(game_screen: GameScreen, hint_on: bool) -> tuple[But
     return hint_button, back_button
 
 
-def _build_tower_button(game_screen: GameScreen) -> Button:
-    bs = game_screen.block_size
-    dim = (55, 55, 55)
-    return Button(bs * 0.45, bs * 0.4,
-                  game_screen.display_width - bs * 0.65, game_screen.display_height - bs * 0.55,
-                  box_width=1, font=game_screen.text_font,
-                  text="^", text_color=dim, box_color=dim)
-
-
-def main(game_screen: GameScreen) -> Optional[str]:
+def main(game_screen: GameScreen) -> None:
     active_tab = "display"
     tab_buttons = _build_tab_buttons(game_screen, active_tab)
     option_buttons, display_back_button = _build_display_buttons(game_screen)
 
     hint_on = load_setting("hint_on")
     hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
-    tower_button = _build_tower_button(game_screen)
 
-    result: Optional[str] = None
     running = True
     clock = pygame.time.Clock()
 
@@ -134,10 +121,6 @@ def main(game_screen: GameScreen) -> Optional[str]:
                 if key_pressed(keys) == pygame.K_ESCAPE:
                     running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if tower_button.touch(mouse_x, mouse_y):
-                    result = "endless"
-                    running = False
-                    continue
                 for tab_id, button in tab_buttons:
                     if button.touch(mouse_x, mouse_y) and tab_id != active_tab:
                         active_tab = tab_id
@@ -152,7 +135,6 @@ def main(game_screen: GameScreen) -> Optional[str]:
                             tab_buttons = _build_tab_buttons(game_screen, active_tab)
                             option_buttons, display_back_button = _build_display_buttons(game_screen)
                             hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
-                            tower_button = _build_tower_button(game_screen)
                             break
                     if display_back_button.touch(mouse_x, mouse_y):
                         running = False
@@ -177,9 +159,5 @@ def main(game_screen: GameScreen) -> Optional[str]:
             hint_button.update(game_screen)
             gameplay_back_button.update(game_screen)
 
-        tower_button.update(game_screen)
-
         pygame.display.update()
         clock.tick(60)
-
-    return result

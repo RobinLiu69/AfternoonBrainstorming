@@ -37,14 +37,14 @@ def main(game_screen: GameScreen) -> str:
     main_text_x = bs * 0.4
     main_text_y = bs * 0.2
 
-    local_button = Button(main_w, main_h, main_x, cy - bs * 1.7,
-                        box_width=box_width, font=game_screen.big_big_text_font, text="local")
+    play_button = Button(main_w, main_h, main_x, cy - bs * 1.7,
+                        box_width=box_width, font=game_screen.big_big_text_font, text="play")
     campaign_button = Button(main_w, main_h, main_x, cy - bs * 0.8,
                         box_width=box_width, font=game_screen.big_big_text_font, text="campaign")
-    host_button = Button(main_w, main_h, main_x, cy + bs * 0.1,
-                        box_width=box_width, font=game_screen.big_big_text_font, text="host")
-    join_button = Button(main_w, main_h, main_x, cy + bs * 1.0,
-                        box_width=box_width, font=game_screen.big_big_text_font, text="join")
+    tower_button = Button(main_w, main_h, main_x, cy + bs * 0.1,
+                        box_width=box_width, font=game_screen.big_big_text_font, text="tower")
+    donate_button = Button(main_w, main_h, main_x, cy + bs * 1.0,
+                        box_width=box_width, font=game_screen.big_big_text_font, text="donate")
 
     playback_h = bs * 0.45
     playback_button = Button(main_w, playback_h, main_x, cy + bs * 1.9,
@@ -69,18 +69,18 @@ def main(game_screen: GameScreen) -> str:
                     case pygame.K_ESCAPE:
                         running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if local_button.touch(mouse_x, mouse_y):
+                if play_button.touch(mouse_x, mouse_y):
                     running = False
-                    state = "local"
+                    state = "play"
                 if campaign_button.touch(mouse_x, mouse_y):
                     running = False
                     state = "campaign"
-                if host_button.touch(mouse_x, mouse_y):
+                if tower_button.touch(mouse_x, mouse_y):
                     running = False
-                    state = "host"
-                if join_button.touch(mouse_x, mouse_y):
+                    state = "tower"
+                if donate_button.touch(mouse_x, mouse_y):
                     running = False
-                    state = "join"
+                    state = "donate"
                 if playback_button.touch(mouse_x, mouse_y):
                     running = False
                     state = "playback"
@@ -96,10 +96,10 @@ def main(game_screen: GameScreen) -> str:
         draw_text("by Five O'clock Shadow Studio", game_screen.mid_text_font, WHITE,
                 cx + bs * 1.2, cy - bs * 1.9, game_screen.surface)
 
-        local_button.update(game_screen)
+        play_button.update(game_screen)
         campaign_button.update(game_screen)
-        host_button.update(game_screen)
-        join_button.update(game_screen)
+        tower_button.update(game_screen)
+        donate_button.update(game_screen)
         playback_button.update(game_screen)
         settings_button.update(game_screen)
 
