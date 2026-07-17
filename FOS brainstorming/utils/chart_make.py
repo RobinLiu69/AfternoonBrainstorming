@@ -46,7 +46,11 @@ FOLDER_PATH: str = _get_base()
 with open(f"{FOLDER_PATH}/config/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
-COLORS_DICT: dict[str, tuple[float, float, float]] = dict(zip(JOB_DICTIONARY["colors_dict"].keys(), tuple(tuple(v) for v in JOB_DICTIONARY["RGB_colors"].values())))
+COLORS_DICT: dict[str, tuple[float, float, float]] = {
+    tag: (r / 255, g / 255, b / 255)
+    for tag, name in JOB_DICTIONARY["colors_dict"].items()
+    for r, g, b in [JOB_DICTIONARY["RGB_colors"][name]]
+}
 
 font_file_path = FOLDER_PATH+"/fonts/8bitOperatorPlus-Bold.ttf"
 
