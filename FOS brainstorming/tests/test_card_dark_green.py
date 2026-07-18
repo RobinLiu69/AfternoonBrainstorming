@@ -95,6 +95,27 @@ class TestDarkGreenHf:
         assert hf.health < before_health
         assert gs.players_totem["player1"] == before_totem + S["HF"]["engraved_totem"]
 
+    def test_turn_start_self_damage_skips_low_health_bonus(self) -> None:
+        gs = make_game_state()
+        hf = place_card(gs, Hf, "player1", 0, 0)
+        hf.health = 4
+        hf.update(gs)
+        assert hf.extra_damage == S["HF"]["damage_bonus"]
+
+        hf.on_refresh(gs)
+        assert hf.health == 4 - S["HF"]["turn_start_health_loss"]
+
+    def test_attack_still_applies_low_health_bonus(self) -> None:
+        gs = make_game_state()
+        hf = place_card(gs, Hf, "player1", 0, 0)
+        enemy = place_card(gs, RedAdc, "player2", 1, 0)
+        hf.health = 4
+        hf.update(gs)
+
+        before = enemy.health
+        do_attack(hf, gs)
+        assert before - enemy.health == S["HF"]["damage"] + S["HF"]["damage_bonus"]
+
 
 class TestDarkGreenLf:
     def test_ability_engraves_totem(self) -> None:

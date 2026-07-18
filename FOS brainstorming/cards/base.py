@@ -154,7 +154,7 @@ class Card(ABC):
         self.original_damage = self.damage
         
         match self.job_and_color:
-            case "MOVE" | "HEAL" | "CUBE" | "CUBES":
+            case "MOVE" | "HEAL" | "CUBE" | "CUBES" | "JUDGE":
                 self.job = self.job_and_color
                 self.color_name = "White"
             case "LUCKYBLOCK":
@@ -170,7 +170,7 @@ class Card(ABC):
                 self.attack_types = self.get_attack_type()
 
         if self.color_name:
-            self.color = tuple(JOB_DICTIONARY["RGB_colors"][self.color_name])
+            self.color = self.get_RGB_color()
             self.text_color = self.color
         
         if self.job == "ASS" and self.owner != "display":
@@ -222,7 +222,8 @@ class Card(ABC):
     @final
     def get_RGB_color(self) -> tuple[int, int, int]:
         if not self.color_name: raise ValueError("color_name must be string.")
-        return tuple(JOB_DICTIONARY["RGB_colors"][self.color_name])
+        r, g, b = JOB_DICTIONARY["RGB_colors"][self.color_name]
+        return (r, g, b)
     
     def _compute_shape_points(self) -> tuple[tuple[float, float], ...]:
         match self.job:
@@ -755,4 +756,15 @@ class Card(ABC):
         self.original_damage = data["original_damage"]
         self.pending_death = data["pending_death"]
         self.display_health = data["display_health"]
+
+
+class Judge(Card):
+    def __init__(self) -> None:
+        super().__init__(owner="None", job_and_color="JUDGE", health=1, damage=0, board_x=-1, board_y=-1)
+        self.movable = False
+
+    def deal(self, value: int, target: Card, game_state: GameState) -> bool:
+        result = target.damage_calculate(value, self, game_state, False)
+        self.hit_cards.clear()
+        return result
  

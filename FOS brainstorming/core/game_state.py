@@ -31,7 +31,7 @@ from shared.combat_event import CombatEvent
 from core.neutral import Neutral
 from core.board_block import Board
 from core.board_config import BoardConfig
-from cards.base import Card
+from cards.base import Card, Judge
 from utils.logger import GameLogger
 
 if TYPE_CHECKING:
@@ -54,6 +54,7 @@ class GameState:
     
     game_logger: GameLogger = field(default_factory=GameLogger)
     game_statistics: GameStatistics = field(default_factory=GameStatistics)
+    judge: Judge = field(default_factory=Judge)
 
     player_timer: dict[str, str] = field(default_factory=lambda: {"player1": "0", "player2": "0"})
     timer_mode: str = "timer"
