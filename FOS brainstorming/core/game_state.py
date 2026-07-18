@@ -24,7 +24,7 @@ from collections import deque
 
 from shared.setting import SETTING
 from shared.attack_request import AttackRequest
-from core.lobby_state import TIME_CONTROL_OPTIONS, DEFAULT_TIME_CONTROL
+from core.match_settings import TIME_CONTROL_OPTIONS, DEFAULT_TIME_CONTROL
 from core.game_statistics import GameStatistics
 from core.player import Player
 from shared.combat_event import CombatEvent

@@ -2284,6 +2284,7 @@ debug:
         底部按鈕顯示 START 不需等待對手連線 ESC 返回開戰子選單
         時間控制實際套用到本地對戰 (讀秒/加秒與 host 相同) 並寫入 log 回放可重建時鐘
         LobbyDispatcher 新增 local 模式: 動作直接執行不經網路 start_match 不要求對手在線 (lan_server 行為不變 專用伺服器不受影響)
+    設定頁新增mode : free play/tournament
 修改:
     設定畫面移除通往爬塔的隱藏入口 (^) 主選單已有 tower 正式入口 settings_screen.main 不再回傳值
 優化:

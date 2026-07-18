@@ -30,7 +30,7 @@ from core.neutral import Neutral
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from core.battling_dispatcher import BattlingDispatcher
-from core.lobby_state import TIME_CONTROL_OPTIONS
+from core.match_settings import TIME_CONTROL_OPTIONS
 from core.replay_source import ReplaySource, ReplayClock
 from rendering.game_renderer import GameRenderer
 from screens.battling.battling_action import collect_actions

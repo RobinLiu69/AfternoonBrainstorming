@@ -16,59 +16,60 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.lobby_state import LobbyState, TIME_CONTROL_OPTIONS, DEFAULT_TIME_CONTROL
+from core.lobby_state import LobbyState
+from core.match_settings import MatchSettings, TIME_CONTROL_OPTIONS, DEFAULT_TIME_CONTROL
 from core.lobby_dispatcher import LobbyDispatcher
 from core.battling_dispatcher import BattlingDispatcher
 from core.game_action import GameAction
-from screens.lobby.lobby_action import LobbyAction
+from screens.lobby.lobby_action import set_setting
 
 from tests.helpers import make_game_state
 
 
 def test_time_control_presets():
-    state = LobbyState()
-    assert state.time_control == DEFAULT_TIME_CONTROL
-    assert state.countdown_seconds() == 600
-    assert state.increment_seconds() == 0
+    settings = MatchSettings()
+    assert settings.time_control == DEFAULT_TIME_CONTROL
+    assert settings.countdown_seconds() == 600
+    assert settings.increment_seconds() == 0
 
-    state.time_control = "5+5"
-    assert state.countdown_seconds() == 300
-    assert state.increment_seconds() == 5
+    settings.time_control = "5+5"
+    assert settings.countdown_seconds() == 300
+    assert settings.increment_seconds() == 5
 
-    state.time_control = "15+10"
-    assert state.countdown_seconds() == 900
-    assert state.increment_seconds() == 10
+    settings.time_control = "15+10"
+    assert settings.countdown_seconds() == 900
+    assert settings.increment_seconds() == 10
 
-    state.time_control = "nonsense"
-    assert state.countdown_seconds() == 600
-    assert state.increment_seconds() == 0
+    settings.time_control = "nonsense"
+    assert settings.countdown_seconds() == 600
+    assert settings.increment_seconds() == 0
 
 
 def test_time_control_survives_wire_roundtrip():
     state = LobbyState()
-    state.time_control = "10+10"
+    state.settings.time_control = "10+10"
     received = LobbyState()
     received.apply_dict(state.to_dict_for("player2"))
-    assert received.time_control == "10+10"
-    assert received.countdown_seconds() == 600
-    assert received.increment_seconds() == 10
+    assert received.settings.time_control == "10+10"
+    assert received.settings.countdown_seconds() == 600
+    assert received.settings.increment_seconds() == 10
 
 
 def test_set_time_control_action():
     state = LobbyState()
     dispatcher = LobbyDispatcher(state, mode="lan_server")
 
-    result = dispatcher.dispatch(LobbyAction("host", "set_time_control", str_value="5+5"))
+    result = dispatcher.dispatch(set_setting("time_control", "5+5"))
     assert result.success is True
-    assert state.time_control == "5+5"
+    assert state.settings.time_control == "5+5"
 
-    result = dispatcher.dispatch(LobbyAction("host", "set_time_control", str_value="3min"))
+    result = dispatcher.dispatch(set_setting("time_control", "3min"))
     assert result.success is False
-    assert state.time_control == "5+5"
+    assert state.settings.time_control == "5+5"
 
-    result = dispatcher.dispatch(LobbyAction("player2", "set_time_control", str_value="20min"))
+    result = dispatcher.dispatch(set_setting("time_control", "20min", player="player2"))
     assert result.success is False
-    assert state.time_control == "5+5"
+    assert state.settings.time_control == "5+5"
 
 
 def _make_countdown_game(increment: int):
@@ -128,12 +129,12 @@ def test_draft_cannot_override_lobby_timer_in_lan():
     from screens.draft.draft_action import DraftAction
 
     draft_state = DraftState()
-    draft_state.timer_mode = "countdown"
+    draft_state.settings.timer_mode = "countdown"
     dispatcher = DraftDispatcher(draft_state, mode="lan_server")
 
     result = dispatcher.dispatch(DraftAction("player1", "toggle_timer"), draft_state)
     assert result.success is False
-    assert draft_state.timer_mode == "countdown"
+    assert draft_state.settings.timer_mode == "countdown"
 
     result = dispatcher.dispatch(DraftAction("player1", "toggle_file_save"), draft_state)
     assert result.success is False
@@ -142,7 +143,7 @@ def test_draft_cannot_override_lobby_timer_in_lan():
     local_dispatcher = DraftDispatcher(local_state, mode="local")
     result = local_dispatcher.dispatch(DraftAction("player1", "toggle_timer"), local_state)
     assert result.success is True
-    assert local_state.timer_mode == "countdown"
+    assert local_state.settings.timer_mode == "countdown"
 
 
 def test_countdown_time_synced_over_wire():

@@ -18,39 +18,34 @@
 
 from dataclasses import dataclass, field
 
-from shared.setting import SETTING
+from core.match_settings import (
+    MATCH_SETTING_NAMES,
+    MatchSettings,
+    RULESET_OPTIONS,
+    TIME_CONTROL_OPTIONS,
+)
 
 
 INFINITE_RECONNECT: float = float("inf")
 RECONNECT_TIMEOUT_OPTIONS: tuple[float, ...] = (30.0, 60.0, 120.0, 300.0, INFINITE_RECONNECT)
 
 
-def _load_time_control_options() -> dict[str, tuple[int, int]]:
-    options: dict[str, tuple[int, int]] = {}
-    for label, value in SETTING.get("time_control_options", {}).items():
-        try:
-            options[str(label)] = (int(value[0]), int(value[1]))
-        except (TypeError, ValueError, IndexError):
-            print(f"[lobby_state] ignoring bad time control option {label!r}: {value!r}")
-    if not options:
-        options = {"10min": (600, 0)}
-    return options
-
-
-TIME_CONTROL_OPTIONS: dict[str, tuple[int, int]] = _load_time_control_options()
-DEFAULT_TIME_CONTROL: str = str(SETTING.get("default_time_control", ""))
-if DEFAULT_TIME_CONTROL not in TIME_CONTROL_OPTIONS:
-    DEFAULT_TIME_CONTROL = next(iter(TIME_CONTROL_OPTIONS))
+SETTING_OPTIONS: dict[str, tuple] = {
+    "timer_mode": ("timer", "countdown"),
+    "time_control": tuple(TIME_CONTROL_OPTIONS),
+    "ruleset": RULESET_OPTIONS,
+    "file_auto_delete": (False, True),
+    "god_view": (False, True),
+    "reconnect_timeout": RECONNECT_TIMEOUT_OPTIONS,
+}
 
 
 @dataclass
 class LobbyState:
     host_seat: str = "player1"
     god_view: bool = False
-    timer_mode: str = "timer"
-    time_control: str = DEFAULT_TIME_CONTROL
-    file_auto_delete: bool = False
     reconnect_timeout: float = 60.0
+    settings: MatchSettings = field(default_factory=MatchSettings)
 
     peer_connected: bool = False
     spectator_count: int = 0
@@ -62,20 +57,18 @@ class LobbyState:
     def peer_seat(self) -> str:
         return "player2" if self.host_seat == "player1" else "player1"
 
-    def countdown_seconds(self) -> int:
-        return TIME_CONTROL_OPTIONS.get(self.time_control, TIME_CONTROL_OPTIONS[DEFAULT_TIME_CONTROL])[0]
-
-    def increment_seconds(self) -> int:
-        return TIME_CONTROL_OPTIONS.get(self.time_control, TIME_CONTROL_OPTIONS[DEFAULT_TIME_CONTROL])[1]
+    def set_value(self, name: str, value) -> None:
+        if name in MATCH_SETTING_NAMES:
+            setattr(self.settings, name, value)
+        else:
+            setattr(self, name, value)
 
     def to_dict(self) -> dict:
         return {
             "host_seat": self.host_seat,
             "god_view": self.god_view,
-            "timer_mode": self.timer_mode,
-            "time_control": self.time_control,
-            "file_auto_delete": self.file_auto_delete,
             "reconnect_timeout": self.reconnect_timeout,
+            **self.settings.to_dict(),
             "peer_connected": self.peer_connected,
             "spectator_count": self.spectator_count,
             "latencies": dict(self.latencies),
@@ -90,10 +83,8 @@ class LobbyState:
     def apply_dict(self, data: dict) -> None:
         self.host_seat = data["host_seat"]
         self.god_view = data["god_view"]
-        self.timer_mode = data["timer_mode"]
-        self.time_control = data.get("time_control", self.time_control)
-        self.file_auto_delete = data["file_auto_delete"]
         self.reconnect_timeout = data["reconnect_timeout"]
+        self.settings.apply_dict(data)
         self.peer_connected = data["peer_connected"]
         self.spectator_count = data["spectator_count"]
         self.latencies = data.get("latencies", {})

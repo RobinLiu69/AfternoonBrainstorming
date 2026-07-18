@@ -22,6 +22,7 @@ import pygame
 
 from core.draft_state import DraftState
 from core.draft_dispatcher import DraftDispatcher
+from core.match_settings import MatchSettings
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from core.game_screen import GameScreen, draw_text
@@ -78,15 +79,13 @@ def main(game_screen: GameScreen, mode: str = "local",
          draft_state: Optional[DraftState] = None,
          host_seat: str = "player1",
          reconnect_timeout: float = 60.0,
-         timer_mode: str = "timer",
-         file_auto_delete: bool = False) -> DraftExitReason:
+         settings: Optional[MatchSettings] = None) -> DraftExitReason:
     registry = ExhibitRegistry(game_screen)
     if draft_state is None:
         draft_state = DraftState()
     draft_state.board_config = BoardConfig(4, 3)
     draft_state.board_dict = initialize_board(game_screen, draft_state.board_config)
-    draft_state.timer_mode = timer_mode
-    draft_state.file_auto_delete = file_auto_delete
+    draft_state.settings = settings.copy() if settings is not None else MatchSettings()
 
     dispatcher = DraftDispatcher(draft_state, mode=mode,
                                  reconnect_timeout=reconnect_timeout,

@@ -21,6 +21,7 @@ from typing import Literal
 
 from core.board_config import BoardConfig
 from core.board_block import Board
+from core.match_settings import MatchSettings
 
 
 BPPhase = Literal["p1_first6", "p2_pick12", "p1_last6", "done"]
@@ -37,8 +38,7 @@ class DraftState:
     board_dict: dict[tuple[int, int], Board] = field(default_factory=dict)
 
 
-    timer_mode: str = "timer"
-    file_auto_delete: bool = False
+    settings: MatchSettings = field(default_factory=MatchSettings)
 
     paused: bool = False
     pause_reason: str = ""
@@ -82,24 +82,17 @@ class DraftState:
             "player1_deck": self.player1_deck,
             "player2_deck": self.player2_deck,
             "phase": self.phase,
-            "timer_mode": self.timer_mode,
-            "file_auto_delete": self.file_auto_delete,
+            **self.settings.to_dict(),
             "paused": self.paused,
             "pause_reason": self.pause_reason,
             "pause_seconds_remaining": self.pause_seconds_remaining,
         }
 
     def to_dict_for(self, viewer: str) -> dict:
-        return {
-            "player1_deck": self._mask_deck("player1", viewer),
-            "player2_deck": self._mask_deck("player2", viewer),
-            "phase": self.phase,
-            "timer_mode": self.timer_mode,
-            "file_auto_delete": self.file_auto_delete,
-            "paused": self.paused,
-            "pause_reason": self.pause_reason,
-            "pause_seconds_remaining": self.pause_seconds_remaining,
-        }
+        data = self.to_dict()
+        data["player1_deck"] = self._mask_deck("player1", viewer)
+        data["player2_deck"] = self._mask_deck("player2", viewer)
+        return data
 
     def _mask_deck(self, owner: str, viewer: str) -> list[str]:
         deck = self.player1_deck if owner == "player1" else self.player2_deck
@@ -111,8 +104,7 @@ class DraftState:
         self.player1_deck = data["player1_deck"]
         self.player2_deck = data["player2_deck"]
         self.phase = data["phase"]
-        self.timer_mode = data["timer_mode"]
-        self.file_auto_delete = data["file_auto_delete"]
+        self.settings.apply_dict(data)
         self.paused = data.get("paused", False)
         self.pause_reason = data.get("pause_reason", "")
         self.pause_seconds_remaining = data.get("pause_seconds_remaining", 0.0)
