@@ -57,9 +57,10 @@ MATCH_SETTING_OFFSETS = {"time": -1.40, "swap_seats": -0.95}
 ADVANCED_HEADER_OFFSET = -0.25
 ADVANCED_SETTING_OFFSETS = {"god_view": -0.02, "file_auto_delete": 0.43,
                             "reconnect_timeout": 0.88}
+LOCAL_SETTING_OFFSETS = {"time": -1.40, "file_auto_delete": -0.95}
 
 
-def _make_buttons(gs: GameScreen) -> dict[str, Button]:
+def _make_buttons(gs: GameScreen, mode: str) -> dict[str, Button]:
     bs = gs.block_size
     cx = gs.display_width / 2
     cy = gs.display_height / 2
@@ -84,8 +85,9 @@ def _make_buttons(gs: GameScreen) -> dict[str, Button]:
                          position="Middle", padding=bs * 0.15,
                          box_width=box_width, font=gs.text_font, text="START MATCH")
 
-    buttons = {name: left_btn(off) for name, off in
-               (MATCH_SETTING_OFFSETS | ADVANCED_SETTING_OFFSETS).items()}
+    offsets = (LOCAL_SETTING_OFFSETS if mode == "local"
+               else MATCH_SETTING_OFFSETS | ADVANCED_SETTING_OFFSETS)
+    buttons = {name: left_btn(off) for name, off in offsets.items()}
     buttons["switch_role"] = switch_role
     buttons["start_match"] = start_match
     return buttons
@@ -124,11 +126,15 @@ def _setting_labels(state: LobbyState) -> dict[str, str]:
     }
 
 
-def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: str) -> None:
+def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: str, mode: str) -> None:
     for name, label in _setting_labels(state).items():
-        buttons[name].text = label
+        if name in buttons:
+            buttons[name].text = label
 
-    buttons["start_match"].text = "START MATCH" if state.peer_connected else "(waiting for player)"
+    if mode == "local":
+        buttons["start_match"].text = "START"
+    else:
+        buttons["start_match"].text = "START MATCH" if state.peer_connected else "(waiting for player)"
 
     if _is_host(role):
         buttons["switch_role"].text = ""
@@ -163,21 +169,27 @@ def _render_advanced_header(gs: GameScreen) -> None:
               cx - bs * 3.3, cy + bs * ADVANCED_HEADER_OFFSET, gs.surface)
 
 
+def _render_title(gs: GameScreen) -> None:
+    bs = gs.block_size
+    cx = gs.display_width / 2
+    cy = gs.display_height / 2
+
+    draw_text("LOBBY", gs.title_text_font, WHITE,
+              cx - bs * 0.7, cy - bs * 2.8, gs.surface)
+
+    draw_text("Settings", gs.text_font, WHITE,
+              cx - bs * 3.3, cy - bs * 1.85, gs.surface)
+
+
 def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
     bs = gs.block_size
     cx = gs.display_width / 2
     cy = gs.display_height / 2
     right_x = cx + bs * 0.3
 
-    draw_text("LOBBY", gs.title_text_font, WHITE,
-              cx - bs * 0.7, cy - bs * 2.8, gs.surface)
-
     if state.room_code:
         draw_text(f"room: {state.room_code}", gs.text_font, WHITE,
                   right_x, cy - bs * 2.35, gs.surface)
-
-    draw_text("Settings", gs.text_font, WHITE,
-              cx - bs * 3.3, cy - bs * 1.85, gs.surface)
 
     draw_text("Players", gs.text_font, WHITE,
               right_x, cy - bs * 1.85, gs.surface)
@@ -227,11 +239,13 @@ def _render_quit_confirm(gs: GameScreen) -> None:
         draw_text(line, gs.mid_text_font, WHITE, cx - w / 2, cy + dy, gs.surface)
 
 
-def _render_help(gs: GameScreen, role: str) -> None:
+def _render_help(gs: GameScreen, role: str, mode: str) -> None:
     bs = gs.block_size
     cy = gs.display_height / 2
     cx = gs.display_width / 2
-    if _is_host(role):
+    if mode == "local":
+        msg = "click to toggle / cycle  |  ESC: back"
+    elif _is_host(role):
         msg = "click to toggle / cycle  |  ESC: leave & shut down server"
     else:
         msg = "host controls settings  |  ESC: leave"
@@ -241,17 +255,21 @@ def _render_help(gs: GameScreen, role: str) -> None:
 
 def _click_dispatch(buttons: dict[str, Button], mouse_x: float, mouse_y: float,
                     state: LobbyState, role: str, dispatcher: LobbyDispatcher) -> None:
+    def touched(name: str) -> bool:
+        button = buttons.get(name)
+        return button is not None and button.touch(mouse_x, mouse_y)
+
     if _is_host(role):
-        if buttons["god_view"].touch(mouse_x, mouse_y):
+        if touched("god_view"):
             dispatcher.dispatch(LobbyAction("host", "set_god_view", bool_value=not state.god_view))
             return
-        if buttons["time"].touch(mouse_x, mouse_y):
+        if touched("time"):
             _cycle_time(state, dispatcher)
             return
-        if buttons["file_auto_delete"].touch(mouse_x, mouse_y):
+        if touched("file_auto_delete"):
             dispatcher.dispatch(LobbyAction("host", "set_file_auto_delete", bool_value=not state.file_auto_delete))
             return
-        if buttons["reconnect_timeout"].touch(mouse_x, mouse_y):
+        if touched("reconnect_timeout"):
             try:
                 idx = RECONNECT_TIMEOUT_OPTIONS.index(state.reconnect_timeout)
             except ValueError:
@@ -259,14 +277,14 @@ def _click_dispatch(buttons: dict[str, Button], mouse_x: float, mouse_y: float,
             new_t = RECONNECT_TIMEOUT_OPTIONS[(idx + 1) % len(RECONNECT_TIMEOUT_OPTIONS)]
             dispatcher.dispatch(LobbyAction("host", "set_reconnect_timeout", float_value=new_t))
             return
-        if buttons["swap_seats"].touch(mouse_x, mouse_y):
+        if touched("swap_seats"):
             dispatcher.dispatch(LobbyAction("host", "swap_seats"))
             return
-        if buttons["start_match"].touch(mouse_x, mouse_y):
+        if touched("start_match"):
             dispatcher.dispatch(LobbyAction("host", "start_match"))
             return
     else:
-        if buttons["switch_role"].touch(mouse_x, mouse_y):
+        if touched("switch_role"):
             if role == state.peer_seat():
                 dispatcher.dispatch(LobbyAction(role, "switch_to_spectator"))
             elif _is_spectator(role) and not state.peer_connected:
@@ -281,7 +299,10 @@ def main(game_screen: GameScreen, mode: str,
     state = lobby_state if lobby_state is not None else LobbyState()
     dispatcher = LobbyDispatcher(state, mode=mode)
 
-    if mode == "lan_server":
+    if mode == "local":
+        state.local_role = "host"
+
+    elif mode == "lan_server":
         assert server is not None
         dispatcher.attach_server(server)
         if not server.is_running:
@@ -299,7 +320,7 @@ def main(game_screen: GameScreen, mode: str,
             state.apply_dict(initial_state)
         state.local_role = role or ""
 
-    buttons = _make_buttons(game_screen)
+    buttons = _make_buttons(game_screen, mode)
     clock = pygame.time.Clock()
     confirming_quit = False
 
@@ -316,7 +337,7 @@ def main(game_screen: GameScreen, mode: str,
         if mode == "lan_server" and server is not None:
             server.pulse()
 
-        if mode == "lan_server" and dispatcher.start_signal:
+        if dispatcher.start_signal:
             return LobbyExit(kind="start_match", state=state)
 
         for event in pygame.event.get():
@@ -341,13 +362,16 @@ def main(game_screen: GameScreen, mode: str,
         dispatcher.tick()
 
         game_screen.render()
-        _render_roster(game_screen, state, state.local_role)
-        _render_advanced_header(game_screen)
-        _refresh_button_labels(buttons, state, state.local_role)
+        _render_title(game_screen)
+        if mode != "local":
+            _render_roster(game_screen, state, state.local_role)
+            _render_advanced_header(game_screen)
+        _refresh_button_labels(buttons, state, state.local_role, mode)
 
         if _is_host(state.local_role):
-            for key in ("time", "swap_seats", "god_view", "file_auto_delete", "reconnect_timeout", "start_match"):
-                buttons[key].update(game_screen)
+            for name, button in buttons.items():
+                if name != "switch_role":
+                    button.update(game_screen)
         else:
             _render_settings_labels(game_screen, state)
             sw = buttons["switch_role"]
@@ -359,7 +383,7 @@ def main(game_screen: GameScreen, mode: str,
                           sw.y + game_screen.block_size * 0.10,
                           game_screen.surface)
 
-        _render_help(game_screen, state.local_role)
+        _render_help(game_screen, state.local_role, mode)
         if confirming_quit:
             _render_quit_confirm(game_screen)
         pygame.display.update()

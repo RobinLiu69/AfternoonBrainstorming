@@ -94,7 +94,7 @@ class Hf(DarkGreenCard):
         self.extra_damage = card_settings["HF"]["damage_bonus"] if self.health <= 4 else 0
 
     def on_refresh(self, game_state: GameState) -> int:
-        self.damage_calculate(card_settings["HF"]["turn_start_health_loss"], self, game_state, False)
+        game_state.judge.deal(card_settings["HF"]["turn_start_health_loss"], self, game_state)
         self.engraved_totem(card_settings["HF"]["engraved_totem"], game_state)
         return 0
 
@@ -111,7 +111,7 @@ class Lf(DarkGreenCard):
             target.damage_calculate(game_state.players_totem[self.owner]//4, self, game_state)
     
     def on_refresh(self, game_state: GameState) -> int:
-        self.damage_calculate(card_settings["LF"]["turn_start_health_loss"], self, game_state, False)
+        game_state.judge.deal(card_settings["LF"]["turn_start_health_loss"], self, game_state)
         return 0
 
     def ability(self, target: Card, game_state: GameState) -> bool:

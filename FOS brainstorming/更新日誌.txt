@@ -2272,3 +2272,38 @@ debug:
         解釋: 橘色從job_dictionary.json的color_array不見了，因此draft.py沒抓到
         修法: 將 {"O": "Orange"} 加回color_array裡面
 ----------------
+=======================
+2026/07/18-4.4.2.0
+編寫者 Anemois, Robin
+----------------
+新增:
+    Judge 系統單位 (cards/base.py)
+        第三方專門扣血的單位 不在棋盤上 owner=None damage=0 永遠沒有攻擊加成
+        judge.deal(value, target, game_state) 以judge為攻擊者走正常傷害流程 護盾/減傷/擊殺判定/動畫照常
+        GameState 新增 judge 欄位 不進序列化 LAN/回放不受影響
+        效果類扣血的傷害來源記為 None_JUDGE 不再灌水卡片自身輸出數據 玩家圖表不受影響
+    主選單 play 進入後新增開戰子選單 (host / join / local)
+        對戰結束或 ESC 退出會回到此子選單 再按 ESC 才回主選單 (原本開戰流程直接掛在主選單下)
+    local 對戰開打前也會經過設定頁 (與 host/join 共用同一個 lobby 畫面)
+        只顯示本地有意義的設定: 時間控制 / 自動刪除log 網路限定項目 (玩家名單/房號/god view/斷線逾時/換位) 不顯示
+        底部按鈕顯示 START 不需等待對手連線 ESC 返回開戰子選單
+        時間控制實際套用到本地對戰 (讀秒/加秒與 host 相同) 並寫入 log 回放可重建時鐘
+        LobbyDispatcher 新增 local 模式: 動作直接執行不經網路 start_match 不要求對手在線 (lan_server 行為不變 專用伺服器不受影響)
+修改:
+    設定畫面移除通往爬塔的隱藏入口 (^) 主選單已有 tower 正式入口 settings_screen.main 不再回傳值
+優化:
+    main.py 收斂為純選單分派 各模式的流程移入被呼叫的模組 不再散落在 main.py
+        host/join/local 三條開戰流程 -> screens/menu/play_screen.py (client 端兩段重複的開戰區塊合併為一個 helper)
+        回放流程 (選檔->播放->結算) -> screens/playback.py
+        戰役流程 -> campaign/run_loop.py (比照 endless/run_loop.py 的形式)
+        對戰結算 _finalize_battle 與 log 備份廣播 -> screens/battling/finalize.py (開戰/回放/戰役共用)
+        GameState 建立 helpers / 連線失敗原因對應 / DEFAULT_PORT -> play_screen.py (僅開戰流程使用)
+    lobby 渲染拆分: 標題與 Settings 標頭獨立成 _render_title 名單/房號留在 _render_roster 供 local 模式只畫前者
+修正:
+    HFDKG 低血增傷後回合開始自傷吃到+2直接把自己打死 (起於4.3.0.0)
+        解釋: damage_calculate 對所有傷害一律套用攻擊者的damage_bonus 自傷時攻擊者是自己 血量<=4時自傷 2 變 2+2
+        修法: 深綠 HF/LF 的回合開始自傷改由 judge.deal 出手 攻擊加成只作用於真正的攻擊
+        tests/test_card_dark_green.py 補 低血自傷不吃加成/攻擊仍吃加成 兩回歸測試 共315通過
+    Pylance: get_RGB_color 回傳 tuple[int,...] 對不上宣告的 tuple[int,int,int]
+        修法: 改解包重組固定三元組 __post_init__ 的 self.color 查表改直接呼叫 get_RGB_color
+----------------
