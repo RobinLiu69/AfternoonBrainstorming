@@ -2307,3 +2307,37 @@ debug:
     Pylance: get_RGB_color 回傳 tuple[int,...] 對不上宣告的 tuple[int,int,int]
         修法: 改解包重組固定三元組 __post_init__ 的 self.color 查表改直接呼叫 get_RGB_color
 ----------------
+=======================
+2026/07/19-4.4.2.1
+編寫者 Robin
+----------------
+修正:
+    結束畫面的時間會顯示0 (LAN對戰)
+        解釋: 致勝動作會被廣播兩組[state, game_over] 而server的player_timer整場都是預設"0"
+              client先進結算畫面後 遲到的第二個state在網路執行緒被套用 把時間蓋回"0"
+        修法: 結算畫面改直接讀 player.time_display (晚到的state也會從elapsed_time重算出正確值)
+              host迴圈只在timeout獲勝時補廣播 消除重複的[state, game_over]
+    APP 放置不會觸發效果無效 (起於4.4.0.0)
+        解釋: deploy只清了護甲與攻擊 漏了extra_damage歸零與set_nullify
+        修法: 補齊與攻擊效果一致 麻痺維持攻擊限定 附回歸測試
+    Orange 在選卡頁的色列位置錯誤 (起於4.4.1.1) 應在Blue後DKG前 colors_array順序修正
+    spectator 在選卡頁無法切換色列 (red <-> brown)
+        解釋: SPECTATOR_ALLOWED白名單漏了change_index/index_next/index_prev
+        修法: 加入白名單 並讓色列切換完全走本地 不再多餘地送伺服器
+    spectator 的 HFDKG 攻擊力顯示更新不及時
+        解釋: 廣播在動作處理完立即發出 重算extra_damage的on_update要等下一個tick 且extra_damage變動不觸發廣播
+        修法: _broadcast_state 廣播前先跑 game_state.update() (所有on_update皆為冪等重算 不會重複累加)
+    replay 按上一步後卡面血量非真實血量
+        解釋: 重建時animator關閉 整段fast-forward的hurt事件堆進_pending_display_health
+              重建完被按棋盤位置套到現在站在該格的卡上 display_health全亂
+        修法: 重建收尾丟棄過期佇列 並把所有卡(含影子)的display_health對齊真實health
+    結算圖表某類統計完全沒資料時 該圓餅圖直接消失
+        解釋: export_player_stats對沒資料的stat type不給key data_prep取值KeyError被吞
+        修法: 改用.get接住 空資料流入No Data fallback 會產出No_Data圖 檔名一致
+    文案: LFO提示補「敵方單位」 APC升級數值 +2+2 -> +1+2 README同步
+移除:
+    draft 的 T/Y 鍵 (切換計時/log儲存) local也經過lobby後已完全過時
+        鍵盤事件/action型別/dispatcher分支全刪 網路端送進來一律拒絕 選卡畫面保留唯讀Timer Mode顯示
+    GameState.player_timer 欄位 (結算畫面改讀time_display後無人使用) 含wire同步與各寫入點
+    end_game_renderer 兩個未使用的舊繪製函式
+----------------

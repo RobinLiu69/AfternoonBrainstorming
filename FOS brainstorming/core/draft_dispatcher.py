@@ -259,16 +259,4 @@ class DraftDispatcher:
                     phase_advanced=True,
                     ready_to_start=(draft_state.phase == "done"),
                 )
-            case "toggle_timer":
-                if self.mode != "local":
-                    return DraftResult(False, message="timer is set in the lobby")
-                draft_state.timer_mode = (
-                    "countdown" if draft_state.timer_mode == "timer" else "timer"
-                )
-                return DraftResult(True)
-            case "toggle_file_save":
-                if self.mode != "local":
-                    return DraftResult(False, message="log saving is set in the lobby")
-                draft_state.file_auto_delete = not draft_state.file_auto_delete
-                return DraftResult(True)
         return DraftResult(False, message=f"unknown action: {action.action_type}")

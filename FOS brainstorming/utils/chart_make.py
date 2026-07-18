@@ -61,6 +61,8 @@ custom_font_prop = font_manager.FontProperties(fname=font_file_path)
 
 def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict[str, int],
                    fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
+    if not data:
+        data = {"No Data": 0}
     if len(data) > 0:
         labels: list[str] = list(map(lambda key: key.split("_")[-1], data.keys()))
         sorted_tags = sorted(COLORS_DICT.keys(), key=len, reverse=True)

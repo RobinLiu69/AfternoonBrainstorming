@@ -122,27 +122,25 @@ def test_time_display_synced_over_wire():
     assert receiver.player1.elapsed_time == 425
 
 
-def test_draft_cannot_override_lobby_timer_in_lan():
+def test_draft_cannot_override_lobby_timer():
     from core.draft_state import DraftState
     from core.draft_dispatcher import DraftDispatcher
     from screens.draft.draft_action import DraftAction
 
-    draft_state = DraftState()
-    draft_state.timer_mode = "countdown"
-    dispatcher = DraftDispatcher(draft_state, mode="lan_server")
+    for mode in ("lan_server", "local"):
+        draft_state = DraftState()
+        draft_state.timer_mode = "countdown"
+        dispatcher = DraftDispatcher(draft_state, mode=mode)
 
-    result = dispatcher.dispatch(DraftAction("player1", "toggle_timer"), draft_state)
-    assert result.success is False
-    assert draft_state.timer_mode == "countdown"
+        action = DraftAction.from_json('{"player": "player1", "action_type": "toggle_timer"}')
+        result = dispatcher.dispatch(action, draft_state)
+        assert result.success is False
+        assert draft_state.timer_mode == "countdown"
 
-    result = dispatcher.dispatch(DraftAction("player1", "toggle_file_save"), draft_state)
-    assert result.success is False
-
-    local_state = DraftState()
-    local_dispatcher = DraftDispatcher(local_state, mode="local")
-    result = local_dispatcher.dispatch(DraftAction("player1", "toggle_timer"), local_state)
-    assert result.success is True
-    assert local_state.timer_mode == "countdown"
+        action = DraftAction.from_json('{"player": "player1", "action_type": "toggle_file_save"}')
+        result = dispatcher.dispatch(action, draft_state)
+        assert result.success is False
+        assert draft_state.file_auto_delete is False
 
 
 def test_countdown_time_synced_over_wire():

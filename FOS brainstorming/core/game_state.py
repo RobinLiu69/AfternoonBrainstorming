@@ -56,7 +56,6 @@ class GameState:
     game_statistics: GameStatistics = field(default_factory=GameStatistics)
     judge: Judge = field(default_factory=Judge)
 
-    player_timer: dict[str, str] = field(default_factory=lambda: {"player1": "0", "player2": "0"})
     timer_mode: str = "timer"
         
     countdown_time: int = TIME_CONTROL_OPTIONS[DEFAULT_TIME_CONTROL][0]
@@ -142,7 +141,6 @@ class GameState:
                 f"{x},{y}": board.to_dict()
                 for (x, y), board in self.board_dict.items()
             },
-            "player_timer": self.player_timer,
             "timer_mode": self.timer_mode,
             "countdown_time": self.countdown_time,
             "file_auto_delete": self.file_auto_delete,
@@ -180,7 +178,6 @@ class GameState:
                 game_renderer.combat_animator.push(CombatEvent.from_dict(ev_dict))
 
 
-        self.player_timer = data["player_timer"]
         self.timer_mode = data["timer_mode"]
         self.countdown_time = data.get("countdown_time", self.countdown_time)
         self.file_auto_delete = data["file_auto_delete"]

@@ -296,7 +296,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                 running = False
 
             if not running and winner not in ("None", ""):
-                if is_server:
+                if is_server and dispatcher.pending_winner is None:
                     dispatcher._broadcast_state(game_state)
                     dispatcher._broadcast_game_over(winner, game_state)
         
