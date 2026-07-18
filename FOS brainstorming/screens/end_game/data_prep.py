@@ -127,13 +127,13 @@ def making_image(player1_datas: dict[str, dict[str, int]], player2_datas: dict[s
     for key in PIE_TITLE_TEXTS:
         title_text = " ".join(map(lambda s: s.capitalize(), key.split("_")))
         try:
-            pie_paths["player1"].append(make_pie_chart("player1", title_text, key, player1_datas[key]))
+            pie_paths["player1"].append(make_pie_chart("player1", title_text, key, player1_datas.get(key, {})))
         except Exception as e:
             print(f"[pie {key}] {e}")
         _tick(f"Pie: P1 {title_text}")
 
         try:
-            pie_paths["player2"].append(make_pie_chart("player2", title_text, key, player2_datas[key]))
+            pie_paths["player2"].append(make_pie_chart("player2", title_text, key, player2_datas.get(key, {})))
         except Exception as e:
             print(f"[pie {key}] {e}")
         _tick(f"Pie: P2 {title_text}")

@@ -23,6 +23,7 @@ from cards.card_blue import Tank as BlueTank, Apt as BlueApt
 from cards.card_cyan import Adc as CyanAdc, Apt as CyanApt
 from cards.card_red import Adc as RedAdc, Tank as RedTank, Hf as RedHf
 from cards.card_fuchsia import Apt as FuchsiaApt, Ass as FuchsiaAss
+from cards.card_purple import Ap as PurpleAp
 
 
 class TestNullifiedAttacker:
@@ -113,6 +114,25 @@ class TestNullifiedVictim:
 
         hf.nullify = True
         assert hf.can_be_killed(gs) is True
+
+
+class TestPurpleApDeploy:
+    def test_deploy_nullifies_nearest_enemy_without_numbing(self) -> None:
+        gs = make_game_state()
+        enemy = place_card(gs, RedTank, "player2", 1, 0)
+        enemy.armor = 3
+        enemy.extra_damage = 2
+        enemy.damage = enemy.original_damage + 1
+        enemy.numbness = False
+
+        ap = place_card(gs, PurpleAp, "player1", 0, 0)
+        ap.deploy(gs)
+
+        assert enemy.nullify is True
+        assert enemy.armor == 0
+        assert enemy.extra_damage == 0
+        assert enemy.damage == enemy.original_damage
+        assert enemy.numbness is False
 
 
 class TestNullifiedFieldEffects:

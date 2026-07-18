@@ -246,9 +246,15 @@ def _rebuild_and_fast_forward(
         game_renderer.combat_animator.enabled = prev_anim_runtime
 
     game_state.pending_combat_events.clear()
+    game_renderer.combat_animator.drain_skipped_display_updates()
     for card in game_renderer.dying_cards:
         game_renderer.card_renderer.release(card.instance_id)
     game_renderer.dying_cards.clear()
+
+    for card in game_state.get_all_cards():
+        card.display_health = card.health
+        for shadow in getattr(card, "shadows", ()):
+            shadow.display_health = shadow.health
 
     game_state._attack_anim_cursor = 0.0
 

@@ -63,7 +63,9 @@ class Ap(PurpleCard):
         ):
             target.armor = 0
             target.damage = target.original_damage
-    
+            target.extra_damage = 0
+            target.set_nullify(True, game_state)
+
     def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
         target.armor = 0

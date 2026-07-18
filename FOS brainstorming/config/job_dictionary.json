@@ -14,9 +14,9 @@
     "colors_array": [
         {"W": "White"},
         {"R": "Red", "BR": "Brown"},
-        {"O": "Orange"},
         {"G": "Green"},
         {"B": "Blue"},
+        {"O": "Orange"},
         {"DKG": "DarkGreen"},
         {"C": "Cyan"},
         {"F": "Fuchsia"},

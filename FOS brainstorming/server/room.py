@@ -352,9 +352,6 @@ class Room:
         assert self.game_state is not None
         game_state = self.game_state
         self._log_match_secrets()
-        game_state.player_timer["player1"] = game_state.player1.time_display
-        game_state.player_timer["player2"] = game_state.player2.time_display
-
         logger = game_state.game_logger
         logger.info(f"winner {winner}")
         logger.info(f"player1 timer {game_state.player1.time_display}")

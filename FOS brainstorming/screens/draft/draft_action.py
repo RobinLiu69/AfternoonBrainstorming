@@ -36,8 +36,6 @@ DraftActionType = Literal[
     "advance_phase",
     "page_next",
     "page_prev",
-    "toggle_timer",
-    "toggle_file_save",
     "toggle_hint",
     "confirm_start",
     "quit",
@@ -69,7 +67,8 @@ class DraftResult:
     quit: bool = False
 
 
-SPECTATOR_ALLOWED: tuple[str, ...] = ("page_next", "page_prev", "toggle_hint", "quit")
+SPECTATOR_ALLOWED: tuple[str, ...] = ("page_next", "page_prev", "toggle_hint", "quit",
+                                      "change_index", "index_next", "index_prev")
 
 
 def collect_draft_actions(current_editor: str, page: int, index: int, registry: ExhibitRegistry,
@@ -93,7 +92,7 @@ def collect_draft_actions(current_editor: str, page: int, index: int, registry: 
                 case 1:
                     if card != "None":
                         actions.append(DraftAction(current_editor, "add_card", card))
-                    for i, color in enumerate(registry.get_page_colors(page)):
+                    for i in range(len(registry.get_page_colors(page))):
                         if registry.switch_rects[i].collidepoint(event.pos):
                             actions.append(DraftAction(current_editor, "change_index", data=i))
                 case 3:
@@ -127,10 +126,6 @@ def collect_draft_actions(current_editor: str, page: int, index: int, registry: 
                     actions.append(DraftAction(current_editor, "advance_phase"))
                 case pygame.K_r:
                     actions.append(DraftAction(current_editor, "confirm_start"))
-                case pygame.K_t:
-                    actions.append(DraftAction(current_editor, "toggle_timer"))
-                case pygame.K_y:
-                    actions.append(DraftAction(current_editor, "toggle_file_save"))
                 case pygame.K_f:
                     actions.append(DraftAction(current_editor, "toggle_hint"))
     if is_spectator:

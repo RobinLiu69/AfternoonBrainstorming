@@ -227,6 +227,7 @@ class BattlingDispatcher:
         if not isinstance(self._network, LANServer):
             return
         self._refresh_pause_remaining()
+        game_state.update()
         print(f"[BattlingDispatcher] broadcast_state turn={game_state.turn_number} score={game_state.score} paused={game_state.paused}")
         self._network.broadcast_state_for(game_state.to_dict_for)
 
