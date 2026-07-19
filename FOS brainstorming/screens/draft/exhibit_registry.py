@@ -18,7 +18,7 @@
 
 from typing import Optional
 
-from shared.setting import JOB_DICTIONARY, CARD_SETTING
+from shared.setting import JOB_DICTIONARY, CARD_SETTING, JOB_ORDER
 from cards.base import Card
 from cards.factory import CardFactory
 from core.game_screen import GameScreen
@@ -26,7 +26,6 @@ from core.game_screen import GameScreen
 import pygame
 
 
-_JOB_ORDER = ["ADC", "AP", "TANK", "HF", "LF", "ASS", "APT", "SP"]
 _POSITIONS  = [(0,0),(1,0),(2,0),(3,0),(0,1),(1,1),(2,1),(3,1)]
 _MAGIC_DEFS = [("CUBES", 0, 2), ("HEAL", 1, 2), ("MOVE", 2, 2)]
 
@@ -45,7 +44,7 @@ class ExhibitRegistry:
             for color_tag, color_name in page_array.items():
                 color: list[Card] = []
                 available = CARD_SETTING.get(color_name, {}).keys()
-                for job, pos in zip(_JOB_ORDER, _POSITIONS):
+                for job, pos in zip(JOB_ORDER, _POSITIONS):
                     key = job + color_tag
                     if job not in available:
                         continue

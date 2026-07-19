@@ -26,6 +26,7 @@ from pygame._sdl2.video import Window
 
 from shared.setting import FOLDER_PATH
 from core.setting_config import load_setting
+from rendering.sprite_registry import SpriteRegistry
 
 
 with open(f"{FOLDER_PATH}/config/setting.json", "r", encoding="utf-8") as file:
@@ -116,6 +117,7 @@ class GameScreen:
         self.block_size: float = (self.display_width / 8) / 1.2
         self.thickness: int = self.display_width // 400
         self.font_init()
+        SpriteRegistry.initialize(f"{FOLDER_PATH}/assets", self.block_size)
 
     def _center_window(self, desktop_width: int, desktop_height: int) -> None:
         x = max(0, (desktop_width - self.display_width) // 2)

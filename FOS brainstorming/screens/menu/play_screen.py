@@ -133,13 +133,10 @@ def _build_game_state_from_draft(draft_state: DraftState) -> GameState:
     player2 = Player(name="player2", deck=draft_state.player2_deck.copy(), hand=[], on_board=[], draw_pile=[], discard_pile=[])
     neutral = Neutral()
 
-    keep_files = not draft_state.file_auto_delete
+    keep_files = not draft_state.settings.file_auto_delete
     logger = GameLogger(enable_file=keep_files, enable_console=True, enable_jsonl=keep_files)
     game_state = GameState(player1, player2, neutral, BoardConfig(), game_logger=logger)
-    game_state.timer_mode = draft_state.timer_mode
-    game_state.file_auto_delete = draft_state.file_auto_delete
-
-    game_state.game_logger.info(f"timer mode {game_state.timer_mode}")
+    draft_state.settings.apply_to(game_state)
     game_state.game_logger.info(f"version {VERSION}", version=VERSION)
     return game_state
 
@@ -154,17 +151,6 @@ def _build_game_state_for_client() -> GameState:
     return GameState(player1, player2, neutral, BoardConfig(), game_logger=silent_logger)
 
 
-def _apply_time_control(game_state: GameState, lobby_state: LobbyState) -> None:
-    game_state.countdown_time = lobby_state.countdown_seconds()
-    game_state.turn_increment_seconds = lobby_state.increment_seconds()
-    effective_tc = (lobby_state.time_control
-                    if game_state.timer_mode == "countdown" else "unlimited")
-    game_state.game_logger.info(
-        f"time control {effective_tc}",
-        countdown_seconds=game_state.countdown_time,
-        increment_seconds=game_state.turn_increment_seconds)
-
-
 def _run_local(game_screen: GameScreen) -> None:
     lobby_state = LobbyState()
     lobby_exit = lobby.main(game_screen, mode="local", lobby_state=lobby_state)
@@ -172,13 +158,11 @@ def _run_local(game_screen: GameScreen) -> None:
         return
 
     exit_reason = draft.main(game_screen, mode="local",
-                             timer_mode=lobby_state.timer_mode,
-                             file_auto_delete=lobby_state.file_auto_delete)
+                             settings=lobby_state.settings)
     if exit_reason.kind != "finished" or exit_reason.draft_state is None:
         return
 
     game_state = _build_game_state_from_draft(exit_reason.draft_state)
-    _apply_time_control(game_state, lobby_state)
 
     winner = battling.main(game_state, game_screen, mode="local")
     if winner not in ("None", ""):
@@ -200,8 +184,7 @@ def _run_host(game_screen: GameScreen) -> None:
             game_screen, mode="lan_server", server=server,
             host_seat=lobby_state.host_seat,
             reconnect_timeout=lobby_state.reconnect_timeout,
-            timer_mode=lobby_state.timer_mode,
-            file_auto_delete=lobby_state.file_auto_delete,
+            settings=lobby_state.settings,
         )
         if exit_reason.kind == "peer_lost":
             print("[play_screen] draft cancelled: opponent did not reconnect in time")
@@ -210,7 +193,6 @@ def _run_host(game_screen: GameScreen) -> None:
             return
 
         game_state = _build_game_state_from_draft(exit_reason.draft_state)
-        _apply_time_control(game_state, lobby_state)
 
         winner = battling.main(
             game_state, game_screen,

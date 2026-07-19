@@ -17,16 +17,17 @@
 # -----------------------------------------------------------------
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Callable, Optional, Sequence, TypeVar
 
 import pygame
 
-from core.lobby_state import LobbyState, RECONNECT_TIMEOUT_OPTIONS, TIME_CONTROL_OPTIONS
+from core.match_settings import RULESET_OPTIONS, TIME_CONTROL_OPTIONS
+from core.lobby_state import LobbyState, RECONNECT_TIMEOUT_OPTIONS
 from core.lobby_dispatcher import LobbyDispatcher
 from core.network_layer import LANServer, LANClient
 from core.game_screen import GameScreen, draw_text
 from core.UI import Button
-from screens.lobby.lobby_action import LobbyAction
+from screens.lobby.lobby_action import LobbyAction, set_setting
 from screens.notices import server_closed_screen
 from shared.setting import WHITE
 
@@ -53,14 +54,91 @@ def _room_has_others(state: LobbyState) -> bool:
     return state.peer_connected or state.spectator_count > 0
 
 
-MATCH_SETTING_OFFSETS = {"time": -1.40, "swap_seats": -0.95}
-ADVANCED_HEADER_OFFSET = -0.25
-ADVANCED_SETTING_OFFSETS = {"god_view": -0.02, "file_auto_delete": 0.43,
-                            "reconnect_timeout": 0.88}
-LOCAL_SETTING_OFFSETS = {"time": -1.40, "file_auto_delete": -0.95}
+T = TypeVar("T")
 
 
-def _make_buttons(gs: GameScreen, mode: str) -> dict[str, Button]:
+def _next_option(options: Sequence[T], current: T) -> T:
+    items = list(options)
+    try:
+        idx = items.index(current)
+    except ValueError:
+        idx = -1
+    return items[(idx + 1) % len(items)]
+
+
+def _format_timeout(timeout: float) -> str:
+    return "unlimited" if timeout == float("inf") else f"{int(timeout)}s"
+
+
+def _cycle_time(state: LobbyState, dispatcher: LobbyDispatcher) -> None:
+    options = ["unlimited"] + list(TIME_CONTROL_OPTIONS)
+    chosen = _next_option(options, state.settings.time_label())
+    if chosen == "unlimited":
+        dispatcher.dispatch(set_setting("timer_mode", "timer"))
+        return
+    if state.settings.timer_mode != "countdown":
+        dispatcher.dispatch(set_setting("timer_mode", "countdown"))
+    dispatcher.dispatch(set_setting("time_control", chosen))
+
+
+@dataclass(frozen=True)
+class _SettingRow:
+    label: Callable[[LobbyState], str]
+    click: Callable[[LobbyState, LobbyDispatcher], object]
+
+
+ROWS: dict[str, _SettingRow] = {
+    "time": _SettingRow(
+        label=lambda s: f"time: {s.settings.time_label()}",
+        click=_cycle_time),
+    "ruleset": _SettingRow(
+        label=lambda s: f"ruleset: {s.settings.ruleset}",
+        click=lambda s, d: d.dispatch(set_setting(
+            "ruleset", _next_option(RULESET_OPTIONS, s.settings.ruleset)))),
+    "swap_seats": _SettingRow(
+        label=lambda s: f"host plays: {s.host_seat}",
+        click=lambda s, d: d.dispatch(LobbyAction("host", "swap_seats"))),
+    "god_view": _SettingRow(
+        label=lambda s: f"god view: {'on' if s.god_view else 'off'}",
+        click=lambda s, d: d.dispatch(set_setting("god_view", not s.god_view))),
+    "file_auto_delete": _SettingRow(
+        label=lambda s: f"auto-delete log: {'yes' if s.settings.file_auto_delete else 'no'}",
+        click=lambda s, d: d.dispatch(set_setting(
+            "file_auto_delete", not s.settings.file_auto_delete))),
+    "reconnect_timeout": _SettingRow(
+        label=lambda s: f"reconnect timeout: {_format_timeout(s.reconnect_timeout)}",
+        click=lambda s, d: d.dispatch(set_setting(
+            "reconnect_timeout", _next_option(RECONNECT_TIMEOUT_OPTIONS, s.reconnect_timeout)))),
+}
+
+MATCH_ROWS = ("time", "ruleset", "swap_seats")
+ADVANCED_ROWS = ("god_view", "file_auto_delete", "reconnect_timeout")
+LOCAL_ROWS = ("time", "ruleset", "file_auto_delete")
+
+FIRST_ROW_OFFSET = -1.55
+ROW_STEP = 0.45
+ADVANCED_HEADER_GAP = 0.60
+ADVANCED_HEADER_TO_ROW = 0.25
+
+
+def _layout(mode: str) -> tuple[dict[str, float], Optional[float]]:
+    offsets: dict[str, float] = {}
+    y = FIRST_ROW_OFFSET
+    for name in (LOCAL_ROWS if mode == "local" else MATCH_ROWS):
+        offsets[name] = y
+        y += ROW_STEP
+    if mode == "local":
+        return offsets, None
+
+    header = y - ROW_STEP + ADVANCED_HEADER_GAP
+    y = header + ADVANCED_HEADER_TO_ROW
+    for name in ADVANCED_ROWS:
+        offsets[name] = y
+        y += ROW_STEP
+    return offsets, header
+
+
+def _make_buttons(gs: GameScreen, row_offsets: dict[str, float]) -> dict[str, Button]:
     bs = gs.block_size
     cx = gs.display_width / 2
     cy = gs.display_height / 2
@@ -70,66 +148,27 @@ def _make_buttons(gs: GameScreen, mode: str) -> dict[str, Button]:
     btn_h = bs * 0.43
     left_x = cx - bs * 3.3
 
-    def left_btn(y_offset: float) -> Button:
-        return Button(left_btn_w, btn_h, left_x, cy + bs * y_offset,
-                      position="Left", padding=bs * 0.15,
-                      box_width=box_width, font=gs.mid_text_font)
+    buttons = {name: Button(left_btn_w, btn_h, left_x, cy + bs * y_offset,
+                            position="Left", padding=bs * 0.15,
+                            box_width=box_width, font=gs.mid_text_font)
+               for name, y_offset in row_offsets.items()}
 
     switch_w = bs * 2.5
-    switch_role = Button(switch_w, btn_h, cx - switch_w / 2, cy + bs * 1.70,
-                         position="Left", padding=bs * 0.15,
-                         box_width=box_width, font=gs.mid_text_font)
+    buttons["switch_role"] = Button(switch_w, btn_h, cx - switch_w / 2, cy + bs * 1.70,
+                                    position="Left", padding=bs * 0.15,
+                                    box_width=box_width, font=gs.mid_text_font)
 
     start_w = bs * 3.2
-    start_match = Button(start_w, bs * 0.55, cx - start_w / 2, cy + bs * 2.30,
-                         position="Middle", padding=bs * 0.15,
-                         box_width=box_width, font=gs.text_font, text="START MATCH")
-
-    offsets = (LOCAL_SETTING_OFFSETS if mode == "local"
-               else MATCH_SETTING_OFFSETS | ADVANCED_SETTING_OFFSETS)
-    buttons = {name: left_btn(off) for name, off in offsets.items()}
-    buttons["switch_role"] = switch_role
-    buttons["start_match"] = start_match
+    buttons["start_match"] = Button(start_w, bs * 0.55, cx - start_w / 2, cy + bs * 2.30,
+                                    position="Middle", padding=bs * 0.15,
+                                    box_width=box_width, font=gs.text_font, text="START MATCH")
     return buttons
 
 
-def _time_label(state: LobbyState) -> str:
-    return "unlimited" if state.timer_mode == "timer" else state.time_control
-
-
-def _cycle_time(state: LobbyState, dispatcher: LobbyDispatcher) -> None:
-    options = ["unlimited"] + list(TIME_CONTROL_OPTIONS)
-    try:
-        idx = options.index(_time_label(state))
-    except ValueError:
-        idx = 0
-    chosen = options[(idx + 1) % len(options)]
-    if chosen == "unlimited":
-        dispatcher.dispatch(LobbyAction("host", "set_timer_mode", str_value="timer"))
-        return
-    if state.timer_mode != "countdown":
-        dispatcher.dispatch(LobbyAction("host", "set_timer_mode", str_value="countdown"))
-    dispatcher.dispatch(LobbyAction("host", "set_time_control", str_value=chosen))
-
-
-def _format_timeout(timeout: float) -> str:
-    return "unlimited" if timeout == float("inf") else f"{int(timeout)}s"
-
-
-def _setting_labels(state: LobbyState) -> dict[str, str]:
-    return {
-        "time": f"time: {_time_label(state)}",
-        "swap_seats": f"host plays: {state.host_seat}",
-        "god_view": f"god view: {'on' if state.god_view else 'off'}",
-        "file_auto_delete": f"auto-delete log: {'yes' if state.file_auto_delete else 'no'}",
-        "reconnect_timeout": f"reconnect timeout: {_format_timeout(state.reconnect_timeout)}",
-    }
-
-
 def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: str, mode: str) -> None:
-    for name, label in _setting_labels(state).items():
+    for name, row in ROWS.items():
         if name in buttons:
-            buttons[name].text = label
+            buttons[name].text = row.label(state)
 
     if mode == "local":
         buttons["start_match"].text = "START"
@@ -149,24 +188,23 @@ def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: 
         buttons["switch_role"].text = ""
 
 
-def _render_settings_labels(gs: GameScreen, state: LobbyState) -> None:
+def _render_settings_labels(gs: GameScreen, state: LobbyState,
+                            row_offsets: dict[str, float]) -> None:
     bs = gs.block_size
     cx = gs.display_width / 2
     cy = gs.display_height / 2
     x = cx - bs * 3.15
-    labels = _setting_labels(state)
-    offsets = MATCH_SETTING_OFFSETS | ADVANCED_SETTING_OFFSETS
-    for name, y_off in offsets.items():
-        draw_text(labels[name], gs.mid_text_font, WHITE,
-                  x, cy + bs * y_off + bs * 0.10, gs.surface)
+    for name, y_offset in row_offsets.items():
+        draw_text(ROWS[name].label(state), gs.mid_text_font, WHITE,
+                  x, cy + bs * y_offset + bs * 0.10, gs.surface)
 
 
-def _render_advanced_header(gs: GameScreen) -> None:
+def _render_advanced_header(gs: GameScreen, y_offset: float) -> None:
     bs = gs.block_size
     cx = gs.display_width / 2
     cy = gs.display_height / 2
     draw_text("advanced", gs.mid_text_font, WHITE,
-              cx - bs * 3.3, cy + bs * ADVANCED_HEADER_OFFSET, gs.surface)
+              cx - bs * 3.3, cy + bs * y_offset, gs.surface)
 
 
 def _render_title(gs: GameScreen) -> None:
@@ -260,29 +298,12 @@ def _click_dispatch(buttons: dict[str, Button], mouse_x: float, mouse_y: float,
         return button is not None and button.touch(mouse_x, mouse_y)
 
     if _is_host(role):
-        if touched("god_view"):
-            dispatcher.dispatch(LobbyAction("host", "set_god_view", bool_value=not state.god_view))
-            return
-        if touched("time"):
-            _cycle_time(state, dispatcher)
-            return
-        if touched("file_auto_delete"):
-            dispatcher.dispatch(LobbyAction("host", "set_file_auto_delete", bool_value=not state.file_auto_delete))
-            return
-        if touched("reconnect_timeout"):
-            try:
-                idx = RECONNECT_TIMEOUT_OPTIONS.index(state.reconnect_timeout)
-            except ValueError:
-                idx = 1
-            new_t = RECONNECT_TIMEOUT_OPTIONS[(idx + 1) % len(RECONNECT_TIMEOUT_OPTIONS)]
-            dispatcher.dispatch(LobbyAction("host", "set_reconnect_timeout", float_value=new_t))
-            return
-        if touched("swap_seats"):
-            dispatcher.dispatch(LobbyAction("host", "swap_seats"))
-            return
+        for name, row in ROWS.items():
+            if touched(name):
+                row.click(state, dispatcher)
+                return
         if touched("start_match"):
             dispatcher.dispatch(LobbyAction("host", "start_match"))
-            return
     else:
         if touched("switch_role"):
             if role == state.peer_seat():
@@ -320,7 +341,8 @@ def main(game_screen: GameScreen, mode: str,
             state.apply_dict(initial_state)
         state.local_role = role or ""
 
-    buttons = _make_buttons(game_screen, mode)
+    row_offsets, advanced_header_offset = _layout(mode)
+    buttons = _make_buttons(game_screen, row_offsets)
     clock = pygame.time.Clock()
     confirming_quit = False
 
@@ -365,7 +387,8 @@ def main(game_screen: GameScreen, mode: str,
         _render_title(game_screen)
         if mode != "local":
             _render_roster(game_screen, state, state.local_role)
-            _render_advanced_header(game_screen)
+        if advanced_header_offset is not None:
+            _render_advanced_header(game_screen, advanced_header_offset)
         _refresh_button_labels(buttons, state, state.local_role, mode)
 
         if _is_host(state.local_role):
@@ -373,7 +396,7 @@ def main(game_screen: GameScreen, mode: str,
                 if name != "switch_role":
                     button.update(game_screen)
         else:
-            _render_settings_labels(game_screen, state)
+            _render_settings_labels(game_screen, state, row_offsets)
             sw = buttons["switch_role"]
             if sw.text and not sw.text.startswith("("):
                 sw.update(game_screen)

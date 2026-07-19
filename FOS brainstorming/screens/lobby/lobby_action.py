@@ -17,15 +17,11 @@
 # -----------------------------------------------------------------
 
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 
 LobbyActionType = Literal[
-    "set_god_view",
-    "set_timer_mode",
-    "set_time_control",
-    "set_file_auto_delete",
-    "set_reconnect_timeout",
+    "set_setting",
     "swap_seats",
     "switch_to_spectator",
     "switch_to_player",
@@ -38,6 +34,26 @@ LobbyActionType = Literal[
 class LobbyAction:
     player: str
     action_type: LobbyActionType
+    setting: Optional[str] = None
     bool_value: Optional[bool] = None
     str_value: Optional[str] = None
     float_value: Optional[float] = None
+
+    def value(self):
+        if self.bool_value is not None:
+            return self.bool_value
+        if self.str_value is not None:
+            return self.str_value
+        return self.float_value
+
+
+def set_setting(name: str, value: Union[bool, str, float],
+                player: str = "host") -> LobbyAction:
+    action = LobbyAction(player, "set_setting", setting=name)
+    if isinstance(value, bool):
+        action.bool_value = value
+    elif isinstance(value, str):
+        action.str_value = value
+    else:
+        action.float_value = float(value)
+    return action

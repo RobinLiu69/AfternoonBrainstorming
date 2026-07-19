@@ -230,6 +230,8 @@ class DraftDispatcher:
                 limit = MAX_MAGIC if is_magic else MAX_UNIT
                 if deck.count(action.card_name) >= limit:
                     return DraftResult(False, message="Over limit")
+                if draft_state.is_banned(action.card_name):
+                    return DraftResult(False, message="Card banned")
                 deck.append(action.card_name)
                 return DraftResult(True)
             case "remove_card":

@@ -20,7 +20,7 @@ from __future__ import annotations
 import os
 import sys
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from utils.type_hint import JobDictionary, CardSetting
@@ -36,7 +36,7 @@ def _get_base_path() -> str:
 FOLDER_PATH: str = _get_base_path()
 
 with open(f"{FOLDER_PATH}/config/setting.json", "r", encoding="utf-8") as file:
-    SETTING: dict[str, str] = json.loads(file.read())
+    SETTING: dict[str, Any] = json.loads(file.read())
 
 with open(f"{FOLDER_PATH}/config/card_setting.json", "r", encoding="utf-8") as file:
     CARD_SETTING: CardSetting = json.loads(file.read())
@@ -47,7 +47,9 @@ with open(f"{FOLDER_PATH}/config/card_hints.json", "r", encoding="utf-8") as fil
 with open(f"{FOLDER_PATH}/config/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
-VERSION = "4.4.2.1"
+JOB_ORDER = ["ADC", "AP", "TANK", "HF", "LF", "ASS", "APT", "SP"]
+
+VERSION = "4.4.2.2"
 
 ANIM_LUNGE_STEP: float = 0.32
 COMBAT_ANIMATIONS_ENABLED = True
