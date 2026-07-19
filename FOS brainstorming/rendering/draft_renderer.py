@@ -27,6 +27,7 @@ from core.card_hint import HintBox
 from rendering.board_renderer import BoardRenderer
 from rendering.card_renderer import CardRenderer
 from screens.draft.exhibit_registry import ExhibitRegistry
+from rendering.sprite_registry import SpriteRegistry
 
 
 class DraftRenderer:
@@ -44,6 +45,7 @@ class DraftRenderer:
 
         self._render_colors(page)
         self._render_cards(page, index)
+        self._render_ban(page, index, draft_state)
         self._render_boards(draft_state)
         self._render_deck_displays(draft_state)
         self._render_status_labels(draft_state)
@@ -117,6 +119,19 @@ class DraftRenderer:
         for card in self.exhibit_registry.get_magic_row():
             for render_object in card.get_render_data():
                 self.card_renderer.render(render_object)
+    
+    def _render_ban(self, page: int, index: int, draft_state: DraftState) -> None:
+        locked = SpriteRegistry.get_instance().get("locked")
+        if locked is None:
+            return
+        gs = self.game_screen
+        for card in self.exhibit_registry.get_page(page, index):
+            if not draft_state.is_banned(card.job_and_color):
+                continue
+            for data in card.get_render_data():
+                x = (gs.display_width  / 2 - gs.block_size * 2) + data.board_x * gs.block_size
+                y = (gs.display_height / 2 - gs.block_size * 1.65) + data.board_y * gs.block_size
+                gs.surface.blit(locked, (int(x), int(y)))
 
     def _render_boards(self, draft_state: DraftState) -> None:
         for board in draft_state.board_dict.values():
@@ -153,14 +168,14 @@ class DraftRenderer:
 
     def _render_status_labels(self, draft_state: DraftState) -> None:
         draw_text(
-            f"Timer Mode: {draft_state.timer_mode}",
+            f"Timer Mode: {draft_state.settings.timer_mode}",
             self.game_screen.text_font, WHITE,
             self.game_screen.display_width / 5,
             self.game_screen.display_height/1.4 + self.game_screen.block_size*0.2,
             self.game_screen.surface
         )
         draw_text(
-            "File Mode: Save" if not draft_state.file_auto_delete else "File Mode: Delete",
+            "File Mode: Save" if not draft_state.settings.file_auto_delete else "File Mode: Delete",
             self.game_screen.text_font, WHITE,
             self.game_screen.display_width/5 + self.game_screen.block_size*1.5,
             self.game_screen.display_height/1.4 + self.game_screen.block_size*0.2,

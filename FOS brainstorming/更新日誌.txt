@@ -2341,3 +2341,35 @@ debug:
     GameState.player_timer 欄位 (結算畫面改讀time_display後無人使用) 含wire同步與各寫入點
     end_game_renderer 兩個未使用的舊繪製函式
 ----------------
+=======================
+2026/07/19-4.4.2.2
+編寫者 Anemois
+----------------
+新增:
+    lobby 新增 ruleset 設定: free play / tournament (local 與網路 lobby 皆可選 隨其他設定同步)
+        tournament: 選卡時各色頁僅最新(最後index)的顏色可選 其餘顏色蓋上 locked.png 且無法選取
+        鎖卡表由 host 依 ruleset 生成 (DraftState.init_ban_deck) 隨選卡狀態同步給對手與觀戰者 專用伺服器同樣生成
+        add_card 於 dispatcher 阻擋被鎖卡片 (伺服器端權威判定 客戶端不可繞過)
+    nullify 狀態顯示於左下角
+優化:
+    lobby 設定管線重構: 新增 MatchSettings (core/match_settings.py) 單一物件貫穿 lobby -> draft -> battle
+        draft.main 只收一個 settings 物件 不再逐欄位傳參 DraftState 改持有 settings
+        序列化逐 dataclass 欄位自動處理 新增設定欄位零同步代碼 (lobby 與 draft 的 wire dict 自動含新欄位)
+        六個 set_* lobby action 合併為單一 set_setting 由 SETTING_OPTIONS 註冊表統一驗證並正規化數值型別
+        lobby UI 改資料驅動: 每個設定一筆 ROWS (label+click) 版面位置依列序自動計算 host 按鈕/client 唯讀標籤/點擊判定共用同一表
+        新增一個設定 = MatchSettings 欄位 + SETTING_OPTIONS + ROWS 各一筆 + 區段擺放 其餘 UI/驗證/同步/傳遞全自動
+        settings.apply_to(game_state) 統一戰鬥設定套用與 time control log (play_screen 與專用伺服器共用 log 格式不變 回放不受影響)
+    SpriteRegistry 改於 apply_display_mode 結尾初始化 切換視窗大小後 sprite 快取以新 block size 重建 (locked.png 縮放跟上解析度)
+    新增設定管線與渲染煙霧測試 (tests/test_match_settings.py 與 tests/test_draft_render_smoke.py 以 SDL dummy 實際渲染選卡整幀含鎖卡覆蓋) 合併 dev 後全套 329 通過
+修正:
+    切換設定選項時按鈕文字上下跳動 (起於4.4.0.0)
+        解釋: 文字垂直置中以當前文字的 ink 框計算 含下伸字母(p/y)與否的字串高度不同 (free play <-> tournament / yes <-> no)
+        修法: 垂直定錨改用固定參考字串 "Ay" 的 ink 框 同字型所有文字共用基線 水平仍依實際文字 ink
+    SPBR不會被nullify 
+        解釋: Overload的函式沒有重設nullify
+        修法: 增加回去
+    SPBR有兩隻anger時其中一隻死亡會使其他BR單位失效 但是另一隻在場不應該取消
+        解釋: 原本改變狀態為直接更改 沒考慮其他SPBR
+        修法: 增加一層偵測其他SPBR是否ANGER來判斷是否取消
+
+----------------

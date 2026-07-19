@@ -19,7 +19,7 @@
 import time
 from dataclasses import dataclass
 
-from core.lobby_state import LobbyState, RECONNECT_TIMEOUT_OPTIONS, TIME_CONTROL_OPTIONS
+from core.lobby_state import LobbyState, SETTING_OPTIONS
 from core.network_layer import LANServer, LANClient
 from core.network.messages import _send_msg
 from screens.lobby.lobby_action import LobbyAction
@@ -131,49 +131,28 @@ class LobbyDispatcher:
         self._network.send_action({
             "action_type": action.action_type,
             "player": action.player,
+            "setting": action.setting,
             "bool_value": action.bool_value,
             "str_value": action.str_value,
             "float_value": action.float_value,
         })
 
     def _execute(self, action: LobbyAction, sender_conn=None) -> LobbyResult:
-        host_only = ("set_god_view", "set_timer_mode", "set_time_control",
-                     "set_file_auto_delete", "set_reconnect_timeout",
-                     "swap_seats", "start_match")
+        host_only = ("set_setting", "swap_seats", "start_match")
         if action.action_type in host_only and action.player != "host":
             return LobbyResult(False, message="host only")
 
         match action.action_type:
-            case "set_god_view":
-                if action.bool_value is None:
-                    return LobbyResult(False)
-                self._state.god_view = action.bool_value
-                if isinstance(self._network, LANServer):
-                    self._network.god_view = action.bool_value
-                return LobbyResult(True)
-
-            case "set_timer_mode":
-                if action.str_value not in ("timer", "countdown"):
-                    return LobbyResult(False)
-                self._state.timer_mode = action.str_value
-                return LobbyResult(True)
-
-            case "set_time_control":
-                if action.str_value not in TIME_CONTROL_OPTIONS:
-                    return LobbyResult(False)
-                self._state.time_control = action.str_value
-                return LobbyResult(True)
-
-            case "set_file_auto_delete":
-                if action.bool_value is None:
-                    return LobbyResult(False)
-                self._state.file_auto_delete = action.bool_value
-                return LobbyResult(True)
-
-            case "set_reconnect_timeout":
-                if action.float_value is None or action.float_value not in RECONNECT_TIMEOUT_OPTIONS:
-                    return LobbyResult(False)
-                self._state.reconnect_timeout = action.float_value
+            case "set_setting":
+                name = action.setting or ""
+                options = SETTING_OPTIONS.get(name)
+                value = action.value()
+                if options is None or value is None or value not in options:
+                    return LobbyResult(False, message=f"invalid setting {name!r}")
+                value = options[options.index(value)]
+                self._state.set_value(name, value)
+                if name == "god_view" and isinstance(self._network, LANServer):
+                    self._network.god_view = value
                 return LobbyResult(True)
 
             case "swap_seats":

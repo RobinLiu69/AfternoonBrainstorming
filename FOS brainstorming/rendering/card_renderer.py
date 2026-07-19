@@ -28,7 +28,7 @@ class CardRenderer:
         self.game_screen = game_screen
         self._surfaces: dict[str, pygame.Surface] = {}
 
-    def _get_card_surface(self, instance_id: str) -> pygame.Surface:
+    def get_card_surface(self, instance_id: str) -> pygame.Surface:
         if instance_id not in self._surfaces:
             bs = int(self.game_screen.block_size)
             self._surfaces[instance_id] = pygame.Surface((bs, bs), pygame.SRCALPHA)
@@ -38,7 +38,7 @@ class CardRenderer:
         self._surfaces.pop(instance_id, None)
 
     def render(self, data: CardRenderData, offset: tuple[float, float] = (0.0, 0.0)) -> None:
-        surface = self._get_card_surface(data.instance_id)
+        surface = self.get_card_surface(data.instance_id)
         surface.fill((0, 0, 0, 0))
 
         sprite = (SpriteRegistry.get_instance().get(data.sprite_key) if data.use_sprite else None)
@@ -86,7 +86,9 @@ class CardRenderer:
                 if data.armor > 0:
                     draw_text(f"arm:{data.armor}", self.game_screen.small_text_font, text_color, bs * 0.1, bs * 0.12, surface)
                 if data.anger:
-                    draw_text("anger", self.game_screen.small_text_font, text_color, bs * 0.6, bs * 0.775, surface)
+                    draw_text("anger", self.game_screen.small_text_font, text_color, bs * 0.6, bs * 0.76, surface)
+                if data.nullify:
+                    draw_text("nullify", self.game_screen.small_text_font, text_color, bs * 0.1, bs * 0.76, surface)
                 if data.numbness:
                     draw_text("numbness", self.game_screen.small_text_font, text_color, bs * 0.6, bs * 0.85, surface)
                 if data.moving:

@@ -287,7 +287,7 @@ class Player:
             data["draw_pile"] = ["?"] * len(self.draw_pile)
         return data
 
-    def apply_dict(self, data: dict, old_by_iid: dict, all_cards_by_iid: dict, game_renderer: GameRenderer) -> None:
+    def apply_dict(self, data: dict, old_by_iid: dict, all_cards_by_iid: dict, game_renderer: GameRenderer | None) -> None:
         from cards.factory import CardFactory
         self.name = data["name"]
         self.deck = data["deck"]

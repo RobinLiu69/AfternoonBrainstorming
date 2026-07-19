@@ -169,7 +169,7 @@ def test_non_owner_cannot_use_host_actions(room_server):
     joiner.connect()
 
     creator_collector = StateCollector(creator)
-    _send_lobby(joiner, "set_god_view", player="host", bool_value=True)
+    _send_lobby(joiner, "set_setting", player="host", setting="god_view", bool_value=True)
     _send_lobby(joiner, "start_match", player="host")
     time.sleep(0.5)
 
@@ -184,9 +184,9 @@ def test_full_match_flow(room_server):
     joiner = make_client(room=creator.room)
     joiner.connect()
 
-    _send_lobby(creator, "set_file_auto_delete", bool_value=True)
-    _send_lobby(creator, "set_timer_mode", str_value="countdown")
-    _send_lobby(creator, "set_time_control", str_value="5+5")
+    _send_lobby(creator, "set_setting", setting="file_auto_delete", bool_value=True)
+    _send_lobby(creator, "set_setting", setting="timer_mode", str_value="countdown")
+    _send_lobby(creator, "set_setting", setting="time_control", str_value="5+5")
     _send_lobby(creator, "start_match")
     wait_until(lambda: creator.pending_scene == "draft")
     wait_until(lambda: joiner.pending_scene == "draft")
@@ -348,7 +348,7 @@ def test_spectator_can_join_mid_battle(room_server):
     joiner = make_client(room=creator.room)
     joiner.connect()
 
-    _send_lobby(creator, "set_file_auto_delete", bool_value=True)
+    _send_lobby(creator, "set_setting", setting="file_auto_delete", bool_value=True)
     _send_lobby(creator, "start_match")
     wait_until(lambda: creator.pending_scene == "draft")
     creator.consume_pending_scene()

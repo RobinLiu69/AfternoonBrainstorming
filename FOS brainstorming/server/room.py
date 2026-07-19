@@ -207,8 +207,8 @@ class Room:
         self.channel.move_token("host", host_seat)
 
         draft_state = DraftState()
-        draft_state.timer_mode = self.lobby_state.timer_mode
-        draft_state.file_auto_delete = self.lobby_state.file_auto_delete
+        draft_state.settings = self.lobby_state.settings.copy()
+        draft_state.init_ban_deck()
         self.draft_state = draft_state
 
         self.draft_dispatcher = DraftDispatcher(
@@ -243,7 +243,8 @@ class Room:
                          hand=[], on_board=[], draw_pile=[], discard_pile=[])
         neutral = Neutral()
 
-        keep_files = not draft_state.file_auto_delete
+        settings = draft_state.settings
+        keep_files = not settings.file_auto_delete
         log_file = None
         if keep_files:
             from datetime import datetime
@@ -255,20 +256,11 @@ class Room:
                             enable_jsonl=keep_files, log_file=log_file)
         game_state = GameState(player1, player2, neutral, BoardConfig(),
                                game_logger=logger)
-        game_state.timer_mode = draft_state.timer_mode
-        game_state.countdown_time = self.lobby_state.countdown_seconds()
-        game_state.turn_increment_seconds = self.lobby_state.increment_seconds()
-        game_state.file_auto_delete = draft_state.file_auto_delete
         game_state.board_dict = make_board_dict(game_state.board_config)
         self.game_state = game_state
 
-        effective_tc = (self.lobby_state.time_control
-                        if game_state.timer_mode == "countdown" else "unlimited")
         logger.info(f"room {self.code}")
-        logger.info(f"timer mode {game_state.timer_mode}")
-        logger.info(f"time control {effective_tc}",
-                    countdown_seconds=game_state.countdown_time,
-                    increment_seconds=game_state.turn_increment_seconds)
+        settings.apply_to(game_state)
         logger.info(f"version {VERSION}", version=VERSION)
 
         self.battle_dispatcher = BattlingDispatcher(
