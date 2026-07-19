@@ -170,7 +170,8 @@ class Card(ABC):
                 self.attack_types = self.get_attack_type()
 
         if self.color_name:
-            self.color = tuple(JOB_DICTIONARY["RGB_colors"][self.color_name])
+            r, g, b = JOB_DICTIONARY["RGB_colors"][self.color_name]
+            self.color = (r, g, b)
             self.text_color = self.color
         
         if self.job == "ASS" and self.owner != "display":
@@ -222,7 +223,8 @@ class Card(ABC):
     @final
     def get_RGB_color(self) -> tuple[int, int, int]:
         if not self.color_name: raise ValueError("color_name must be string.")
-        return tuple(JOB_DICTIONARY["RGB_colors"][self.color_name])
+        r, g, b = JOB_DICTIONARY["RGB_colors"][self.color_name]
+        return (r, g, b)
     
     def _compute_shape_points(self) -> tuple[tuple[float, float], ...]:
         match self.job:

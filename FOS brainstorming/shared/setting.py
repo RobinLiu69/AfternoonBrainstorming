@@ -47,6 +47,8 @@ with open(f"{FOLDER_PATH}/config/card_hints.json", "r", encoding="utf-8") as fil
 with open(f"{FOLDER_PATH}/config/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
+JOB_ORDER = ["ADC", "AP", "TANK", "HF", "LF", "ASS", "APT", "SP"]
+
 VERSION = "4.4.1.1"
 
 ANIM_LUNGE_STEP: float = 0.32

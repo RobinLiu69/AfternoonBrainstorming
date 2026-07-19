@@ -86,6 +86,7 @@ def main(game_screen: GameScreen, mode: str = "local",
     draft_state.board_config = BoardConfig(4, 3)
     draft_state.board_dict = initialize_board(game_screen, draft_state.board_config)
     draft_state.settings = settings.copy() if settings is not None else MatchSettings()
+    draft_state.init_ban_deck()
 
     dispatcher = DraftDispatcher(draft_state, mode=mode,
                                  reconnect_timeout=reconnect_timeout,
@@ -123,7 +124,7 @@ def main(game_screen: GameScreen, mode: str = "local",
 
     page = 0
     index = 0
-    hint_on = load_setting("hint_on")
+    hint_on : bool = load_setting("hint_on")
     last_phase = draft_state.phase
     clock = pygame.time.Clock()
 
@@ -248,9 +249,11 @@ def main(game_screen: GameScreen, mode: str = "local",
             
             if action.action_type == "index_next":
                 index = ((index + 1) + len(registry.get_page_colors(page))) % len(registry.get_page_colors(page))
+                continue
 
             if action.action_type == "index_prev":
                 index = ((index - 1) + len(registry.get_page_colors(page))) % len(registry.get_page_colors(page))
+                continue
 
             dispatcher.dispatch(action, draft_state)
 

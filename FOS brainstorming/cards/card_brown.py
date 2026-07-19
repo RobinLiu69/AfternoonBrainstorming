@@ -202,13 +202,13 @@ class Sp(BrownCard):
         if nullify:
             for card in game_state.get_player_cards(self.owner):
                 if card is not self and isinstance(card, BrownCard):
-                    card.effects_disabled = True
+                    card.effects_disabled = False
         return
     
     def on_killed_by(self, attacker: Card, game_state: GameState) -> bool:
         for card in game_state.get_player_cards(self.owner):
             if card is not self and isinstance(card, BrownCard):
-                card.effects_disabled = True
+                card.effects_disabled = False
         return True
 
 

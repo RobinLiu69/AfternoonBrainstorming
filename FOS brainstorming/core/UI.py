@@ -96,19 +96,18 @@ class Button:
             pygame.draw.rect(self.surface, self.box_color, (0, 0, self.width, self.height), self.box_width, border_radius=self.box_width*4)
 
         if self.font and self.text:
-            # Measure the actual visible pixels (ink), not the full font line-box,
-            # so tall ascender headroom / descender space don't skew the centering.
             rendered = self.font.render(self.text, True, self.text_color)
             ink = rendered.get_bounding_rect()
+            ref_ink = self.font.render("Ay", True, self.text_color).get_bounding_rect()
 
             if self.position == "Left":
                 tx = self.padding - ink.x
             elif self.position == "Right":
                 tx = self.width - self.padding - ink.right
-            else:  # "Middle"
+            else:
                 tx = (self.width - ink.width) / 2 - ink.x
 
-            ty = (self.height - ink.height) / 2 - ink.y
+            ty = (self.height - ref_ink.height) / 2 - ref_ink.y
 
             draw_text(self.text, self.font, self.text_color, tx, ty, self.surface)
 

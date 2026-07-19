@@ -208,6 +208,7 @@ class Room:
 
         draft_state = DraftState()
         draft_state.settings = self.lobby_state.settings.copy()
+        draft_state.init_ban_deck()
         self.draft_state = draft_state
 
         self.draft_dispatcher = DraftDispatcher(

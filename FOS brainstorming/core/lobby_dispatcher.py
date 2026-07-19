@@ -144,13 +144,14 @@ class LobbyDispatcher:
 
         match action.action_type:
             case "set_setting":
-                options = SETTING_OPTIONS.get(action.setting or "")
+                name = action.setting or ""
+                options = SETTING_OPTIONS.get(name)
                 value = action.value()
                 if options is None or value is None or value not in options:
-                    return LobbyResult(False, message=f"invalid setting {action.setting!r}")
+                    return LobbyResult(False, message=f"invalid setting {name!r}")
                 value = options[options.index(value)]
-                self._state.set_value(action.setting, value)
-                if action.setting == "god_view" and isinstance(self._network, LANServer):
+                self._state.set_value(name, value)
+                if name == "god_view" and isinstance(self._network, LANServer):
                     self._network.god_view = value
                 return LobbyResult(True)
 

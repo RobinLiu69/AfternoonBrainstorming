@@ -28,7 +28,7 @@ class CardRenderer:
         self.game_screen = game_screen
         self._surfaces: dict[str, pygame.Surface] = {}
 
-    def _get_card_surface(self, instance_id: str) -> pygame.Surface:
+    def get_card_surface(self, instance_id: str) -> pygame.Surface:
         if instance_id not in self._surfaces:
             bs = int(self.game_screen.block_size)
             self._surfaces[instance_id] = pygame.Surface((bs, bs), pygame.SRCALPHA)
@@ -38,7 +38,7 @@ class CardRenderer:
         self._surfaces.pop(instance_id, None)
 
     def render(self, data: CardRenderData, offset: tuple[float, float] = (0.0, 0.0)) -> None:
-        surface = self._get_card_surface(data.instance_id)
+        surface = self.get_card_surface(data.instance_id)
         surface.fill((0, 0, 0, 0))
 
         sprite = (SpriteRegistry.get_instance().get(data.sprite_key) if data.use_sprite else None)

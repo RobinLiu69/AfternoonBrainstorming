@@ -17,7 +17,7 @@
 # -----------------------------------------------------------------
 
 from dataclasses import dataclass
-from typing import Callable, Optional, Sequence
+from typing import Callable, Optional, Sequence, TypeVar
 
 import pygame
 
@@ -54,7 +54,10 @@ def _room_has_others(state: LobbyState) -> bool:
     return state.peer_connected or state.spectator_count > 0
 
 
-def _next_option(options: Sequence, current) -> object:
+T = TypeVar("T")
+
+
+def _next_option(options: Sequence[T], current: T) -> T:
     items = list(options)
     try:
         idx = items.index(current)
@@ -81,7 +84,7 @@ def _cycle_time(state: LobbyState, dispatcher: LobbyDispatcher) -> None:
 @dataclass(frozen=True)
 class _SettingRow:
     label: Callable[[LobbyState], str]
-    click: Callable[[LobbyState, LobbyDispatcher], None]
+    click: Callable[[LobbyState, LobbyDispatcher], object]
 
 
 ROWS: dict[str, _SettingRow] = {

@@ -96,6 +96,22 @@ def test_draft_state_syncs_settings_to_every_viewer():
         assert name in draft_state.to_dict_for("spectator")
 
 
+def test_ban_deck_syncs_to_every_viewer():
+    draft_state = DraftState()
+    draft_state.settings = MatchSettings(ruleset="tournament")
+    draft_state.init_ban_deck()
+    assert draft_state.ban_deck
+
+    received = DraftState()
+    received.apply_dict(draft_state.to_dict_for("player2"))
+    assert received.ban_deck == draft_state.ban_deck
+    assert received.is_banned(draft_state.ban_deck[0])
+
+    free_play = DraftState()
+    free_play.init_ban_deck()
+    assert free_play.ban_deck == []
+
+
 def test_apply_to_configures_game_state():
     settings = MatchSettings(timer_mode="countdown", time_control="5+5",
                              ruleset="tournament", file_auto_delete=True)
