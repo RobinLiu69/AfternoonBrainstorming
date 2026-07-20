@@ -31,7 +31,6 @@ from core.scene_exit import DraftExitReason
 from screens.draft.draft_action import collect_draft_actions
 from screens.draft.exhibit_registry import ExhibitRegistry
 from screens.notices import server_closed_screen
-from screens.widgets import make_back_button
 from rendering.draft_renderer import DraftRenderer
 from shared.setting import WHITE
 from core.setting_config import load_setting
@@ -128,7 +127,6 @@ def main(game_screen: GameScreen, mode: str = "local",
             draft_state.local_player = "player1"
 
     renderer = DraftRenderer(game_screen, registry)
-    back_button = make_back_button(game_screen, text="back", corner="top_left")
 
     page = 0
     index = 0
@@ -229,7 +227,7 @@ def main(game_screen: GameScreen, mode: str = "local",
 
         actions = collect_draft_actions(
             draft_state.local_player, page, index, registry,
-            mouse_board_x, mouse_board_y, back_button=back_button,
+            mouse_board_x, mouse_board_y,
         )
 
         for action in actions:
@@ -269,6 +267,5 @@ def main(game_screen: GameScreen, mode: str = "local",
 
         renderer.render_frame(page, index, mouse_board_x, mouse_board_y, draft_state, hint_on,
                               multiplayer=mode in ("lan_server", "lan_client"))
-        back_button.update(game_screen)
         pygame.display.update()
         clock.tick(60)

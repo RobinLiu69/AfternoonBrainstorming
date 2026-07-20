@@ -2395,7 +2395,7 @@ debug:
         同機多開僅第一個實例讀寫 token 檔 (以 localhost 端口鎖判定主實例) 其餘僅用記憶體 避免同機測試互搶座位
     各畫面補滑鼠 back 按鈕: 原本只能鍵盤離開的畫面全數補上 (主選單 quit / 選模式 / join / ban draft / 選牌 / 對戰 / 結算 / 重播列表 / 重播播放)
         draft 與 battling 的 back 經 collect_*_actions 送出 quit action 沿用既有離開流程 (host 跳確認框 client / local 直接離開)
-        共用 screens/widgets.py make_back_button (四角落可選) 對戰 / 選牌左上身分標籤右移讓位
+        共用 screens/widgets.py make_back_button (四角落可選)
     選牌畫面「Drafting: 名字」標題置中放大 藍色為自己紅色為對方
 優化:
     jsonl 與 log 分工明確: jsonl 只保留重播所需 (最後牌組 + 戰鬥動作) 玩家名 / ban 清單 / 選牌增減過程改只寫 .log
@@ -2410,4 +2410,15 @@ debug:
         修法: played HEAL / 統計 / 次數扣除改為治療實際成功後才執行 三者一致 失敗的治療不留痕跡
     HFDKG 每次攻擊命中自癒 +1 在 log 中完全不顯示 (對著 log 追血量會看到無來由回升)
         修法: Card.heal 成功時統一寫入 log_heal (目標 / 位置 / 量 / 後血量護甲 含溢出轉護甲) 魔法 HEAL / 自癒 / 未來卡皆記
+----------------
+=======================
+2026/07/20-4.5.0.1
+編寫者 Robin
+----------------
+移除:
+    選牌 / 對戰 / 主選單的 back 鈕 (太佔畫面) 改回只用鍵盤 ESC 離開 其餘畫面的 back 鈕保留
+        還原 collect_actions / collect_draft_actions 的 back_button 參數與對戰 / 選牌左上身分標籤位置
+修正:
+    local 選牌時 Drafting 標題一律顯示藍色 (local_player 每幀跟隨當前選牌方 導致 editor==local 恆成立)
+        修法: _render_status_labels 收 multiplayer 旗標 local 改依座位固定上色 (P1 藍 P2 紅) 多人維持自己藍對手紅
 ----------------

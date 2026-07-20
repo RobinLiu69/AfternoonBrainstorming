@@ -48,7 +48,7 @@ class DraftRenderer:
         self._render_ban(page, index, draft_state)
         self._render_boards(draft_state)
         self._render_deck_displays(draft_state)
-        self._render_status_labels(draft_state)
+        self._render_status_labels(draft_state, multiplayer)
         self._render_spectator_count(draft_state)
         if multiplayer:
             self._render_identity_label(draft_state.local_player)
@@ -67,7 +67,7 @@ class DraftRenderer:
         label = label_map.get(local_player, local_player)
         gs = self.game_screen
         draw_text(label, gs.text_font, WHITE,
-                  gs.block_size * 2.0, gs.block_size * 0.25, gs.surface)
+                  gs.block_size * 0.2, gs.block_size * 0.2, gs.surface)
 
     def _render_spectator_count(self, draft_state: DraftState) -> None:
         count = getattr(draft_state, "net_spectator_count", 0)
@@ -166,12 +166,12 @@ class DraftRenderer:
         self._render_player_deck("player1", draft_state)
         self._render_player_deck("player2", draft_state)
 
-    def _render_status_labels(self, draft_state: DraftState) -> None:
+    def _render_status_labels(self, draft_state: DraftState, multiplayer: bool = False) -> None:
         editor = draft_state.current_editor()
         editor_label = draft_state.current_editor_label()
         if editor_label:
             local = draft_state.local_player
-            if local in ("player1", "player2"):
+            if multiplayer and local in ("player1", "player2"):
                 color = BLUE if editor == local else RED
             else:
                 color = BLUE if editor == "player1" else RED
