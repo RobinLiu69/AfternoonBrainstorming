@@ -224,7 +224,7 @@ class Card(ABC):
         if not self.color_name: raise ValueError("color_name must be string.")
         r, g, b = JOB_DICTIONARY["RGB_colors"][self.color_name]
         return (r, g, b)
-    
+
     def _compute_shape_points(self) -> tuple[tuple[float, float], ...]:
         match self.job:
             case "ADC":

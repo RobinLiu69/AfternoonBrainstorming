@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 import random as _py_random
 from collections import deque
 
@@ -129,6 +129,9 @@ class GameState:
     def get_side_cards(self, owner: str, get_opponent: bool = False) -> list[Card]:
         player_cards = self.get_player_cards(owner) if not get_opponent else self.get_opponent_cards(owner)
         return player_cards + self.neutral.on_board
+
+    def count_cards(self, matches: Callable[[Card], bool]) -> int:
+        return sum(1 for card in self.get_both_player_cards() if matches(card))
 
     def to_dict(self) -> dict:
         events_payload = [e.to_dict() for e in self.pending_combat_events]

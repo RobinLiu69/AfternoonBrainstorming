@@ -56,8 +56,7 @@ class CyanCard(Card):
     def price_check(self, game_state: GameState) -> bool:
         if not self.upgrade:
             return True
-        cyan_cards: filter[CyanCard] = filter(lambda card: isinstance(card, CyanCard), game_state.get_both_player_cards()) # pyright: ignore[reportAssignmentType]
-        price = card_settings[self.job]["cost"] - (card_settings["SP"]["cost_reduction"] * len(tuple(filter(lambda card: card.job_and_color == "SPC" and card.upgrade and card.owner == self.owner, cyan_cards))))
+        price = card_settings[self.job]["cost"] - (card_settings["SP"]["cost_reduction"] * game_state.count_cards(lambda card: card.job_and_color == "SPC" and card.upgrade and card.owner == self.owner))
         if game_state.players_coin[self.owner] >= price:
             game_state.players_coin[self.owner] -= price
             return True
