@@ -2430,3 +2430,14 @@ debug:
     重播列表 (replay_select) 與重播播放 (battling_replay) 的 back 鈕 改回只用鍵盤 ESC 離開
         (剩餘保留 back 鈕的畫面: 選模式 / join / ban draft / 結算)
 ----------------
+=======================
+2026/07/20-4.5.0.3
+編寫者 Robin
+----------------
+優化:
+    對戰紀錄 jsonl 自足化供賽後數據整理 (比賽只傳 jsonl): 開賽前導區塊 (玩家名 + ban 清單) 改同時寫入 .log 與 .jsonl
+        名稱與 ban 屬雙方已知資訊 可放檔頭 最終牌組與 rng_seed 屬機密仍於遊戲結束才寫入 (維持 fog of war: 對戰進行中檔案不含牌組 / seed)
+        結束後的 jsonl 即自足: 玩家名 / ban / 最終牌組 / rng_seed / 逐步動作 皆在
+移除:
+    log 不再逐步記錄選牌 add / remove: 移除 DraftState.pick_history 及其記錄與前導寫入 只保留最終牌組 (直接寫 deck 內容)
+----------------

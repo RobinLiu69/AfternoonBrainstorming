@@ -63,8 +63,6 @@ class DraftState:
 
     player_names: dict[str, str] = field(default_factory=dict)
 
-    pick_history: list[tuple[str, str, str]] = field(default_factory=list)
-
     def get_visible_deck(self, viewer: str, owner: str) -> range:
         deck = self.player1_deck if owner == "player1" else self.player2_deck
         if viewer == owner or viewer == "god":

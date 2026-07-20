@@ -146,7 +146,7 @@ def _build_game_state_from_draft(draft_state: DraftState,
     game_state = GameState(player1, player2, neutral, BoardConfig(), game_logger=logger)
     draft_state.settings.apply_to(game_state)
     game_state.game_logger.info(f"version {VERSION}", version=VERSION)
-    log_match_prelude(logger, draft_state, lobby_state)
+    log_match_prelude(logger, lobby_state)
     return game_state
 
 
