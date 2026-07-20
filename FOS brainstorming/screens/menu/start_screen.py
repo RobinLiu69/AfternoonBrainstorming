@@ -21,7 +21,6 @@ import pygame
 from shared.setting import WHITE, VERSION
 from core.game_screen import GameScreen, draw_text
 from core.UI import Button
-from screens.widgets import make_back_button
 from utils.controls import key_pressed
 
 
@@ -53,7 +52,6 @@ def main(game_screen: GameScreen) -> str:
 
     settings_button = Button(bs * 1.25, bs * 0.55, bs, game_screen.display_height - bs * 1,
                         box_width=box_width, font=game_screen.mid_text_font, text="settings")
-    quit_button = make_back_button(game_screen, text="quit", corner="top_right")
 
     state = "quit"
 
@@ -89,9 +87,6 @@ def main(game_screen: GameScreen) -> str:
                 if settings_button.touch(mouse_x, mouse_y):
                     running = False
                     state = "settings"
-                if quit_button.touch(mouse_x, mouse_y):
-                    running = False
-                    state = "quit"
 
             if event.type == pygame.QUIT:
                 running = False
@@ -107,7 +102,6 @@ def main(game_screen: GameScreen) -> str:
         donate_button.update(game_screen)
         playback_button.update(game_screen)
         settings_button.update(game_screen)
-        quit_button.update(game_screen)
 
         draw_text(f"version: {VERSION}", game_screen.mid_text_font, WHITE,
                 game_screen.display_width - bs * 2,

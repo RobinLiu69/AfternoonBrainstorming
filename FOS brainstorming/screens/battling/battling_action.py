@@ -30,7 +30,7 @@ SPECTATOR_ALLOWED: tuple[str, ...] = ("toggle_hint", "toggle_animation", "quit")
 
 
 def collect_actions(controller: str, picked_hand_card: list, game_state: GameState, game_screen: GameScreen,
-                    events: Optional[list] = None, back_button=None) -> list[GameAction]:
+                    events: Optional[list] = None) -> list[GameAction]:
     actions: list[GameAction] = []
     is_spectator = controller in ("spectator", "god")
     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -41,10 +41,6 @@ def collect_actions(controller: str, picked_hand_card: list, game_state: GameSta
     if events is None:
         events = pygame.event.get()
     for event in events:
-        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
-                and back_button is not None and back_button.touch(mouse_x, mouse_y)):
-            actions.append(GameAction(player=controller, action_type="quit"))
-            continue
         if event.type == pygame.MOUSEBUTTONDOWN and not is_spectator:
             match event.button:
                 case 1:

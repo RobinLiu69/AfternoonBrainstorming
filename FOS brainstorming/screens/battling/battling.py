@@ -31,7 +31,6 @@ from core.board_block import initialize_board
 from rendering.game_renderer import GameRenderer
 from screens.battling.battling_action import collect_actions
 from screens.notices import server_closed_screen
-from screens.widgets import make_back_button
 from campaign.ai_controller import AIController
 from core.setting_config import load_setting
 
@@ -101,7 +100,6 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
     game_state.board_config = BoardConfig()
     game_renderer = GameRenderer(game_screen)
     game_state.board_dict = initialize_board(game_screen, game_state.board_config)
-    back_button = make_back_button(game_screen, text="back", corner="top_left")
 
     dispatcher = BattlingDispatcher(game_state=game_state, mode=mode,
                                     reconnect_timeout=reconnect_timeout,
@@ -222,8 +220,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             pygame.display.update()
             continue
 
-        actions = collect_actions(local_controller, picked_hand_card, game_state, game_screen,
-                                  back_button=back_button)
+        actions = collect_actions(local_controller, picked_hand_card, game_state, game_screen)
 
         if mode == "campaign" and ai_controller is not None:
             renderer_busy = bool(
@@ -341,7 +338,6 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
         if mode == "campaign" and ai_controller is not None and ai_controller.focus_position is not None:
             _draw_ai_focus(game_screen, ai_controller.focus_position)
 
-        back_button.update(game_screen)
         pygame.display.update()
     
     if mode in ("local", "lan_server"):
