@@ -266,7 +266,7 @@ class Room:
         logger.info(f"room {self.code}")
         settings.apply_to(game_state)
         logger.info(f"version {VERSION}", version=VERSION)
-        log_match_prelude(logger, draft_state, self.lobby_state)
+        log_match_prelude(logger, self.lobby_state)
 
         self.battle_dispatcher = BattlingDispatcher(
             game_state=game_state, mode="lan_server",

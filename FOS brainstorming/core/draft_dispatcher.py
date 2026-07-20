@@ -233,18 +233,15 @@ class DraftDispatcher:
                 if draft_state.is_banned(action.card_name):
                     return DraftResult(False, message="Card banned")
                 deck.append(action.card_name)
-                draft_state.pick_history.append((action.player, "add", action.card_name))
                 return DraftResult(True)
             case "remove_card":
                 if action.card_name and action.card_name in deck:
                     idx = len(deck) - 1 - deck[::-1].index(action.card_name)
                     deck.pop(idx)
-                    draft_state.pick_history.append((action.player, "remove", action.card_name))
                 return DraftResult(True)
             case "remove_last_card":
                 if deck:
-                    removed = deck.pop()
-                    draft_state.pick_history.append((action.player, "remove", removed))
+                    deck.pop()
                 return DraftResult(True)
             case "advance_phase":
                 if not draft_state.can_advance():
