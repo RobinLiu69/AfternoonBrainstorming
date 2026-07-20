@@ -26,6 +26,10 @@ LobbyActionType = Literal[
     "switch_to_spectator",
     "switch_to_player",
     "start_match",
+    "set_ban_draft",
+    "ban_card",
+    "unban_card",
+    "set_name",
     "quit",
 ]
 

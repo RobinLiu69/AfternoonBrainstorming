@@ -125,7 +125,7 @@ class DraftRenderer:
         if locked is None:
             return
         gs = self.game_screen
-        for card in self.exhibit_registry.get_page(page, index):
+        for card in self.exhibit_registry.get_page(page, index) + self.exhibit_registry.get_magic_row():
             if not draft_state.is_banned(card.job_and_color):
                 continue
             for data in card.get_render_data():

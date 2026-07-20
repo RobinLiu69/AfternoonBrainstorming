@@ -254,6 +254,18 @@ class GameLogger:
             damage=damage
         )
 
+    def log_heal(self, target: str, position: tuple[int, int], value: int,
+                 post_health: int, post_armor: int) -> None:
+        self.info(
+            f"{target}{position} healed {value} -> health {post_health} armor {post_armor}",
+            category=LogCategory.COMBAT,
+            target=target,
+            target_position=position,
+            heal=value,
+            post_health=post_health,
+            post_armor=post_armor
+        )
+
     def log_card_recycled(self, player_name: str, card_name: str, position: tuple[int, int]) -> None:
         self.info(
             f"{player_name} recycled {card_name} at {position}",

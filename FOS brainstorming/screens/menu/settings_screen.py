@@ -81,7 +81,14 @@ def _build_display_buttons(game_screen: GameScreen) -> tuple[list[tuple[str, But
     return option_buttons, back_button
 
 
-def _build_gameplay_buttons(game_screen: GameScreen, hint_on: bool) -> tuple[Button, Button]:
+def _name_label(name: str, editing: bool, caret: str) -> str:
+    if editing:
+        return f"name : {name}{caret}"
+    return f"name : {name if name else '-'}"
+
+
+def _build_gameplay_buttons(game_screen: GameScreen, hint_on: bool,
+                            player_name: str) -> tuple[Button, Button, Button]:
     bs = game_screen.block_size
     box_width = int(bs / 30)
     cx = game_screen.display_width / 2
@@ -95,9 +102,14 @@ def _build_gameplay_buttons(game_screen: GameScreen, hint_on: bool) -> tuple[But
                          box_width=box_width, font=game_screen.big_big_text_font,
                          text=f"Hint on : {hint_on}")
 
-    back_button = Button(btn_w, btn_h, btn_x, top_y + bs * 0.9 + bs * 0.35,
+    name_button = Button(btn_w, btn_h, btn_x, top_y + bs * 0.9,
+                         position="Left", padding=bs * 0.25,
+                         box_width=box_width, font=game_screen.big_big_text_font,
+                         text=_name_label(player_name, False, ""))
+
+    back_button = Button(btn_w, btn_h, btn_x, top_y + bs * 1.8 + bs * 0.35,
                          box_width=box_width, font=game_screen.big_big_text_font, text="back")
-    return hint_button, back_button
+    return hint_button, name_button, back_button
 
 
 def main(game_screen: GameScreen) -> None:
@@ -106,10 +118,19 @@ def main(game_screen: GameScreen) -> None:
     option_buttons, display_back_button = _build_display_buttons(game_screen)
 
     hint_on = load_setting("hint_on")
-    hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
+    player_name = load_setting("player_name")
+    hint_button, name_button, gameplay_back_button = \
+        _build_gameplay_buttons(game_screen, hint_on, player_name)
 
+    editing_name = False
+    blink = 0
     running = True
     clock = pygame.time.Clock()
+
+    def commit_name() -> None:
+        nonlocal editing_name
+        editing_name = False
+        save_setting("player_name", player_name)
 
     while running:
         game_screen.render()
@@ -117,10 +138,22 @@ def main(game_screen: GameScreen) -> None:
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
+                if editing_name:
+                    if event.key in (pygame.K_ESCAPE, pygame.K_RETURN):
+                        commit_name()
+                    elif event.key == pygame.K_BACKSPACE:
+                        player_name = player_name[:-1]
+                    else:
+                        ch = event.unicode
+                        if ch and (ch.isascii() and (ch.isalnum() or ch == "_")) and len(player_name) < 12:
+                            player_name += ch
+                    continue
                 keys = pygame.key.get_pressed()
                 if key_pressed(keys) == pygame.K_ESCAPE:
                     running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
+                if editing_name and not name_button.touch(mouse_x, mouse_y):
+                    commit_name()
                 for tab_id, button in tab_buttons:
                     if button.touch(mouse_x, mouse_y) and tab_id != active_tab:
                         active_tab = tab_id
@@ -134,7 +167,8 @@ def main(game_screen: GameScreen) -> None:
                             game_screen.apply_display_mode(mode)
                             tab_buttons = _build_tab_buttons(game_screen, active_tab)
                             option_buttons, display_back_button = _build_display_buttons(game_screen)
-                            hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
+                            hint_button, name_button, gameplay_back_button = \
+                                _build_gameplay_buttons(game_screen, hint_on, player_name)
                             break
                     if display_back_button.touch(mouse_x, mouse_y):
                         running = False
@@ -142,11 +176,16 @@ def main(game_screen: GameScreen) -> None:
                     if hint_button.touch(mouse_x, mouse_y):
                         hint_on = not hint_on
                         save_setting("hint_on", hint_on)
-                        hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
+                        hint_button.text = f"Hint on : {hint_on}"
+                    if name_button.touch(mouse_x, mouse_y):
+                        editing_name = True
                     if gameplay_back_button.touch(mouse_x, mouse_y):
                         running = False
             if event.type == pygame.QUIT:
                 running = False
+
+        if not running and editing_name:
+            commit_name()
 
         for _tab_id, button in tab_buttons:
             button.update(game_screen)
@@ -156,7 +195,11 @@ def main(game_screen: GameScreen) -> None:
                 button.update(game_screen)
             display_back_button.update(game_screen)
         elif active_tab == "gameplay":
+            caret = "_" if (blink // 30) % 2 == 0 else " "
+            blink += 1
+            name_button.text = _name_label(player_name, editing_name, caret)
             hint_button.update(game_screen)
+            name_button.update(game_screen)
             gameplay_back_button.update(game_screen)
 
         pygame.display.update()

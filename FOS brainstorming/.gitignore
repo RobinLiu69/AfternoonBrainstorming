@@ -3,6 +3,7 @@ imgs/
 battle_records/
 campaign_progress.json
 display_setting.json
+net_tokens.json
 build/
 dist/
 data/

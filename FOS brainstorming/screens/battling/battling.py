@@ -43,8 +43,8 @@ def _render_quit_confirm(game_screen: GameScreen) -> None:
     overlay.fill((0, 0, 0, 185))
     game_screen.surface.blit(overlay, (0, 0))
     lines = [
-        "Leave the match and shut down server?",
-        "all players will be disconnected",
+        "Abandon the match and return to lobby?",
+        "everyone will go back to the lobby",
         "[Y] yes        [N] no",
     ]
     offsets = (-bs * 0.7, -bs * 0.05, bs * 0.7)
@@ -184,6 +184,11 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                             break
                 game_state.game_statistics.score_history = stats.get("score_history", [])
                 winner = winner_name
+                running = False
+                break
+
+            if client.pending_scene is not None:
+                print("[battling] host changed scene, leaving battle")
                 running = False
                 break
 

@@ -19,7 +19,11 @@
 import time
 from dataclasses import dataclass
 
-from core.lobby_state import LobbyState, SETTING_OPTIONS
+from core.draft_state import TOURNAMENT_BANS
+from core.lobby_state import (
+    LobbyState, SETTING_OPTIONS, MAX_BANS_PER_PLAYER,
+    PLAYER_NAME_PATTERN, is_bannable_card,
+)
 from core.network_layer import LANServer, LANClient
 from core.network.messages import _send_msg
 from screens.lobby.lobby_action import LobbyAction
@@ -52,6 +56,8 @@ class LobbyDispatcher:
         server.on_peer_reconnect = self._on_peer_reconnect
         server.on_client_dropped = self._on_client_dropped
         server.on_pong = self._on_pong
+        server.reset_heartbeat()
+        self._refresh_roster()
 
     def attach_client(self, client: "LANClient") -> None:
         self._network = client
@@ -138,7 +144,7 @@ class LobbyDispatcher:
         })
 
     def _execute(self, action: LobbyAction, sender_conn=None) -> LobbyResult:
-        host_only = ("set_setting", "swap_seats", "start_match")
+        host_only = ("set_setting", "swap_seats", "start_match", "set_ban_draft")
         if action.action_type in host_only and action.player != "host":
             return LobbyResult(False, message="host only")
 
@@ -152,7 +158,7 @@ class LobbyDispatcher:
                 value = options[options.index(value)]
                 self._state.set_value(name, value)
                 if name == "god_view" and isinstance(self._network, LANServer):
-                    self._network.god_view = value
+                    self._network.update_god_view(value)
                 return LobbyResult(True)
 
             case "swap_seats":
@@ -198,6 +204,52 @@ class LobbyDispatcher:
                 except OSError:
                     pass
                 self._refresh_roster()
+                return LobbyResult(True)
+
+            case "set_name":
+                if action.player == "host":
+                    identity = "host"
+                elif action.player == self._state.peer_seat():
+                    identity = "peer"
+                else:
+                    return LobbyResult(True)
+                name = (action.str_value or "").strip()
+                if name and not PLAYER_NAME_PATTERN.match(name):
+                    return LobbyResult(False, message="invalid name")
+                if name:
+                    self._state.player_names[identity] = name
+                else:
+                    self._state.player_names.pop(identity, None)
+                return LobbyResult(True)
+
+            case "set_ban_draft":
+                self._state.in_ban_draft = bool(action.bool_value)
+                return LobbyResult(True)
+
+            case "ban_card" | "unban_card":
+                if action.player == "host":
+                    banner = "host"
+                elif action.player == self._state.peer_seat():
+                    banner = "peer"
+                else:
+                    return LobbyResult(False, message="players only")
+                if not self._state.in_ban_draft:
+                    return LobbyResult(False, message="not in ban draft")
+                card = action.str_value or ""
+                if action.action_type == "unban_card":
+                    if self._state.bans.get(card) != banner:
+                        return LobbyResult(False, message="not your ban")
+                    del self._state.bans[card]
+                    return LobbyResult(True)
+                if not is_bannable_card(card):
+                    return LobbyResult(False, message="not bannable")
+                if self._state.settings.ruleset == "tournament" and card in TOURNAMENT_BANS:
+                    return LobbyResult(False, message="locked by ruleset")
+                if card in self._state.bans:
+                    return LobbyResult(False, message="already banned")
+                if self._state.ban_count(banner) >= MAX_BANS_PER_PLAYER:
+                    return LobbyResult(False, message="ban limit reached")
+                self._state.bans[card] = banner
                 return LobbyResult(True)
 
             case "start_match":

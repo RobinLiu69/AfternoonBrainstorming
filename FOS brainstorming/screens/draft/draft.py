@@ -44,8 +44,8 @@ def _render_quit_confirm(gs: GameScreen) -> None:
     overlay.fill((0, 0, 0, 185))
     gs.surface.blit(overlay, (0, 0))
     lines = [
-        "Shut down server and leave?",
-        "all players will be disconnected",
+        "Cancel the draft and return to lobby?",
+        "everyone will go back to the lobby",
         "[Y] yes        [N] no",
     ]
     offsets = (-bs * 0.7, -bs * 0.05, bs * 0.7)
@@ -79,7 +79,8 @@ def main(game_screen: GameScreen, mode: str = "local",
          draft_state: Optional[DraftState] = None,
          host_seat: str = "player1",
          reconnect_timeout: float = 60.0,
-         settings: Optional[MatchSettings] = None) -> DraftExitReason:
+         settings: Optional[MatchSettings] = None,
+         extra_bans: Optional[list[str]] = None) -> DraftExitReason:
     registry = ExhibitRegistry(game_screen)
     if draft_state is None:
         draft_state = DraftState()
@@ -87,6 +88,8 @@ def main(game_screen: GameScreen, mode: str = "local",
     draft_state.board_dict = initialize_board(game_screen, draft_state.board_config)
     draft_state.settings = settings.copy() if settings is not None else MatchSettings()
     draft_state.init_ban_deck()
+    if extra_bans:
+        draft_state.add_ban([c for c in extra_bans if not draft_state.is_banned(c)])
 
     dispatcher = DraftDispatcher(draft_state, mode=mode,
                                  reconnect_timeout=reconnect_timeout,
@@ -139,9 +142,10 @@ def main(game_screen: GameScreen, mode: str = "local",
         if mode == "lan_client" and client is not None:
             handoff = client.consume_pending_scene()
             if handoff is not None:
-                _scene, next_state = handoff
+                scene, next_state = handoff
                 return DraftExitReason(
                     kind="scene_handoff",
+                    next_scene=scene,
                     next_scene_state=next_state,
                 )
             if client.is_disconnected:
@@ -157,10 +161,11 @@ def main(game_screen: GameScreen, mode: str = "local",
                     if client.try_reconnect():
                         print("[draft] reconnect succeeded")
                         disconnect_since = None
-                        if client.scene == "battling":
-                            print("[draft] host moved on to battle, handing off")
+                        if client.scene in ("battling", "lobby"):
+                            print(f"[draft] host moved on to {client.scene}, handing off")
                             return DraftExitReason(
                                 kind="scene_handoff",
+                                next_scene=client.scene,
                                 next_scene_state=client.initial_state,
                             )
                         if client.scene != "draft":

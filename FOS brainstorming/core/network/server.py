@@ -96,6 +96,19 @@ class LANServer:
         with self._lock:
             self._clients = [(c, new_peer if r == old_peer else r) for c, r in self._clients]
 
+    def reset_heartbeat(self) -> None:
+        now = time.monotonic()
+        with self._lock:
+            for conn, _role in self._clients:
+                self._last_seen[conn] = now
+
+    def update_god_view(self, god_view: bool) -> None:
+        self.god_view = god_view
+        old_role = "spectator" if god_view else "god"
+        new_role = "god" if god_view else "spectator"
+        with self._lock:
+            self._clients = [(c, new_role if r == old_role else r) for c, r in self._clients]
+
     def find_role(self, conn: socket.socket) -> str:
         with self._lock:
             return next((r for c, r in self._clients if c is conn), "")
@@ -132,7 +145,7 @@ class LANServer:
                 issued_token: str = self._peer_token  # type: ignore[assignment]
             else:
                 has_peer = any(r == peer_role for _conn, r in self._clients)
-                if intent == "play" and not has_peer:
+                if intent == "play" and not has_peer and self.scene == "lobby":
                     new_token = secrets.token_urlsafe(16)
                     self._peer_token = new_token
                     chosen_role = peer_role

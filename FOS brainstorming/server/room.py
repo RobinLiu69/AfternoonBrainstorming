@@ -29,6 +29,7 @@ from core.draft_state import DraftState
 from core.draft_dispatcher import DraftDispatcher
 from core.battling_dispatcher import BattlingDispatcher
 from core.game_state import GameState
+from core.match_prelude import log_match_prelude
 from core.player import Player
 from core.neutral import Neutral
 from core.board_config import BoardConfig
@@ -209,6 +210,8 @@ class Room:
         draft_state = DraftState()
         draft_state.settings = self.lobby_state.settings.copy()
         draft_state.init_ban_deck()
+        draft_state.add_ban([c for c in self.lobby_state.bans
+                             if not draft_state.is_banned(c)])
         self.draft_state = draft_state
 
         self.draft_dispatcher = DraftDispatcher(
@@ -262,6 +265,7 @@ class Room:
         logger.info(f"room {self.code}")
         settings.apply_to(game_state)
         logger.info(f"version {VERSION}", version=VERSION)
+        log_match_prelude(logger, draft_state, self.lobby_state)
 
         self.battle_dispatcher = BattlingDispatcher(
             game_state=game_state, mode="lan_server",
