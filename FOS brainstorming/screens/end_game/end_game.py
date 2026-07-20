@@ -21,6 +21,7 @@ import pygame
 from core.game_state import GameState
 from core.game_screen import GameScreen
 from rendering.end_game_renderer import EndGameRenderer
+from screens.widgets import make_back_button
 from utils.controls import key_pressed
 
 
@@ -30,11 +31,16 @@ def main(winner: str, game_state: GameState, game_screen: GameScreen) -> None:
     display_state: str = "mid"
     running = True
     clock = pygame.time.Clock()
+    back_button = make_back_button(game_screen, text="back", corner="top_left")
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                continue
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if back_button.touch(*event.pos):
+                    running = False
                 continue
             if event.type != pygame.KEYDOWN:
                 continue
@@ -61,5 +67,6 @@ def main(winner: str, game_state: GameState, game_screen: GameScreen) -> None:
                     renderer.set_display_state(display_state)
 
         renderer.render_frame(winner, display_state)
+        back_button.update(game_screen)
         pygame.display.update()
         clock.tick(60)

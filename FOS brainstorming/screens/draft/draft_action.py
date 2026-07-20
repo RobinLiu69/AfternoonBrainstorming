@@ -72,7 +72,8 @@ SPECTATOR_ALLOWED: tuple[str, ...] = ("page_next", "page_prev", "toggle_hint", "
 
 
 def collect_draft_actions(current_editor: str, page: int, index: int, registry: ExhibitRegistry,
-                          mouse_board_x: Optional[int], mouse_board_y: Optional[int]) -> list[DraftAction]:
+                          mouse_board_x: Optional[int], mouse_board_y: Optional[int],
+                          back_button=None) -> list[DraftAction]:
     actions: list[DraftAction] = []
     is_spectator = current_editor in ("spectator", "god")
 
@@ -84,6 +85,11 @@ def collect_draft_actions(current_editor: str, page: int, index: int, registry: 
         if event.type == pygame.MOUSEWHEEL:
             t = "page_next" if event.y > 0 else "page_prev"
             actions.append(DraftAction(current_editor, t))
+            continue
+
+        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
+                and back_button is not None and back_button.touch(*event.pos)):
+            actions.append(DraftAction(current_editor, "quit"))
             continue
 
         if event.type == pygame.MOUSEBUTTONDOWN:

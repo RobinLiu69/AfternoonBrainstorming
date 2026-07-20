@@ -67,7 +67,7 @@ class DraftRenderer:
         label = label_map.get(local_player, local_player)
         gs = self.game_screen
         draw_text(label, gs.text_font, WHITE,
-                  gs.block_size * 0.2, gs.block_size * 0.2, gs.surface)
+                  gs.block_size * 2.0, gs.block_size * 0.25, gs.surface)
 
     def _render_spectator_count(self, draft_state: DraftState) -> None:
         count = getattr(draft_state, "net_spectator_count", 0)

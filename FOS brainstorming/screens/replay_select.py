@@ -26,6 +26,7 @@ import pygame
 from shared.setting import WHITE, RED, FOLDER_PATH
 from core.game_screen import GameScreen, draw_text
 from core.replay_source import ReplaySource
+from screens.widgets import make_back_button
 
 
 VISIBLE_ROWS: int = 10
@@ -47,6 +48,7 @@ def main(game_screen: GameScreen) -> Optional[Path]:
     clock = pygame.time.Clock()
     running: bool = True
     chosen: Optional[Path] = None
+    back_button = make_back_button(game_screen, text="back", corner="top_left")
 
     while running:
         game_screen.render()
@@ -107,6 +109,9 @@ def main(game_screen: GameScreen) -> Optional[Path]:
             elif renaming:
                 pass
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if back_button.touch(*event.pos):
+                    running = False
+                    break
                 delete_armed = False
                 clicked_idx = _row_at(event.pos[1], scroll_top, game_screen)
                 if clicked_idx is not None and 0 <= clicked_idx < len(replays):
@@ -125,6 +130,7 @@ def main(game_screen: GameScreen) -> Optional[Path]:
 
         _draw(game_screen, replays, selected, scroll_top, renaming, rename_text,
               delete_armed)
+        back_button.update(game_screen)
 
         pygame.display.update()
         clock.tick(60)

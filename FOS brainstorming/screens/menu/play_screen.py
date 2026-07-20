@@ -35,6 +35,7 @@ from core.neutral import Neutral
 from core.UI import Button
 
 from screens.connect import join_screen, connecting_screen
+from screens.widgets import make_back_button
 from screens.lobby import lobby
 from screens.notices import version_mismatch_screen, connection_failed_screen
 from screens.draft import draft
@@ -65,6 +66,7 @@ def _choose_mode(game_screen: GameScreen) -> str:
                         box_width=box_width, font=game_screen.big_big_text_font, text="join")
     local_button = Button(main_w*2, main_h, main_x, cy + bs,
                         box_width=box_width, font=game_screen.big_big_text_font, text="local")
+    back_button = make_back_button(game_screen, text="back", corner="top_left")
 
     state = "quit"
 
@@ -82,6 +84,8 @@ def _choose_mode(game_screen: GameScreen) -> str:
                     case pygame.K_ESCAPE:
                         running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
+                if back_button.touch(mouse_x, mouse_y):
+                    running = False
                 if local_button.touch(mouse_x, mouse_y):
                     running = False
                     state = "local"
@@ -103,6 +107,7 @@ def _choose_mode(game_screen: GameScreen) -> str:
         local_button.update(game_screen)
         host_button.update(game_screen)
         join_button.update(game_screen)
+        back_button.update(game_screen)
 
         draw_text(f"version: {VERSION}", game_screen.mid_text_font, WHITE,
                 game_screen.display_width - bs * 2,

@@ -34,6 +34,7 @@ from rendering.card_renderer import CardRenderer
 from rendering.sprite_registry import SpriteRegistry
 from screens.draft.exhibit_registry import ExhibitRegistry
 from screens.lobby.lobby_action import LobbyAction
+from screens.widgets import make_back_button
 
 _BAN_IDENTITIES = ("host", "peer")
 
@@ -176,6 +177,7 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
     index = 0
 
     ruleset_locked = TOURNAMENT_BANS if state.settings.ruleset == "tournament" else frozenset()
+    back_button = make_back_button(game_screen, text="back", corner="top_right")
 
     def actor_for(banner: str) -> str:
         return "host" if banner == "host" else state.peer_seat()
@@ -279,6 +281,13 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
                     else:
                         unban_last()
 
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and back_button.touch(*event.pos):
+                if controls in ("host", "both"):
+                    dispatcher.dispatch(LobbyAction("host", "set_ban_draft", bool_value=False))
+                else:
+                    return "quit"
+                continue
+
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and controls is not None:
                 for i in range(len(registry.get_page_colors(page))):
                     if registry.switch_rects[i].collidepoint(event.pos):
@@ -316,6 +325,7 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
             _render_spectator_labels(game_screen, state)
 
         _render_header(game_screen, state, controls, local_role, my_seat, my_identity)
+        back_button.update(game_screen)
 
         pygame.display.update()
         clock.tick(60)

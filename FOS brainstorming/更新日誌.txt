@@ -2373,3 +2373,41 @@ debug:
         修法: 增加一層偵測其他SPBR是否ANGER來判斷是否取消
 
 ----------------
+=======================
+2026/07/20-4.5.0.0
+編寫者 Robin, Anemois
+----------------
+新增:
+    禁牌選角 (ban draft): lobby 設定區新增「ban draft」入口 host 點進後雙方玩家與觀戰者一同進入
+        玩家畫面比照選卡可翻頁瀏覽全部卡片 但左鍵 / S / B 為 ban (非選牌) C / U 取消自己的 ban 每人上限 4 隻
+        被 ban 的角色與魔法卡 (CUBES/HEAL/MOVE) 雙方皆無法使用 (灌入 DraftState.ban_deck 沿用既有鎖卡阻擋與 lock 顯示)
+        觀戰者畫面為空的 4x2 棋盤 玩家每 ban 一隻該單位即以 lock 顯示 god 同待遇
+        tournament 自動鎖卡於 ban 畫面同步顯示且不可 ban (不佔額度) 選卡畫面魔法列被 ban 也補上 lock
+        ban 綁人 (host / peer) 不綁座位 host 換位後 ban 歸屬與取消權不變 伺服器端權威驗證身分 / 上限 / 重複 / 鎖卡 / 可 ban 與否
+        local 模式亦可進 ban 畫面 (host 與 player2 兩身分皆可 ban) 網路模式隨 lobby state 同步給對手與觀戰者
+    玩家名稱: 設定新增 user 分頁可填名字 (英數與底線 上限 16 字 寬輸入框 存 user_setting.json)
+        名字經 set_name 動作同步 綁 host / peer 身分 顯示於 lobby 名單 / ban 畫面 / log 取代 P1P2 與 host peer 的稱呼
+    LAN 對戰結束或中途退出回到大廳: 打完一場或選牌 / 對戰中離開改回 lobby 保留伺服器與所有連線 可直接再開一場
+        host 迴圈改為 lobby -> draft -> battle -> lobby 循環 client 收 scene:lobby 一同回大廳 (含斷線重連後跟回)
+        選牌 / 對戰確認框文案改為「回到大廳」 ESC 從大廳才真正關伺服器 (遊戲內=回大廳 大廳=關房)
+        重回大廳時重置心跳計時與名單 避免看結算期間所有人被誤判逾時踢除
+    連線 token 落地: 座位 token 存本地 net_tokens.json 關閉遊戲重開仍可重連拿回座位 (原本僅記憶體 重開即失效)
+        同機多開僅第一個實例讀寫 token 檔 (以 localhost 端口鎖判定主實例) 其餘僅用記憶體 避免同機測試互搶座位
+    各畫面補滑鼠 back 按鈕: 原本只能鍵盤離開的畫面全數補上 (主選單 quit / 選模式 / join / ban draft / 選牌 / 對戰 / 結算 / 重播列表 / 重播播放)
+        draft 與 battling 的 back 經 collect_*_actions 送出 quit action 沿用既有離開流程 (host 跳確認框 client / local 直接離開)
+        共用 screens/widgets.py make_back_button (四角落可選) 對戰 / 選牌左上身分標籤右移讓位
+    選牌畫面「Drafting: 名字」標題置中放大 藍色為自己紅色為對方
+優化:
+    jsonl 與 log 分工明確: jsonl 只保留重播所需 (最後牌組 + 戰鬥動作) 玩家名 / ban 清單 / 選牌增減過程改只寫 .log
+        新增 core/match_prelude.py 開戰前寫入前導區塊 (LAN 開戰與專用伺服器共用) GameLogger.info 新增 to_jsonl 開關
+        選牌過程 (DraftState.pick_history) 只進 .log 不上網路線也不進 jsonl 對手中途看不到隱藏選牌 重播不受影響
+    LANServer 對戰中不再發空座位 (比照房間伺服器 scene=="lobby" 限定) 避免第三者搶走斷線者座位 (token 落地後可安全限定)
+    設定畫面分頁重整: display / gameplay / user 三頁 名字移至 user 分頁 gameplay 僅留 hint
+    新增回歸測試: ban draft / fog of war (確認觀戰者與對手看不到完整牌組與抽牌堆) / token 落地與主實例判定 / 治療記錄 / 名稱與 log 前導 合併後全套 367 通過
+修正:
+    治療 (HEAL) 記錄不實與統計高估: 點空格 / 敵方單位或無治療次數時仍記「played HEAL」且 HEAL_USE 統計 +1
+        解釋: heal_card 開頭無條件寫 log 且統計在「找到目標」判定之前就累加
+        修法: played HEAL / 統計 / 次數扣除改為治療實際成功後才執行 三者一致 失敗的治療不留痕跡
+    HFDKG 每次攻擊命中自癒 +1 在 log 中完全不顯示 (對著 log 追血量會看到無來由回升)
+        修法: Card.heal 成功時統一寫入 log_heal (目標 / 位置 / 量 / 後血量護甲 含溢出轉護甲) 魔法 HEAL / 自癒 / 未來卡皆記
+----------------
