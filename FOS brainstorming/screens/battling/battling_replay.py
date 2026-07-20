@@ -35,7 +35,6 @@ from core.replay_source import ReplaySource, ReplayClock
 from rendering.game_renderer import GameRenderer
 from screens.battling.battling_action import collect_actions
 from screens.notices import notice_screen
-from screens.widgets import make_back_button
 from utils.logger import GameLogger
 from campaign.boss_config import (
     apply_initial_buffs, apply_stage_one_shots, maintain_unit_buffs, apply_per_turn_buffs,
@@ -471,7 +470,6 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
 
     clock = pygame.time.Clock()
     running: bool = True
-    back_button = make_back_button(game_screen, text="back", corner="top_right")
 
     while running:
         dt = clock.tick(60) / 1000.0
@@ -480,8 +478,6 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
         if not taken_over:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
-                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and back_button.touch(*event.pos):
                     running = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
@@ -611,7 +607,6 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
             _draw_takeover_hud(game_screen, controller)
         else:
             _draw_hud(game_screen, source, paused, speed, save_log)
-            back_button.update(game_screen)
 
         pygame.display.update()
 
