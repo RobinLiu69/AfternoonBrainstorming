@@ -33,7 +33,8 @@ RECONNECT_TIMEOUT_OPTIONS: tuple[float, ...] = (30.0, 60.0, 120.0, 300.0, INFINI
 
 MAX_BANS_PER_PLAYER: int = 4
 
-PLAYER_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_]{1,12}$")
+MAX_NAME_LENGTH: int = 16
+PLAYER_NAME_PATTERN = re.compile(rf"^[A-Za-z0-9_]{{1,{MAX_NAME_LENGTH}}}$")
 
 BANNABLE_MAGIC_CARDS: frozenset[str] = frozenset({"CUBES", "HEAL", "MOVE"})
 
@@ -83,6 +84,16 @@ class LobbyState:
 
     def display_name(self, identity: str) -> str:
         return self.player_names.get(identity, "")
+
+    def seat_names(self) -> dict[str, str]:
+        names: dict[str, str] = {}
+        host_name = self.player_names.get("host", "")
+        peer_name = self.player_names.get("peer", "")
+        if host_name:
+            names[self.host_seat] = host_name
+        if peer_name:
+            names[self.peer_seat()] = peer_name
+        return names
 
     def set_value(self, name: str, value) -> None:
         if name in MATCH_SETTING_NAMES:

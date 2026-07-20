@@ -212,6 +212,7 @@ class Room:
         draft_state.init_ban_deck()
         draft_state.add_ban([c for c in self.lobby_state.bans
                              if not draft_state.is_banned(c)])
+        draft_state.player_names = self.lobby_state.seat_names()
         self.draft_state = draft_state
 
         self.draft_dispatcher = DraftDispatcher(

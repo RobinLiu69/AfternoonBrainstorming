@@ -80,7 +80,8 @@ def main(game_screen: GameScreen, mode: str = "local",
          host_seat: str = "player1",
          reconnect_timeout: float = 60.0,
          settings: Optional[MatchSettings] = None,
-         extra_bans: Optional[list[str]] = None) -> DraftExitReason:
+         extra_bans: Optional[list[str]] = None,
+         player_names: Optional[dict[str, str]] = None) -> DraftExitReason:
     registry = ExhibitRegistry(game_screen)
     if draft_state is None:
         draft_state = DraftState()
@@ -90,6 +91,8 @@ def main(game_screen: GameScreen, mode: str = "local",
     draft_state.init_ban_deck()
     if extra_bans:
         draft_state.add_ban([c for c in extra_bans if not draft_state.is_banned(c)])
+    if player_names:
+        draft_state.player_names = dict(player_names)
 
     dispatcher = DraftDispatcher(draft_state, mode=mode,
                                  reconnect_timeout=reconnect_timeout,

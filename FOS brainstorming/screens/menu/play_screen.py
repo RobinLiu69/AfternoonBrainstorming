@@ -191,6 +191,7 @@ def _run_host(game_screen: GameScreen) -> None:
                 reconnect_timeout=lobby_state.reconnect_timeout,
                 settings=lobby_state.settings,
                 extra_bans=list(lobby_state.bans),
+                player_names=lobby_state.seat_names(),
             )
             if exit_reason.kind == "peer_lost":
                 print("[play_screen] draft cancelled: opponent did not reconnect in time")

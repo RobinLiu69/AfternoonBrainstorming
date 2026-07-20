@@ -140,7 +140,8 @@ class GameLogger:
         except Exception:
             pass
 
-    def log(self, level: LogLevel, category: LogCategory, message: str, **data) -> None:
+    def log(self, level: LogLevel, category: LogCategory, message: str,
+            to_jsonl: bool = True, **data) -> None:
         entry = LogEntry(
             timestamp=datetime.now(),
             level=level,
@@ -148,18 +149,18 @@ class GameLogger:
             message=message,
             data=data
         )
-        
+
         self._memory_logs.append(entry)
         if len(self._memory_logs) > self.max_memory_logs:
             self._memory_logs.pop(0)
-        
+
         extra = {'category': category.value}
         self._logger.log(level.value, message, extra=extra)
-        
+
         for subscriber in self._subscribers:
             subscriber(entry)
-        
-        if self._jsonl_fp is not None and not self._closed:
+
+        if self._jsonl_fp is not None and not self._closed and to_jsonl:
             try:
                 record: dict[str, Any] = {
                     'timestamp': entry.timestamp.isoformat(),
@@ -179,8 +180,9 @@ class GameLogger:
             except Exception as e:
                 print(f"[GameLogger] jsonl write failed: {e}")
     
-    def info(self, message: str, category: LogCategory = LogCategory.SYSTEM, **data) -> None:
-        self.log(LogLevel.INFO, category, message, **data)
+    def info(self, message: str, category: LogCategory = LogCategory.SYSTEM,
+             to_jsonl: bool = True, **data) -> None:
+        self.log(LogLevel.INFO, category, message, to_jsonl=to_jsonl, **data)
     
     def debug(self, message: str, category: LogCategory = LogCategory.DEBUG, **data) -> None:
         self.log(LogLevel.DEBUG, category, message, **data)

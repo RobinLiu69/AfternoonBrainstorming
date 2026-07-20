@@ -16,7 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.lobby_state import LobbyState
+from core.lobby_state import LobbyState, MAX_NAME_LENGTH
 from core.lobby_dispatcher import LobbyDispatcher
 from core.draft_state import DraftState
 from core.draft_dispatcher import DraftDispatcher
@@ -53,7 +53,8 @@ def test_set_name_validation():
     state, dispatcher = _dispatcher()
     assert _set_name(dispatcher, "host", "bad name").success is False
     assert _set_name(dispatcher, "host", "中文").success is False
-    assert _set_name(dispatcher, "host", "a" * 13).success is False
+    assert _set_name(dispatcher, "host", "a" * (MAX_NAME_LENGTH + 1)).success is False
+    assert _set_name(dispatcher, "host", "a" * MAX_NAME_LENGTH).success is True
     assert _set_name(dispatcher, "host", "Rob_1n").success is True
 
     assert _set_name(dispatcher, "host", "").success is True
@@ -92,6 +93,58 @@ def test_pick_history_stays_out_of_wire():
     draft_state = DraftState()
     draft_state.pick_history.append(("player1", "add", "TANKG"))
     assert "pick_history" not in draft_state.to_dict_for("player2")
+
+
+def test_seat_names_maps_identities_to_seats():
+    state = LobbyState()
+    state.host_seat = "player2"
+    state.player_names = {"host": "Robin", "peer": "Angus"}
+    assert state.seat_names() == {"player2": "Robin", "player1": "Angus"}
+
+
+def test_draft_names_and_editor_label_survive_wire():
+    draft_state = DraftState()
+    draft_state.player_names = {"player1": "Robin", "player2": "Angus"}
+    draft_state.phase = "p2_pick12"
+    assert draft_state.current_editor_label() == "Angus"
+
+    received = DraftState()
+    received.apply_dict(draft_state.to_dict_for("player1"))
+    assert received.player_names == {"player1": "Robin", "player2": "Angus"}
+    assert received.current_editor_label() == "Angus"
+
+
+def test_draft_editor_label_falls_back_without_names():
+    draft_state = DraftState()
+    draft_state.phase = "p1_first6"
+    assert draft_state.current_editor_label() == "P1"
+
+
+def test_prelude_writes_to_log_but_not_jsonl(tmp_path):
+    log_file = tmp_path / "match.log"
+    logger = GameLogger(log_file=log_file, enable_console=False)
+
+    lobby_state = LobbyState()
+    lobby_state.player_names = {"host": "Robin", "peer": "Angus"}
+    lobby_state.bans = {"TANKG": "host"}
+    draft_state = DraftState()
+    draft_state.pick_history = [("player1", "add", "APG")]
+
+    logger.info("player1 deck ADCW-APG")  # final deck line still belongs in jsonl
+    log_match_prelude(logger, draft_state, lobby_state)
+    logger.close()
+
+    jsonl_text = (tmp_path / "match.jsonl").read_text(encoding="utf-8")
+    log_text = log_file.read_text(encoding="utf-8")
+
+    assert "player1 deck ADCW-APG" in jsonl_text
+    assert "players player1" not in jsonl_text
+    assert "ban TANKG" not in jsonl_text
+    assert "draft player1 add APG" not in jsonl_text
+
+    assert "players player1=Robin player2=Angus" in log_text
+    assert "ban TANKG by Robin" in log_text
+    assert "draft player1 add APG" in log_text
 
 
 def test_log_match_prelude_writes_names_bans_and_picks():

@@ -138,6 +138,26 @@ def test_unban_only_own_bans():
     assert state.bans == {}
 
 
+def test_local_mode_can_ban_for_both_identities():
+    state = LobbyState()
+    state.in_ban_draft = True
+    dispatcher = LobbyDispatcher(state, mode="local")
+
+    assert dispatcher.dispatch(
+        LobbyAction("host", "ban_card", str_value="TANKG")).success is True
+    assert dispatcher.dispatch(
+        LobbyAction("player2", "ban_card", str_value="APG")).success is True
+    assert state.bans == {"TANKG": "host", "APG": "peer"}
+    assert state.ban_count("host") == 1
+    assert state.ban_count("peer") == 1
+
+    assert dispatcher.dispatch(
+        LobbyAction("player2", "unban_card", str_value="TANKG")).success is False
+    assert dispatcher.dispatch(
+        LobbyAction("host", "unban_card", str_value="TANKG")).success is True
+    assert state.bans == {"APG": "peer"}
+
+
 def test_tournament_locked_cards_not_bannable():
     state, dispatcher = _dispatcher()
     state.in_ban_draft = True

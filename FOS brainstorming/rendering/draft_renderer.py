@@ -22,7 +22,7 @@ import pygame
 
 from core.game_screen import GameScreen, draw_text
 from core.draft_state import DraftState
-from shared.setting import WHITE
+from shared.setting import WHITE, BLUE, RED
 from core.card_hint import HintBox
 from rendering.board_renderer import BoardRenderer
 from rendering.card_renderer import CardRenderer
@@ -167,6 +167,23 @@ class DraftRenderer:
         self._render_player_deck("player2", draft_state)
 
     def _render_status_labels(self, draft_state: DraftState) -> None:
+        editor = draft_state.current_editor()
+        editor_label = draft_state.current_editor_label()
+        if editor_label:
+            local = draft_state.local_player
+            if local in ("player1", "player2"):
+                color = BLUE if editor == local else RED
+            else:
+                color = BLUE if editor == "player1" else RED
+            text = f"Drafting: {editor_label}"
+            font = self.game_screen.big_big_text_font
+            width = font.size(text)[0]
+            draw_text(
+                text, font, color,
+                self.game_screen.display_width / 2 - width / 2,
+                self.game_screen.block_size * 0.25,
+                self.game_screen.surface
+            )
         draw_text(
             f"Timer Mode: {draft_state.settings.timer_mode}",
             self.game_screen.text_font, WHITE,

@@ -61,6 +61,8 @@ class DraftState:
     net_spectator_count: int = 0
     net_latencies: dict = field(default_factory=dict)
 
+    player_names: dict[str, str] = field(default_factory=dict)
+
     pick_history: list[tuple[str, str, str]] = field(default_factory=list)
 
     def get_visible_deck(self, viewer: str, owner: str) -> range:
@@ -79,6 +81,14 @@ class DraftState:
             case "p2_pick12": return "player2"
             case "p1_last6": return "player1"
             case _: return ""
+
+    def seat_label(self, seat: str) -> str:
+        name = self.player_names.get(seat, "")
+        return name if name else {"player1": "P1", "player2": "P2"}.get(seat, seat)
+
+    def current_editor_label(self) -> str:
+        editor = self.current_editor()
+        return self.seat_label(editor) if editor else ""
 
     def can_advance(self) -> bool:
         match self.phase:
@@ -103,6 +113,7 @@ class DraftState:
             "paused": self.paused,
             "pause_reason": self.pause_reason,
             "pause_seconds_remaining": self.pause_seconds_remaining,
+            "player_names": dict(self.player_names),
         }
 
     def to_dict_for(self, viewer: str) -> dict:
@@ -126,6 +137,7 @@ class DraftState:
         self.paused = data.get("paused", False)
         self.pause_reason = data.get("pause_reason", "")
         self.pause_seconds_remaining = data.get("pause_seconds_remaining", 0.0)
+        self.player_names = dict(data.get("player_names", {}))
 
     def add_ban(self, ban_list: Optional[list[str]] = None) -> None:
         if ban_list is not None:

@@ -27,21 +27,20 @@ def log_match_prelude(logger: GameLogger, draft_state: Optional[DraftState],
                       lobby_state: Optional[LobbyState]) -> None:
     if lobby_state is not None:
         names = lobby_state.player_names
-        if names:
-            host_name = names.get("host", "")
-            peer_name = names.get("peer", "")
-            logger.info(
-                f"players {lobby_state.host_seat}={host_name or 'host'} "
-                f"{lobby_state.peer_seat()}={peer_name or 'peer'}",
-                category=LogCategory.GAME_FLOW,
-                host_seat=lobby_state.host_seat,
-                host_name=host_name, peer_name=peer_name,
-            )
+        seat_names = lobby_state.seat_names()
+        p1_name = seat_names.get("player1", "")
+        p2_name = seat_names.get("player2", "")
+        logger.info(
+            f"players player1={p1_name or 'player1'} player2={p2_name or 'player2'}",
+            category=LogCategory.GAME_FLOW, to_jsonl=False,
+            player1_name=p1_name, player2_name=p2_name,
+            host_seat=lobby_state.host_seat,
+        )
         for card, banner in lobby_state.bans.items():
             banner_name = names.get(banner) or banner
             logger.info(
                 f"ban {card} by {banner_name}",
-                category=LogCategory.GAME_FLOW,
+                category=LogCategory.GAME_FLOW, to_jsonl=False,
                 ban_card=card, banned_by=banner, banned_by_name=banner_name,
             )
 
@@ -49,6 +48,6 @@ def log_match_prelude(logger: GameLogger, draft_state: Optional[DraftState],
         for player, kind, card in draft_state.pick_history:
             logger.info(
                 f"draft {player} {kind} {card}",
-                category=LogCategory.GAME_FLOW,
+                category=LogCategory.GAME_FLOW, to_jsonl=False,
                 draft_event=kind, player=player, card=card,
             )
