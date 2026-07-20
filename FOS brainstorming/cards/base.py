@@ -224,7 +224,7 @@ class Card(ABC):
         if not self.color_name: raise ValueError("color_name must be string.")
         r, g, b = JOB_DICTIONARY["RGB_colors"][self.color_name]
         return (r, g, b)
-    
+
     def _compute_shape_points(self) -> tuple[tuple[float, float], ...]:
         match self.job:
             case "ADC":
@@ -265,7 +265,6 @@ class Card(ABC):
                    (abs(self.board_y-board_y) == 0 and
                     abs(self.board_x-board_x) == 1)) and
                     (self.board_y != board_y or self.board_x != board_x) and self.moving == True):
-                self.moving = False
                 return False
             from_x, from_y = self.board_x, self.board_y
             game_state.game_logger.log_card_moved(self.owner, self.job_and_color, self.get_position(), (board_x, board_y))
@@ -292,7 +291,6 @@ class Card(ABC):
                     card.on_card_moved(self, game_state)
 
             return True
-        self.moving = True
         return False
 
     def custom_move(self, board_x: int, board_y: int, game_state: GameState) -> bool:
@@ -381,15 +379,14 @@ class Card(ABC):
     def heal(self, value: int, game_state: GameState) -> bool:
         if self.health+value <= self.max_health:
             self.health += value
-            self.display_health = self.health
-            return True
-        elif self.health+value > self.max_health:
+        else:
             self.health += value
             self.armor += (self.health-self.max_health) // 2
             self.health = self.max_health
-            self.display_health = self.health
-            return True
-        return False
+        self.display_health = self.health
+        game_state.game_logger.log_heal(self.get_uid(), self.get_position(), value,
+                                        self.health, self.armor)
+        return True
 
     def get_render_data(self) -> list[CardRenderData]:
         return [CardRenderData(

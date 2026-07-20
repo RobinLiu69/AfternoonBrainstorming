@@ -24,6 +24,7 @@ import pygame
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text
 from core.network_layer import LANClient, VersionMismatchError
+from screens.widgets import make_back_button
 
 
 def main(game_screen: GameScreen, client: LANClient, host_ip: str,
@@ -50,6 +51,7 @@ def main(game_screen: GameScreen, client: LANClient, host_ip: str,
 
     clock = pygame.time.Clock()
     pygame.event.clear()
+    cancel_button = make_back_button(game_screen, text="cancel", corner="top_left")
 
     while True:
         for event in pygame.event.get():
@@ -59,6 +61,10 @@ def main(game_screen: GameScreen, client: LANClient, host_ip: str,
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 canceled["flag"] = True
                 return ("canceled", None)
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if cancel_button.touch(*event.pos):
+                    canceled["flag"] = True
+                    return ("canceled", None)
 
         status = result["status"]
         if status != "pending":
@@ -82,6 +88,8 @@ def main(game_screen: GameScreen, client: LANClient, host_ip: str,
 
         draw_text("[Esc] cancel", game_screen.text_font, WHITE,
                   cx - bs * 0.7, cy + bs * 1.1, game_screen.surface)
+
+        cancel_button.update(game_screen)
 
         pygame.display.update()
         clock.tick(60)

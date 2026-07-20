@@ -41,7 +41,7 @@ class BrownCard(Card):
         return self.effects_disabled
     
     def deploy(self, game_state: GameState) -> None:
-        if any(card for card in game_state.get_player_cards(self.owner) if card.job_and_color == "SPBR" and card.anger):
+        if game_state.count_cards(lambda card: card.job_and_color == "SPBR" and card.anger and card.owner == self.owner) > 0:
             self.effects_disabled = True
         return
 
@@ -205,7 +205,7 @@ class Sp(BrownCard):
     def set_nullify(self, nullify: bool, game_state: GameState) -> None:
         self.nullify = nullify
         if nullify:
-            if not any(card for card in game_state.get_player_cards(self.owner) if card.job_and_color == "SPBR" and card.anger):
+            if game_state.count_cards(lambda card: card.job_and_color == "SPBR" and card.anger and card.owner == self.owner) == 0:
                 for card in game_state.get_player_cards(self.owner):
                     if card is not self and isinstance(card, BrownCard):
                         card.effects_disabled = False
@@ -213,7 +213,7 @@ class Sp(BrownCard):
     
     def on_killed_by(self, attacker: Card, game_state: GameState) -> bool:
         for card in game_state.get_player_cards(self.owner):
-            if not any(card for card in game_state.get_player_cards(self.owner) if card.job_and_color == "SPBR" and card.anger):
+            if game_state.count_cards(lambda card: card.job_and_color == "SPBR" and card.anger and card.owner == self.owner) == 0:
                 if card is not self and isinstance(card, BrownCard):
                     card.effects_disabled = False
         return True

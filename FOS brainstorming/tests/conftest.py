@@ -16,18 +16,13 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from dataclasses import dataclass
-from typing import Literal, Optional
+import pytest
 
-from core.draft_state import DraftState
-
-
-ExitKind = Literal["quit", "finished", "scene_handoff", "peer_lost"]
+import core.network.client as network_client
+import core.network.token_store as token_store
 
 
-@dataclass
-class DraftExitReason:
-    kind: ExitKind
-    draft_state: Optional[DraftState] = None
-    next_scene: str = "battling"
-    next_scene_state: Optional[dict] = None
+@pytest.fixture(autouse=True)
+def _isolate_token_store(tmp_path, monkeypatch):
+    monkeypatch.setattr(token_store, "TOKEN_FILE", tmp_path / "net_tokens.json")
+    monkeypatch.setattr(network_client, "load_token", lambda host, port, room: "")

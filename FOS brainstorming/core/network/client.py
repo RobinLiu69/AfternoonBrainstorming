@@ -22,6 +22,7 @@ from typing import Callable, Optional
 
 from core.network.errors import VersionMismatchError
 from core.network.messages import _recv_msg, _send_msg
+from core.network.token_store import is_primary_instance, load_token, save_token
 
 
 class LANClient:
@@ -59,7 +60,10 @@ class LANClient:
             return self.role, self.initial_state
 
         self._intent = intent
-        return self._do_handshake(timeout=timeout, intent=intent, token=None)
+        token = self.token
+        if not token and is_primary_instance():
+            token = load_token(self.host, self.port, self.room)
+        return self._do_handshake(timeout=timeout, intent=intent, token=token or None)
 
     def try_reconnect(self, timeout: float = 5.0) -> bool:
         if self._sock is not None:
@@ -133,6 +137,8 @@ class LANClient:
         new_room = welcome.get("room", "")
         if new_room:
             self.room = new_room
+        if new_token and is_primary_instance():
+            save_token(self.host, self.port, self.room, new_token)
         self.is_disconnected = False
 
         threading.Thread(target=self._recv_loop, daemon=True).start()
@@ -178,6 +184,8 @@ class LANClient:
                         pass
                 elif mtype == "token":
                     self.token = msg.get("token", "")
+                    if is_primary_instance():
+                        save_token(self.host, self.port, self.room, self.token)
                 elif mtype == "net_info":
                     self.net_spectator_count = msg.get("spectator_count", 0)
                     self.net_latencies = msg.get("latencies", {})

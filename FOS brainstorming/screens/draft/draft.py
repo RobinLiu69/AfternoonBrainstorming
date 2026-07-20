@@ -31,6 +31,7 @@ from core.scene_exit import DraftExitReason
 from screens.draft.draft_action import collect_draft_actions
 from screens.draft.exhibit_registry import ExhibitRegistry
 from screens.notices import server_closed_screen
+from screens.widgets import make_back_button
 from rendering.draft_renderer import DraftRenderer
 from shared.setting import WHITE
 from core.setting_config import load_setting
@@ -44,8 +45,8 @@ def _render_quit_confirm(gs: GameScreen) -> None:
     overlay.fill((0, 0, 0, 185))
     gs.surface.blit(overlay, (0, 0))
     lines = [
-        "Shut down server and leave?",
-        "all players will be disconnected",
+        "Cancel the draft and return to lobby?",
+        "everyone will go back to the lobby",
         "[Y] yes        [N] no",
     ]
     offsets = (-bs * 0.7, -bs * 0.05, bs * 0.7)
@@ -79,7 +80,9 @@ def main(game_screen: GameScreen, mode: str = "local",
          draft_state: Optional[DraftState] = None,
          host_seat: str = "player1",
          reconnect_timeout: float = 60.0,
-         settings: Optional[MatchSettings] = None) -> DraftExitReason:
+         settings: Optional[MatchSettings] = None,
+         extra_bans: Optional[list[str]] = None,
+         player_names: Optional[dict[str, str]] = None) -> DraftExitReason:
     registry = ExhibitRegistry(game_screen)
     if draft_state is None:
         draft_state = DraftState()
@@ -87,6 +90,10 @@ def main(game_screen: GameScreen, mode: str = "local",
     draft_state.board_dict = initialize_board(game_screen, draft_state.board_config)
     draft_state.settings = settings.copy() if settings is not None else MatchSettings()
     draft_state.init_ban_deck()
+    if extra_bans:
+        draft_state.add_ban([c for c in extra_bans if not draft_state.is_banned(c)])
+    if player_names:
+        draft_state.player_names = dict(player_names)
 
     dispatcher = DraftDispatcher(draft_state, mode=mode,
                                  reconnect_timeout=reconnect_timeout,
@@ -121,6 +128,7 @@ def main(game_screen: GameScreen, mode: str = "local",
             draft_state.local_player = "player1"
 
     renderer = DraftRenderer(game_screen, registry)
+    back_button = make_back_button(game_screen, text="back", corner="top_left")
 
     page = 0
     index = 0
@@ -139,9 +147,10 @@ def main(game_screen: GameScreen, mode: str = "local",
         if mode == "lan_client" and client is not None:
             handoff = client.consume_pending_scene()
             if handoff is not None:
-                _scene, next_state = handoff
+                scene, next_state = handoff
                 return DraftExitReason(
                     kind="scene_handoff",
+                    next_scene=scene,
                     next_scene_state=next_state,
                 )
             if client.is_disconnected:
@@ -157,10 +166,11 @@ def main(game_screen: GameScreen, mode: str = "local",
                     if client.try_reconnect():
                         print("[draft] reconnect succeeded")
                         disconnect_since = None
-                        if client.scene == "battling":
-                            print("[draft] host moved on to battle, handing off")
+                        if client.scene in ("battling", "lobby"):
+                            print(f"[draft] host moved on to {client.scene}, handing off")
                             return DraftExitReason(
                                 kind="scene_handoff",
+                                next_scene=client.scene,
                                 next_scene_state=client.initial_state,
                             )
                         if client.scene != "draft":
@@ -219,7 +229,7 @@ def main(game_screen: GameScreen, mode: str = "local",
 
         actions = collect_draft_actions(
             draft_state.local_player, page, index, registry,
-            mouse_board_x, mouse_board_y,
+            mouse_board_x, mouse_board_y, back_button=back_button,
         )
 
         for action in actions:
@@ -259,5 +269,6 @@ def main(game_screen: GameScreen, mode: str = "local",
 
         renderer.render_frame(page, index, mouse_board_x, mouse_board_y, draft_state, hint_on,
                               multiplayer=mode in ("lan_server", "lan_client"))
+        back_button.update(game_screen)
         pygame.display.update()
         clock.tick(60)

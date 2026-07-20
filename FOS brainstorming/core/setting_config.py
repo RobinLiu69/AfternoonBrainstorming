@@ -25,24 +25,26 @@ from shared.setting import FOLDER_PATH
 
 SETTING_PATH = os.path.join(FOLDER_PATH, "data/user_setting.json")
 
-SETTING_NAMES = Literal["display_mode", "hint_on", "last_join_ip"]
+SETTING_NAMES = Literal["display_mode", "hint_on", "last_join_ip", "player_name"]
 
 VALID_SETTING: dict[str, tuple[str | bool, ...] | None] = {
     "display_mode" : ("60", "80", "100", "fullscreen"),
     "hint_on" : (False, True),
     "last_join_ip" : None,
+    "player_name" : None,
 }
 
 DEFAULT_SETTING: dict[str, str | bool] = {
     "display_mode" : "100",
     "hint_on" : False,
     "last_join_ip" : "",
+    "player_name" : "",
 }
 
 @overload
 def load_setting(request: Literal["hint_on"]) -> bool: ...
 @overload
-def load_setting(request: Literal["display_mode", "last_join_ip"]) -> str: ...
+def load_setting(request: Literal["display_mode", "last_join_ip", "player_name"]) -> str: ...
 def load_setting(request: SETTING_NAMES) -> str | bool:
     if request not in VALID_SETTING:
         raise ValueError(f"unknown setting: {request!r}")

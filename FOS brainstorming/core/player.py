@@ -144,13 +144,13 @@ class Player:
                     game_state.game_logger.log_card_played(self.name, card_name, (board_x, board_y))
 
     def heal_card(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        game_state.game_logger.log_card_played(self.name, "HEAL", (board_x, board_y))
         if game_state.number_of_heals[self.name] > 0:
-            game_state.game_statistics.increment(StatType.HEAL_USE, self.name, 1)
             for card in self.on_board:
                 if card.board_x == board_x and card.board_y == board_y:
-                    card.heal(6, game_state)
-                    game_state.number_of_heals[self.name] -= 1
+                    if card.heal(6, game_state):
+                        game_state.game_logger.log_card_played(self.name, "HEAL", (board_x, board_y))
+                        game_state.game_statistics.increment(StatType.HEAL_USE, self.name, 1)
+                        game_state.number_of_heals[self.name] -= 1
                     break
     
     def move_card(self, board_x: int, board_y: int, game_state: GameState) -> None:

@@ -35,7 +35,7 @@ color_code = "DKG"
 class DarkGreenCard(Card):
     def engraved_totem(self, times: int, game_state: GameState) -> None:
         for i in range(times):
-            game_state.players_totem[self.owner] += 1 * (card_settings["SP"]["engraved_totem_coefficient"]**len(tuple(filter(lambda card: card.job_and_color == "SPDKG", game_state.get_player_cards(self.owner)))))
+            game_state.players_totem[self.owner] += 1 * (card_settings["SP"]["engraved_totem_coefficient"]**game_state.count_cards(lambda card: card.job_and_color == "SPDKG" and not card.nullify and card.owner == self.owner))
 
 
 class Adc(DarkGreenCard):

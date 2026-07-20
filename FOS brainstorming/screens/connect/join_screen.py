@@ -25,6 +25,7 @@ import pygame
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text
 from core.setting_config import load_setting, save_setting
+from screens.widgets import make_back_button
 
 IP_PATTERN = re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")
 
@@ -99,6 +100,7 @@ def _input_loop(game_screen: GameScreen, default: str = "",
     clock = pygame.time.Clock()
     blink = 0
     rects = _field_rects(game_screen)
+    back_button = make_back_button(game_screen, text="back", corner="top_left")
 
     while True:
         game_screen.render()
@@ -108,6 +110,8 @@ def _input_loop(game_screen: GameScreen, default: str = "",
                 return "", ""
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if back_button.touch(*event.pos):
+                    return "", ""
                 for name, rect in rects.items():
                     if rect.collidepoint(event.pos):
                         active = name
@@ -180,6 +184,8 @@ def _input_loop(game_screen: GameScreen, default: str = "",
         draw_text("[Enter] connect    [Tab] switch field    [Esc] cancel    [Ctrl+V] paste",
                   game_screen.text_font, WHITE,
                   rects["room"].x, cy + bs * 1.75, game_screen.surface)
+
+        back_button.update(game_screen)
 
         pygame.display.update()
         clock.tick(60)

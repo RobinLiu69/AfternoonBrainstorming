@@ -20,6 +20,7 @@ from core.match_settings import MATCH_SETTING_NAMES, MatchSettings, RULESET_OPTI
 from core.lobby_state import LobbyState, SETTING_OPTIONS
 from core.lobby_dispatcher import LobbyDispatcher
 from core.draft_state import DraftState
+from core.network_layer import LANServer
 from screens.lobby.lobby_action import LobbyAction, set_setting
 
 from tests.helpers import make_game_state
@@ -44,6 +45,27 @@ def test_set_setting_routes_to_match_settings_and_lobby_fields():
     result = dispatcher.dispatch(set_setting("reconnect_timeout", 120.0))
     assert result.success is True
     assert state.reconnect_timeout == 120.0
+
+
+def test_god_view_toggle_retags_connected_spectators():
+    state = LobbyState()
+    dispatcher = LobbyDispatcher(state, mode="lan_server")
+    server = LANServer("test")
+    dispatcher.attach_server(server)
+    watcher = object()
+    peer = object()
+    server._clients.append((watcher, "spectator"))
+    server._clients.append((peer, "player2"))
+
+    assert dispatcher._execute(set_setting("god_view", True)).success is True
+    assert server.god_view is True
+    assert server.find_role(watcher) == "god"
+    assert server.find_role(peer) == "player2"
+
+    assert dispatcher._execute(set_setting("god_view", False)).success is True
+    assert server.god_view is False
+    assert server.find_role(watcher) == "spectator"
+    assert server.find_role(peer) == "player2"
 
 
 def test_set_setting_rejects_bad_input():

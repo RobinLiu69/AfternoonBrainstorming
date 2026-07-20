@@ -26,7 +26,10 @@ from core.lobby_state import LobbyState, RECONNECT_TIMEOUT_OPTIONS
 from core.lobby_dispatcher import LobbyDispatcher
 from core.network_layer import LANServer, LANClient
 from core.game_screen import GameScreen, draw_text
+from core.setting_config import load_setting
 from core.UI import Button
+from screens.widgets import make_back_button
+from screens.lobby import ban_draft
 from screens.lobby.lobby_action import LobbyAction, set_setting
 from screens.notices import server_closed_screen
 from shared.setting import WHITE
@@ -98,6 +101,9 @@ ROWS: dict[str, _SettingRow] = {
     "swap_seats": _SettingRow(
         label=lambda s: f"host plays: {s.host_seat}",
         click=lambda s, d: d.dispatch(LobbyAction("host", "swap_seats"))),
+    "ban_draft": _SettingRow(
+        label=lambda s: f"ban draft ({len(s.bans)} banned)",
+        click=lambda s, d: d.dispatch(LobbyAction("host", "set_ban_draft", bool_value=True))),
     "god_view": _SettingRow(
         label=lambda s: f"god view: {'on' if s.god_view else 'off'}",
         click=lambda s, d: d.dispatch(set_setting("god_view", not s.god_view))),
@@ -111,9 +117,9 @@ ROWS: dict[str, _SettingRow] = {
             "reconnect_timeout", _next_option(RECONNECT_TIMEOUT_OPTIONS, s.reconnect_timeout)))),
 }
 
-MATCH_ROWS = ("time", "ruleset", "swap_seats")
+MATCH_ROWS = ("time", "ruleset", "swap_seats", "ban_draft")
 ADVANCED_ROWS = ("god_view", "file_auto_delete", "reconnect_timeout")
-LOCAL_ROWS = ("time", "ruleset", "file_auto_delete")
+LOCAL_ROWS = ("time", "ruleset", "ban_draft", "file_auto_delete")
 
 FIRST_ROW_OFFSET = -1.55
 ROW_STEP = 0.45
@@ -234,7 +240,11 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
 
     host_seat = state.host_seat
     peer_seat = state.peer_seat()
-    peer_status = "connected" if state.peer_connected else "waiting..."
+    host_label = state.display_name("host") or "host"
+    if state.peer_connected:
+        peer_label = state.display_name("peer") or "connected"
+    else:
+        peer_label = "waiting..."
 
     def lat_str(key: str) -> str:
         ms = state.latencies.get(key)
@@ -246,8 +256,8 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
     spectator_you = you_marker("spectator") or you_marker("god")
 
     lines = [
-        f"{host_seat}: host{you_marker('host')}",
-        f"{peer_seat}: {peer_status}{lat_str(peer_seat)}{you_marker(peer_seat)}",
+        f"{host_seat}: {host_label}{you_marker('host')}",
+        f"{peer_seat}: {peer_label}{lat_str(peer_seat)}{you_marker(peer_seat)}",
         f"spectators: {state.spectator_count}{spectator_you}",
     ]
     for i, line in enumerate(lines):
@@ -329,6 +339,9 @@ def main(game_screen: GameScreen, mode: str,
         if not server.is_running:
             server.start()
         state.local_role = "host"
+        my_name = load_setting("player_name")
+        if my_name:
+            dispatcher.dispatch(LobbyAction("host", "set_name", str_value=my_name))
 
     elif mode == "lan_client":
         assert client is not None
@@ -343,8 +356,18 @@ def main(game_screen: GameScreen, mode: str,
 
     row_offsets, advanced_header_offset = _layout(mode)
     buttons = _make_buttons(game_screen, row_offsets)
+    back_button = make_back_button(game_screen, text="leave", corner="top_left")
     clock = pygame.time.Clock()
     confirming_quit = False
+
+    def request_leave() -> bool:
+        nonlocal confirming_quit
+        if mode == "lan_server" and _room_has_others(state):
+            confirming_quit = True
+            return False
+        return True
+    my_name = load_setting("player_name") if mode == "lan_client" else ""
+    name_sent_as = ""
 
     while True:
         if mode == "lan_client" and client is not None:
@@ -355,12 +378,26 @@ def main(game_screen: GameScreen, mode: str,
                 return LobbyExit(kind="start_match", state=state)
             if state.local_role and client.pending_scene is None:
                 client.role = state.local_role
+            if my_name and state.local_role and state.local_role != name_sent_as:
+                dispatcher.dispatch(LobbyAction(state.local_role, "set_name",
+                                                str_value=my_name))
+                name_sent_as = state.local_role
 
         if mode == "lan_server" and server is not None:
             server.pulse()
 
         if dispatcher.start_signal:
             return LobbyExit(kind="start_match", state=state)
+
+        if state.in_ban_draft:
+            ban_exit = ban_draft.main(game_screen, state, dispatcher, mode,
+                                      server=server, client=client)
+            if ban_exit == "quit":
+                return LobbyExit(kind="quit")
+            if ban_exit == "disconnected":
+                server_closed_screen.main(game_screen)
+                return LobbyExit(kind="quit")
+            continue
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -373,13 +410,15 @@ def main(game_screen: GameScreen, mode: str,
                         confirming_quit = False
                     continue
                 if event.key == pygame.K_ESCAPE:
-                    if mode == "lan_server" and _room_has_others(state):
-                        confirming_quit = True
-                    else:
+                    if request_leave():
                         return LobbyExit(kind="quit")
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not confirming_quit:
                 mx, my = pygame.mouse.get_pos()
-                _click_dispatch(buttons, mx, my, state, state.local_role, dispatcher)
+                if back_button.touch(mx, my):
+                    if request_leave():
+                        return LobbyExit(kind="quit")
+                else:
+                    _click_dispatch(buttons, mx, my, state, state.local_role, dispatcher)
 
         dispatcher.tick()
 
@@ -407,6 +446,7 @@ def main(game_screen: GameScreen, mode: str,
                           game_screen.surface)
 
         _render_help(game_screen, state.local_role, mode)
+        back_button.update(game_screen)
         if confirming_quit:
             _render_quit_confirm(game_screen)
         pygame.display.update()

@@ -110,6 +110,13 @@ class CombatAnimator:
                         and active.event.board_y == event.board_y)
             ]
 
+        if event.kind == "hurt":
+            for active in self._active:
+                if (active.event.kind == "hurt"
+                        and active.event.board_x == event.board_x
+                        and active.event.board_y == event.board_y):
+                    event.delay = max(event.delay, -active.elapsed + 0.02)
+
         duration = _DURATIONS.get(event.kind, 0.35)
         self._active.append(_Anim(event=event, elapsed=-event.delay, duration=duration))
 

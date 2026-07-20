@@ -118,8 +118,8 @@ class UIRenderer:
         draw_text(
             label,
             self.game_screen.text_font, WHITE,
-            self.game_screen.block_size * 0.2,
-            self.game_screen.block_size * 0.2,
+            self.game_screen.block_size * 2.0,
+            self.game_screen.block_size * 0.25,
             self.game_screen.surface,
         )
 

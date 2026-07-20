@@ -28,6 +28,18 @@ from shared.setting import JOB_DICTIONARY, JOB_ORDER
 BPPhase = Literal["p1_first6", "p2_pick12", "p1_last6", "done"]
 
 
+def tournament_ban_list() -> list[str]:
+    bans: list[str] = []
+    for page_array in JOB_DICTIONARY["colors_array"]:
+        for color_tag, _color_name in list(page_array.items())[:-1]:
+            for card_type in JOB_ORDER:
+                bans.append(f"{card_type}{color_tag}")
+    return bans
+
+
+TOURNAMENT_BANS: frozenset[str] = frozenset(tournament_ban_list())
+
+
 @dataclass
 class DraftState:
     local_player: str = ""
@@ -49,6 +61,10 @@ class DraftState:
     net_spectator_count: int = 0
     net_latencies: dict = field(default_factory=dict)
 
+    player_names: dict[str, str] = field(default_factory=dict)
+
+    pick_history: list[tuple[str, str, str]] = field(default_factory=list)
+
     def get_visible_deck(self, viewer: str, owner: str) -> range:
         deck = self.player1_deck if owner == "player1" else self.player2_deck
         if viewer == owner or viewer == "god":
@@ -65,6 +81,14 @@ class DraftState:
             case "p2_pick12": return "player2"
             case "p1_last6": return "player1"
             case _: return ""
+
+    def seat_label(self, seat: str) -> str:
+        name = self.player_names.get(seat, "")
+        return name if name else {"player1": "P1", "player2": "P2"}.get(seat, seat)
+
+    def current_editor_label(self) -> str:
+        editor = self.current_editor()
+        return self.seat_label(editor) if editor else ""
 
     def can_advance(self) -> bool:
         match self.phase:
@@ -89,6 +113,7 @@ class DraftState:
             "paused": self.paused,
             "pause_reason": self.pause_reason,
             "pause_seconds_remaining": self.pause_seconds_remaining,
+            "player_names": dict(self.player_names),
         }
 
     def to_dict_for(self, viewer: str) -> dict:
@@ -112,6 +137,7 @@ class DraftState:
         self.paused = data.get("paused", False)
         self.pause_reason = data.get("pause_reason", "")
         self.pause_seconds_remaining = data.get("pause_seconds_remaining", 0.0)
+        self.player_names = dict(data.get("player_names", {}))
 
     def add_ban(self, ban_list: Optional[list[str]] = None) -> None:
         if ban_list is not None:
@@ -120,10 +146,7 @@ class DraftState:
     def init_ban_deck(self) -> None:
         self.ban_deck = []
         if self.settings.ruleset == "tournament":
-            for page_array in JOB_DICTIONARY["colors_array"]:
-                for color_tag, color_name in list(page_array.items())[:-1]:
-                    for card_type in JOB_ORDER:
-                        self.ban_deck.append(f"{card_type}{color_tag}")
+            self.ban_deck = tournament_ban_list()
                         
     def is_banned(self, card_name: str) -> bool:
         return card_name in self.ban_deck
