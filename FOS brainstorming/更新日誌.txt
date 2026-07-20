@@ -2422,3 +2422,11 @@ debug:
     local 選牌時 Drafting 標題一律顯示藍色 (local_player 每幀跟隨當前選牌方 導致 editor==local 恆成立)
         修法: _render_status_labels 收 multiplayer 旗標 local 改依座位固定上色 (P1 藍 P2 紅) 多人維持自己藍對手紅
 ----------------
+=======================
+2026/07/20-4.5.0.2
+編寫者 Robin
+----------------
+移除:
+    重播列表 (replay_select) 與重播播放 (battling_replay) 的 back 鈕 改回只用鍵盤 ESC 離開
+        (剩餘保留 back 鈕的畫面: 選模式 / join / ban draft / 結算)
+----------------
