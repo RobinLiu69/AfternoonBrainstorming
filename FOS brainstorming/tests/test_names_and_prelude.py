@@ -19,7 +19,8 @@
 from core.lobby_state import LobbyState, MAX_NAME_LENGTH
 from core.lobby_dispatcher import LobbyDispatcher
 from core.draft_state import DraftState
-from core.match_prelude import log_match_prelude
+from core.match_prelude import (log_match_prelude, resolve_ban_draft, log_ban_draft,
+                                judge_bans_of, log_judge_bans)
 from screens.lobby.lobby_action import LobbyAction
 from utils.logger import GameLogger
 
@@ -134,3 +135,56 @@ def test_log_match_prelude_writes_names_and_bans():
     assert {(e.data["ban_card"], e.data["banned_by"]) for e in bans} == {
         ("TANKG", "peer"), ("HEAL", "host"),
     }
+
+
+def test_resolve_ban_draft_uses_names_then_seat_fallback():
+    state = LobbyState()
+    state.host_seat = "player2"
+    state.player_names = {"host": "Robin"}
+    state.bans = {"TANKG": "host", "HEAL": "peer"}
+
+    assert resolve_ban_draft(state) == {"TANKG": "Robin", "HEAL": "player1"}
+    assert resolve_ban_draft(None) == {}
+
+
+def test_ban_draft_carries_on_game_state_and_logs_at_game_over(tmp_path):
+    from tests.helpers import make_game_state
+
+    game_state = make_game_state()
+    assert game_state.ban_draft == {}
+
+    state = LobbyState()
+    state.player_names = {"host": "Robin"}
+    state.bans = {"TANKG": "host", "HFW": "host", "SPB": "peer"}
+    game_state.ban_draft = resolve_ban_draft(state)
+
+    logger = GameLogger(enable_file=False, enable_console=False, enable_jsonl=False)
+    entries = []
+    logger.subscribe(entries.append)
+    log_ban_draft(logger, game_state.ban_draft)
+
+    assert len(entries) == 2
+    messages = [e.message for e in entries]
+    assert "ban TANKG-HFW by Robin" in messages
+    assert "ban SPB by player2" in messages
+    assert {(tuple(e.data["ban_cards"]), e.data["banned_by_name"]) for e in entries} == {
+        (("TANKG", "HFW"), "Robin"), (("SPB",), "player2"),
+    }
+
+
+def test_judge_bans_exclude_player_picks_and_log_one_line():
+    ban_deck = ["ADCR", "APR", "TANKG", "SPB"]
+    ban_draft = {"TANKG": "Robin", "SPB": "player2"}
+    judge = judge_bans_of(ban_deck, ban_draft)
+    assert judge == ["ADCR", "APR"]
+
+    logger = GameLogger(enable_file=False, enable_console=False, enable_jsonl=False)
+    entries = []
+    logger.subscribe(entries.append)
+    log_judge_bans(logger, judge)
+    log_judge_bans(logger, [])
+
+    assert len(entries) == 1
+    assert entries[0].message == "ban ADCR-APR by judge"
+    assert entries[0].data["banned_by_name"] == "judge"
+    assert entries[0].data["ban_cards"] == ["ADCR", "APR"]

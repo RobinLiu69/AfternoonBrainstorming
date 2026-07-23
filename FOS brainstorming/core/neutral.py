@@ -20,6 +20,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from shared.renderer import DyingCardSink
+
 if TYPE_CHECKING:
     from rendering.game_renderer import GameRenderer
     from core.game_state import GameState
@@ -31,7 +33,7 @@ class Neutral:
     name: str = "neutral"
     on_board: list[Card] = field(default_factory=list)
 
-    def recycle_cards(self, game_state:GameState, game_renderer: GameRenderer) -> None:
+    def recycle_cards(self, game_state:GameState, game_renderer: DyingCardSink) -> None:
         to_remove = []
         for card in self.on_board:
             if card.health <= 0 and card.can_be_killed(game_state):
@@ -43,7 +45,7 @@ class Neutral:
         for card in to_remove:
             self.on_board.remove(card)
 
-    def update(self, game_state: GameState, game_renderer: GameRenderer) -> None:
+    def update(self, game_state: GameState, game_renderer: DyingCardSink) -> None:
         self.recycle_cards(game_state, game_renderer)
 
     def to_dict(self) -> dict:

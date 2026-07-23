@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 import pygame
 
 from shared.combat_event import CombatEvent
+from core.game_screen import cell_origin
 
 if TYPE_CHECKING:
     from core.game_screen import GameScreen
@@ -215,7 +216,4 @@ class CombatAnimator:
                 surface.blit(text_surf, (int(cx - tw/2), int(cy - th/2)))
 
     def _to_screen(self, board_x: int, board_y: int) -> tuple[float, float]:
-        game_screen = self._game_screen
-        x = (game_screen.display_width/2 - game_screen.block_size*2) + board_x*game_screen.block_size
-        y = (game_screen.display_height/2 - game_screen.block_size*1.65) + board_y*game_screen.block_size
-        return x, y
+        return cell_origin(self._game_screen, board_x, board_y)

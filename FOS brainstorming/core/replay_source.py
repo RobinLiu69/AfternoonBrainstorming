@@ -101,6 +101,26 @@ class ReplaySource:
 
             if msg.startswith("campaign stage "):
                 self.metadata["campaign_stage"] = msg[len("campaign stage "):].strip()
+
+            if msg.startswith("settings "):
+                self.metadata["settings"] = {
+                    key: value for key, value in entry.items()
+                    if key not in ("timestamp", "level", "category", "message")
+                }
+
+            if msg.startswith("players "):
+                self.metadata["player1_name"] = entry.get("player1_name", "")
+                self.metadata["player2_name"] = entry.get("player2_name", "")
+
+            banner = entry.get("banned_by_name")
+            if banner:
+                cards = entry.get("ban_cards")
+                if not cards:
+                    single = entry.get("ban_card")
+                    cards = [single] if single else []
+                if cards:
+                    bans = self.metadata.setdefault("bans", {})
+                    bans.setdefault(banner, []).extend(cards)
     
     def next_action(self) -> Optional[GameAction]:
         if self._cursor >= len(self._action_indices):

@@ -163,7 +163,10 @@ class Sp(WhiteCard):
                 self.numbness = False
             return 0
         else:
-            return 1 + card_settings["SP"]["extra_score"]
+            score = 1
+            if not self.nullify:
+                score += card_settings["SP"]["extra_score"]
+            return score
 
 
 CardFactory.register("ADC" + color_code, Adc)

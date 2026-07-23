@@ -20,7 +20,7 @@ import pygame
 
 from cards.base import CardRenderData
 from rendering.sprite_registry import SpriteRegistry
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, cell_origin, draw_text
 
 
 class CardRenderer:
@@ -104,8 +104,5 @@ class CardRenderer:
                     draw_text(data.owner, self.game_screen.text_font, text_color, bs * 0.1, bs * 0.8, surface)
     
     def _blit(self, surface: pygame.Surface, data: CardRenderData, offset: tuple[float, float]) -> None:
-        game_screen = self.game_screen
-        x = (game_screen.display_width  / 2 - game_screen.block_size * 2) + data.board_x * game_screen.block_size + offset[0]
-        y = (game_screen.display_height / 2 - game_screen.block_size * 1.65) + data.board_y * game_screen.block_size + offset[1]
-        
-        game_screen.surface.blit(surface, (int(x), int(y)))
+        x, y = cell_origin(self.game_screen, data.board_x, data.board_y)
+        self.game_screen.surface.blit(surface, (int(x + offset[0]), int(y + offset[1])))

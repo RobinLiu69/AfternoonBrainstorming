@@ -16,30 +16,11 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from typing import TYPE_CHECKING
-
-from shared.setting import WHITE
-from core.board_block import Board
-from core.board_config import BoardConfig
+from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from cards.base import Card
 
 
-class _DiscardList(list["Card"]):
-    def append(self, item: "Card") -> None:
-        pass
-
-
-class HeadlessRenderer:
-    def __init__(self) -> None:
-        self.dying_cards: list["Card"] = _DiscardList()
-
-
-def make_board_dict(config: BoardConfig) -> dict[tuple[int, int], Board]:
-    return {
-        (x, y): Board(width=100, height=100, occupy=False, color=WHITE,
-                      board_x=x, board_y=y)
-        for y in range(config.height)
-        for x in range(config.width)
-    }
+class DyingCardSink(Protocol):
+    dying_cards: list["Card"]

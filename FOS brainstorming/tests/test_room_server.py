@@ -300,7 +300,7 @@ def test_switch_to_player_receives_reconnect_token(room_server):
     assert spectator.role == "player2"
 
 
-def test_deck_hidden_from_log_until_game_over(room_server):
+def test_match_header_written_at_battle_start(room_server):
     server, make_client = room_server
     creator = make_client()
     creator.connect()
@@ -322,8 +322,9 @@ def test_deck_hidden_from_log_until_game_over(room_server):
     assert log_path is not None and log_path.exists()
 
     mid_battle_log = log_path.read_text(encoding="utf-8")
-    assert "player1 deck" not in mid_battle_log
-    assert "rng_seed" not in mid_battle_log
+    assert f"player1 deck {'-'.join(TEST_DECK)}" in mid_battle_log
+    assert "rng_seed" in mid_battle_log
+    assert "settings " in mid_battle_log
 
     room.battle_dispatcher.pending_winner = "player1"
     wait_until(lambda: room.closed)
