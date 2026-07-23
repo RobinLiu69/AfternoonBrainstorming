@@ -18,11 +18,18 @@
 
 import socket
 import threading
+import time
 from typing import Callable, Optional
 
 from core.network.errors import VersionMismatchError
 from core.network.messages import _recv_msg, _send_msg
 from core.network.token_store import is_primary_instance, load_token, save_token
+
+
+ACK_TIMEOUT_SECONDS: float = 10.0
+IDLE_TIMEOUT_SECONDS: float = 20.0
+RECV_POLL_SECONDS: float = 1.0
+WAITING_HINT_DELAY_SECONDS: float = 1.0
 
 
 class LANClient:
@@ -52,9 +59,61 @@ class LANClient:
         self.net_latencies: dict = {}
         self.my_latency: Optional[float] = None
 
+        self.ack_timeout: float = ACK_TIMEOUT_SECONDS
+        self.idle_timeout: float = IDLE_TIMEOUT_SECONDS
+        self.timed_out: bool = False
+        self._last_recv: float = 0.0
+        self._write_lock = threading.Lock()
+        self._ack_lock = threading.Lock()
+        self._action_seq: int = 0
+        self._pending_seq: Optional[int] = None
+        self._pending_since: float = 0.0
+
     @property
     def is_connected(self) -> bool:
         return self._sock is not None
+
+    @property
+    def is_awaiting_ack(self) -> bool:
+        with self._ack_lock:
+            if self._pending_seq is None:
+                return False
+            if time.monotonic() - self._pending_since <= self.ack_timeout:
+                return True
+            stale_seq = self._pending_seq
+            self._pending_seq = None
+        print(f"[LANClient] no ack for action #{stale_seq} within {self.ack_timeout}s; "
+              f"dropping the connection so it can be re-established")
+        self.disconnect()
+        self.is_disconnected = True
+        return False
+
+    @property
+    def awaiting_ack_seconds(self) -> float:
+        with self._ack_lock:
+            if self._pending_seq is None:
+                return 0.0
+            return time.monotonic() - self._pending_since
+
+    @property
+    def show_waiting_hint(self) -> bool:
+        return self.awaiting_ack_seconds > WAITING_HINT_DELAY_SECONDS
+
+    def _check_idle(self) -> bool:
+        if time.monotonic() - self._last_recv < self.idle_timeout:
+            return True
+        self.timed_out = True
+        print(f"[LANClient] nothing received from the server for {self.idle_timeout}s; "
+              f"connection timed out")
+        return False
+
+    def clear_pending_action(self) -> None:
+        with self._ack_lock:
+            self._pending_seq = None
+
+    def _send(self, sock: socket.socket, payload: dict) -> None:
+        with self._write_lock:
+            _send_msg(sock, payload)
 
     def connect(self, timeout: float = 5.0, intent: str = "play") -> tuple[str, dict]:
         if self._sock is not None:
@@ -89,7 +148,6 @@ class LANClient:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(timeout)
         sock.connect((self.host, self.port))
-        sock.settimeout(None)
 
         hello = {"type": "hello", "intent": intent, "version": self.version,
                  "room": self.room}
@@ -128,6 +186,9 @@ class LANClient:
                 client_version=self.version,
             )
 
+        sock.settimeout(RECV_POLL_SECONDS)
+        self._last_recv = time.monotonic()
+        self.timed_out = False
         self._sock = sock
         self.role = welcome["role"]
         self.scene = welcome.get("scene", "")
@@ -141,6 +202,7 @@ class LANClient:
         if new_token and is_primary_instance():
             save_token(self.host, self.port, self.room, new_token)
         self.is_disconnected = False
+        self.clear_pending_action()
 
         threading.Thread(target=self._recv_loop, daemon=True).start()
         print(f"[LANClient] Connected to {self.host}:{self.port} as {self.role} (scene={self.scene!r})")
@@ -154,11 +216,12 @@ class LANClient:
             if sock is not self._sock:
                 return
             try:
-                msg = _recv_msg(sock)
+                msg = _recv_msg(sock, on_idle=self._check_idle)
             except (OSError, ValueError):
                 break
             if msg is None:
                 break
+            self._last_recv = time.monotonic()
 
             try:
                 mtype = msg.get("type")
@@ -178,10 +241,12 @@ class LANClient:
                     self.pending_statistics = msg.get("statistics", {})
                 elif mtype == "log_transfer":
                     self._save_transferred_logs(msg)
+                elif mtype == "ack":
+                    self._on_ack(msg.get("seq"))
                 elif mtype == "ping":
                     ts = msg.get("ts", 0.0)
                     try:
-                        _send_msg(sock, {"type": "pong", "ts": ts})
+                        self._send(sock, {"type": "pong", "ts": ts})
                     except OSError:
                         pass
                 elif mtype == "token":
@@ -206,12 +271,20 @@ class LANClient:
 
         if sock is self._sock:
             self.is_disconnected = True
+            self.clear_pending_action()
             try:
                 sock.close()
             except OSError:
                 pass
             self._sock = None
             print(f"[LANClient] socket disconnected")
+
+    def _on_ack(self, seq) -> None:
+        if seq is None:
+            return
+        with self._ack_lock:
+            if self._pending_seq is not None and seq >= self._pending_seq:
+                self._pending_seq = None
 
     def consume_pending_scene(self) -> Optional[tuple[str, dict]]:
         if self.pending_scene is None:
@@ -247,17 +320,31 @@ class LANClient:
             except Exception as e:
                 print(f"[LANClient] failed to save {key}: {e}")
 
-    def send_action(self, action_dict: dict) -> None:
+    def send_action(self, action_dict: dict, await_ack: bool = False) -> bool:
         sock = self._sock
         if sock is None:
-            return
+            return False
+        if await_ack and self.is_awaiting_ack:
+            print("[LANClient] action dropped: still waiting for the server to ack the previous one")
+            return False
+
+        with self._ack_lock:
+            self._action_seq += 1
+            seq = self._action_seq
+            if await_ack:
+                self._pending_seq = seq
+                self._pending_since = time.monotonic()
         try:
-            _send_msg(sock, {"type": "action", **action_dict})
+            self._send(sock, {"type": "action", "seq": seq, **action_dict})
         except OSError as e:
             print(f"[LANClient] send_action failed (connection lost?): {e}")
+            self.clear_pending_action()
+            return False
+        return True
 
     def disconnect(self) -> None:
         sock = self._sock
+        self.clear_pending_action()
         if sock is None:
             return
         self._sock = None

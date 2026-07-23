@@ -50,6 +50,7 @@ class DraftRenderer:
         self._render_deck_displays(draft_state)
         self._render_status_labels(draft_state, multiplayer)
         self._render_spectator_count(draft_state)
+        self._render_awaiting_server(draft_state)
         if multiplayer:
             self._render_identity_label(draft_state.local_player)
         self._render_hint(page, index, mouse_board_x, mouse_board_y, hint_on)
@@ -78,6 +79,16 @@ class DraftRenderer:
         width = gs.text_font.size(text)[0]
         draw_text(text, gs.text_font, WHITE,
                   gs.display_width - width - gs.block_size * 0.3,
+                  gs.block_size * 0.2, gs.surface)
+
+    def _render_awaiting_server(self, draft_state: DraftState) -> None:
+        if not getattr(draft_state, "net_awaiting_ack", False):
+            return
+        gs = self.game_screen
+        text = "waiting for host..."
+        width = gs.text_font.size(text)[0]
+        draw_text(text, gs.text_font, WHITE,
+                  gs.display_width / 2 - width / 2,
                   gs.block_size * 0.2, gs.surface)
 
     def _render_pause_overlay(self, draft_state: DraftState) -> None:

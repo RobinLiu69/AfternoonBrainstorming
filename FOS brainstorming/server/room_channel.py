@@ -58,14 +58,7 @@ class RoomChannel(LANServer):
             self._clients.clear()
             self._last_seen.clear()
         for conn in conns:
-            try:
-                conn.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
-            try:
-                conn.close()
-            except OSError:
-                pass
+            self._force_close(conn)
 
     def adopt_creator(self, conn: socket.socket, addr, hello: dict) -> None:
         self._forced_role = ("host", secrets.token_urlsafe(16))

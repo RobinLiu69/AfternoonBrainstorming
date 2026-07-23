@@ -31,7 +31,7 @@ from core.UI import Button
 from screens.widgets import make_back_button
 from screens.lobby import ban_draft
 from screens.lobby.lobby_action import LobbyAction, set_setting
-from screens.notices import server_closed_screen
+from screens.notices import connection_timeout_screen, server_closed_screen
 from shared.setting import WHITE
 
 
@@ -125,6 +125,7 @@ FIRST_ROW_OFFSET = -1.55
 ROW_STEP = 0.45
 ADVANCED_HEADER_GAP = 0.60
 ADVANCED_HEADER_TO_ROW = 0.25
+SWITCH_ROLE_GAP = 0.75
 
 
 def _layout(mode: str) -> tuple[dict[str, float], Optional[float]]:
@@ -160,7 +161,8 @@ def _make_buttons(gs: GameScreen, row_offsets: dict[str, float]) -> dict[str, Bu
                for name, y_offset in row_offsets.items()}
 
     switch_w = bs * 2.5
-    buttons["switch_role"] = Button(switch_w, btn_h, cx - switch_w / 2, cy + bs * 1.70,
+    switch_y = max(row_offsets.values()) + SWITCH_ROLE_GAP
+    buttons["switch_role"] = Button(switch_w, btn_h, cx - switch_w / 2, cy + bs * switch_y,
                                     position="Left", padding=bs * 0.15,
                                     box_width=box_width, font=gs.mid_text_font)
 
@@ -371,6 +373,9 @@ def main(game_screen: GameScreen, mode: str,
 
     while True:
         if mode == "lan_client" and client is not None:
+            if client.timed_out:
+                connection_timeout_screen.main(game_screen)
+                return LobbyExit(kind="quit")
             if client.is_disconnected:
                 server_closed_screen.main(game_screen)
                 return LobbyExit(kind="quit")
@@ -395,7 +400,7 @@ def main(game_screen: GameScreen, mode: str,
             if ban_exit == "quit":
                 return LobbyExit(kind="quit")
             if ban_exit == "disconnected":
-                server_closed_screen.main(game_screen)
+                connection_timeout_screen.show_for(game_screen, client)
                 return LobbyExit(kind="quit")
             continue
 
@@ -424,26 +429,27 @@ def main(game_screen: GameScreen, mode: str,
 
         game_screen.render()
         _render_title(game_screen)
-        if mode != "local":
-            _render_roster(game_screen, state, state.local_role)
-        if advanced_header_offset is not None:
-            _render_advanced_header(game_screen, advanced_header_offset)
-        _refresh_button_labels(buttons, state, state.local_role, mode)
+        with dispatcher.action_lock:
+            if mode != "local":
+                _render_roster(game_screen, state, state.local_role)
+            if advanced_header_offset is not None:
+                _render_advanced_header(game_screen, advanced_header_offset)
+            _refresh_button_labels(buttons, state, state.local_role, mode)
 
-        if _is_host(state.local_role):
-            for name, button in buttons.items():
-                if name != "switch_role":
-                    button.update(game_screen)
-        else:
-            _render_settings_labels(game_screen, state, row_offsets)
-            sw = buttons["switch_role"]
-            if sw.text and not sw.text.startswith("("):
-                sw.update(game_screen)
-            elif sw.text:
-                draw_text(sw.text, game_screen.mid_text_font, WHITE,
-                          sw.x + game_screen.block_size * 0.15,
-                          sw.y + game_screen.block_size * 0.10,
-                          game_screen.surface)
+            if _is_host(state.local_role):
+                for name, button in buttons.items():
+                    if name != "switch_role":
+                        button.update(game_screen)
+            else:
+                _render_settings_labels(game_screen, state, row_offsets)
+                sw = buttons["switch_role"]
+                if sw.text and not sw.text.startswith("("):
+                    sw.update(game_screen)
+                elif sw.text:
+                    draw_text(sw.text, game_screen.mid_text_font, WHITE,
+                              sw.x + game_screen.block_size * 0.15,
+                              sw.y + game_screen.block_size * 0.10,
+                              game_screen.surface)
 
         _render_help(game_screen, state.local_role, mode)
         back_button.update(game_screen)

@@ -30,7 +30,7 @@ from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from rendering.game_renderer import GameRenderer
 from screens.battling.battling_action import collect_actions
-from screens.notices import server_closed_screen
+from screens.notices import connection_timeout_screen, server_closed_screen
 from campaign.ai_controller import AIController
 from core.setting_config import load_setting
 
@@ -152,6 +152,9 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             server.pulse()
 
         if is_client and client:
+            if client.timed_out:
+                connection_timeout_screen.main(game_screen)
+                return "None"
             if client.is_disconnected:
                 if client.role not in ("player1", "player2"):
                     server_closed_screen.main(game_screen)
@@ -214,13 +217,16 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                         running = False
                     elif event.key in (pygame.K_n, pygame.K_ESCAPE):
                         confirming_quit = False
-            game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y,
-                                       game_state, hint_on, dt, multiplayer=(mode != "local"))
+            with dispatcher.action_lock:
+                game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y,
+                                           game_state, hint_on, dt, multiplayer=(mode != "local"))
             _render_quit_confirm(game_screen)
             pygame.display.update()
             continue
 
-        actions = collect_actions(local_controller, picked_hand_card, game_state, game_screen)
+        awaiting_server = dispatcher.awaiting_server
+        actions = collect_actions(local_controller, picked_hand_card, game_state, game_screen,
+                                  locked=awaiting_server)
 
         if mode == "campaign" and ai_controller is not None:
             renderer_busy = bool(
@@ -263,61 +269,62 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             winner = dispatcher.pending_winner
             running = False
 
-        if not is_client and not game_state.paused:
-            prev_snapshot = None
-            if is_server:
-                prev_snapshot = (
-                    len(game_state.player1.hand),
-                    len(game_state.player2.hand),
-                    len(game_state.player1.draw_pile),
-                    len(game_state.player2.draw_pile),
-                    dict(game_state.card_to_draw),
-                    dict(game_state.players_token),
-                )
+        with dispatcher.action_lock:
+            if not is_client and not game_state.paused:
+                prev_snapshot = None
+                if is_server:
+                    prev_snapshot = (
+                        len(game_state.player1.hand),
+                        len(game_state.player2.hand),
+                        len(game_state.player1.draw_pile),
+                        len(game_state.player2.draw_pile),
+                        dict(game_state.card_to_draw),
+                        dict(game_state.players_token),
+                    )
 
-            game_state.get_player(controller).logic_update(game_state, game_renderer, True)
-            game_state.get_opponent(controller).logic_update(game_state, game_renderer, False)
-            game_state.neutral.update(game_state, game_renderer)
-            game_state.update()
+                game_state.get_player(controller).logic_update(game_state, game_renderer, True)
+                game_state.get_opponent(controller).logic_update(game_state, game_renderer, False)
+                game_state.neutral.update(game_state, game_renderer)
+                game_state.update()
 
-            if is_server and prev_snapshot is not None:
-                new_snapshot = (
-                    len(game_state.player1.hand),
-                    len(game_state.player2.hand),
-                    len(game_state.player1.draw_pile),
-                    len(game_state.player2.draw_pile),
-                    dict(game_state.card_to_draw),
-                    dict(game_state.players_token),
-                )
-                if new_snapshot != prev_snapshot:
-                    dispatcher._broadcast_state(game_state)
+                if is_server and prev_snapshot is not None:
+                    new_snapshot = (
+                        len(game_state.player1.hand),
+                        len(game_state.player2.hand),
+                        len(game_state.player1.draw_pile),
+                        len(game_state.player2.draw_pile),
+                        dict(game_state.card_to_draw),
+                        dict(game_state.players_token),
+                    )
+                    if new_snapshot != prev_snapshot:
+                        dispatcher._broadcast_state(game_state)
 
 
-            if game_state.player1.time_out:
-                winner = "player2"
-                running = False
-            if game_state.player2.time_out:
-                winner = "player1"
-                running = False
+                if game_state.player1.time_out:
+                    winner = "player2"
+                    running = False
+                if game_state.player2.time_out:
+                    winner = "player1"
+                    running = False
 
-            if not running and winner not in ("None", ""):
-                if is_server and dispatcher.pending_winner is None:
-                    dispatcher._broadcast_state(game_state)
-                    dispatcher._broadcast_game_over(winner, game_state)
-        
-        if not is_client and game_state.paused and game_state.pause_seconds_remaining > 0:
-            game_state.pause_seconds_remaining = max(0.0, game_state.pause_seconds_remaining - dt)
+                if not running and winner not in ("None", ""):
+                    if is_server and dispatcher.pending_winner is None:
+                        dispatcher._broadcast_state(game_state)
+                        dispatcher._broadcast_game_over(winner, game_state)
 
-        if is_client:
-            _sweep_dead_cards_visually(game_state, game_renderer)
-            if game_state.paused:
-                if game_state.pause_seconds_remaining > 0:
-                    game_state.pause_seconds_remaining = max(0.0, game_state.pause_seconds_remaining - dt)
-            else:
-                game_state.get_player(controller)._update_timer_logic(game_state.timer_mode)
+            if not is_client and game_state.paused and game_state.pause_seconds_remaining > 0:
+                game_state.pause_seconds_remaining = max(0.0, game_state.pause_seconds_remaining - dt)
 
-        if mode not in ("local", "campaign"):
-            controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
+            if is_client:
+                _sweep_dead_cards_visually(game_state, game_renderer)
+                if game_state.paused:
+                    if game_state.pause_seconds_remaining > 0:
+                        game_state.pause_seconds_remaining = max(0.0, game_state.pause_seconds_remaining - dt)
+                else:
+                    game_state.get_player(controller)._update_timer_logic(game_state.timer_mode)
+
+            if mode not in ("local", "campaign"):
+                controller = "player1" if (game_state.turn_number % 2 == 0) else "player2"
 
 
         if is_server and server is not None:
@@ -328,12 +335,14 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
             game_state.net_spectator_count = client.net_spectator_count
             game_state.net_latencies = client.net_latencies
             game_state.net_my_ping = client.my_latency
+            game_state.net_awaiting_ack = dispatcher.awaiting_server_visibly
 
         show_netinfo = pygame.key.get_pressed()[pygame.K_TAB] and mode in ("lan_server", "lan_client")
 
-        game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on, dt,
-                                   multiplayer=(mode != "local"),
-                                   show_netinfo=show_netinfo)
+        with dispatcher.action_lock:
+            game_renderer.render_frame(local_controller, controller, mouse_x, mouse_y, board_x, board_y, game_state, hint_on, dt,
+                                       multiplayer=(mode != "local"),
+                                       show_netinfo=show_netinfo)
 
         if mode == "campaign" and ai_controller is not None and ai_controller.focus_position is not None:
             _draw_ai_focus(game_screen, ai_controller.focus_position)

@@ -95,6 +95,7 @@ class GameState:
     net_spectator_count: int = 0
     net_latencies: dict[str, float] = field(default_factory=dict)
     net_my_ping: "float | None" = None
+    net_awaiting_ack: bool = False
 
     def __post_init__(self) -> None:
         self.rng = _py_random.Random(self.rng_seed)

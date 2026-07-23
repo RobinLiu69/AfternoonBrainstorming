@@ -2484,3 +2484,63 @@ debug:
         修法: 新增 shared/renderer.py 的 DyingCardSink Protocol (結構型別) 上述三處參數改用之
               GameRenderer 與 HeadlessRenderer 皆自動符合 不需繼承也不需 cast (apply_dict 仍要求完整 GameRenderer)
 ----------------
+=======================
+2026/07/24-4.5.1.1
+編寫者 Anemois, Robin
+----------------
+新增:
+    連線動作確認 (ack): client 送出的動作帶 seq server 處理完並廣播狀態後才回該連線 ack
+        同一條 TCP 連線保證 state 先於 ack 抵達 故 client 收到 ack 時新狀態必定已套用
+        收到 ack 前不再送出下一個同類動作 涵蓋 攻擊 / 出牌 / 移動 / 治療 / 生成方塊 / 切換升級 / 結束回合 與選卡的進入下一階段
+        等待期間不採集輸入 (沿用觀戰者的過濾路徑) 純本地操作 提示切換 / 動畫切換 / 翻頁 / 離開 仍可用
+        選牌與禁牌不上鎖: 連點不同卡是正常操作 重複點同一張本來就會被 server 擋掉
+    等待提示 waiting for host... (對戰 / 選卡): 累積等待超過 1 秒才顯示 正常連線下不會閃現 (輸入鎖仍是立即生效)
+    client 端連線逾時: 20 秒沒收到任何封包即判定逾時 顯示 Connection Timeout 畫面後離開 不再空等重連視窗
+        recv socket 改 1 秒輪詢 _recv_exactly 新增 on_idle 回呼 未達上限時繼續等 訊息讀到一半不會被切斷
+        screens/notices/connection_timeout_screen.py
+修正:
+    延遲時連按同一個動作會被執行兩次 (client 送出後畫面沒反應 玩家再按一次)
+        解釋: lan_client 的 dispatch 是 fire-and-forget 送出即回傳 pending 本地沒有任何在途動作的紀錄
+        修法: 上述 ack 機制 收到前直接丟棄後續動作 逾時則判定連線已死交給重連或逾時畫面 不做靜默解鎖
+              (靜默解鎖等於自己製造出想防的重複動作: 遲到的第一個動作照樣會執行)
+    同一個 socket 被多執行緒同時 sendall 可能交錯造成訊框損毀
+        解釋: 主執行緒 (pulse / 主迴圈的差異廣播) 與網路執行緒 (遠端動作處理後廣播) 會同時寫入同一條連線
+        修法: LANServer 與 LANClient 的所有送出集中經過寫入鎖
+    GameState / DraftState / LobbyState 被主執行緒與網路執行緒同時讀寫
+        解釋: 專用伺服器 room.py 早有 _action_lock 保護 但桌面主機端 (lan_server) 沒有
+              client 端也一樣: recv 執行緒 apply_dict 重建棋盤時主執行緒正在 render 或序列化
+              可能取到半套用的狀態或迭代中被改動的清單
+        修法: 三個 dispatcher 各加 action_lock (RLock) 遠端動作 / 狀態套用 / 暫停與斷線回呼 / 主迴圈的邏輯更新與 render 全部納入
+              鎖順序 room._action_lock -> dispatcher.action_lock -> server._lock -> 寫入鎖 無反向路徑
+    HFBR 只花一刀就能攻擊 (卡面寫明不足兩把則無法攻擊)
+        解釋: 關卡只檢查 number_of_attacks > 0 沒有跟 attack_uses 比較 扣除又寫成 max(0, n - attack_uses)
+              於是傷害先打出去 刀數再被夾到 0 實際成本變成 min(2, 手上的刀)
+        修法: 新增 Card.attack_cost 即時計算成本 Player.attack 先驗成本 不足就不打 足夠才扣掉該值
+              Hf 原本在攻擊結束後回寫 attack_uses 的快取一併移除 (那份值永遠描述的是上一次攻擊)
+    SPBR 陣亡或被 nullify 時沒有解除隊友的效果壓制
+        解釋: 判斷式數的是本方狂暴的 SPBR 但 count_cards 不濾血量 陣亡當下自己還在場上且 anger 仍為 True
+              計數永遠 >= 1 所以還原那行從不執行 set_nullify 同理
+        修法: 抽出 has_active_angry_sp (需存活且未被 nullify) 三處共用 Sp 的三個入口收斂為 _refresh_allies
+              解除 nullify 後若仍在狂暴會重新壓制 (原本只處理單向)
+              deploy 也改用同一判斷 SPBR 屍體尚未清除時進場的巨人不再被誤判
+    check_heartbeat 與 LANServer.stop 只 close 沒有先 shutdown
+        解釋: Linux 上 close 不會喚醒阻塞在 recv 的執行緒 連線清不掉 對手的遊戲不會暫停也開不了重連視窗
+        修法: 統一走 _force_close (先 shutdown(SHUT_RDWR) 再 close) 與既有的驅逐路徑一致
+    server 已停止仍會接受連線 (房間剛關閉的瞬間加入會進到不再運轉的房間)
+    on_client_connect 是唯一沒有 try/except 的回呼 拋錯會漏掉一條 socket
+    end_game 畫面沒有心跳 (主機端唯一沒有 pulse 的迴圈) 看戰績期間不會回收死連線
+        且加入 client 閒置逾時後 這裡不補心跳會讓看戰績的 client 被誤判逾時
+    LANClient handshake 連上後立刻把 timeout 設為 None: server 接受連線卻不回 welcome 會永久卡住 改為全程沿用連線逾時
+    lobby 非 host 的 switch to spectator 按鈕蓋住 reconnect timeout 那一行
+        解釋: 按鈕 y 寫死 1.70 而最後一列在 1.55 按鈕框是不透明黑底 直接蓋掉文字下緣
+        修法: 改由最後一列往下推算 (SWITCH_ROLE_GAP) 之後增減進階設定列不會再撞上
+    APBR 提示漏寫暈眩: 實作是攻擊附帶麻痺再讓對手抽牌 但提示只寫抽牌 (其餘顏色的 AP 都寫了攻擊附帶麻痺)
+移除:
+    TANKBR 舊設計殘骸: card_setting 的 turn_start_health_loss 與 Tank.attacked_this_turn 皆無任何地方讀取
+        (DarkGreen 的 HF / LF 仍在使用 turn_start_health_loss 未動)
+優化:
+    action 封包的協定欄位過濾抽成 action_payload (原本各 dispatcher 各寫一次排除 type) 日後新增協定欄位只需改一處
+    新增 tests/test_card_brown.py: 巨人八張全覆蓋 37 項 並以十個突變驗證確認測試抓得到 (含本次修的兩個 bug)
+    新增 tests/test_dispatcher_locking.py: 以另一執行緒 non-blocking acquire 驗證狀態變更確實在 action_lock 內
+    test_room_server.py 新增 ack 送出與丟棄 / 等待提示延遲 / 閒置逾時與心跳餵食 全套 424 通過
+----------------

@@ -54,8 +54,31 @@ class LANServer:
         self._peer_token: Optional[str] = None
         self._evicted: set[socket.socket] = set()
         self._lock = threading.Lock()
+        self._write_lock = threading.Lock()
         self._server_sock: Optional[socket.socket] = None
         self._running = False
+
+    @staticmethod
+    def _force_close(conn: socket.socket) -> None:
+        try:
+            conn.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
+        try:
+            conn.close()
+        except OSError:
+            pass
+
+    def _send_locked(self, conn: socket.socket, payload: dict) -> None:
+        with self._write_lock:
+            _send_msg(conn, payload)
+
+    def send_to(self, conn: socket.socket, payload: dict) -> bool:
+        try:
+            self._send_locked(conn, payload)
+        except OSError:
+            return False
+        return True
 
     def set_scene(self, scene: str) -> None:
         self.scene = scene
@@ -155,14 +178,7 @@ class LANServer:
                     issued_token = ""
 
         for c in evicted:
-            try:
-                c.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
-            try:
-                c.close()
-            except OSError:
-                pass
+            self._force_close(c)
 
         return chosen_role, issued_token
 
@@ -208,10 +224,15 @@ class LANServer:
             self.handle_connection(conn, addr, hello)
 
     def handle_connection(self, conn: socket.socket, addr, hello: dict) -> None:
+        if not self._running:
+            self._force_close(conn)
+            print(f"[LANServer] Refused {addr}: server is shutting down")
+            return
+
         client_version = hello.get("version", "")
         if client_version != self.version:
             try:
-                _send_msg(conn, {
+                self._send_locked(conn, {
                     "type": "rejected",
                     "reason": "version_mismatch",
                     "server_version": self.version,
@@ -236,10 +257,17 @@ class LANServer:
             except Exception as e:
                 print(f"[LANServer] on_peer_reconnect raised: {e}")
 
-        state = self.on_client_connect(role) if self.on_client_connect is not None else {}
+        state: dict = {}
+        if self.on_client_connect is not None:
+            try:
+                state = self.on_client_connect(role)
+            except Exception as e:
+                print(f"[LANServer] on_client_connect raised: {e}")
+                self._force_close(conn)
+                return
 
         try:
-            _send_msg(conn, {
+            self._send_locked(conn, {
                 "type": "welcome",
                 "role": role,
                 "state": state,
@@ -297,18 +325,21 @@ class LANServer:
             if msg.get("type") == "pong":
                 sent_ts = msg.get("ts", 0.0)
                 rtt_ms = (time.monotonic() - sent_ts) * 1000.0
-                try:
-                    _send_msg(conn, {"type": "ping_result", "ms": round(rtt_ms, 1)})
-                except OSError:
-                    pass
+                self.send_to(conn, {"type": "ping_result", "ms": round(rtt_ms, 1)})
                 if self.on_pong is not None:
                     role = self.find_role(conn)
                     try:
                         self.on_pong(role, rtt_ms)
                     except Exception as e:
                         print(f"[LANServer] on_pong raised: {e}")
-            elif msg.get("type") == "action" and self.on_action is not None:
-                self.on_action(msg, conn)
+            elif msg.get("type") == "action":
+                try:
+                    if self.on_action is not None:
+                        self.on_action(msg, conn)
+                finally:
+                    seq = msg.get("seq")
+                    if seq is not None:
+                        self.send_to(conn, {"type": "ack", "seq": seq})
 
     def _prune_dead(self, dead_conns: list[socket.socket]) -> list[str]:
         if not dead_conns:
@@ -341,7 +372,7 @@ class LANServer:
         dead: list[socket.socket] = []
         for conn, _role in snapshot:
             try:
-                _send_msg(conn, envelope)
+                self._send_locked(conn, envelope)
             except OSError as e:
                 print(f"[LANServer] client dropped during broadcast: {e}")
                 dead.append(conn)
@@ -353,7 +384,7 @@ class LANServer:
         dead: list[socket.socket] = []
         for conn, role in snapshot:
             try:
-                _send_msg(conn, build_envelope(role))
+                self._send_locked(conn, build_envelope(role))
             except OSError as e:
                 print(f"[LANServer] client dropped during broadcast: {e}")
                 dead.append(conn)
@@ -415,7 +446,7 @@ class LANServer:
         dead: list[socket.socket] = []
         for conn, _role in snapshot:
             try:
-                _send_msg(conn, {"type": "ping", "ts": ts})
+                self._send_locked(conn, {"type": "ping", "ts": ts})
             except OSError:
                 dead.append(conn)
         if dead:
@@ -430,10 +461,7 @@ class LANServer:
             last = last_seen_snap.get(conn)
             if last is not None and now - last > timeout:
                 print(f"[LANServer] heartbeat timeout, closing stale connection")
-                try:
-                    conn.close()
-                except OSError:
-                    pass
+                self._force_close(conn)
 
     def stop(self) -> None:
         if not self._running:
@@ -456,11 +484,9 @@ class LANServer:
             self._accept_thread = None
 
         with self._lock:
-            for conn, _role in self._clients:
-                try:
-                    conn.close()
-                except OSError:
-                    pass
+            conns = [c for c, _role in self._clients]
             self._clients.clear()
             self._last_seen.clear()
+        for conn in conns:
+            self._force_close(conn)
 

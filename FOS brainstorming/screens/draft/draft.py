@@ -30,7 +30,7 @@ from core.network_layer import LANClient, LANServer
 from core.scene_exit import DraftExitReason
 from screens.draft.draft_action import collect_draft_actions
 from screens.draft.exhibit_registry import ExhibitRegistry
-from screens.notices import server_closed_screen
+from screens.notices import connection_timeout_screen, server_closed_screen
 from rendering.draft_renderer import DraftRenderer
 from shared.setting import WHITE
 from core.setting_config import load_setting
@@ -151,6 +151,9 @@ def main(game_screen: GameScreen, mode: str = "local",
                     next_scene=scene,
                     next_scene_state=next_state,
                 )
+            if client.timed_out:
+                connection_timeout_screen.main(game_screen)
+                return DraftExitReason(kind="quit")
             if client.is_disconnected:
                 if client.role not in ("player1", "player2"):
                     server_closed_screen.main(game_screen)
@@ -181,7 +184,7 @@ def main(game_screen: GameScreen, mode: str = "local",
                     client.reconnect_refused or now - disconnect_since > reconnect_timeout
                 ):
                     print("[draft] host gone; leaving draft")
-                    server_closed_screen.main(game_screen)
+                    connection_timeout_screen.show_for(game_screen, client)
                     return DraftExitReason(kind="quit")
             else:
                 disconnect_since = None
@@ -209,6 +212,7 @@ def main(game_screen: GameScreen, mode: str = "local",
         elif mode == "lan_client" and client is not None:
             draft_state.net_spectator_count = client.net_spectator_count
             draft_state.net_latencies = client.net_latencies
+            draft_state.net_awaiting_ack = dispatcher.awaiting_server_visibly
 
         if confirming_quit:
             for event in pygame.event.get():
@@ -219,7 +223,8 @@ def main(game_screen: GameScreen, mode: str = "local",
                         return DraftExitReason(kind="quit")
                     if event.key in (pygame.K_n, pygame.K_ESCAPE):
                         confirming_quit = False
-            renderer.render_frame(page, index, mouse_board_x, mouse_board_y, draft_state, hint_on, multiplayer=True)
+            with dispatcher.action_lock:
+                renderer.render_frame(page, index, mouse_board_x, mouse_board_y, draft_state, hint_on, multiplayer=True)
             _render_quit_confirm(game_screen)
             pygame.display.update()
             clock.tick(60)
@@ -265,7 +270,8 @@ def main(game_screen: GameScreen, mode: str = "local",
 
             dispatcher.dispatch(action, draft_state)
 
-        renderer.render_frame(page, index, mouse_board_x, mouse_board_y, draft_state, hint_on,
-                              multiplayer=mode in ("lan_server", "lan_client"))
+        with dispatcher.action_lock:
+            renderer.render_frame(page, index, mouse_board_x, mouse_board_y, draft_state, hint_on,
+                                  multiplayer=mode in ("lan_server", "lan_client"))
         pygame.display.update()
         clock.tick(60)

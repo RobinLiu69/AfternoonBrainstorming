@@ -21,7 +21,7 @@ import time
 from dataclasses import dataclass
 
 from core.draft_state import DraftState
-from core.network_layer import LANServer, LANClient
+from core.network_layer import LANServer, LANClient, action_payload
 from screens.draft.draft_action import DraftAction
 
 
@@ -30,6 +30,8 @@ MAX_DECK  = 12
 MAX_UNIT  = 2
 MAX_MAGIC = 3
 DEFAULT_PAUSE_TIMEOUT_SECONDS: float = 60.0
+
+ACK_GATED_ACTIONS: tuple[str, ...] = ("advance_phase", "confirm_start")
 
 
 @dataclass
@@ -54,6 +56,7 @@ class DraftDispatcher:
         self._pause_deadline: float | None = None
         self._pause_timer: threading.Timer | None = None
         self._pause_lock = threading.Lock()
+        self.action_lock = threading.RLock()
         self.latencies: dict[str, float] = {}
 
     def attach_server(self, server: "LANServer") -> None:
@@ -70,7 +73,19 @@ class DraftDispatcher:
 
     def attach_client(self, client: "LANClient") -> None:
         self._network = client
-        client.on_state_update = self._draft_state.apply_dict
+        client.on_state_update = self._client_apply_state
+
+    def _client_apply_state(self, state_dict: dict) -> None:
+        with self.action_lock:
+            self._draft_state.apply_dict(state_dict)
+
+    @property
+    def awaiting_server(self) -> bool:
+        return isinstance(self._network, LANClient) and self._network.is_awaiting_ack
+
+    @property
+    def awaiting_server_visibly(self) -> bool:
+        return isinstance(self._network, LANClient) and self._network.show_waiting_hint
 
     def _on_pong(self, role: str, rtt_ms: float) -> None:
         if role in ("player1", "player2"):
@@ -87,12 +102,14 @@ class DraftDispatcher:
         self._network.broadcast_net_info(spectators, latencies)
 
     def _on_client_connect(self, role: str) -> dict:
-        self._refresh_pause_remaining()
-        return self._draft_state.to_dict_for(role)
+        with self.action_lock:
+            self._refresh_pause_remaining()
+            return self._draft_state.to_dict_for(role)
 
     def _on_pulse(self) -> None:
-        if self._draft_state.paused:
-            self._broadcast(self._draft_state)
+        with self.action_lock:
+            if self._draft_state.paused:
+                self._broadcast(self._draft_state)
         self._broadcast_net_info()
 
     def _refresh_pause_remaining(self) -> None:
@@ -100,52 +117,55 @@ class DraftDispatcher:
             self._draft_state.pause_seconds_remaining = max(0.0, self._pause_deadline - time.monotonic())
 
     def _on_peer_disconnect(self) -> None:
-        if self.reconnect_timeout == float("inf"):
-            if self._draft_state.paused:
+        with self.action_lock:
+            if self.reconnect_timeout == float("inf"):
+                if self._draft_state.paused:
+                    return
+                self._draft_state.paused = True
+                self._draft_state.pause_reason = "opponent disconnected"
+                self._draft_state.pause_seconds_remaining = float("inf")
+                print("[DraftDispatcher] paused; waiting indefinitely for reconnect")
+                self._broadcast(self._draft_state)
                 return
+            with self._pause_lock:
+                if self._pause_timer is not None:
+                    return
+                self._pause_deadline = time.monotonic() + self.reconnect_timeout
+                self._pause_timer = threading.Timer(self.reconnect_timeout, self._on_pause_timeout)
+                self._pause_timer.daemon = True
+                self._pause_timer.start()
             self._draft_state.paused = True
             self._draft_state.pause_reason = "opponent disconnected"
-            self._draft_state.pause_seconds_remaining = float("inf")
-            print("[DraftDispatcher] paused; waiting indefinitely for reconnect")
+            self._draft_state.pause_seconds_remaining = self.reconnect_timeout
+            print(f"[DraftDispatcher] paused; reconnect window {self.reconnect_timeout}s")
             self._broadcast(self._draft_state)
-            return
-        with self._pause_lock:
-            if self._pause_timer is not None:
-                return
-            self._pause_deadline = time.monotonic() + self.reconnect_timeout
-            self._pause_timer = threading.Timer(self.reconnect_timeout, self._on_pause_timeout)
-            self._pause_timer.daemon = True
-            self._pause_timer.start()
-        self._draft_state.paused = True
-        self._draft_state.pause_reason = "opponent disconnected"
-        self._draft_state.pause_seconds_remaining = self.reconnect_timeout
-        print(f"[DraftDispatcher] paused; reconnect window {self.reconnect_timeout}s")
-        self._broadcast(self._draft_state)
 
     def _on_peer_reconnect(self) -> None:
-        with self._pause_lock:
-            if self._pause_timer is not None:
-                self._pause_timer.cancel()
-                self._pause_timer = None
-            self._pause_deadline = None
-        self._draft_state.paused = False
-        self._draft_state.pause_reason = ""
-        self._draft_state.pause_seconds_remaining = 0.0
-        print("[DraftDispatcher] resumed (peer reconnected)")
-        self._broadcast(self._draft_state)
+        with self.action_lock:
+            with self._pause_lock:
+                if self._pause_timer is not None:
+                    self._pause_timer.cancel()
+                    self._pause_timer = None
+                self._pause_deadline = None
+            self._draft_state.paused = False
+            self._draft_state.pause_reason = ""
+            self._draft_state.pause_seconds_remaining = 0.0
+            print("[DraftDispatcher] resumed (peer reconnected)")
+            self._broadcast(self._draft_state)
 
     def _on_pause_timeout(self) -> None:
         if not self._draft_state.paused:
             return
-        with self._pause_lock:
-            self._pause_timer = None
-            self._pause_deadline = None
-        self._draft_state.paused = False
-        self._draft_state.pause_reason = ""
-        self._draft_state.pause_seconds_remaining = 0.0
-        self.peer_lost = True
-        print("[DraftDispatcher] reconnect timeout; peer lost")
-        self._broadcast(self._draft_state)
+        with self.action_lock:
+            with self._pause_lock:
+                self._pause_timer = None
+                self._pause_deadline = None
+            self._draft_state.paused = False
+            self._draft_state.pause_reason = ""
+            self._draft_state.pause_seconds_remaining = 0.0
+            self.peer_lost = True
+            print("[DraftDispatcher] reconnect timeout; peer lost")
+            self._broadcast(self._draft_state)
 
     def dispatch(self, action: DraftAction, draft_state: DraftState) -> DraftResult:
         self._draft_state = draft_state
@@ -155,19 +175,21 @@ class DraftDispatcher:
                 return self._execute(action, draft_state)
 
             case "lan_client":
-                self._send_to_server(action)
+                if not self._send_to_server(action):
+                    return DraftResult(False, message="waiting for host")
                 return DraftResult(True, message="pending")
 
             case "lan_server":
-                result = self._execute(action, draft_state)
-                if result.success:
-                    self._broadcast(draft_state)
+                with self.action_lock:
+                    result = self._execute(action, draft_state)
+                    if result.success:
+                        self._broadcast(draft_state)
                 return result
 
         return DraftResult(False, message=f"unknown mode: {self.mode}")
 
     def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
-        payload = {k: v for k, v in envelope.items() if k != "type"}
+        payload = action_payload(envelope)
         if not self._sender_matches(payload.get("player"), sender_conn):
             return
         try:
@@ -176,9 +198,10 @@ class DraftDispatcher:
             print(f"[DraftDispatcher] Bad remote action payload: {e}")
             return
 
-        result = self._execute(action, self._draft_state)
-        if result.success:
-            self._broadcast(self._draft_state)
+        with self.action_lock:
+            result = self._execute(action, self._draft_state)
+            if result.success:
+                self._broadcast(self._draft_state)
 
     def _sender_matches(self, claimed_player, sender_conn) -> bool:
         if sender_conn is None or not isinstance(self._network, LANServer):
@@ -190,15 +213,15 @@ class DraftDispatcher:
             return False
         return True
 
-    def _send_to_server(self, action: DraftAction) -> None:
+    def _send_to_server(self, action: DraftAction) -> bool:
         if not isinstance(self._network, LANClient):
             print("[DraftDispatcher] No network attached — cannot send action.")
-            return
-        self._network.send_action({
+            return False
+        return self._network.send_action({
             "action_type": action.action_type,
             "player":      action.player,
             "card_name":   action.card_name,
-        })
+        }, await_ack=action.action_type in ACK_GATED_ACTIONS)
 
     def _broadcast(self, draft_state: DraftState) -> None:
         if not isinstance(self._network, LANServer):

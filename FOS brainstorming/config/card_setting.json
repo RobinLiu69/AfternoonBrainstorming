@@ -371,8 +371,7 @@
         },
         "TANK": {
             "health": 22,
-            "damage": 1,
-            "turn_start_health_loss": 4
+            "damage": 1
         },
         "HF": {
             "health": 9,

@@ -364,3 +364,141 @@ def test_spectator_can_join_mid_battle(room_server):
     assert spectator.scene == "battling"
     assert state["player1"]["deck"] == ["?"] * 12
     assert state["player2"]["deck"] == ["?"] * 12
+
+
+def _reach_battle(creator, joiner):
+    _send_lobby(creator, "set_setting", setting="file_auto_delete", bool_value=True)
+    _send_lobby(creator, "start_match")
+    wait_until(lambda: creator.pending_scene == "draft")
+    wait_until(lambda: joiner.pending_scene == "draft")
+    creator.consume_pending_scene()
+    joiner.consume_pending_scene()
+
+    _draft_full_deck(creator, joiner)
+    wait_until(lambda: creator.pending_scene == "battling")
+    wait_until(lambda: joiner.pending_scene == "battling")
+    creator.consume_pending_scene()
+    joiner.consume_pending_scene()
+
+
+def _end_turn(client, player: str, await_ack: bool = True) -> bool:
+    return client.send_action(
+        {"action_type": "end_turn", "player": player,
+         "board_x": None, "board_y": None, "hand_index": None},
+        await_ack=await_ack,
+    )
+
+
+def test_gated_action_waits_for_ack(room_server):
+    _server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+    joiner = make_client(room=creator.room)
+    joiner.connect()
+    _reach_battle(creator, joiner)
+
+    collector = StateCollector(creator)
+    assert _end_turn(creator, "player1") is True
+    assert creator.is_awaiting_ack is True
+
+    wait_until(lambda: creator.is_awaiting_ack is False)
+    wait_until(lambda: collector.last is not None
+               and collector.last.get("turn_number") == 1)
+
+
+def test_double_press_during_latency_reaches_server_once(room_server):
+    _server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+    joiner = make_client(room=creator.room)
+    joiner.connect()
+    _reach_battle(creator, joiner)
+
+    collector = StateCollector(creator)
+    assert _end_turn(creator, "player1") is True
+    assert _end_turn(creator, "player1") is False
+
+    wait_until(lambda: collector.last is not None
+               and collector.last.get("turn_number") == 1)
+    time.sleep(0.3)
+    assert collector.last["turn_number"] == 1
+    assert creator.is_awaiting_ack is False
+
+    assert _end_turn(creator, "player1", await_ack=False) is True
+
+
+def test_waiting_hint_is_delayed_but_input_lock_is_immediate(room_server):
+    _server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+    joiner = make_client(room=creator.room)
+    joiner.connect()
+    _reach_battle(creator, joiner)
+
+    creator._on_ack = lambda _seq: None
+    assert _end_turn(creator, "player1") is True
+    assert creator.is_awaiting_ack is True
+    assert creator.show_waiting_hint is False
+
+    creator._pending_since -= 1.5
+    assert creator.show_waiting_hint is True
+
+
+def test_idle_connection_times_out_and_reports_it(room_server):
+    _server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+
+    creator.idle_timeout = 0.3
+    creator._last_recv -= 5.0
+
+    wait_until(lambda: creator.timed_out)
+    wait_until(lambda: creator.is_disconnected)
+    assert creator.is_connected is False
+
+
+def test_server_traffic_keeps_the_idle_watchdog_fed(room_server):
+    _server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+
+    before = creator._last_recv
+    wait_until(lambda: creator._last_recv > before)
+    assert creator.timed_out is False
+    assert creator.is_disconnected is False
+
+
+def test_idle_watchdog_only_trips_after_the_timeout(room_server):
+    _server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+    creator.idle_timeout = 5.0
+
+    assert creator._check_idle() is True
+    assert creator.timed_out is False
+
+    creator._last_recv -= 5.1
+    assert creator._check_idle() is False
+    assert creator.timed_out is True
+
+
+def test_ack_timeout_drops_connection_instead_of_unlocking(room_server):
+    _server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+    joiner = make_client(room=creator.room)
+    joiner.connect()
+    _reach_battle(creator, joiner)
+
+    creator.ack_timeout = 0.2
+    creator._on_ack = lambda _seq: None
+    assert _end_turn(creator, "player1") is True
+    assert creator.is_awaiting_ack is True
+
+    wait_until(lambda: creator.is_awaiting_ack is False)
+    assert creator.is_disconnected is True
+    assert creator.is_connected is False
+    assert _end_turn(creator, "player1") is False
+
+    assert creator.try_reconnect() is True
+    assert creator.initial_state["turn_number"] == 1

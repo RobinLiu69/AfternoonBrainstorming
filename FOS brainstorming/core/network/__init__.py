@@ -18,13 +18,14 @@
 
 from core.network.client import LANClient
 from core.network.errors import VersionMismatchError
-from core.network.messages import _recv_exactly, _recv_msg, _send_msg
+from core.network.messages import action_payload, _recv_exactly, _recv_msg, _send_msg
 from core.network.server import LANServer
 
 __all__ = [
     "LANClient",
     "LANServer",
     "VersionMismatchError",
+    "action_payload",
     "_recv_exactly",
     "_recv_msg",
     "_send_msg",
