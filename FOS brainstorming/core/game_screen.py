@@ -65,6 +65,12 @@ def to_board_y(mouse_y: int, game_screen: GameScreen) -> Optional[int]:
         mouse_y < game_screen.display_height/2 + game_screen.block_size*2.35 else None)
 
 
+def cell_origin(game_screen: GameScreen, board_x: float, board_y: float) -> tuple[float, float]:
+    x = (game_screen.display_width / 2 - game_screen.block_size * 2) + board_x * game_screen.block_size
+    y = (game_screen.display_height / 2 - game_screen.block_size * 1.65) + board_y * game_screen.block_size
+    return x, y
+
+
 class GameScreen:
     def __init__(self) -> None:
         pygame.init()

@@ -68,6 +68,8 @@ class GameState:
     _attack_anim_cursor: float = 0.0
 
     file_auto_delete: bool = False
+    ban_draft: dict[str, str] = field(default_factory=dict)
+    judge_bans: list[str] = field(default_factory=list)
 
     score: int = 0
     turn_number: int = 0

@@ -23,6 +23,7 @@ import time
 
 from core.game_screen import GameScreen
 from shared.stat_type import StatType
+from shared.renderer import DyingCardSink
 from cards.base import Card
 from cards.factory import spawn_card
 
@@ -46,7 +47,7 @@ class Player:
     def __post_init__(self) -> None:
         self.short_name: str = self.name[0].upper()+self.name[-1]
         self.start_time: float = 0
-        self.elapsed_time: int = 0
+        self.elapsed_time: float = 0
         self.time_out: bool = False
         self.time_display: str = "00:00"
         self.selected_card_index: int = -1
@@ -176,7 +177,7 @@ class Player:
                         card.mouse_selected = True
                         break
     
-    def recycle_cards(self, game_state:GameState, game_renderer: GameRenderer) -> None:
+    def recycle_cards(self, game_state:GameState, game_renderer: DyingCardSink) -> None:
         to_remove = []
         for card in self.on_board:
             if card.health <= 0 and card.can_be_killed(game_state):
@@ -220,7 +221,7 @@ class Player:
                 self.elapsed_time = 0
         self._update_timer_logic(game_state.timer_mode)
     
-    def logic_update(self, game_state: GameState, game_renderer: GameRenderer, update_timer: bool) -> None:
+    def logic_update(self, game_state: GameState, game_renderer: DyingCardSink, update_timer: bool) -> None:
         self.recycle_cards(game_state, game_renderer)
         if game_state.card_to_draw[self.name] > 0:
             game_state.card_to_draw[self.name] -= 1

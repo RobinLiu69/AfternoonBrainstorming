@@ -267,6 +267,7 @@ class Room:
         settings.apply_to(game_state)
         logger.info(f"version {VERSION}", version=VERSION)
         log_match_prelude(logger, self.lobby_state)
+        self._log_match_secrets()
 
         self.battle_dispatcher = BattlingDispatcher(
             game_state=game_state, mode="lan_server",
@@ -348,7 +349,6 @@ class Room:
     def _finish_battle(self, winner: str) -> None:
         assert self.game_state is not None
         game_state = self.game_state
-        self._log_match_secrets()
         logger = game_state.game_logger
         logger.info(f"winner {winner}")
         logger.info(f"player1 timer {game_state.player1.time_display}")

@@ -24,7 +24,7 @@ from shared.setting import WHITE
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from core.draft_state import TOURNAMENT_BANS
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, cell_origin, draw_text
 from core.lobby_state import LobbyState, MAX_BANS_PER_PLAYER, is_bannable_card
 from core.lobby_dispatcher import LobbyDispatcher
 from core.network_layer import LANServer, LANClient
@@ -53,12 +53,6 @@ def _to_board_y(mouse_y: int, game_screen: GameScreen) -> Optional[int]:
     if top < mouse_y < bottom:
         return int((mouse_y - top) / game_screen.block_size)
     return None
-
-
-def _cell_origin(game_screen: GameScreen, board_x: int, board_y: int) -> tuple[float, float]:
-    x = (game_screen.display_width / 2 - game_screen.block_size * 2) + board_x * game_screen.block_size
-    y = (game_screen.display_height / 2 - game_screen.block_size * 1.65) + board_y * game_screen.block_size
-    return x, y
 
 
 def _identity_label(state: LobbyState, identity: str) -> str:
@@ -96,14 +90,14 @@ def _render_lock(game_screen: GameScreen, board_x: int, board_y: int) -> None:
     locked = SpriteRegistry.get_instance().get("locked")
     if locked is None:
         return
-    x, y = _cell_origin(game_screen, board_x, board_y)
+    x, y = cell_origin(game_screen, board_x, board_y)
     game_screen.surface.blit(locked, (int(x), int(y)))
 
 
 def _render_spectator_labels(game_screen: GameScreen, state: LobbyState) -> None:
     bs = game_screen.block_size
     for row, identity in enumerate(_BAN_IDENTITIES):
-        _x, y = _cell_origin(game_screen, 0, row)
+        _x, y = cell_origin(game_screen, 0, row)
         label = _identity_label(state, identity)
         draw_text(label, game_screen.mid_text_font, WHITE,
                   game_screen.display_width / 2 - bs * 3.7, y + bs * 0.3,
