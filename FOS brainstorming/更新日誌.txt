@@ -2441,3 +2441,46 @@ debug:
 移除:
     log 不再逐步記錄選牌 add / remove: 移除 DraftState.pick_history 及其記錄與前導寫入 只保留最終牌組 (直接寫 deck 內容)
 ----------------
+=======================
+2026/07/24-4.5.1.0
+編寫者 Anemois
+----------------
+新增:
+    重播開場資訊頁 (screens/replay_prelude.py): 選好重播檔後先看該場的禁牌與雙方牌組 按 E / ENTER 開始播放 ESC 或 back 鈕返回
+        上半為觀戰視角禁牌盤 (每位玩家一列 每張禁牌以卡面顯示並蓋 locked.png 比照 ban draft 的觀戰畫面)
+        下半為雙方最終牌組 中間一行列出該場對戰設定 (timer mode / time control / ruleset)
+        名稱優先顯示玩家名 沒填名字則顯示 player1 / player2 舊重播檔 (無 players 行 / 無禁牌) 一樣能正常開啟
+        file auto delete 不列入設定行 (屬 log 偏好非對戰規則) 由 UNLISTED_SETTINGS 統一排除
+    GameState 新增 ban_draft 與 judge_bans 欄位: 建立 game state 時由 lobby 的禁牌解析寫入 (卡片對應到禁牌者的顯示名)
+        禁牌者身分 (host / peer) 於建立當下換算成座位再換成玩家名 沒名字則寫座位 未來加使用者名稱不需再改 log
+    log 新增 settings 行: 逐 MatchSettings 欄位自動輸出 (settings timer_mode=... time_control=... ruleset=...)
+        欄位取自 dataclass 故日後新增設定自動進 log 與重播 metadata 無需改動 log 或解析代碼
+    ReplaySource 解析新增: 玩家名 / 禁牌 (依 banned_by_name 分組 相容舊版逐張 ban_card 欄位) / settings
+修改:
+    開賽資訊全部改寫在 log 與 jsonl 檔頭 (建立 game state 當下): 設定 / 玩家名 / 禁牌 / 雙方最終牌組 / rng_seed
+        battling.py 結束時的 deck / rng_seed 寫入區塊移除 專用伺服器 _log_match_secrets 由 _finish_battle 移至 _start_battle
+        注意: 此舉取消 4.5.0.3 的檔案 fog of war 對戰進行中 host 可從自己的 log 直接看到對手最終牌組
+              (專用伺服器的 log 位於伺服器端 且仍是結束才廣播 影響較小) 重播頁本身不需要此順序 純為檔案可讀性
+    禁牌 log 改為每人一行: ban <卡1>-<卡2>-... by <名字> (原本一張一行) 規則自動鎖卡同格式寫成一行 by judge
+        jsonl 欄位統一為 ban_cards (list) + banned_by_name 玩家禁牌與規則鎖卡格式一致 便於賽後整理
+優化:
+    棋盤格起點座標收斂: (W/2-2bs, H/2-1.65bs) 原本散在五處各寫一份 (card_renderer / draft_renderer / ban_draft /
+        combat_animator / 重播開場頁) 抽成 core/game_screen.cell_origin 與既有 to_board_x / to_board_y 同處
+        覆蓋物 (locked.png) 與卡片自此共用同一算式 日後調版面不會再各算各的而錯位
+    重播開場頁每列禁牌上限改用 MAX_BANS_PER_PLAYER 常數 (原本寫死 4) 調整禁牌額度時版面自動跟上
+    新增 tests/test_replay_prelude.py (metadata 解析 / 設定行 / 以 SDL dummy 實際渲染整頁並驗證 E 與 ESC) 全套 375 通過
+修正:
+    SPW賺分不會被無效化:
+        解釋: on_settle 並無統一nullify的函式
+        修法: 直接在SPW的override上面增加nullify偵測，再加一層感覺很懶蛋
+    local 對戰在 lobby 選的禁牌到選卡畫面完全沒作用 (被 ban 的卡照樣選得到 也不顯示 locked) (起於4.5.0.0)
+        解釋: _run_local 呼叫 draft.main 時漏傳 extra_bans 與 player_names (host 有傳) 禁牌與玩家名都沒進 draft_state
+              原有測試手動把 ban_deck 塞好再驗阻擋 只測到機制沒測到串接 故一直沒抓到
+        修法: 補傳兩者 並新增串接層回歸測試 (驗證 _run_local 確實把 lobby 的禁牌與名字交給 draft)
+    Pylance: Player.elapsed_time 宣告為 int 但重播依動作時間戳重建時鐘時會寫入小數
+        修法: 宣告改 float (正常對戰仍以整秒增減 time_display 本就以 int 取值 存檔與連線格式不變)
+    Pylance: 專用伺服器把 HeadlessRenderer 傳進要求 GameRenderer 的 logic_update / neutral.update / recycle_cards
+        解釋: 這些路徑實際只用到 game_renderer.dying_cards.append 卻要求完整的 GameRenderer 型別
+        修法: 新增 shared/renderer.py 的 DyingCardSink Protocol (結構型別) 上述三處參數改用之
+              GameRenderer 與 HeadlessRenderer 皆自動符合 不需繼承也不需 cast (apply_dict 仍要求完整 GameRenderer)
+----------------

@@ -17,14 +17,26 @@
 # -----------------------------------------------------------------
 
 from core.game_screen import GameScreen
-from screens import replay_select
+from core.replay_source import ReplaySource
+from screens import replay_prelude, replay_select
 from screens.battling import battling_replay
 from screens.battling.finalize import finalize_battle
+
+
+def _replay_metadata(replay_path) -> dict:
+    try:
+        return ReplaySource(replay_path).metadata
+    except (FileNotFoundError, OSError, ValueError) as e:
+        print(f"[playback] could not read replay metadata: {e}")
+        return {}
 
 
 def main(game_screen: GameScreen) -> None:
     replay_path = replay_select.main(game_screen)
     if replay_path is None:
+        return
+
+    if not replay_prelude.main(game_screen, _replay_metadata(replay_path)):
         return
 
     game_state = battling_replay.main(game_screen, replay_path)

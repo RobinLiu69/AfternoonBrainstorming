@@ -27,7 +27,8 @@ from core.game_screen import GameScreen, draw_text
 from core.game_state import GameState
 from core.draft_state import DraftState
 from core.lobby_state import LobbyState
-from core.match_prelude import log_match_prelude
+from core.match_prelude import (log_player_names, resolve_ban_draft, judge_bans_of,
+                                log_ban_draft, log_judge_bans)
 from core.network_layer import LANClient, LANServer, VersionMismatchError
 from core.board_config import BoardConfig
 from core.player import Player
@@ -146,7 +147,14 @@ def _build_game_state_from_draft(draft_state: DraftState,
     game_state = GameState(player1, player2, neutral, BoardConfig(), game_logger=logger)
     draft_state.settings.apply_to(game_state)
     game_state.game_logger.info(f"version {VERSION}", version=VERSION)
-    log_match_prelude(logger, lobby_state)
+    log_player_names(logger, lobby_state)
+    game_state.ban_draft = resolve_ban_draft(lobby_state)
+    game_state.judge_bans = judge_bans_of(draft_state.ban_deck, game_state.ban_draft)
+    log_ban_draft(logger, game_state.ban_draft)
+    log_judge_bans(logger, game_state.judge_bans)
+    logger.info(f"player1 deck {'-'.join(player1.deck)}")
+    logger.info(f"player2 deck {'-'.join(player2.deck)}")
+    logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
     return game_state
 
 
@@ -167,7 +175,9 @@ def _run_local(game_screen: GameScreen) -> None:
         return
 
     exit_reason = draft.main(game_screen, mode="local",
-                             settings=lobby_state.settings)
+                             settings=lobby_state.settings,
+                             extra_bans=list(lobby_state.bans),
+                             player_names=lobby_state.seat_names())
     if exit_reason.kind != "finished" or exit_reason.draft_state is None:
         return
 
@@ -235,7 +245,7 @@ def _run_client_battle(game_screen: GameScreen, client: LANClient,
     if winner in ("None", ""):
         handoff = client.consume_pending_scene()
     else:
-        finalize_battle(game_state, game_screen, winner)
+        finalize_battle(game_state, game_screen, winner, client=client)
         deadline = time.monotonic() + 3.0
         while time.monotonic() < deadline:
             handoff = client.consume_pending_scene()
@@ -246,6 +256,9 @@ def _run_client_battle(game_screen: GameScreen, client: LANClient,
     if handoff is None:
         return None
     scene, state = handoff
+    if scene == "lobby" and isinstance(client.latest_state, dict) \
+            and client.latest_state.get("in_ban_draft"):
+        state = client.latest_state
     client.scene = scene
     client.initial_state = state
     return scene

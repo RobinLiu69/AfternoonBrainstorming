@@ -340,9 +340,5 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
 
         pygame.display.update()
     
-    if mode in ("local", "lan_server"):
-        game_state.game_logger.info(f"player1 deck {'-'.join(game_state.player1.deck)}")
-        game_state.game_logger.info(f"player2 deck {'-'.join(game_state.player2.deck)}")
-        game_state.game_logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)
     game_state.game_logger.close()
     return winner

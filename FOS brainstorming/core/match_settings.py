@@ -78,6 +78,10 @@ class MatchSettings:
         game_state.file_auto_delete = self.file_auto_delete
         game_state.countdown_time = self.countdown_seconds()
         game_state.turn_increment_seconds = self.increment_seconds()
+        settings = self.to_dict()
+        game_state.game_logger.info(
+            "settings " + " ".join(f"{name}={value}" for name, value in settings.items()),
+            **settings)
         game_state.game_logger.info(f"timer mode {self.timer_mode}")
         game_state.game_logger.info(
             f"time control {self.time_label()}",

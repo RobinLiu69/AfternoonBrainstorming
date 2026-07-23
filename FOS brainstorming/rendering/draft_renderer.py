@@ -20,7 +20,7 @@ from typing import Optional
 
 import pygame
 
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, cell_origin, draw_text
 from core.draft_state import DraftState
 from shared.setting import WHITE, BLUE, RED
 from core.card_hint import HintBox
@@ -129,8 +129,7 @@ class DraftRenderer:
             if not draft_state.is_banned(card.job_and_color):
                 continue
             for data in card.get_render_data():
-                x = (gs.display_width  / 2 - gs.block_size * 2) + data.board_x * gs.block_size
-                y = (gs.display_height / 2 - gs.block_size * 1.65) + data.board_y * gs.block_size
+                x, y = cell_origin(gs, data.board_x, data.board_y)
                 gs.surface.blit(locked, (int(x), int(y)))
 
     def _render_boards(self, draft_state: DraftState) -> None:

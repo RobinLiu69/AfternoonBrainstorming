@@ -208,3 +208,33 @@ def test_lobby_bans_block_draft_picks():
     result = draft_dispatcher.dispatch(
         DraftAction("player1", "add_card", "APG"), draft_state)
     assert result.success is True
+
+
+def _capture_draft_call(monkeypatch, runner):
+    from screens.menu import play_screen
+    from screens.lobby.lobby import LobbyExit
+    from core.scene_exit import DraftExitReason
+
+    captured: dict = {}
+
+    def fake_lobby_main(game_screen, mode, lobby_state=None, **kwargs):
+        assert lobby_state is not None
+        lobby_state.bans = {"TANKG": "host", "APG": "peer"}
+        lobby_state.player_names = {"host": "Robin", "peer": "Angus"}
+        return LobbyExit(kind="start_match", state=lobby_state)
+
+    def fake_draft_main(game_screen, mode="local", **kwargs):
+        captured.update(kwargs)
+        return DraftExitReason(kind="quit")
+
+    monkeypatch.setattr(play_screen.lobby, "main", fake_lobby_main)
+    monkeypatch.setattr(play_screen.draft, "main", fake_draft_main)
+    getattr(play_screen, runner)(None)
+    return captured
+
+
+def test_local_run_forwards_lobby_bans_and_names_to_draft(monkeypatch):
+    captured = _capture_draft_call(monkeypatch, "_run_local")
+
+    assert captured["extra_bans"] == ["TANKG", "APG"]
+    assert captured["player_names"] == {"player1": "Robin", "player2": "Angus"}
