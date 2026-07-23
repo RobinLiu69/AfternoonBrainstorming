@@ -163,6 +163,23 @@ def _render_header(game_screen: GameScreen, state: LobbyState, controls: Optiona
               bs * 0.2, game_screen.display_height - bs * 0.45, game_screen.surface)
 
 
+def _render_leave_confirm(game_screen: GameScreen) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    overlay = pygame.Surface((game_screen.display_width, game_screen.display_height), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 185))
+    game_screen.surface.blit(overlay, (0, 0))
+    lines = [
+        "Leave the game?",
+        "[Y] yes        [N] no",
+    ]
+    offsets = (-bs * 0.4, bs * 0.4)
+    for line, dy in zip(lines, offsets):
+        w = game_screen.mid_text_font.size(line)[0]
+        draw_text(line, game_screen.mid_text_font, WHITE, cx - w / 2, cy + dy, game_screen.surface)
+
+
 def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher,
          mode: str, server: Optional[LANServer] = None,
          client: Optional[LANClient] = None) -> str:
@@ -178,6 +195,7 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
 
     ruleset_locked = TOURNAMENT_BANS if state.settings.ruleset == "tournament" else frozenset()
     back_button = make_back_button(game_screen, text="back", corner="top_right")
+    confirming_leave = False
 
     def actor_for(banner: str) -> str:
         return "host" if banner == "host" else state.peer_seat()
@@ -209,6 +227,7 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
             controls = None
             my_seat = ""
         my_identity = controls if controls in ("host", "peer") else None
+        is_controller = controls in ("host", "both")
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
         board_x = _to_board_x(mouse_x, game_screen)
@@ -254,12 +273,17 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
                 index = registry.index_count(page) - 1
 
             if event.type == pygame.KEYDOWN:
-                closes_screen = controls in ("host", "both")
+                if confirming_leave:
+                    if event.key in (pygame.K_y, pygame.K_RETURN):
+                        return "quit"
+                    if event.key in (pygame.K_n, pygame.K_ESCAPE):
+                        confirming_leave = False
+                    continue
                 if event.key == pygame.K_ESCAPE:
-                    if closes_screen:
+                    if is_controller:
                         dispatcher.dispatch(LobbyAction("host", "set_ban_draft", bool_value=False))
                     else:
-                        return "quit"
+                        confirming_leave = True
                 elif event.key in (pygame.K_d, pygame.K_RIGHT, pygame.K_SPACE):
                     if pygame.key.get_pressed()[pygame.K_LSHIFT]:
                         index = (index + 1) % max(1, registry.index_count(page))
@@ -281,30 +305,26 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
                     else:
                         unban_last()
 
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and back_button.touch(*event.pos):
-                if controls in ("host", "both"):
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not confirming_leave:
+                if is_controller and back_button.touch(*event.pos):
                     dispatcher.dispatch(LobbyAction("host", "set_ban_draft", bool_value=False))
-                else:
-                    return "quit"
-                continue
+                    continue
 
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and controls is not None:
-                for i in range(len(registry.get_page_colors(page))):
-                    if registry.switch_rects[i].collidepoint(event.pos):
-                        index = i
-                        break
-                else:
-                    card = hovered_card()
-                    if state.bans.get(card) is not None:
-                        try_unban(card)
+                if controls is not None:
+                    for i in range(len(registry.get_page_colors(page))):
+                        if registry.switch_rects[i].collidepoint(event.pos):
+                            index = i
+                            break
                     else:
-                        try_ban(card)
+                        card = hovered_card()
+                        if state.bans.get(card) is not None:
+                            try_unban(card)
+                        else:
+                            try_ban(card)
 
         game_screen.render()
 
         if controls is not None:
-            for board in board_player.values():
-                board_renderer.render(board)
             for i, color in enumerate(registry.get_page_colors(page)):
                 pygame.draw.rect(game_screen.surface, color, registry.switch_rects[i])
             exhibit_cards = registry.get_page(page, index) + registry.get_magic_row()
@@ -314,18 +334,23 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
             for card in exhibit_cards:
                 if card.job_and_color in state.bans or card.job_and_color in ruleset_locked:
                     _render_lock(game_screen, card.board_x, card.board_y)
+            for board in board_player.values():
+                board_renderer.render(board)
             _render_player_ban_rows(game_screen, state, controls, my_identity)
         else:
-            for board in board_spectator.values():
-                board_renderer.render(board)
             for card in spectator_board.get(state):
                 for render_object in card.get_render_data():
                     card_renderer.render(render_object)
                 _render_lock(game_screen, card.board_x, card.board_y)
+            for board in board_spectator.values():
+                board_renderer.render(board)
             _render_spectator_labels(game_screen, state)
 
         _render_header(game_screen, state, controls, local_role, my_seat, my_identity)
-        back_button.update(game_screen)
+        if is_controller:
+            back_button.update(game_screen)
+        if confirming_leave:
+            _render_leave_confirm(game_screen)
 
         pygame.display.update()
         clock.tick(60)

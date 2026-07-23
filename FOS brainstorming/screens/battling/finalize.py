@@ -21,7 +21,7 @@ from typing import Optional
 
 from core.game_state import GameState
 from core.game_screen import GameScreen
-from core.network_layer import LANServer
+from core.network_layer import LANServer, LANClient
 from screens.end_game import end_game
 
 
@@ -43,7 +43,8 @@ def _broadcast_log_backup(game_state: GameState, server: LANServer) -> None:
 
 
 def finalize_battle(game_state: GameState, game_screen: GameScreen, winner: str,
-                    server: Optional[LANServer] = None) -> None:
+                    server: Optional[LANServer] = None,
+                    client: Optional[LANClient] = None) -> None:
     game_state.game_logger.info(f"winner {winner}")
     game_state.game_logger.info(f"player1 timer {game_state.player1.time_display}")
     game_state.game_logger.info(f"player2 timer {game_state.player2.time_display}")
@@ -53,4 +54,4 @@ def finalize_battle(game_state: GameState, game_screen: GameScreen, winner: str,
     if server is not None:
         _broadcast_log_backup(game_state, server)
 
-    end_game.main(winner, game_state, game_screen)
+    end_game.main(winner, game_state, game_screen, client=client)

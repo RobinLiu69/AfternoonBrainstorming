@@ -49,7 +49,7 @@ with open(f"{FOLDER_PATH}/config/job_dictionary.json", "r", encoding="utf-8") as
 
 JOB_ORDER = ["ADC", "AP", "TANK", "HF", "LF", "ASS", "APT", "SP"]
 
-VERSION = "4.5.0.3"
+VERSION = "4.5.0.4"
 
 ANIM_LUNGE_STEP: float = 0.32
 COMBAT_ANIMATIONS_ENABLED = True

@@ -235,7 +235,7 @@ def _run_client_battle(game_screen: GameScreen, client: LANClient,
     if winner in ("None", ""):
         handoff = client.consume_pending_scene()
     else:
-        finalize_battle(game_state, game_screen, winner)
+        finalize_battle(game_state, game_screen, winner, client=client)
         deadline = time.monotonic() + 3.0
         while time.monotonic() < deadline:
             handoff = client.consume_pending_scene()
@@ -246,6 +246,9 @@ def _run_client_battle(game_screen: GameScreen, client: LANClient,
     if handoff is None:
         return None
     scene, state = handoff
+    if scene == "lobby" and isinstance(client.latest_state, dict) \
+            and client.latest_state.get("in_ban_draft"):
+        state = client.latest_state
     client.scene = scene
     client.initial_state = state
     return scene

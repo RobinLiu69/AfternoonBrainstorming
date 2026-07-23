@@ -46,6 +46,7 @@ class LANClient:
         self.pending_scene_state: Optional[dict] = None
         self.pending_winner: Optional[str]  = None
         self.pending_statistics: Optional[dict] = None
+        self.latest_state: Optional[dict] = None
 
         self.net_spectator_count: int = 0
         self.net_latencies: dict = {}
@@ -163,6 +164,7 @@ class LANClient:
                 mtype = msg.get("type")
                 if mtype == "state":
                     print(f"[LANClient] received state envelope")
+                    self.latest_state = msg.get("state")
                     if self.on_state_update is not None:
                         self.on_state_update(msg["state"])
                 elif mtype == "scene":
