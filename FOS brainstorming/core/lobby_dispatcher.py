@@ -16,6 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+import threading
 import time
 from dataclasses import dataclass
 
@@ -24,9 +25,11 @@ from core.lobby_state import (
     LobbyState, SETTING_OPTIONS, MAX_BANS_PER_PLAYER,
     PLAYER_NAME_PATTERN, is_bannable_card,
 )
-from core.network_layer import LANServer, LANClient
-from core.network.messages import _send_msg
+from core.network_layer import LANServer, LANClient, action_payload
 from screens.lobby.lobby_action import LobbyAction
+
+
+ACK_GATED_ACTIONS: tuple[str, ...] = ("switch_to_spectator", "switch_to_player")
 
 
 @dataclass
@@ -43,6 +46,7 @@ class LobbyDispatcher:
         self.start_signal: bool = False
         self.peer_left: bool = False
         self._last_ping_time: float = 0.0
+        self.action_lock = threading.RLock()
 
     def attach_server(self, server: "LANServer") -> None:
         self._network = server
@@ -61,29 +65,41 @@ class LobbyDispatcher:
 
     def attach_client(self, client: "LANClient") -> None:
         self._network = client
-        client.on_state_update = self._state.apply_dict
+        client.on_state_update = self._client_apply_state
+
+    def _client_apply_state(self, state_dict: dict) -> None:
+        with self.action_lock:
+            self._state.apply_dict(state_dict)
+
+    @property
+    def awaiting_server(self) -> bool:
+        return isinstance(self._network, LANClient) and self._network.is_awaiting_ack
 
     def _on_client_connect(self, role: str) -> dict:
-        if role in ("player1", "player2"):
-            self._state.peer_connected = True
-        else:
-            self._state.spectator_count += 1
-        welcome_state = self._state.to_dict_for(role)
-        self._broadcast()
-        return welcome_state
+        with self.action_lock:
+            if role in ("player1", "player2"):
+                self._state.peer_connected = True
+            else:
+                self._state.spectator_count += 1
+            welcome_state = self._state.to_dict_for(role)
+            self._broadcast()
+            return welcome_state
 
     def _on_peer_disconnect(self) -> None:
-        self._state.peer_connected = False
-        self._broadcast()
+        with self.action_lock:
+            self._state.peer_connected = False
+            self._broadcast()
 
     def _on_peer_reconnect(self) -> None:
-        self._state.peer_connected = True
-        self._broadcast()
+        with self.action_lock:
+            self._state.peer_connected = True
+            self._broadcast()
 
     def _on_client_dropped(self, role: str) -> None:
-        if role in ("spectator", "god") and self._state.spectator_count > 0:
-            self._state.spectator_count -= 1
-            self._broadcast()
+        with self.action_lock:
+            if role in ("spectator", "god") and self._state.spectator_count > 0:
+                self._state.spectator_count -= 1
+                self._broadcast()
 
     def _refresh_roster(self) -> None:
         if not isinstance(self._network, LANServer):
@@ -99,17 +115,19 @@ class LobbyDispatcher:
             case "local":
                 return self._execute(action)
             case "lan_server":
-                result = self._execute(action)
-                if result.success:
-                    self._broadcast()
+                with self.action_lock:
+                    result = self._execute(action)
+                    if result.success:
+                        self._broadcast()
                 return result
             case "lan_client":
-                self._send_to_server(action)
+                if not self._send_to_server(action):
+                    return LobbyResult(False, message="waiting for host")
                 return LobbyResult(True, message="pending")
         return LobbyResult(False, message=f"unknown mode: {self.mode}")
 
     def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
-        payload = {k: v for k, v in envelope.items() if k != "type"}
+        payload = action_payload(envelope)
         if not self._sender_matches(payload.get("player"), sender_conn):
             return
         try:
@@ -117,9 +135,10 @@ class LobbyDispatcher:
         except TypeError as e:
             print(f"[LobbyDispatcher] Bad remote action: {e}")
             return
-        result = self._execute(action, sender_conn=sender_conn)
-        if result.success:
-            self._broadcast()
+        with self.action_lock:
+            result = self._execute(action, sender_conn=sender_conn)
+            if result.success:
+                self._broadcast()
 
     def _sender_matches(self, claimed_player, sender_conn) -> bool:
         if sender_conn is None or not isinstance(self._network, LANServer):
@@ -131,17 +150,17 @@ class LobbyDispatcher:
             return False
         return True
 
-    def _send_to_server(self, action: LobbyAction) -> None:
+    def _send_to_server(self, action: LobbyAction) -> bool:
         if not isinstance(self._network, LANClient):
-            return
-        self._network.send_action({
+            return False
+        return self._network.send_action({
             "action_type": action.action_type,
             "player": action.player,
             "setting": action.setting,
             "bool_value": action.bool_value,
             "str_value": action.str_value,
             "float_value": action.float_value,
-        })
+        }, await_ack=action.action_type in ACK_GATED_ACTIONS)
 
     def _execute(self, action: LobbyAction, sender_conn=None) -> LobbyResult:
         host_only = ("set_setting", "swap_seats", "start_match", "set_ban_draft")
@@ -179,10 +198,7 @@ class LobbyDispatcher:
                 new_role = "god" if self._network.god_view else "spectator"
                 self._network.reassign_role(conn, new_role)
                 self._network._peer_token = None
-                try:
-                    _send_msg(conn, {"type": "token", "token": ""})
-                except OSError:
-                    pass
+                self._network.send_to(conn, {"type": "token", "token": ""})
                 self._refresh_roster()
                 return LobbyResult(True)
 
@@ -199,10 +215,7 @@ class LobbyDispatcher:
                 self._network._peer_token = new_token
                 peer_seat = self._network.peer_seat()
                 self._network.reassign_role(conn, peer_seat)
-                try:
-                    _send_msg(conn, {"type": "token", "token": new_token})
-                except OSError:
-                    pass
+                self._network.send_to(conn, {"type": "token", "token": new_token})
                 self._refresh_roster()
                 return LobbyResult(True)
 
@@ -273,8 +286,9 @@ class LobbyDispatcher:
         return None
 
     def _on_pong(self, role: str, rtt_ms: float) -> None:
-        self._state.latencies[role] = round(rtt_ms, 1)
-        self._broadcast()
+        with self.action_lock:
+            self._state.latencies[role] = round(rtt_ms, 1)
+            self._broadcast()
 
     def tick(self) -> None:
         if not isinstance(self._network, LANServer):

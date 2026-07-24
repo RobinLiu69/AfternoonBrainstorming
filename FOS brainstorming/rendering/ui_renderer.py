@@ -244,6 +244,16 @@ class UIRenderer:
                   gs.display_width - width - gs.block_size * 0.3,
                   gs.block_size * 0.2, gs.surface)
 
+    def render_awaiting_server(self, game_state: GameState) -> None:
+        if not getattr(game_state, "net_awaiting_ack", False):
+            return
+        gs = self.game_screen
+        text = "waiting for host..."
+        width = gs.text_font.size(text)[0]
+        draw_text(text, gs.text_font, WHITE,
+                  gs.display_width / 2 - width / 2,
+                  gs.block_size * 0.2, gs.surface)
+
     def render_netinfo_overlay(self, local_controller: str, game_state: GameState) -> None:
         gs = self.game_screen
         bs = gs.block_size

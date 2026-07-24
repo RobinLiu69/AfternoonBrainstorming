@@ -19,16 +19,28 @@
 import json
 import socket
 import struct
-from typing import Optional
+from typing import Callable, Optional
 
 
 MAX_MESSAGE_BYTES = 16 * 1024 * 1024
 
+ENVELOPE_KEYS: frozenset = frozenset({"type", "seq"})
 
-def _recv_exactly(sock: socket.socket, n: int) -> Optional[bytes]:
+
+def action_payload(envelope: dict) -> dict:
+    return {k: v for k, v in envelope.items() if k not in ENVELOPE_KEYS}
+
+
+def _recv_exactly(sock: socket.socket, n: int,
+                  on_idle: Optional[Callable[[], bool]] = None) -> Optional[bytes]:
     buf = b""
     while len(buf) < n:
-        chunk = sock.recv(n - len(buf))
+        try:
+            chunk = sock.recv(n - len(buf))
+        except TimeoutError:
+            if on_idle is not None and on_idle():
+                continue
+            raise
         if not chunk:
             return None
         buf += chunk
@@ -40,14 +52,15 @@ def _send_msg(sock: socket.socket, payload: dict) -> None:
     sock.sendall(struct.pack(">I", len(data)) + data)
 
 
-def _recv_msg(sock: socket.socket) -> Optional[dict]:
-    raw_len = _recv_exactly(sock, 4)
+def _recv_msg(sock: socket.socket,
+              on_idle: Optional[Callable[[], bool]] = None) -> Optional[dict]:
+    raw_len = _recv_exactly(sock, 4, on_idle)
     if raw_len is None:
         return None
     length = struct.unpack(">I", raw_len)[0]
     if length > MAX_MESSAGE_BYTES:
         raise ValueError(f"message too large: {length} bytes")
-    raw_data = _recv_exactly(sock, length)
+    raw_data = _recv_exactly(sock, length, on_idle)
     if raw_data is None:
         return None
     return json.loads(raw_data.decode())

@@ -31,6 +31,13 @@ card_settings = CARD_SETTING["Brown"]
 color_code = "BR"
 
 
+def has_active_angry_sp(game_state: GameState, owner: str) -> bool:
+    return game_state.count_cards(
+        lambda card: (card.job_and_color == "SPBR" and card.owner == owner
+                      and card.anger and card.health > 0 and not card.nullify)
+    ) > 0
+
+
 class BrownCard(Card):
     effects_disabled: bool = False
 
@@ -39,9 +46,9 @@ class BrownCard(Card):
 
     def effects_off(self) -> bool:
         return self.effects_disabled
-    
+
     def deploy(self, game_state: GameState) -> None:
-        if game_state.count_cards(lambda card: card.job_and_color == "SPBR" and card.anger and card.owner == self.owner) > 0:
+        if has_active_angry_sp(game_state, self.owner):
             self.effects_disabled = True
         return
 
@@ -81,8 +88,7 @@ class Tank(BrownCard):
                  damage: int = card_settings["TANK"]["damage"]) -> None:
 
         super().__init__(owner=owner, job_and_color="TANKBR", health=health, damage=damage, board_x=board_x, board_y=board_y)
-        self.attacked_this_turn = False
-    
+
     def on_attacked_by(self, attacker: Card, value: int, game_state: GameState) -> bool:
         if self.effects_off():
             return False
@@ -105,13 +111,8 @@ class Hf(BrownCard):
         super().__init__(owner=owner, job_and_color="HFBR", health=health, damage=damage, board_x=board_x, board_y=board_y)
         self.attack_uses = card_settings["HF"]["attack_uses"]
 
-    def on_attack(self, game_state: GameState) -> bool:
-        attack_success = super().on_attack(game_state)
-        if self.effects_off():
-            self.attack_uses = 1
-        else:
-            self.attack_uses = 2
-        return attack_success
+    def attack_cost(self, game_state: GameState) -> int:
+        return 1 if self.effects_off() else self.attack_uses
 
 
 class Lf(BrownCard):
@@ -195,27 +196,24 @@ class Sp(BrownCard):
 
         super().__init__(owner=owner, job_and_color="SPBR", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
-    def ability(self, target: Card, game_state: GameState) -> bool:
-        self.anger = True
+    def _refresh_allies(self, game_state: GameState) -> None:
+        disabled = has_active_angry_sp(game_state, self.owner)
         for card in game_state.get_player_cards(self.owner):
             if card is not self and isinstance(card, BrownCard):
-                card.effects_disabled = True
+                card.effects_disabled = disabled
+
+    def ability(self, target: Card, game_state: GameState) -> bool:
+        self.anger = True
+        self._refresh_allies(game_state)
         return True
-    
+
     def set_nullify(self, nullify: bool, game_state: GameState) -> None:
         self.nullify = nullify
-        if nullify:
-            if game_state.count_cards(lambda card: card.job_and_color == "SPBR" and card.anger and card.owner == self.owner) == 0:
-                for card in game_state.get_player_cards(self.owner):
-                    if card is not self and isinstance(card, BrownCard):
-                        card.effects_disabled = False
+        self._refresh_allies(game_state)
         return
-    
+
     def on_killed_by(self, attacker: Card, game_state: GameState) -> bool:
-        for card in game_state.get_player_cards(self.owner):
-            if game_state.count_cards(lambda card: card.job_and_color == "SPBR" and card.anger and card.owner == self.owner) == 0:
-                if card is not self and isinstance(card, BrownCard):
-                    card.effects_disabled = False
+        self._refresh_allies(game_state)
         return True
 
 

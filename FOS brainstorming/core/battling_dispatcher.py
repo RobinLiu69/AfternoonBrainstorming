@@ -31,6 +31,11 @@ if TYPE_CHECKING:
 
 DEFAULT_PAUSE_TIMEOUT_SECONDS: float = 60.0
 
+ACK_GATED_ACTIONS: tuple[str, ...] = (
+    "attack", "play_card", "move_to", "heal", "spawn_cube",
+    "toggle_upgrade", "end_turn",
+)
+
 
 class BattlingDispatcher:
     def __init__(self, game_state: GameState, mode: str = "local",
@@ -47,6 +52,7 @@ class BattlingDispatcher:
         self._pause_deadline: Optional[float] = None
         self._pause_timer: Optional[threading.Timer] = None
         self._pause_lock = threading.Lock()
+        self.action_lock = threading.RLock()
         self.latencies: dict[str, float] = {}
 
     def attach_renderer(self, renderer: "GameRenderer") -> None:
@@ -68,6 +74,16 @@ class BattlingDispatcher:
         self._network = client
         client.on_state_update = self._client_apply_state
 
+    @property
+    def awaiting_server(self) -> bool:
+        from core.network_layer import LANClient
+        return isinstance(self._network, LANClient) and self._network.is_awaiting_ack
+
+    @property
+    def awaiting_server_visibly(self) -> bool:
+        from core.network_layer import LANClient
+        return isinstance(self._network, LANClient) and self._network.show_waiting_hint
+
     def _on_pong(self, role: str, rtt_ms: float) -> None:
         if role in ("player1", "player2"):
             self.latencies[role] = round(rtt_ms, 1)
@@ -86,12 +102,14 @@ class BattlingDispatcher:
     def _on_client_connect(self, role: str) -> dict:
         if self._game_state is None:
             return {}
-        self._refresh_pause_remaining()
-        return self._game_state.to_dict_for(role)
+        with self.action_lock:
+            self._refresh_pause_remaining()
+            return self._game_state.to_dict_for(role)
 
     def _on_pulse(self) -> None:
-        if self._game_state is not None and self._game_state.paused:
-            self._broadcast_state(self._game_state)
+        with self.action_lock:
+            if self._game_state is not None and self._game_state.paused:
+                self._broadcast_state(self._game_state)
         self._broadcast_net_info()
 
     def _refresh_pause_remaining(self) -> None:
@@ -103,61 +121,65 @@ class BattlingDispatcher:
     def _on_peer_disconnect(self) -> None:
         if self._game_state is None:
             return
-        if self.reconnect_timeout == float("inf"):
-            if self._game_state.paused:
+        with self.action_lock:
+            if self.reconnect_timeout == float("inf"):
+                if self._game_state.paused:
+                    return
+                self._game_state.paused = True
+                self._game_state.pause_reason = "opponent disconnected"
+                self._game_state.pause_seconds_remaining = float("inf")
+                print("[BattlingDispatcher] paused; waiting indefinitely for reconnect")
+                self._broadcast_state(self._game_state)
                 return
+            with self._pause_lock:
+                if self._pause_timer is not None:
+                    return
+                self._pause_deadline = time.monotonic() + self.reconnect_timeout
+                self._pause_timer = threading.Timer(self.reconnect_timeout, self._on_pause_timeout)
+                self._pause_timer.daemon = True
+                self._pause_timer.start()
             self._game_state.paused = True
             self._game_state.pause_reason = "opponent disconnected"
-            self._game_state.pause_seconds_remaining = float("inf")
-            print("[BattlingDispatcher] paused; waiting indefinitely for reconnect")
+            self._game_state.pause_seconds_remaining = self.reconnect_timeout
+            print(f"[BattlingDispatcher] paused; reconnect window {self.reconnect_timeout}s")
             self._broadcast_state(self._game_state)
-            return
-        with self._pause_lock:
-            if self._pause_timer is not None:
-                return
-            self._pause_deadline = time.monotonic() + self.reconnect_timeout
-            self._pause_timer = threading.Timer(self.reconnect_timeout, self._on_pause_timeout)
-            self._pause_timer.daemon = True
-            self._pause_timer.start()
-        self._game_state.paused = True
-        self._game_state.pause_reason = "opponent disconnected"
-        self._game_state.pause_seconds_remaining = self.reconnect_timeout
-        print(f"[BattlingDispatcher] paused; reconnect window {self.reconnect_timeout}s")
-        self._broadcast_state(self._game_state)
 
     def _on_peer_reconnect(self) -> None:
         if self._game_state is None:
             return
-        with self._pause_lock:
-            if self._pause_timer is not None:
-                self._pause_timer.cancel()
-                self._pause_timer = None
-            self._pause_deadline = None
-        self._game_state.paused = False
-        self._game_state.pause_reason = ""
-        self._game_state.pause_seconds_remaining = 0.0
-        print("[BattlingDispatcher] resumed (peer reconnected)")
-        self._broadcast_state(self._game_state)
+        with self.action_lock:
+            with self._pause_lock:
+                if self._pause_timer is not None:
+                    self._pause_timer.cancel()
+                    self._pause_timer = None
+                self._pause_deadline = None
+            self._game_state.paused = False
+            self._game_state.pause_reason = ""
+            self._game_state.pause_seconds_remaining = 0.0
+            print("[BattlingDispatcher] resumed (peer reconnected)")
+            self._broadcast_state(self._game_state)
 
     def _on_pause_timeout(self) -> None:
         if self._game_state is None or not self._game_state.paused:
             return
-        with self._pause_lock:
-            self._pause_timer = None
-            self._pause_deadline = None
-        self._game_state.paused = False
-        self._game_state.pause_reason = ""
-        self._game_state.pause_seconds_remaining = 0.0
-        winner = self.host_seat
-        self.pending_winner = winner
-        print(f"[BattlingDispatcher] reconnect timeout; declaring {winner} winner")
-        self._broadcast_state(self._game_state)
-        self._broadcast_game_over(winner, self._game_state)
+        with self.action_lock:
+            with self._pause_lock:
+                self._pause_timer = None
+                self._pause_deadline = None
+            self._game_state.paused = False
+            self._game_state.pause_reason = ""
+            self._game_state.pause_seconds_remaining = 0.0
+            winner = self.host_seat
+            self.pending_winner = winner
+            print(f"[BattlingDispatcher] reconnect timeout; declaring {winner} winner")
+            self._broadcast_state(self._game_state)
+            self._broadcast_game_over(winner, self._game_state)
 
     def _client_apply_state(self, state_dict: dict) -> None:
         if self._game_renderer is None:
             return
-        self._game_state.apply_dict(state_dict, self._game_renderer)
+        with self.action_lock:
+            self._game_state.apply_dict(state_dict, self._game_renderer)
 
     def dispatch(self, action: GameAction, game_state: GameState) -> ActionResult:
         self._game_state = game_state
@@ -167,22 +189,25 @@ class BattlingDispatcher:
                 return self._execute(action, game_state)
 
             case "lan_client":
-                self._send_to_server(action)
+                if not self._send_to_server(action):
+                    return ActionResult(False, message="waiting for host")
                 return ActionResult(True, message="pending")
 
             case "lan_server":
-                result = self._execute(action, game_state)
-                if result.success:
-                    self._broadcast_state(game_state)
-                    if result.quit and result.message:
-                        self._broadcast_game_over(result.message, game_state)
-                        self.pending_winner = result.message
+                with self.action_lock:
+                    result = self._execute(action, game_state)
+                    if result.success:
+                        self._broadcast_state(game_state)
+                        if result.quit and result.message:
+                            self._broadcast_game_over(result.message, game_state)
+                            self.pending_winner = result.message
                 return result
 
         return ActionResult(False, message=f"unknown mode: {self.mode}")
 
     def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
-        payload = {k: v for k, v in envelope.items() if k != "type"}
+        from core.network_layer import action_payload
+        payload = action_payload(envelope)
         if not self._sender_matches(payload.get("player"), sender_conn):
             return
         try:
@@ -191,12 +216,13 @@ class BattlingDispatcher:
             print(f"[BattlingDispatcher] Bad remote action payload: {e}")
             return
 
-        result = self._execute(action, self._game_state)
-        if result.success:
-            self._broadcast_state(self._game_state)
-            if result.quit and result.message:
-                self._broadcast_game_over(result.message, self._game_state)
-                self.pending_winner = result.message
+        with self.action_lock:
+            result = self._execute(action, self._game_state)
+            if result.success:
+                self._broadcast_state(self._game_state)
+                if result.quit and result.message:
+                    self._broadcast_game_over(result.message, self._game_state)
+                    self.pending_winner = result.message
 
     def _sender_matches(self, claimed_player, sender_conn) -> bool:
         from core.network_layer import LANServer
@@ -209,18 +235,18 @@ class BattlingDispatcher:
             return False
         return True
 
-    def _send_to_server(self, action: GameAction) -> None:
+    def _send_to_server(self, action: GameAction) -> bool:
         from core.network_layer import LANClient
         if not isinstance(self._network, LANClient):
             print("[BattlingDispatcher] No network attached — cannot send action.")
-            return
-        self._network.send_action({
+            return False
+        return self._network.send_action({
             "action_type": action.action_type,
             "player": action.player,
             "board_x": action.board_x,
             "board_y": action.board_y,
             "hand_index": action.hand_index,
-        })
+        }, await_ack=action.action_type in ACK_GATED_ACTIONS)
 
     def _broadcast_state(self, game_state: GameState) -> None:
         from core.network_layer import LANServer

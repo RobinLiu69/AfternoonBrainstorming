@@ -30,9 +30,9 @@ SPECTATOR_ALLOWED: tuple[str, ...] = ("toggle_hint", "toggle_animation", "quit")
 
 
 def collect_actions(controller: str, picked_hand_card: list, game_state: GameState, game_screen: GameScreen,
-                    events: Optional[list] = None) -> list[GameAction]:
+                    events: Optional[list] = None, locked: bool = False) -> list[GameAction]:
     actions: list[GameAction] = []
-    is_spectator = controller in ("spectator", "god")
+    is_spectator = controller in ("spectator", "god") or locked
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
     board_x = to_board_x(mouse_x, game_screen)

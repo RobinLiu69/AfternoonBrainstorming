@@ -54,4 +54,4 @@ def finalize_battle(game_state: GameState, game_screen: GameScreen, winner: str,
     if server is not None:
         _broadcast_log_backup(game_state, server)
 
-    end_game.main(winner, game_state, game_screen, client=client)
+    end_game.main(winner, game_state, game_screen, client=client, server=server)

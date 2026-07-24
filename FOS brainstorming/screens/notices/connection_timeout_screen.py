@@ -16,22 +16,20 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-from core.network import (
-    LANClient,
-    LANServer,
-    VersionMismatchError,
-    action_payload,
-    _recv_exactly,
-    _recv_msg,
-    _send_msg,
-)
+from typing import Optional
 
-__all__ = [
-    "LANClient",
-    "LANServer",
-    "VersionMismatchError",
-    "action_payload",
-    "_recv_exactly",
-    "_recv_msg",
-    "_send_msg",
-]
+from core.game_screen import GameScreen
+from core.network_layer import LANClient
+from screens.notices import notice_screen, server_closed_screen
+
+
+def main(game_screen: GameScreen) -> None:
+    notice_screen.main(game_screen, "Connection Timeout",
+                       "no response from the host")
+
+
+def show_for(game_screen: GameScreen, client: Optional[LANClient]) -> None:
+    if client is not None and client.timed_out:
+        main(game_screen)
+    else:
+        server_closed_screen.main(game_screen)

@@ -82,6 +82,7 @@ class GameRenderer:
         self.ui_renderer.render_deck_info(game_state)
         self.ui_renderer.render_timers(game_state)
         self.ui_renderer.render_spectator_count(game_state)
+        self.ui_renderer.render_awaiting_server(game_state)
 
         self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state, hint_on)
 

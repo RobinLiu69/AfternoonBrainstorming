@@ -456,6 +456,9 @@ class Card(ABC):
     def on_death(self, game_state: GameState) -> bool:
         return False
 
+    def attack_cost(self, game_state: GameState) -> int:
+        return self.attack_uses
+
     def damage_bonus(self, value: int, victim: "Card", game_state: GameState) -> int:
         return value + self.extra_damage
 

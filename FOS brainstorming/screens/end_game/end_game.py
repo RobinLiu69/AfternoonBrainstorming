@@ -22,7 +22,7 @@ import pygame
 
 from core.game_state import GameState
 from core.game_screen import GameScreen
-from core.network_layer import LANClient
+from core.network_layer import LANClient, LANServer
 from rendering.end_game_renderer import EndGameRenderer
 from utils.controls import key_pressed
 
@@ -37,7 +37,8 @@ def _host_advanced(client: LANClient) -> bool:
 
 
 def main(winner: str, game_state: GameState, game_screen: GameScreen,
-         client: Optional[LANClient] = None) -> None:
+         client: Optional[LANClient] = None,
+         server: Optional[LANServer] = None) -> None:
     renderer = EndGameRenderer(game_screen, game_state)
 
     display_state: str = "mid"
@@ -51,6 +52,8 @@ def main(winner: str, game_state: GameState, game_screen: GameScreen,
 
     try:
         while running:
+            if server is not None:
+                server.pulse()
             if client is not None and _host_advanced(client):
                 break
 

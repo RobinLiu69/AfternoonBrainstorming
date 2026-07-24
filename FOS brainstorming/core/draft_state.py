@@ -60,6 +60,7 @@ class DraftState:
 
     net_spectator_count: int = 0
     net_latencies: dict = field(default_factory=dict)
+    net_awaiting_ack: bool = False
 
     player_names: dict[str, str] = field(default_factory=dict)
 

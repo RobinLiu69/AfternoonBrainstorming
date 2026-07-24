@@ -318,29 +318,30 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
 
         game_screen.render()
 
-        if controls is not None:
-            for i, color in enumerate(registry.get_page_colors(page)):
-                pygame.draw.rect(game_screen.surface, color, registry.switch_rects[i])
-            exhibit_cards = registry.get_page(page, index) + registry.get_magic_row()
-            for card in exhibit_cards:
-                for render_object in card.get_render_data():
-                    card_renderer.render(render_object)
-            for card in exhibit_cards:
-                if card.job_and_color in state.bans or card.job_and_color in ruleset_locked:
+        with dispatcher.action_lock:
+            if controls is not None:
+                for i, color in enumerate(registry.get_page_colors(page)):
+                    pygame.draw.rect(game_screen.surface, color, registry.switch_rects[i])
+                exhibit_cards = registry.get_page(page, index) + registry.get_magic_row()
+                for card in exhibit_cards:
+                    for render_object in card.get_render_data():
+                        card_renderer.render(render_object)
+                for card in exhibit_cards:
+                    if card.job_and_color in state.bans or card.job_and_color in ruleset_locked:
+                        _render_lock(game_screen, card.board_x, card.board_y)
+                for board in board_player.values():
+                    board_renderer.render(board)
+                _render_player_ban_rows(game_screen, state, controls, my_identity)
+            else:
+                for card in spectator_board.get(state):
+                    for render_object in card.get_render_data():
+                        card_renderer.render(render_object)
                     _render_lock(game_screen, card.board_x, card.board_y)
-            for board in board_player.values():
-                board_renderer.render(board)
-            _render_player_ban_rows(game_screen, state, controls, my_identity)
-        else:
-            for card in spectator_board.get(state):
-                for render_object in card.get_render_data():
-                    card_renderer.render(render_object)
-                _render_lock(game_screen, card.board_x, card.board_y)
-            for board in board_spectator.values():
-                board_renderer.render(board)
-            _render_spectator_labels(game_screen, state)
+                for board in board_spectator.values():
+                    board_renderer.render(board)
+                _render_spectator_labels(game_screen, state)
 
-        _render_header(game_screen, state, controls, local_role, my_seat, my_identity)
+            _render_header(game_screen, state, controls, local_role, my_seat, my_identity)
         if is_controller:
             back_button.update(game_screen)
         if confirming_leave:
