@@ -24,7 +24,7 @@ from shared.setting import WHITE
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from core.draft_state import TOURNAMENT_BANS
-from core.game_screen import GameScreen, cell_origin, draw_text
+from core.game_screen import GameScreen, cell_origin, draw_text, QuitGame
 from core.lobby_state import LobbyState, MAX_BANS_PER_PLAYER, is_bannable_card
 from core.lobby_dispatcher import LobbyDispatcher
 from core.network_layer import LANServer, LANClient
@@ -260,8 +260,7 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return "quit"
-
+                raise QuitGame
             if event.type == pygame.MOUSEWHEEL:
                 page = (page + (1 if event.y > 0 else -1)) % registry.page_count()
                 index = registry.index_count(page) - 1

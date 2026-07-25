@@ -205,6 +205,16 @@ class BattlingDispatcher:
 
         return ActionResult(False, message=f"unknown mode: {self.mode}")
 
+    def resolve_flag(self, game_state: GameState) -> Optional[str]:
+        for seat in ("player1", "player2"):
+            if not game_state.get_player(seat).time_out:
+                continue
+            if game_state.timer_mode == "countdown" and game_state.turn_increment_seconds > 0:
+                self.dispatch(GameAction(player=seat, action_type="end_turn"), game_state)
+                return None
+            return "player2" if seat == "player1" else "player1"
+        return None
+
     def _on_remote_action(self, envelope: dict, sender_conn=None) -> None:
         from core.network_layer import action_payload
         payload = action_payload(envelope)
@@ -335,6 +345,9 @@ class BattlingDispatcher:
             case "end_turn":
                 if game_state.timer_mode == "countdown" and game_state.turn_increment_seconds > 0:
                     ending_player = game_state.get_player(action.player)
+                    if ending_player.elapsed_time <= 0:
+                        ending_player.elapsed_time = 0
+                        ending_player.time_out = False
                     ending_player.elapsed_time += game_state.turn_increment_seconds
                     ending_player._refresh_time_display()
                 game_state.turn_number += 1

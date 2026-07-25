@@ -24,7 +24,7 @@ import pygame
 from shared.setting import WHITE, RED, VERSION
 from core.game_state import GameState
 from core.game_statistics import GameStatistics
-from core.game_screen import GameScreen, draw_text, to_board_x, to_board_y
+from core.game_screen import GameScreen, draw_text, to_board_x, to_board_y, QuitGame
 from core.player import Player
 from core.neutral import Neutral
 from core.board_config import BoardConfig
@@ -478,7 +478,7 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
         if not taken_over:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    raise QuitGame
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         paused = not paused
@@ -588,12 +588,13 @@ def main(game_screen: GameScreen, replay_path: Path) -> Optional[GameState]:
             game_state.get_opponent(controller).logic_update(game_state, game_renderer, False)
             game_state.neutral.update(game_state, game_renderer)
             game_state.update()
-            if game_state.player1.time_out:
-                winner = "player2"
+            prev_turn = game_state.turn_number
+            flag_winner = dispatcher.resolve_flag(game_state)
+            if flag_winner is not None:
+                winner = flag_winner
                 running = False
-            if game_state.player2.time_out:
-                winner = "player1"
-                running = False
+            elif game_state.turn_number != prev_turn:
+                controller = "player1" if game_state.turn_number % 2 == 0 else "player2"
         else:
             game_state.player1.logic_update(game_state, game_renderer, False)
             game_state.player2.logic_update(game_state, game_renderer, False)

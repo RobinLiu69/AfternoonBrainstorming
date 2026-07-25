@@ -21,7 +21,7 @@ import random
 import pygame
 
 from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from utils.controls import key_pressed
 
@@ -131,8 +131,7 @@ def main(game_screen: GameScreen, run: dict, spec: dict) -> None:
                     buttons = build_buttons()
                     break
             if event.type == pygame.QUIT:
-                running = False
-
+                raise QuitGame
         draw_text(f"Floor {run['floor']}  -  {info['label']}", game_screen.title_text_font, WHITE,
                   cx - bs * 2.6, cy - bs * 2.8, game_screen.surface)
         draw_text(info["text"], game_screen.big_text_font, WHITE,

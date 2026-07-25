@@ -23,6 +23,8 @@ from typing import Any, Literal, Optional, TYPE_CHECKING
 
 import pygame
 
+from core.game_screen import QuitGame
+
 from utils.controls import key_pressed
 
 if TYPE_CHECKING:
@@ -78,9 +80,7 @@ def collect_draft_actions(current_editor: str, page: int, index: int, registry: 
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            actions.append(DraftAction(current_editor, "quit"))
-            continue
-
+            raise QuitGame
         if event.type == pygame.MOUSEWHEEL:
             t = "page_next" if event.y > 0 else "page_prev"
             actions.append(DraftAction(current_editor, t))

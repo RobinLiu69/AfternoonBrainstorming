@@ -25,7 +25,7 @@ from core.draft_dispatcher import DraftDispatcher
 from core.match_settings import MatchSettings
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.network_layer import LANClient, LANServer
 from core.scene_exit import DraftExitReason
 from screens.draft.draft_action import collect_draft_actions
@@ -217,7 +217,7 @@ def main(game_screen: GameScreen, mode: str = "local",
         if confirming_quit:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    return DraftExitReason(kind="quit")
+                    raise QuitGame
                 if event.type == pygame.KEYDOWN:
                     if event.key in (pygame.K_y, pygame.K_RETURN):
                         return DraftExitReason(kind="quit")

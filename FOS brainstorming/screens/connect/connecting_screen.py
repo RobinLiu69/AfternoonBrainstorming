@@ -22,7 +22,7 @@ from typing import Optional
 import pygame
 
 from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.network_layer import LANClient, VersionMismatchError
 from screens.widgets import make_back_button
 
@@ -56,8 +56,7 @@ def main(game_screen: GameScreen, client: LANClient, host_ip: str,
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                canceled["flag"] = True
-                return ("canceled", None)
+                raise QuitGame
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 canceled["flag"] = True
                 return ("canceled", None)

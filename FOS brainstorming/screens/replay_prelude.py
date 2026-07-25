@@ -22,7 +22,7 @@ from shared.setting import WHITE, RED, VERSION
 from cards.factory import CardFactory
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
-from core.game_screen import GameScreen, cell_origin, draw_text
+from core.game_screen import GameScreen, cell_origin, draw_text, QuitGame
 from core.lobby_state import MAX_BANS_PER_PLAYER
 from rendering.board_renderer import BoardRenderer
 from rendering.card_renderer import CardRenderer
@@ -167,7 +167,7 @@ def main(game_screen: GameScreen, metadata: dict) -> bool:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False
+                raise QuitGame
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return False

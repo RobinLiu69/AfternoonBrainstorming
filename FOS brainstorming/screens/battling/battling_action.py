@@ -21,7 +21,7 @@ from typing import Optional
 import pygame
 
 from core.game_state import GameState
-from core.game_screen import GameScreen, to_board_x, to_board_y
+from core.game_screen import GameScreen, to_board_x, to_board_y, QuitGame
 from core.game_action import GameAction
 from utils.controls import key_pressed
 
@@ -41,6 +41,8 @@ def collect_actions(controller: str, picked_hand_card: list, game_state: GameSta
     if events is None:
         events = pygame.event.get()
     for event in events:
+        if event.type == pygame.QUIT:
+            raise QuitGame
         if event.type == pygame.MOUSEBUTTONDOWN and not is_spectator:
             match event.button:
                 case 1:
@@ -249,8 +251,6 @@ def collect_actions(controller: str, picked_hand_card: list, game_state: GameSta
                         ))
                 case pygame.K_ESCAPE:
                     actions.append(GameAction(player=controller, action_type="quit"))
-            if event.type == pygame.QUIT:
-                actions.append(GameAction(player=controller, action_type="quit"))
     if is_spectator:
         actions = [a for a in actions if a.action_type in SPECTATOR_ALLOWED]
     return actions
