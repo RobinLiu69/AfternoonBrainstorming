@@ -257,8 +257,7 @@ class Player:
                     self.start_time = -1
                     self.elapsed_time -= 1
                 self._refresh_time_display()
-                if self.elapsed_time <= 0:
-                    self.time_out = True
+                self.time_out = self.elapsed_time <= 0
             case "timer":
                 if self.start_time == -1:
                     self.start_time = time.time()

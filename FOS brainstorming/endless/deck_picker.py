@@ -21,7 +21,7 @@ from typing import Optional
 import pygame
 
 from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from utils.controls import key_pressed
 
@@ -83,8 +83,7 @@ def main(game_screen: GameScreen, run: dict, title: str) -> Optional[tuple[str, 
                         selected = (source, i)
                         running = False
             if event.type == pygame.QUIT:
-                running = False
-
+                raise QuitGame
         draw_text(title, game_screen.big_big_text_font, WHITE,
                   cx - bs * 2.0, cy - bs * 2.7, game_screen.surface)
         draw_text("* = temporary card", game_screen.text_font, TEMP_COLOR,

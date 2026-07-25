@@ -21,7 +21,7 @@ from typing import Optional
 import pygame
 
 from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from utils.controls import key_pressed
 
@@ -106,8 +106,7 @@ def main(game_screen: GameScreen) -> Optional[str]:
                         selected = stage
                         running = False
             if event.type == pygame.QUIT:
-                running = False
-
+                raise QuitGame
         draw_text("Campaign", game_screen.title_text_font, WHITE,
                   cx - bs * 0.875, cy - bs * 2.7, game_screen.surface)
         draw_text("* = cleared", game_screen.text_font, CLEARED_COLOR,

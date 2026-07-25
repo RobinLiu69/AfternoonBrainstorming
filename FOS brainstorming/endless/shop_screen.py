@@ -19,7 +19,7 @@
 import pygame
 
 from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from utils.controls import key_pressed
 
@@ -153,9 +153,7 @@ def main(game_screen: GameScreen, state: dict, run: dict, stock: dict) -> str:
                             remove_btn, reroll_btn, leave_btn = service_buttons()
                             break
             if event.type == pygame.QUIT:
-                result = "menu"
-                running = False
-
+                raise QuitGame
         draw_text(f"Shop  -  floor {run['floor']}", game_screen.title_text_font, WHITE,
                   cx - bs * 1.6, cy - bs * 3.1, game_screen.surface)
         draw_text(f"coins: {run['coins']}", game_screen.big_big_text_font, GOLD,

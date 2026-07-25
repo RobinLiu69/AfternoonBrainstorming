@@ -23,7 +23,7 @@ import pygame
 from core.network_layer import LANServer, LANClient
 from shared.setting import WHITE
 from core.game_state import GameState
-from core.game_screen import GameScreen, draw_text, to_board_x, to_board_y
+from core.game_screen import GameScreen, draw_text, to_board_x, to_board_y, QuitGame
 from core.battling_dispatcher import BattlingDispatcher
 from shared.stat_type import StatType
 from core.board_config import BoardConfig
@@ -211,7 +211,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
         if confirming_quit:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    raise QuitGame
                 elif event.type == pygame.KEYDOWN:
                     if event.key in (pygame.K_y, pygame.K_RETURN):
                         running = False
@@ -300,12 +300,13 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
                         dispatcher._broadcast_state(game_state)
 
 
-                if game_state.player1.time_out:
-                    winner = "player2"
+                prev_turn = game_state.turn_number
+                flag_winner = dispatcher.resolve_flag(game_state)
+                if flag_winner is not None:
+                    winner = flag_winner
                     running = False
-                if game_state.player2.time_out:
-                    winner = "player1"
-                    running = False
+                elif mode in ("local", "campaign") and game_state.turn_number != prev_turn:
+                    controller = "player1" if game_state.turn_number % 2 == 0 else "player2"
 
                 if not running and winner not in ("None", ""):
                     if is_server and dispatcher.pending_winner is None:

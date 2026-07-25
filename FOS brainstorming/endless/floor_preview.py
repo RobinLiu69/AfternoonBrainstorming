@@ -21,7 +21,7 @@ from typing import Optional
 import pygame
 
 from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from utils.controls import key_pressed
 
@@ -76,8 +76,7 @@ def main(game_screen: GameScreen, spec: dict, ai_fx: dict, player_fx: dict) -> O
                     result = "back"
                     running = False
             if event.type == pygame.QUIT:
-                running = False
-
+                raise QuitGame
         draw_text(spec["label"], game_screen.title_text_font, kind_color,
                   cx - bs * 2.5, cy - bs * 3.0, game_screen.surface)
 

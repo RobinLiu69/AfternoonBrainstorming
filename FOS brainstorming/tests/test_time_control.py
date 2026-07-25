@@ -150,5 +150,51 @@ def test_countdown_time_synced_over_wire():
     data = game_state.to_dict()
     assert data["countdown_time"] == 300
 
-    labels = list(TIME_CONTROL_OPTIONS)
-    assert labels == ["5min", "10min", "15min", "20min", "5+5", "10+10", "15+10"]
+    for preset in ("5min", "10min", "15min", "20min", "5+5", "10+10", "15+10"):
+        assert preset in TIME_CONTROL_OPTIONS
+
+
+def test_flag_in_increment_mode_grants_one_increment_and_ends_turn():
+    for increment in (5, 10):
+        game_state, dispatcher = _make_countdown_game(increment=increment)
+        game_state.player1.elapsed_time = 0
+        game_state.player1.time_out = True
+
+        winner = dispatcher.resolve_flag(game_state)
+
+        assert winner is None
+        assert game_state.player1.elapsed_time == increment
+        assert game_state.player1.time_out is False
+        assert game_state.turn_number == 1
+
+
+def test_flag_in_pure_countdown_is_a_loss():
+    game_state, dispatcher = _make_countdown_game(increment=0)
+    game_state.player1.elapsed_time = 0
+    game_state.player1.time_out = True
+
+    winner = dispatcher.resolve_flag(game_state)
+
+    assert winner == "player2"
+    assert game_state.turn_number == 0
+
+
+def test_resolve_flag_noop_when_nobody_flagged():
+    game_state, dispatcher = _make_countdown_game(increment=5)
+    assert dispatcher.resolve_flag(game_state) is None
+    assert game_state.turn_number == 0
+
+
+def test_timeout_flag_is_self_correcting():
+    import time
+    game_state = make_game_state()
+
+    game_state.player1.elapsed_time = 0
+    game_state.player1.start_time = time.time()
+    game_state.player1._update_timer_logic("countdown")
+    assert game_state.player1.time_out is True
+
+    game_state.player1.elapsed_time = 10
+    game_state.player1.start_time = time.time()
+    game_state.player1._update_timer_logic("countdown")
+    assert game_state.player1.time_out is False

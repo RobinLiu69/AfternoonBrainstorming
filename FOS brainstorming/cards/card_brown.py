@@ -112,7 +112,7 @@ class Hf(BrownCard):
         self.attack_uses = card_settings["HF"]["attack_uses"]
 
     def attack_cost(self, game_state: GameState) -> int:
-        return 1 if self.effects_off() else self.attack_uses
+        return 1 if self.effects_off() or self.nullify else self.attack_uses
 
 
 class Lf(BrownCard):
