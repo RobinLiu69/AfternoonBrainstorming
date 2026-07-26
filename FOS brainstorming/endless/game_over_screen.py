@@ -19,7 +19,7 @@
 import pygame
 
 from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from utils.controls import key_pressed
 
@@ -56,8 +56,7 @@ def main(game_screen: GameScreen, run: dict, state: dict, floors_cleared: int, n
                 if continue_button.touch(mouse_x, mouse_y):
                     running = False
             if event.type == pygame.QUIT:
-                running = False
-
+                raise QuitGame
         draw_text("The tower claims you...", game_screen.title_text_font, (255, 80, 80),
                   cx - bs * 2.3, cy - bs * 2.8, game_screen.surface)
         draw_text(f"fell on floor {run['floor']}", game_screen.big_big_text_font, WHITE,

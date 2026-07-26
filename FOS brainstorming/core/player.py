@@ -159,27 +159,20 @@ class Player:
                     break
     
     def move_card(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        moving_cards = list(filter(lambda card: card.moving, self.on_board))
-        if len(moving_cards) == 0:
+        selected_cards = list(filter(lambda card: card.mouse_selected, self.on_board))
+        if len(selected_cards) == 1:
+            selected_card = selected_cards[0]
+            selected_card.mouse_selected = False
+            selected_card.move(board_x, board_y, game_state)
+        else:
             for card in self.on_board:
-                if card.board_x == board_x and card.board_y == board_y and not card.numbness:
-                    if game_state.number_of_movings[self.name] > 0:
+                if card.board_x == board_x and card.board_y == board_y:
+                    if card.moving:
+                        card.mouse_selected = True
+                    elif not card.numbness and game_state.number_of_movings[self.name] > 0:
                         card.moving = True
                         game_state.number_of_movings[self.name] -= 1
                     break
-            
-        else:
-            selected_cards = list(filter(lambda card: card.mouse_selected, self.on_board))
-            if len(selected_cards) == 1:
-                selected_card = selected_cards[0]
-                selected_card.mouse_selected = False
-                selected_card.moving = True
-                selected_card.move(board_x, board_y, game_state)
-            elif len(selected_cards) == 0:
-                for card in self.on_board:
-                    if card.board_x == board_x and card.board_y == board_y:
-                        card.mouse_selected = True
-                        break
     
     def recycle_cards(self, game_state:GameState, game_renderer: DyingCardSink) -> None:
         to_remove = []
@@ -257,8 +250,7 @@ class Player:
                     self.start_time = -1
                     self.elapsed_time -= 1
                 self._refresh_time_display()
-                if self.elapsed_time <= 0:
-                    self.time_out = True
+                self.time_out = self.elapsed_time <= 0
             case "timer":
                 if self.start_time == -1:
                     self.start_time = time.time()

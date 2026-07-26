@@ -326,10 +326,7 @@ class Room:
                 self._last_snapshot = snapshot
                 dispatcher._broadcast_state(game_state)
 
-            if game_state.player1.time_out:
-                winner = "player2"
-            elif game_state.player2.time_out:
-                winner = "player1"
+            winner = dispatcher.resolve_flag(game_state)
 
         if winner is not None:
             dispatcher._broadcast_state(game_state)

@@ -18,11 +18,11 @@
 
 import pygame
 
-from shared.setting import WHITE
+from shared.setting import WHITE, RED, VERSION
 from cards.factory import CardFactory
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
-from core.game_screen import GameScreen, cell_origin, draw_text
+from core.game_screen import GameScreen, cell_origin, draw_text, QuitGame
 from core.lobby_state import MAX_BANS_PER_PLAYER
 from rendering.board_renderer import BoardRenderer
 from rendering.card_renderer import CardRenderer
@@ -83,10 +83,37 @@ def _render_bans(gs: GameScreen, card_renderer: CardRenderer, cards: list,
                   y + gs.block_size * 0.3, gs.surface)
 
 
-def _render_row(gs: GameScreen, label: str, cards: list[str], y: float) -> None:
-    draw_text(label, gs.text_font, WHITE, gs.display_width / 16 * 2, y, gs.surface)
+def version_notice(metadata: dict) -> tuple[str, tuple, bool]:
+    recorded = metadata.get("version")
+    if recorded is None:
+        return "version: unknown (older replay)", WHITE, False
+    if recorded == VERSION:
+        return f"version: {recorded}", WHITE, False
+    return (f"WARNING: replay version {recorded} != current {VERSION}, "
+            f"playback may differ"), RED, True
+
+
+def _render_version(gs: GameScreen, metadata: dict, cx: float, y: float) -> None:
+    line, color, _mismatch = version_notice(metadata)
+    w = gs.mid_text_font.size(line)[0]
+    draw_text(line, gs.mid_text_font, color, cx - w / 2, y, gs.surface)
+
+
+def deck_layout(gs: GameScreen, metadata: dict) -> tuple[float, float, float]:
+    label_x = gs.display_width / 16 * 2
+    name_w = max(gs.text_font.size(f"{_seat_label(metadata, s)}:")[0] for s in SEATS)
+    deck_x = label_x + name_w + gs.block_size * 0.4
+    max_cards = max((len(metadata.get(f"{s}_deck", [])) for s in SEATS), default=0)
+    step = min(gs.block_size * 0.62,
+               (gs.display_width - deck_x - gs.block_size * 0.3) / max(1, max_cards))
+    return label_x, deck_x, step
+
+
+def _render_row(gs: GameScreen, label: str, cards: list[str],
+                y: float, label_x: float, deck_x: float, step: float) -> None:
+    draw_text(label, gs.text_font, WHITE, label_x, y, gs.surface)
     for i, card in enumerate(cards):
-        draw_text(card, gs.text_font, WHITE, gs.display_width / 16 * (i + 3), y, gs.surface)
+        draw_text(card, gs.text_font, WHITE, deck_x + i * step, y, gs.surface)
 
 
 def main(game_screen: GameScreen, metadata: dict) -> bool:
@@ -104,11 +131,15 @@ def main(game_screen: GameScreen, metadata: dict) -> bool:
     cx = game_screen.display_width / 2
     cy = game_screen.display_height / 2
 
+    labels = [f"{_seat_label(metadata, seat)}:" for seat in SEATS]
+    label_x, deck_x, deck_step = deck_layout(game_screen, metadata)
+
     while True:
         game_screen.render()
 
         draw_text("REPLAY", game_screen.title_text_font, WHITE,
                   cx - bs, bs * 0.25, game_screen.surface)
+        _render_version(game_screen, metadata, cx, cy + bs * 0.5)
         draw_text("bans", game_screen.text_font, WHITE,
                   cx - bs * 3.7, cy - bs * 2.1, game_screen.surface)
 
@@ -125,8 +156,9 @@ def main(game_screen: GameScreen, metadata: dict) -> bool:
                   game_screen.display_width / 16 * 2, deck_y - bs * 0.45,
                   game_screen.surface)
         for i, seat in enumerate(SEATS):
-            _render_row(game_screen, f"{_seat_label(metadata, seat)}:",
-                        metadata.get(f"{seat}_deck", []), deck_y + i * bs * 0.4)
+            _render_row(game_screen, labels[i],
+                        metadata.get(f"{seat}_deck", []),
+                        deck_y + i * bs * 0.4, label_x, deck_x, deck_step)
 
         draw_text("E/ENTER: watch replay    ESC: back", game_screen.mid_text_font, WHITE,
                   bs * 0.2, game_screen.display_height - bs * 0.45, game_screen.surface)
@@ -135,7 +167,7 @@ def main(game_screen: GameScreen, metadata: dict) -> bool:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False
+                raise QuitGame
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return False

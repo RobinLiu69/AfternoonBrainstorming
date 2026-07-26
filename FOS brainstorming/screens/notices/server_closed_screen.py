@@ -19,7 +19,7 @@
 import pygame
 
 from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 
 
 def main(game_screen: GameScreen) -> None:
@@ -31,7 +31,7 @@ def main(game_screen: GameScreen) -> None:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
+                raise QuitGame
             if event.type == pygame.KEYDOWN:
                 return
             if event.type == pygame.MOUSEBUTTONDOWN:

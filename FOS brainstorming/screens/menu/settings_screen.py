@@ -19,7 +19,7 @@
 import pygame
 
 from shared.setting import WHITE, CYAN
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from core.setting_config import save_setting, load_setting
 from core.lobby_state import MAX_NAME_LENGTH
@@ -205,8 +205,7 @@ def main(game_screen: GameScreen) -> None:
                     elif user_back_button.touch(mouse_x, mouse_y):
                         running = False
             if event.type == pygame.QUIT:
-                running = False
-
+                raise QuitGame
         if not running and editing_name:
             commit_name()
 

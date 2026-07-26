@@ -21,7 +21,7 @@ from typing import Optional
 import pygame
 
 from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from core.card_hint import HintBox
 from core.setting_config import load_setting
@@ -96,8 +96,7 @@ def main(game_screen: GameScreen, run: dict, options: list[dict], pending: dict)
                     chosen = options[hover_index]
                     running = False
             if event.type == pygame.QUIT:
-                running = False
-
+                raise QuitGame
         draw_text(f"Floor {run['floor']} cleared!", game_screen.title_text_font, WHITE,
                   cx - bs * 1.9, cy - bs * 3.1, game_screen.surface)
         draw_text(f"+{coins_gained} coins   (total: {run['coins']})",

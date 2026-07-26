@@ -25,7 +25,7 @@ from shared.setting import WHITE, JOB_DICTIONARY
 from core.draft_state import DraftState
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
-from core.game_screen import GameScreen
+from core.game_screen import GameScreen, QuitGame
 from cards.base import Card
 from screens.draft.exhibit_registry import ExhibitRegistry
 from screens.draft.draft_action import DraftAction
@@ -130,8 +130,7 @@ def _collect_actions(page: int, registry: _CampaignExhibitRegistry,
     actions: list[DraftAction] = []
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            actions.append(DraftAction("player1", "quit"))
-            continue
+            raise QuitGame
         if event.type == pygame.MOUSEWHEEL:
             actions.append(DraftAction("player1", "page_next" if event.y > 0 else "page_prev"))
             continue

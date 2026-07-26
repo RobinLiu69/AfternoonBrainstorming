@@ -48,7 +48,7 @@ def game_screen():
     return screen
 
 
-def _write_replay(tmp_path, with_names=True, tournament=False):
+def _write_replay(tmp_path, with_names=True, tournament=False, version=None):
     from core.match_settings import MatchSettings
     from tests.helpers import make_game_state
 
@@ -65,6 +65,8 @@ def _write_replay(tmp_path, with_names=True, tournament=False):
     game_state.game_logger = logger
     state.settings.apply_to(game_state)
 
+    if version is not None:
+        logger.info(f"version {version}", version=version)
     ban_draft = resolve_ban_draft(state)
     log_player_names(logger, state)
     logger.info(f"player1 deck {'-'.join(P1_DECK)}")
@@ -146,3 +148,55 @@ def test_prelude_renders_with_no_bans(game_screen):
     metadata = {"player1_deck": P1_DECK, "player2_deck": P2_DECK}
 
     assert _drive(game_screen, metadata, pygame.K_e) is True
+
+
+def test_matching_version_is_recorded_and_not_flagged(tmp_path):
+    from shared.setting import VERSION
+
+    metadata = _write_replay(tmp_path, version=VERSION)
+    assert metadata["version"] == VERSION
+
+    line, color, mismatch = replay_prelude.version_notice(metadata)
+    assert mismatch is False
+    assert VERSION in line
+
+
+def test_mismatched_version_is_flagged(tmp_path):
+    from shared.setting import VERSION, RED
+
+    metadata = _write_replay(tmp_path, version="0.0.0.1")
+    line, color, mismatch = replay_prelude.version_notice(metadata)
+
+    assert mismatch is True
+    assert color == RED
+    assert "0.0.0.1" in line and VERSION in line
+
+
+def test_missing_version_is_not_a_hard_warning():
+    line, color, mismatch = replay_prelude.version_notice({})
+    assert mismatch is False
+    assert "unknown" in line
+
+
+def test_prelude_renders_with_mismatched_version(game_screen, tmp_path):
+    import pygame
+    metadata = _write_replay(tmp_path, version="0.0.0.1")
+
+    assert _drive(game_screen, metadata, pygame.K_e) is True
+
+
+def test_deck_cards_start_clear_of_the_longest_name(game_screen):
+    long_deck = ["TANKV"] * 12
+    metadata = {
+        "player1_name": "R" * 16,
+        "player2_name": "Ann",
+        "player1_deck": long_deck,
+        "player2_deck": long_deck,
+    }
+    label_x, deck_x, step = replay_prelude.deck_layout(game_screen, metadata)
+
+    label_right = label_x + game_screen.text_font.size("R" * 16 + ":")[0]
+    assert deck_x > label_right
+
+    last_right = deck_x + 11 * step + game_screen.text_font.size("TANKV")[0]
+    assert last_right < game_screen.display_width

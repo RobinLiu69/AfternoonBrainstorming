@@ -40,6 +40,10 @@ KEYS_TO_CHECK = SETTING["keys_to_check"]
 PIE_TITLE_TEXTS = SETTING["pie_title_texts"]
 
 
+class QuitGame(Exception):
+    pass
+
+
 def draw_text(text: str, font: pygame.font.Font, text_color: Sequence[int], x: float, y: float, surface: pygame.surface.Surface) -> None:
     rendered = font.render(text, True, text_color)
     

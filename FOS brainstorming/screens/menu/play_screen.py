@@ -23,7 +23,7 @@ from typing import Optional
 import pygame
 
 from shared.setting import WHITE, VERSION
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.game_state import GameState
 from core.draft_state import DraftState
 from core.lobby_state import LobbyState
@@ -98,8 +98,7 @@ def _choose_mode(game_screen: GameScreen) -> str:
                     state = "join"
 
             if event.type == pygame.QUIT:
-                running = False
-
+                raise QuitGame
         draw_text("Afternoon Brainstorming", game_screen.title_text_font, WHITE,
                 cx - bs * 2.3, cy - bs * 2.4, game_screen.surface)
         draw_text("by Five O'clock Shadow Studio", game_screen.mid_text_font, WHITE,

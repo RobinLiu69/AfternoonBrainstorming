@@ -21,7 +21,7 @@ from typing import Optional
 import pygame
 
 from core.game_state import GameState
-from core.game_screen import GameScreen
+from core.game_screen import GameScreen, QuitGame
 from core.network_layer import LANClient, LANServer
 from rendering.end_game_renderer import EndGameRenderer
 from utils.controls import key_pressed
@@ -59,8 +59,7 @@ def main(winner: str, game_state: GameState, game_screen: GameScreen,
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
-                    continue
+                    raise QuitGame
                 if event.type != pygame.KEYDOWN:
                     continue
 

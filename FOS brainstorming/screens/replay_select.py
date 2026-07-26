@@ -24,7 +24,7 @@ from typing import Optional
 import pygame
 
 from shared.setting import WHITE, RED, FOLDER_PATH
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.replay_source import ReplaySource
 
 
@@ -53,7 +53,7 @@ def main(game_screen: GameScreen) -> Optional[Path]:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                raise QuitGame
             elif event.type == pygame.KEYDOWN:
                 if renaming:
                     if event.key == pygame.K_RETURN:
@@ -246,7 +246,7 @@ def _show_empty_and_wait(game_screen: GameScreen) -> None:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                raise QuitGame
             elif event.type == pygame.KEYDOWN:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:

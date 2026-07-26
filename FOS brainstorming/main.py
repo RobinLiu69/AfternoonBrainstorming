@@ -18,7 +18,9 @@
 
 import webbrowser
 
-from core.game_screen import GameScreen
+import pygame
+
+from core.game_screen import GameScreen, QuitGame
 from cards.factory import CardFactory
 
 from screens import playback
@@ -33,24 +35,29 @@ CardFactory.register_all()
 def main() -> None:
     game_screen = GameScreen()
 
-    while True:
-        mode = start_screen.main(game_screen)
+    try:
+        while True:
+            mode = start_screen.main(game_screen)
 
-        match mode:
-            case "play":
-                play_screen.main(game_screen)
-            case "campaign":
-                campaign_run_loop.main(game_screen)
-            case "tower":
-                endless_run_loop.main(game_screen)
-            case "playback":
-                playback.main(game_screen)
-            case "settings":
-                settings_screen.main(game_screen)
-            case "donate":
-                webbrowser.open('https://fiveoclockshadowdev.github.io/website/donate.html')
-            case _:
-                return
+            match mode:
+                case "play":
+                    play_screen.main(game_screen)
+                case "campaign":
+                    campaign_run_loop.main(game_screen)
+                case "tower":
+                    endless_run_loop.main(game_screen)
+                case "playback":
+                    playback.main(game_screen)
+                case "settings":
+                    settings_screen.main(game_screen)
+                case "donate":
+                    webbrowser.open('https://fiveoclockshadowdev.github.io/website/donate.html')
+                case _:
+                    break
+    except QuitGame:
+        pass
+
+    pygame.quit()
 
 
 if __name__ == "__main__":

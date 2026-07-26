@@ -256,42 +256,43 @@ class Card(ABC):
     
     @final
     def move(self, board_x: int, board_y: int, game_state: GameState) -> bool:
-        if self.custom_move(board_x, board_y, game_state): return True
         if not self.movable: return False
-        if game_state.board_dict[board_x, board_y].occupy == False:
-            if not (((abs(self.board_y-board_y) == 1 and
-                  (abs(self.board_x-board_x) == 1 or
-                   abs(self.board_x-board_x) == 0)) or
-                   (abs(self.board_y-board_y) == 0 and
-                    abs(self.board_x-board_x) == 1)) and
-                    (self.board_y != board_y or self.board_x != board_x) and self.moving == True):
-                return False
-            from_x, from_y = self.board_x, self.board_y
-            game_state.game_logger.log_card_moved(self.owner, self.job_and_color, self.get_position(), (board_x, board_y))
-            game_state.game_statistics.increment(StatType.MOVE, self.get_uid(), 1)
-            game_state.board_dict[self.board_x, self.board_y].occupy = False
-            self.board_x = board_x
-            self.board_y = board_y
-            game_state.board_dict[board_x, board_y].occupy = True
-            self.moving = False
+        if self.custom_move(board_x, board_y, game_state): return True
+        if not game_state.board_config.is_valid_position(board_x, board_y): return False
+        if game_state.board_dict[board_x, board_y].occupy: return False
+        if not (((abs(self.board_y-board_y) == 1 and
+              (abs(self.board_x-board_x) == 1 or
+               abs(self.board_x-board_x) == 0)) or
+               (abs(self.board_y-board_y) == 0 and
+                abs(self.board_x-board_x) == 1)) and
+                (self.board_y != board_y or self.board_x != board_x) and self.moving):
+            return False
 
-            game_state.pending_combat_events.append(
-                CombatEvent(
-                    kind="move",
-                    board_x=board_x, board_y=board_y,
-                    target_x=from_x, target_y=from_y,
-                )
+        from_x, from_y = self.board_x, self.board_y
+        game_state.game_logger.log_card_moved(self.owner, self.job_and_color, self.get_position(), (board_x, board_y))
+        game_state.game_statistics.increment(StatType.MOVE, self.get_uid(), 1)
+        game_state.board_dict[self.board_x, self.board_y].occupy = False
+        self.board_x = board_x
+        self.board_y = board_y
+        game_state.board_dict[board_x, board_y].occupy = True
+        self.moving = False
+
+        game_state.pending_combat_events.append(
+            CombatEvent(
+                kind="move",
+                board_x=board_x, board_y=board_y,
+                target_x=from_x, target_y=from_y,
             )
+        )
 
-            if not self.nullify:
-                self.after_movement(board_x, board_y, game_state)
+        if not self.nullify:
+            self.after_movement(board_x, board_y, game_state)
 
-            for card in game_state.get_all_cards():
-                if not card.nullify:
-                    card.on_card_moved(self, game_state)
+        for card in game_state.get_all_cards():
+            if not card.nullify:
+                card.on_card_moved(self, game_state)
 
-            return True
-        return False
+        return True
 
     def custom_move(self, board_x: int, board_y: int, game_state: GameState) -> bool:
         return False

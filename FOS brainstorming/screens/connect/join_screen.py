@@ -23,7 +23,7 @@ import sys
 import pygame
 
 from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.setting_config import load_setting, save_setting
 from screens.widgets import make_back_button
 
@@ -107,8 +107,7 @@ def _input_loop(game_screen: GameScreen, default: str = "",
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return "", ""
-
+                raise QuitGame
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if back_button.touch(*event.pos):
                     return "", ""

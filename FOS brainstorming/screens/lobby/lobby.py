@@ -25,7 +25,7 @@ from core.match_settings import RULESET_OPTIONS, TIME_CONTROL_OPTIONS
 from core.lobby_state import LobbyState, RECONNECT_TIMEOUT_OPTIONS
 from core.lobby_dispatcher import LobbyDispatcher
 from core.network_layer import LANServer, LANClient
-from core.game_screen import GameScreen, draw_text
+from core.game_screen import GameScreen, draw_text, QuitGame
 from core.setting_config import load_setting
 from core.UI import Button
 from screens.widgets import make_back_button
@@ -406,7 +406,7 @@ def main(game_screen: GameScreen, mode: str,
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return LobbyExit(kind="quit")
+                raise QuitGame
             if event.type == pygame.KEYDOWN:
                 if confirming_quit:
                     if event.key in (pygame.K_y, pygame.K_RETURN):
