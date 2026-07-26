@@ -2544,3 +2544,57 @@ debug:
     新增 tests/test_dispatcher_locking.py: 以另一執行緒 non-blocking acquire 驗證狀態變更確實在 action_lock 內
     test_room_server.py 新增 ack 送出與丟棄 / 等待提示延遲 / 閒置逾時與心跳餵食 全套 424 通過
 ----------------
+=======================
+2026/07/25-4.5.2.0
+編寫者 Robin, Anemois
+----------------
+新增:
+    關窗即結束遊戲: 新增 core/game_screen.QuitGame 例外 所有畫面收到 pygame.QUIT 一律 raise 由 main 統一接住並 pygame.quit()
+        解釋: 原本各畫面自己處理 X 鈕 行為不一致 主選單真的關掉 其餘多半只是退回上一層
+              (選牌 / 對戰送出 quit 動作 商店回主選單 join 回傳空字串 連線中視為取消 通知畫面等同按任意鍵)
+              於是在深層畫面點 X 要連點好幾次才關得掉 且離開後從未呼叫 pygame.quit()
+        修法: 事件迴圈直接 raise QuitGame 一路往上拋 只有 main 接 接到就 pygame.quit() 結束程式
+              涵蓋 主選單 / 選模式 / 設定 / join / 連線中 / lobby / ban draft / 選牌 / 對戰 / 結算 /
+              重播列表 / 重播開場 / 重播 / 各通知畫面 / 戰役 (選關 / 賽前 / 牌組) / 無盡塔 (選單 / 樓層 / 事件 / 商店 / 獎勵 / 結束)
+              ESC 的離開確認與各畫面的 back 鈕維持原樣 (只退一層) 未受影響
+    時間控制新增 1+20 (基本 60 秒 每回合 +20 秒): 搭配下述超時規則 等同每回合限時 20 秒的快棋
+    重播開場頁顯示錄製版本: 與目前版本相同顯示白字 不同顯示紅字警告 (playback may differ)
+        舊重播檔沒記版本則顯示 unknown (older replay) 僅提示不阻擋 三種情況都照常播放
+修改:
+    有增秒的倒數模式超時不再判負: 新增 BattlingDispatcher.resolve_flag 超時者自動結束回合並領取該回合增秒 遊戲繼續
+        純倒數 (5min / 10min / 15min / 20min) 維持超時判負 對手獲勝 行為不變
+        對戰 / 重播 / 專用伺服器三處原本各自寫一份 time_out 判負 現在統一改呼叫 resolve_flag
+        local 與戰役在自動結束回合後會一併切換操作方 (原本只有玩家自己按結束回合才會切)
+    移動操作: 現在可同時讓多隻單位進入待移動狀態 各自消耗一次移動次數
+        點擊未待移動的己方單位 = 消耗一次移動次數讓它待移動 點擊已待移動的單位 = 選取它 再點目標格 = 移動
+修正:
+    只要場上有任一單位待移動 就能任意搬動其他單位 (等於一次移動次數可以移動一整回合)
+        解釋: move_card 在有 moving 單位時走另一條分支 該分支對點到的卡直接寫 selected_card.moving = True
+              沒檢查那張卡有沒有付過移動次數 也沒檢查麻痺 於是先讓一隻單位待移動 之後點誰都能移動 且麻痺的單位照樣能走
+        修法: 分支條件改以滑鼠選取數判斷 待移動狀態只能在點擊未待移動的單位時取得 (需未麻痺且移動次數足夠)
+              實際移動時不再回寫 moving 移動的一定是自己付過次數的單位
+    移動失敗會白白消耗移動次數
+        解釋: 出發前就被強制寫入 moving 目標格被佔 / 距離不合法時單位的待移動狀態語意已經被弄亂
+        修法: Card.move 失敗時完全不動 moving 只有移動成功才清掉 走位點錯可以直接重點目標格
+    移動到棋盤外會 KeyError
+        解釋: board_dict 只有盤面內的座標 越界直接炸
+              (滑鼠路徑有 to_board_x / to_board_y 回傳 None 擋著 但遠端動作與戰役 AI 算出的座標沒有這層保護)
+        修法: Card.move 先過 board_config.is_valid_position 再查 occupy
+    Card.move 的 movable 檢查排在 custom_move 之後: 不可移動的單位 (如不可動的影子) 仍會先觸發 custom_move
+        修法: movable 提到最前面 (目前無人覆寫 custom_move 屬預防)
+    HFBR 被 nullify 後仍需要兩把刀才能攻擊
+        解釋: attack_cost 只看 effects_off (SPBR 的壓制) 沒看 nullify 但 nullify 本來就該讓卡片失去自身效果
+        修法: attack_cost 改為 effects_off() 或 nullify 成立時成本即為 1
+    超時旗標一旦成立就不會復原 (增秒模式領到秒數後仍被判定超時)
+        解釋: 原本只在 elapsed_time <= 0 時寫 True 沒有寫回 False 的路徑
+        修法: _update_timer_logic 改為每次依 elapsed_time 重新計算 time_out
+              end_turn 補增秒前先把負值歸零並清旗標 避免補的秒數被之前的欠秒吃掉
+    重播開場頁的牌組列會壓到玩家名 且牌數多時會超出畫面右緣
+        解釋: 卡名 x 座標寫死 display_width / 16 * (i + 3) 沒考慮名字長度 (最長 16 字元) 也沒考慮牌數
+        修法: 抽出 deck_layout 依雙方最寬的名字決定起始 x 依最多牌數決定間距 並夾在畫面寬度內
+優化:
+    新增 tests/test_quit_event.py: 驗證選牌與對戰的事件收集確實 raise QuitGame
+    test_time_control.py 新增超時規則測試 (增秒模式結束回合並領秒 / 純倒數判負 / 沒人超時不動作 / 旗標可復原)
+        時間控制清單改為逐項檢查存在 日後新增預設不必再改測試
+    test_replay_prelude.py 新增版本提示三態 (相同 / 不同 / 未記錄) 與牌組排版測試 全套 435 通過
+----------------
