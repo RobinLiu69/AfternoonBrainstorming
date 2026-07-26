@@ -2546,7 +2546,7 @@ debug:
 ----------------
 =======================
 2026/07/25-4.5.2.0
-編寫者 Robin, Anemois
+編寫者 Anemois, Robin
 ----------------
 新增:
     關窗即結束遊戲: 新增 core/game_screen.QuitGame 例外 所有畫面收到 pygame.QUIT 一律 raise 由 main 統一接住並 pygame.quit()
