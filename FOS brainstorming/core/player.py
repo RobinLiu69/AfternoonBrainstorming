@@ -22,6 +22,7 @@ from typing import Optional, TYPE_CHECKING
 import time
 
 from core.game_screen import GameScreen
+from shared import card_code
 from shared.stat_type import StatType
 from shared.renderer import DyingCardSink
 from cards.base import Card
@@ -138,14 +139,17 @@ class Player:
                 game_state.number_of_cubes[self.name] += 2
                 self.discard_pile.append(self.hand.pop(index))
             case _:
-                real_name = card_name
+                real_name = card_code.base_code(card_name)
                 kwargs = {}
-                if card_name.endswith(" (+)"):
-                    real_name = card_name[:-4]
+                if real_name.endswith(" (+)"):
+                    real_name = real_name[:-4]
                     kwargs["upgrade"] = True
                 if spawn_card(board_x, board_y, real_name, self.name,
                               self.on_board, game_state, **kwargs):
                     self.hand.pop(index)
+                    spawned = self.on_board[-1]
+                    spawned.tower_code = card_name
+                    card_code.run_enchant_hook(spawned, card_name, game_state)
                     game_state.game_logger.log_card_played(self.name, card_name, (board_x, board_y))
 
     def heal_card(self, board_x: int, board_y: int, game_state: GameState) -> None:
@@ -180,7 +184,7 @@ class Player:
             if card.health <= 0 and card.can_be_killed(game_state):
                 card.on_death(game_state)
                 game_renderer.dying_cards.append(card)
-                self.discard_pile.append(card.job_and_color)
+                self.discard_pile.append(getattr(card, "tower_code", "") or card.job_and_color)
                 game_state.board_dict[card.board_x, card.board_y].occupy = False
                 game_state.game_logger.log_card_recycled(self.name, card.job_and_color, (card.board_x, card.board_y))
                 to_remove.append(card)
