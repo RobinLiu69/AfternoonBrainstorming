@@ -110,7 +110,7 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 key = key_pressed(pygame.key.get_pressed())
-                if key == pygame.K_ESCAPE and cancel is not None:
+                if key == pygame.K_ESCAPE:
                     running = False
                 if key == pygame.K_f:
                     hint_on = not hint_on

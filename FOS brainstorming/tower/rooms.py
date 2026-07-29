@@ -24,11 +24,12 @@ import random
 
 from core.game_screen import GameScreen
 
-from tower import grants, notice_screen, run_state, shop, shop_screen, ui_common
+from tower import events, grants, notice_screen, run_state, shop, shop_screen, ui_common
 from tower.content import GOLD_MINE_REWARD
 
 
-def enter(game_screen: GameScreen, run: dict, room: dict, rng: random.Random) -> None:
+def enter(game_screen: GameScreen, run: dict, room: dict, rng: random.Random) -> str:
+    """Returns "" normally, or "lose"/"abandon" if the room ended the climb."""
     kind = room.get("kind", "")
 
     if kind == "gold_mine":
@@ -37,14 +38,17 @@ def enter(game_screen: GameScreen, run: dict, room: dict, rng: random.Random) ->
                            [f"you dig out {gained} gold."], run=run, color=ui_common.GOLD)
 
     elif kind == "relic_chest":
-        taken = grants.offer_relics(game_screen, run, rng, "Relic Chest", allow_skip=True)
-        if taken is None:
-            return
+        grants.offer_relics(game_screen, run, rng, "Relic Chest", allow_skip=True)
 
     elif kind == "shop":
         stock = shop.generate_stock(run, rng)
         shop_screen.main(game_screen, run, stock, rng)
 
+    elif kind == "event":
+        return events.enter(game_screen, run, rng)
+
     else:
         notice_screen.main(game_screen, "Empty Room",
                            ["nothing here yet."], run=run, color=ui_common.DIM)
+
+    return ""

@@ -23,15 +23,13 @@ from __future__ import annotations
 import random
 
 from core.game_screen import GameScreen
-from screens.battling import battling
 
 from tower import (
-    battle_builder, battle_prep, choice_screen, enchant_runtime, faction_select,
-    grants, map_screen, menu_screen, notice_screen, rooms, run_state, tower_map,
+    battle_flow, choice_screen, enchant_runtime, faction_select, grants,
+    map_screen, menu_screen, notice_screen, rooms, run_state, tower_map,
     tower_save, ui_common,
 )
 from tower.content import ORB_DROP_CHANCE, RELIC_DROP_CHANCE
-from tower.tower_ai import TowerAIController
 
 
 def main(game_screen: GameScreen) -> None:
@@ -70,7 +68,8 @@ def _play_run(game_screen: GameScreen, state: dict) -> None:
             run_state.record_pick(run, pick)
             room = tower_map.branch_choice_room(
                 run_state.current_map(run), run["layer"], pick)
-            rooms.enter(game_screen, run, room, rng)
+            if _visit(game_screen, state, run, room, rng) == "over":
+                return
             outcome = run_state.advance_layer(run)
         else:
             layer = run_state.current_layer(run)
@@ -80,7 +79,8 @@ def _play_run(game_screen: GameScreen, state: dict) -> None:
                 _claim_blessing(game_screen, run, rng)
                 outcome = run_state.advance_layer(run)
             elif kind == "room":
-                rooms.enter(game_screen, run, layer["room"], rng)
+                if _visit(game_screen, state, run, layer["room"], rng) == "over":
+                    return
                 outcome = run_state.advance_layer(run)
             elif kind == "battle":
                 result = _fight(game_screen, run, layer["enemy"], rng)
@@ -100,6 +100,19 @@ def _play_run(game_screen: GameScreen, state: dict) -> None:
             return
 
 
+def _visit(game_screen: GameScreen, state: dict, run: dict, room: dict,
+           rng: random.Random) -> str:
+    """Enter a room.  Returns "over" when it ended the climb."""
+    result = rooms.enter(game_screen, run, room, rng)
+    if result == "lose":
+        _end_run(game_screen, state, run, won=False)
+        return "over"
+    if result == "abandon":
+        tower_save.save(state)
+        return "over"
+    return ""
+
+
 def _claim_blessing(game_screen: GameScreen, run: dict, rng: random.Random) -> None:
     offers = run_state.blessing_offers(run)
     options = [{"label": b["label"], "lines": [b["text"]], "color": ui_common.HILITE}
@@ -112,25 +125,10 @@ def _claim_blessing(game_screen: GameScreen, run: dict, rng: random.Random) -> N
 
 
 def _fight(game_screen: GameScreen, run: dict, enemy: dict, rng: random.Random) -> str:
-    player_effects = run_state.battle_effects(run)
-    enemy_effects = run_state.effects_from_relics(enemy.get("relics", []),
-                                                  enemy.get("effects", {}))
-
-    if battle_prep.main(game_screen, run, enemy, player_effects, enemy_effects) != "start":
-        return "abandon"
-
-    game_state = battle_builder.build_game_state(run, enemy)
-    controller = TowerAIController(enemy, enemy_effects, player_effects)
-    winner = battling.main(game_state, game_screen, mode="campaign", ai_controller=controller)
-
-    if winner == "player2":
-        return "lose"
-    if winner != "player1":
-        return "abandon"
-
-    run["battles_won"] = run.get("battles_won", 0) + 1
-    _battle_reward(game_screen, run, enemy, rng)
-    return "win"
+    result = battle_flow.fight(game_screen, run, enemy)
+    if result == "win":
+        _battle_reward(game_screen, run, enemy, rng)
+    return result
 
 
 def _battle_reward(game_screen: GameScreen, run: dict, enemy: dict,

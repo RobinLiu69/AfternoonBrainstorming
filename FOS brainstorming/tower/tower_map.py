@@ -53,7 +53,7 @@ ROOM_WEIGHTS: dict[str, float] = {
 }
 
 # rooms whose screen does not exist yet - they are simply not generated
-DISABLED_ROOMS: frozenset[str] = frozenset({"event"})
+DISABLED_ROOMS: frozenset[str] = frozenset()
 
 
 def _roll_room(rng: random.Random) -> dict:

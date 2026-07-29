@@ -37,8 +37,9 @@ from cards.factory import CardFactory
 from core.game_screen import GameScreen
 
 from tower import (
-    battle_prep, card_picker, choice_screen, faction_select, map_screen,
-    menu_screen, notice_screen, run_state, shop, shop_screen, tower_map, ui_common,
+    battle_prep, card_picker, choice_screen, events, faction_select, map_screen,
+    menu_screen, notice_screen, rooms, run_state, shop, shop_screen, tower_map,
+    ui_common,
 )
 
 FACTIONS = ["R", "B", "C", "BR"]
@@ -149,3 +150,19 @@ def test_shop_screen_renders(game_screen, escape, run):
     escape(shop_screen)
     stock = shop.generate_stock(run, random.Random(1))
     shop_screen.main(game_screen, run, stock, random.Random(1))
+
+
+@pytest.mark.parametrize("name", sorted(events.EVENTS))
+def test_every_event_renders_and_survives_being_dismissed(game_screen, escape, run, name):
+    escape(choice_screen)
+    escape(notice_screen)
+    run["act"] = events.EVENTS[name]["acts"][0]
+    run_state.add_relic(run, "prepared_pack")
+    assert events.enter(game_screen, run, random.Random(4), name) == ""
+
+
+@pytest.mark.parametrize("kind", ["gold_mine", "relic_chest", "event"])
+def test_rooms_render_and_return_cleanly(game_screen, escape, run, kind):
+    escape(choice_screen)
+    escape(notice_screen)
+    assert rooms.enter(game_screen, run, {"kind": kind}, random.Random(2)) == ""
