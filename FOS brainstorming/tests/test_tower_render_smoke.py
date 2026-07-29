@@ -75,6 +75,16 @@ def run():
     return state
 
 
+def test_the_back_button_stays_clear_of_the_map_strip(game_screen):
+    """It used to sit in the top-left corner, on top of the layer strip."""
+    bs = game_screen.block_size
+    button = ui_common.back_button(game_screen)
+    strip_bottom = bs * 1.05 + bs * 0.75
+    assert button.y > strip_bottom
+    assert button.y + button.height <= game_screen.display_height
+    assert button.x + button.width < game_screen.display_width / 2
+
+
 def test_menu_screen_renders(game_screen, escape, run):
     escape(menu_screen)
     assert menu_screen.main(game_screen, {"run": run, "best_act": 2,
@@ -108,6 +118,23 @@ def test_card_picker_renders_deck_and_bench(game_screen, escape, run):
     escape(card_picker)
     assert card_picker.main(game_screen, run, "Burn which card?",
                             subtitle="costs 1 orb") is None
+
+
+def test_big_decks_still_fit_above_the_back_button(game_screen, escape, run):
+    escape(card_picker)
+    run_state.add_relic(run, "limit_break")
+    run["deck"] = ["TANKW"] * 30
+    assert card_picker.main(game_screen, run, "Burn which card?") is None
+
+
+def test_battle_prep_survives_a_limit_break_deck(game_screen, escape, run):
+    escape(battle_prep)
+    run_state.add_relic(run, "limit_break")
+    run["deck"] = ["TANKW"] * 30
+    enemy = tower_map.boss_of(run_state.current_map(run))
+    enemy_effects = run_state.effects_from_relics(enemy["relics"], enemy["effects"])
+    assert battle_prep.main(game_screen, run, enemy,
+                            run_state.battle_effects(run), enemy_effects) == "back"
 
 
 def test_notice_screen_renders(game_screen, escape, run):

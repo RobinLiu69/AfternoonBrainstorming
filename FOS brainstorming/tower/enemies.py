@@ -127,15 +127,17 @@ def _scaling(act: int, kind: str) -> dict:
 
 
 def weak_enemy(rng: random.Random, index: int) -> dict:
+    """The very first squad fields understrength units, so act 1 opens below par."""
     deck = list(WEAK_DECKS[index % len(WEAK_DECKS)])
+    first = index == 0
     return {
         "kind": "weak",
-        "label": f"{ENEMY_LABELS['weak']} Squad",
+        "label": "Raw Recruits" if first else f"{ENEMY_LABELS['weak']} Squad",
         "deck": deck,
         "strategy": "white",
         "strategy_overrides": {"attack_min_score": 11.0},
         "relics": [],
-        "effects": {},
+        "effects": {"unit_hp_plus": -1, "unit_damage_plus": -1} if first else {},
         "gold": BATTLE_GOLD["weak"],
     }
 
@@ -198,7 +200,10 @@ def faction_lord(tag: str, rng: random.Random) -> dict:
 # unimplemented special spells stay out of the rotation until those land.
 
 def head_instructor(rng: random.Random) -> dict:
-    """Act 1 boss.  Not in the design notes - placeholder, see DESIGN.md."""
+    """Act 1 boss.  Not in the design notes - placeholder, see DESIGN.md.
+
+    Two relics and nothing else: act 1 should never go above a plain deck.
+    """
     deck = ["ADCW", "ADCW", "TANKW", "TANKW", "HFW", "HFW",
             "LFW", "LFW", "ASSW", "ASSW", "APTW", "SPW"]
     return {
@@ -208,7 +213,7 @@ def head_instructor(rng: random.Random) -> dict:
         "strategy": "claude",
         "strategy_overrides": {"beam_width": 5, "depth_cap": 3},
         "relics": ["dorans_shield", "prepared_pack"],
-        "effects": _scaling(1, "boss"),
+        "effects": {},
         "gold": BATTLE_GOLD["boss"],
     }
 

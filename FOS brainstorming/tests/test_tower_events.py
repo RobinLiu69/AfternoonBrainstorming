@@ -109,44 +109,56 @@ def test_pick_always_returns_something_playable(run):
 # altar
 # --------------------------------------------------------------------------
 
-def rigged_altar(deal_id: str) -> random.Random:
-    """An rng that always lands on one particular altar deal."""
-    deal = next(d for d in events.ALTAR_DEALS if d["id"] == deal_id)
+def rigged_altar(*deal_ids: str) -> random.Random:
+    """An rng whose altar always offers exactly these deals, in order."""
+    deals = [next(d for d in events.ALTAR_DEALS if d["id"] == i) for i in deal_ids]
     rng = random.Random(1)
-    rng.choice = lambda seq: deal if seq is events.ALTAR_DEALS else seq[0]
+    rng.sample = lambda seq, k: deals[:k]
     return rng
 
 
 def test_altar_gold_deals_pay_out(run, answer):
     answer(choices=[0])
-    events._altar(None, run, rigged_altar("gold_150"))
+    events._altar(None, run, rigged_altar("gold_150", "orb"))
     assert run["gold"] == 150
 
 
 def test_altar_purchases_take_the_gold(run, answer):
-    answer(choices=[0])
+    answer(choices=[1])
     run["gold"] = 200
 
-    events._altar(None, run, rigged_altar("orb"))
+    events._altar(None, run, rigged_altar("gold_150", "orb"))
     assert run["orbs"] == 1
     assert run["gold"] == 50
 
 
 def test_altar_refuses_when_you_are_broke(run, answer):
-    answer(choices=[0])
+    answer(choices=[1])
     run["gold"] = 10
 
-    events._altar(None, run, rigged_altar("orb"))
+    events._altar(None, run, rigged_altar("gold_150", "orb"))
     assert run["orbs"] == 0
     assert run["gold"] == 10
 
 
 def test_leaving_the_altar_costs_nothing(run, answer):
-    answer(choices=[1])
+    answer(choices=[2])
     run["gold"] = 500
-    events._altar(None, run, random.Random(1))
+    events._altar(None, run, rigged_altar("gold_150", "orb"))
     assert run["gold"] == 500
     assert run["orbs"] == 0
+
+
+def test_the_altar_always_puts_two_rites_on_the_table(run, answer, monkeypatch):
+    seen: list = []
+    monkeypatch.setattr(events.choice_screen, "main",
+                        lambda screen, title, options, **k: seen.append(options) or None)
+    for seed in range(10):
+        events._altar(None, run, random.Random(seed))
+    for options in seen:
+        assert len(options) == events.ALTAR_OFFER_COUNT + 1
+        labels = [o["label"] for o in options[:-1]]
+        assert len(set(labels)) == events.ALTAR_OFFER_COUNT
 
 
 # --------------------------------------------------------------------------
@@ -207,10 +219,11 @@ def test_the_statue_enrages_a_unit(run, answer):
     assert card_code.has_enchant(run["deck"][2], "rage")
 
 
-def test_the_statue_can_be_left_alone(run, answer):
+def test_the_statue_offers_an_orb_instead_of_a_dead_end(run, answer):
     answer(choices=[1])
     events._beast_statue(None, run, random.Random(1))
     assert run_state.enchanted_cards(run) == []
+    assert run["orbs"] == events.STATUE_ORBS
 
 
 def test_the_prism_disperses_a_white_card(run, answer):
@@ -235,6 +248,44 @@ def test_the_prism_pays_out_if_you_pick_no_card(run, answer):
 # --------------------------------------------------------------------------
 # visitor
 # --------------------------------------------------------------------------
+
+def test_the_wanderer_pays_a_flat_price_or_a_gamble(run, answer):
+    answer(choices=[0])
+    events._wanderer(None, run, random.Random(1))
+    assert run["gold"] == events.WANDERER_GOLD
+
+    run["gold"] = 0
+    answer(choices=[1])
+    events._wanderer(None, run, random.Random(1))
+    assert run["gold"] in (events.HAGGLE_WIN, events.HAGGLE_LOSS)
+
+
+def test_every_event_offers_at_least_two_real_choices(run, monkeypatch):
+    """No event may be "one reward or leave" - that is just a gold mine."""
+    seen: dict[str, list] = {}
+
+    def capture(name):
+        def _main(screen, title, options, **kwargs):
+            seen.setdefault(name, []).append(options)
+            return None
+        return _main
+
+    run["gold"] = 1000
+    run_state.add_relic(run, "piggy_bank")
+    run_state.enchant_card(run, "deck", 0, "sharp")
+    monkeypatch.setattr(events.notice_screen, "main", lambda *a, **k: None)
+    monkeypatch.setattr(events.card_picker, "main", lambda *a, **k: None)
+    monkeypatch.setattr(events.grants, "offer_cards", lambda *a, **k: None)
+
+    for name in sorted(events.EVENTS):
+        monkeypatch.setattr(events.choice_screen, "main", capture(name))
+        run["act"] = events.EVENTS[name]["acts"][0]
+        events.enter(None, run, random.Random(6), name)
+
+        options = seen[name][0]
+        rewards = [o for o in options if o["color"] != events.ui_common.DIM]
+        assert len(rewards) >= 2, f"{name} only offers {len(rewards)} real choice(s)"
+
 
 def test_the_visitor_hands_out_a_parting_gift(run, answer):
     answer(choices=[3])

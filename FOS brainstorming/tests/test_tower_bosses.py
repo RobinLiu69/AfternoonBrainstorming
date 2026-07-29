@@ -25,7 +25,7 @@ import pytest
 from shared import card_code
 from core.game_action import GameAction
 from core.battling_dispatcher import BattlingDispatcher
-from tower import card_pool, enchant_runtime, enemies, run_state
+from tower import card_pool, enchant_runtime, enemies, run_state, tower_map
 from tower.content import SELECTABLE_FACTIONS
 from tower.tower_ai import TowerAIController
 
@@ -78,6 +78,38 @@ def test_both_lords_bring_relics():
     boss = forgotten()
     assert boss["relics"]
     assert boss["next_phase"]["relics"]
+
+
+def test_the_opening_squad_fields_understrength_units():
+    first = enemies.weak_enemy(random.Random(1), 0)
+    assert first["effects"] == {"unit_hp_plus": -1, "unit_damage_plus": -1}
+
+    for index in (1, 2):
+        assert enemies.weak_enemy(random.Random(1), index)["effects"] == {}
+
+
+def test_the_act_one_boss_gets_relics_but_no_stat_boost():
+    boss = enemies.head_instructor(random.Random(1))
+    assert boss["effects"] == {}
+    assert set(boss["relics"]) == {"dorans_shield", "prepared_pack"}
+
+    effects = run_state.effects_from_relics(boss["relics"], boss["effects"])
+    assert effects["first_unit_hp_plus"] == 2
+    assert effects["hand_plus"] == 1
+    assert "unit_hp_plus" not in effects
+    assert "unit_damage_plus" not in effects
+
+
+def test_act_one_never_scales_enemy_stats_up():
+    for seed in range(10):
+        act_map = tower_map.build_act(1, FACTIONS, random.Random(seed))
+        for layer in act_map["layers"]:
+            enemy_list = [layer["enemy"]] if "enemy" in layer else []
+            enemy_list += [o["enemy"] for o in layer.get("options", []) if "enemy" in o]
+            for enemy in enemy_list:
+                assert enemy["effects"].get("unit_hp_plus", 0) <= 0
+                assert enemy["effects"].get("unit_damage_plus", 0) <= 0
+                assert enemy["effects"].get("hand_plus", 0) <= 0
 
 
 def test_act_three_only_rolls_finished_bosses():

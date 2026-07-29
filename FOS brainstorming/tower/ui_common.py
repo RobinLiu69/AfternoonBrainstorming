@@ -79,8 +79,11 @@ def box_width(game_screen: GameScreen) -> int:
 
 
 def back_button(game_screen: GameScreen, text: str = "back") -> Button:
+    """Bottom-left corner - the top of the screen belongs to the run bar."""
     bs = game_screen.block_size
-    return Button(bs * 1.5, bs * 0.6, bs * 0.5, bs * 0.5,
+    height = bs * 0.6
+    return Button(bs * 1.5, height, bs * 0.4,
+                  game_screen.display_height - height - bs * 0.25,
                   box_width=box_width(game_screen),
                   font=game_screen.big_text_font, text=text)
 

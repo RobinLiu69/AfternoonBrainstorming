@@ -27,6 +27,8 @@ from utils.controls import key_pressed
 
 from tower import card_picker, card_pool, run_state, ui_common
 
+DECK_ROWS: int = 7
+
 
 def _effect_lines(effects: dict, subject: str) -> list[str]:
     lines: list[str] = []
@@ -134,8 +136,15 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
         draw_text(f"your deck  ({len(run['deck'])})", game_screen.mid_text_font, WHITE,
                   cx + bs * 0.6, y, game_screen.surface)
         y += bs * 0.35
-        for chunk in _wrap([card_pool.display_name(c) for c in run["deck"]], 2):
+        names = [card_pool.display_name(c) for c in run["deck"]]
+        rows = _wrap(names, 2)
+        for chunk in rows[:DECK_ROWS]:
             draw_text("   ".join(chunk), game_screen.small_text_font, WHITE,
+                      cx + bs * 0.6, y, game_screen.surface)
+            y += bs * 0.26
+        hidden = sum(len(chunk) for chunk in rows[DECK_ROWS:])
+        if hidden:
+            draw_text(f"+{hidden} more", game_screen.small_text_font, ui_common.DIM,
                       cx + bs * 0.6, y, game_screen.surface)
             y += bs * 0.26
 

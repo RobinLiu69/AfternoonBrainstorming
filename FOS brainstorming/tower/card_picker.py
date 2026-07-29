@@ -59,8 +59,10 @@ def main(game_screen: GameScreen, run: dict, title: str,
     entries += [("deck", i, code) for i, code in enumerate(run["deck"])]
     entries += [("bench", i, code) for i, code in enumerate(run["bench"])]
 
-    columns = 4
-    btn_w, btn_h = bs * 2.0, bs * 0.45
+    # a Limit Break deck needs more columns, or the grid runs off the bottom
+    columns = 4 if len(entries) <= 16 else 6
+    btn_w = min(bs * 2.0, bs * 9.0 / columns - bs * 0.15)
+    btn_h = bs * 0.45
     grid_w = columns * (btn_w + bs * 0.15) - bs * 0.15
     start_x = cx - grid_w / 2
     start_y = cy - bs * 1.7
@@ -127,8 +129,8 @@ def main(game_screen: GameScreen, run: dict, title: str,
             cancel.update(game_screen)
 
         if hovered_code:
-            lines = card_pool.enchant_lines(hovered_code)
-            y = cy + bs * 1.9
+            lines = card_pool.enchant_lines(hovered_code)[:3]
+            y = cy + bs * 1.25
             for line in lines:
                 draw_text(line, game_screen.text_font, ENCHANT_COLOR,
                           cx - bs * 3.4, y, game_screen.surface)

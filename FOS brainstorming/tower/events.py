@@ -44,20 +44,33 @@ from tower.content import (
 )
 
 ALTAR_DEALS: tuple[dict, ...] = (
-    {"id": "orb", "cost": 150, "text": "offer 150 gold for a Forgetting Orb"},
-    {"id": "relic", "cost": 150, "text": "offer 150 gold for a relic"},
-    {"id": "unit", "cost": 50, "text": "offer 50 gold for a random unit"},
-    {"id": "spell", "cost": 50, "text": "offer 50 gold for a random spell"},
-    {"id": "card_choice", "cost": 100, "text": "offer 100 gold to choose a card"},
-    {"id": "gold_50", "cost": 0, "text": "the altar gives you 50 gold"},
-    {"id": "gold_100", "cost": 0, "text": "the altar gives you 100 gold"},
-    {"id": "gold_150", "cost": 0, "text": "the altar gives you 150 gold"},
+    {"id": "orb", "label": "Sacrifice", "cost": 150,
+     "text": "offer 150 gold for a Forgetting Orb"},
+    {"id": "relic", "label": "Tribute", "cost": 150,
+     "text": "offer 150 gold for a relic"},
+    {"id": "unit", "label": "Conscript", "cost": 50,
+     "text": "offer 50 gold for a random unit"},
+    {"id": "spell", "label": "Incantation", "cost": 50,
+     "text": "offer 50 gold for a random spell"},
+    {"id": "card_choice", "label": "Petition", "cost": 100,
+     "text": "offer 100 gold to choose a card"},
+    {"id": "gold_50", "label": "Small Blessing", "cost": 0,
+     "text": "the altar gives you 50 gold"},
+    {"id": "gold_100", "label": "Blessing", "cost": 0,
+     "text": "the altar gives you 100 gold"},
+    {"id": "gold_150", "label": "Great Blessing", "cost": 0,
+     "text": "the altar gives you 150 gold"},
 )
+
+ALTAR_OFFER_COUNT: int = 2
 
 VISITOR_UNIT_PRICE: int = 150
 VISITOR_RELIC_PRICE: int = 250
 PRISM_GOLD: int = 50
 WANDERER_GOLD: int = 75
+HAGGLE_WIN: int = 150
+HAGGLE_LOSS: int = 25
+STATUE_ORBS: int = 1
 
 
 # --------------------------------------------------------------------------
@@ -93,17 +106,24 @@ def _enchanted_indices(run: dict, curse_free: bool = False) -> set[tuple[str, in
 # --------------------------------------------------------------------------
 
 def _altar(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
+    """Two of the eight rites are on offer, so there is always a decision."""
     tag = _run_faction(run, rng)
-    deal = rng.choice(ALTAR_DEALS)
-    affordable = run_state.affordable(run, deal["cost"])
+    deals = rng.sample(list(ALTAR_DEALS), ALTAR_OFFER_COUNT)
+
+    options = [_option(deal["label"], deal["text"], ui_common.GOLD,
+                       run_state.affordable(run, deal["cost"]))
+               for deal in deals]
+    options.append(_leave())
 
     choice = choice_screen.main(
-        game_screen, f"{FACTION_NAMES[tag]} Altar",
-        [_option("accept", deal["text"], ui_common.GOLD, affordable), _leave()],
-        run=run, subtitle="the stone hums when you step close")
-    if choice != 0 or not affordable:
+        game_screen, f"{FACTION_NAMES[tag]} Altar", options, run=run,
+        subtitle="the stone hums when you step close")
+    if choice is None or choice >= len(deals):
         return ""
 
+    deal = deals[choice]
+    if not run_state.affordable(run, deal["cost"]):
+        return ""
     if deal["cost"] and not run_state.spend_gold(run, deal["cost"]):
         return ""
 
@@ -132,34 +152,50 @@ def _altar_available(run: dict) -> bool:
     return True
 
 
-def _relic_trader(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
-    owned = rng.sample(list(run["relics"]), min(2, len(run["relics"])))
+def _trade_pairs(run: dict, rng: random.Random) -> list[tuple[str, str]]:
+    """Always two trades on the table - with one relic, two things to swap it for."""
+    mine = rng.sample(list(run["relics"]), min(2, len(run["relics"])))
     pool = run_state.relic_offers(run)
-    offered = rng.sample(pool, min(len(owned), len(pool)))
-    if not offered:
+    if not pool:
+        return []
+    theirs = rng.sample(pool, min(2, len(pool)))
+
+    if len(mine) >= 2 and len(theirs) >= 2:
+        return [(mine[0], theirs[0]), (mine[1], theirs[1])]
+    if len(theirs) >= 2:
+        return [(mine[0], theirs[0]), (mine[0], theirs[1])]
+    if len(mine) >= 2:
+        return [(mine[0], theirs[0]), (mine[1], theirs[0])]
+    return [(mine[0], theirs[0])]
+
+
+def _relic_trader(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
+    pairs = _trade_pairs(run, rng)
+    if not pairs:
         return ""
 
-    options = []
-    for mine, theirs in zip(owned, offered):
-        options.append({
-            "label": f"{ui_common.relic_label(mine)}  ->  {ui_common.relic_label(theirs)}",
-            "lines": [ui_common.relic_text(theirs)],
-            "color": ui_common.relic_color(theirs),
-        })
+    options = [{
+        "label": f"{ui_common.relic_label(mine)}  ->  {ui_common.relic_label(theirs)}",
+        "lines": [ui_common.relic_text(theirs)],
+        "color": ui_common.relic_color(theirs),
+    } for mine, theirs in pairs]
     options.append(_leave())
 
     choice = choice_screen.main(game_screen, "Relic Trader", options, run=run,
                                 subtitle="one of yours for one of mine")
-    if choice is None or choice >= len(owned):
+    if choice is None or choice >= len(pairs):
         return ""
 
-    run["relics"].remove(owned[choice])
-    grants.grant_relic(game_screen, run, offered[choice], rng)
+    mine, theirs = pairs[choice]
+    run["relics"].remove(mine)
+    grants.grant_relic(game_screen, run, theirs, rng)
     return ""
 
 
 def _relic_trader_available(run: dict) -> bool:
-    return bool(run.get("relics")) and bool(run_state.relic_offers(run))
+    if not run.get("relics"):
+        return False
+    return len(run_state.relic_offers(run)) >= 2 or len(run["relics"]) >= 2
 
 
 def _tinker(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
@@ -274,18 +310,22 @@ def _visitor_champion(tag: str, rng: random.Random) -> dict:
 
 def _beast_statue(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
     options = [
-        _option("touch the statue", ENCHANTS["rage"]["text"], ui_common.CURSE),
-        _leave(),
+        _option("touch its jaw", ENCHANTS["rage"]["text"], ui_common.CURSE),
+        _option("pry loose a fang", f"+{STATUE_ORBS} Forgetting Orb", ui_common.ORB),
     ]
     choice = choice_screen.main(game_screen, "Statue of the Raging Beast", options,
                                 run=run, subtitle="its jaw is worn smooth by hands")
-    if choice != 0:
-        return ""
-    picked = card_picker.main(
-        game_screen, run, "Enrage which unit?", subtitle=ENCHANTS["rage"]["text"],
-        allowed=lambda zone, index, code: not card_pool.is_magic(code))
-    if picked is not None:
-        run_state.enchant_card(run, picked[0], picked[1], "rage")
+
+    if choice == 0:
+        picked = card_picker.main(
+            game_screen, run, "Enrage which unit?", subtitle=ENCHANTS["rage"]["text"],
+            allowed=lambda zone, index, code: not card_pool.is_magic(code))
+        if picked is not None:
+            run_state.enchant_card(run, picked[0], picked[1], "rage")
+    elif choice == 1:
+        run["orbs"] += STATUE_ORBS
+        notice_screen.main(game_screen, "A fang comes free",
+                           [f"+{STATUE_ORBS} Forgetting Orb"], run=run, color=ui_common.ORB)
     return ""
 
 
@@ -323,9 +363,24 @@ def _prism_available(run: dict) -> bool:
 
 
 def _wanderer(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
-    run["gold"] += WANDERER_GOLD
-    notice_screen.main(game_screen, "Wandering Trader",
-                       [f"they buy your spare kit for {WANDERER_GOLD} gold."],
+    options = [
+        _option("take their price", f"+{WANDERER_GOLD} gold", ui_common.GOLD),
+        _option("haggle", f"{HAGGLE_WIN} gold if they bite, {HAGGLE_LOSS} if they walk",
+                ui_common.CURSE),
+    ]
+    choice = choice_screen.main(game_screen, "Wandering Trader", options, run=run,
+                               subtitle="they eye the spare kit on your cart")
+
+    if choice == 1:
+        won = rng.random() < 0.5
+        gold = HAGGLE_WIN if won else HAGGLE_LOSS
+        headline = "They bite" if won else "They walk"
+    else:
+        gold = WANDERER_GOLD
+        headline = "Sold"
+
+    run["gold"] += gold
+    notice_screen.main(game_screen, headline, [f"+{gold} gold"],
                        run=run, color=ui_common.GOLD)
     return ""
 
