@@ -138,6 +138,11 @@ def _battle_reward(game_screen: GameScreen, run: dict, enemy: dict,
     gold = run_state.award_gold(run, enemy.get("gold", 0))
     lines = [f"+{gold} gold"]
 
+    plunder = run_state.victory_bonus_gold(run)
+    if plunder:
+        run["gold"] += plunder
+        lines.append(f"+{plunder} gold from your pirates")
+
     orb = enemy["kind"] == "boss" or rng.random() < ORB_DROP_CHANCE
     if orb:
         run["orbs"] += 1

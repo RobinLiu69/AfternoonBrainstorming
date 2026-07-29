@@ -18,9 +18,9 @@
 
 """The tower's AI controller.
 
-The battle loop ticks this every frame, and it is the only object that sees
-both sides, so it is also where the run's relic effects get pushed into the
-battle - the player's as well as the enemy's.
+The battle loop ticks this every frame and it is the only object that sees
+both sides, so it also drives the relic and enchantment runtime for the
+player as well as the enemy.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING
 
 from campaign.ai_controller import AIController
 
-from tower import battle_effects
+from tower.battle_effects import SideRuntime, install_side_channels
 
 if TYPE_CHECKING:
     from core.game_state import GameState
@@ -42,26 +42,27 @@ class TowerAIController(AIController):
         for key, value in enemy.get("strategy_overrides", {}).items():
             if hasattr(self.strategy, key):
                 setattr(self.strategy, key, value)
-        self.enemy_effects: dict = dict(enemy_effects)
-        self.player_effects: dict = dict(player_effects)
-        self._player_buffed_ids: set[str] = set()
-        self._player_turn_seen: int = -1
+        self.enemy = SideRuntime(enemy_effects, "player2")
+        self.player = SideRuntime(player_effects, "player1")
+        self._channels_installed: bool = False
 
     def _maintain_units(self, gs: "GameState") -> None:
-        battle_effects.maintain_unit_buffs(
-            self.enemy_effects, gs, "player2", self._buffed_unit_ids)
-        battle_effects.maintain_unit_buffs(
-            self.player_effects, gs, "player1", self._player_buffed_ids)
-        if gs.turn_number % 2 == 0 and gs.turn_number != self._player_turn_seen:
-            self._player_turn_seen = gs.turn_number
-            battle_effects.apply_per_turn(self.player_effects, gs, "player1")
+        if not self._channels_installed:
+            install_side_channels(gs, {"player1": self.player.effects,
+                                       "player2": self.enemy.effects})
+            self._channels_installed = True
+
+        self.enemy.maintain(gs)
+        self.player.maintain(gs)
+        if gs.turn_number % 2 == 0 and self.player.started:
+            self.player.on_turn_start(gs)
 
     def _per_turn(self, gs: "GameState") -> None:
-        battle_effects.apply_per_turn(self.enemy_effects, gs, "player2")
+        self.enemy.on_turn_start(gs)
 
     def _apply_one_shots(self, gs: "GameState") -> None:
         return
 
     def _apply_initial(self, gs: "GameState") -> None:
-        battle_effects.apply_initial_hand(self.enemy_effects, gs, "player2")
-        battle_effects.apply_initial_hand(self.player_effects, gs, "player1")
+        self.enemy.on_battle_start(gs)
+        self.player.on_battle_start(gs)

@@ -87,4 +87,4 @@ def reroll_price(run: dict, stock: dict) -> int:
 def can_reroll(run: dict, stock: dict) -> bool:
     if stock["rerolls"] >= reroll_allowance(run) + free_rerolls(run):
         return False
-    return run["gold"] >= reroll_price(run, stock)
+    return run_state.affordable(run, reroll_price(run, stock))

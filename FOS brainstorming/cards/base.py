@@ -336,6 +336,10 @@ class Card(ABC):
 
         value = self.apply_field_effects(value, attacker, game_state)
 
+        floor = getattr(game_state, "tower_min_damage", {}).get(attacker.owner, 0)
+        if floor and 0 < value < floor:
+            value = floor
+
         value = min(value, self.armor + self.health)
         absorbed = min(self.armor, value)
         self.armor -= absorbed
@@ -382,7 +386,8 @@ class Card(ABC):
             self.health += value
         else:
             self.health += value
-            self.armor += (self.health-self.max_health) // 2
+            overheal_mult = getattr(game_state, "tower_overheal_mult", {}).get(self.owner, 1)
+            self.armor += (self.health-self.max_health) // 2 * overheal_mult
             self.health = self.max_health
         self.display_health = self.health
         game_state.game_logger.log_heal(self.get_uid(), self.get_position(), value,

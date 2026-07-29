@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 
 MAGIC_CARDS = ["CUBES", "MOVE", "MOVEO", "HEAL"]
+HEAL_AMOUNT = 6
 
 
 @dataclass(kw_only=True)
@@ -77,7 +78,8 @@ class Player:
     
     def turn_end(self, game_state: GameState) -> None:
         self.selected_card_index = -1
-        self.hand = list(filter(lambda card: card != "MOVEO", self.hand))
+        self.hand = [card for card in self.hand
+                     if card != "MOVEO" and not card_code.is_ephemeral(card)]
         game_state.number_of_cubes[self.name] = 0
         game_state.number_of_movings[self.name] = 0
         game_state.number_of_heals[self.name] = 0
@@ -117,6 +119,13 @@ class Player:
         else:
             game_state.game_logger.info(f"{self.name} draw pile is empty, no card to draw")
 
+    def spend_from_hand(self, index: int) -> str:
+        """Play a card out of hand.  Ephemeral cards never reach the discard pile."""
+        played = self.hand.pop(index)
+        if not card_code.is_ephemeral(played):
+            self.discard_pile.append(played)
+        return played
+
     def select_card_from_hand(self, index: Optional[int]) -> None:
         if index is None: return
         self.selected_card_index = index
@@ -125,25 +134,26 @@ class Player:
         if -len(self.hand) > index or index >= len(self.hand): return
         card_name = self.hand[index]
         game_state.game_statistics.add_card_use(self.name, 1)
-        match card_name:
+        match card_code.plain_code(card_name):
             case "HEAL":
                 game_state.number_of_heals[self.name] += 1
-                self.discard_pile.append(self.hand.pop(index))
+                self.spend_from_hand(index)
             case "MOVE":
                 game_state.number_of_movings[self.name] += 1
-                self.discard_pile.append(self.hand.pop(index))
+                self.spend_from_hand(index)
             case "MOVEO":
                 game_state.number_of_movings[self.name] += 1
                 self.hand.pop(index)
             case "CUBES":
                 game_state.number_of_cubes[self.name] += 2
-                self.discard_pile.append(self.hand.pop(index))
+                self.spend_from_hand(index)
             case _:
                 real_name = card_code.base_code(card_name)
                 kwargs = {}
                 if real_name.endswith(" (+)"):
                     real_name = real_name[:-4]
                     kwargs["upgrade"] = True
+                real_name = card_code.resolve_spawn_code(real_name, card_name, game_state)
                 if spawn_card(board_x, board_y, real_name, self.name,
                               self.on_board, game_state, **kwargs):
                     self.hand.pop(index)
@@ -154,9 +164,11 @@ class Player:
 
     def heal_card(self, board_x: int, board_y: int, game_state: GameState) -> None:
         if game_state.number_of_heals[self.name] > 0:
+            amount = HEAL_AMOUNT + int(
+                getattr(game_state, "tower_heal_bonus", {}).get(self.name, 0))
             for card in self.on_board:
                 if card.board_x == board_x and card.board_y == board_y:
-                    if card.heal(6, game_state):
+                    if card.heal(amount, game_state):
                         game_state.game_logger.log_card_played(self.name, "HEAL", (board_x, board_y))
                         game_state.game_statistics.increment(StatType.HEAL_USE, self.name, 1)
                         game_state.number_of_heals[self.name] -= 1
@@ -184,7 +196,9 @@ class Player:
             if card.health <= 0 and card.can_be_killed(game_state):
                 card.on_death(game_state)
                 game_renderer.dying_cards.append(card)
-                self.discard_pile.append(getattr(card, "tower_code", "") or card.job_and_color)
+                code = getattr(card, "tower_code", "") or card.job_and_color
+                if not card_code.is_ephemeral(code):
+                    self.discard_pile.append(code)
                 game_state.board_dict[card.board_x, card.board_y].occupy = False
                 game_state.game_logger.log_card_recycled(self.name, card.job_and_color, (card.board_x, card.board_y))
                 to_remove.append(card)

@@ -16,68 +16,227 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-"""Pushing a side's merged relic effects into a live battle.
+"""One side's relic effects, driven from the tower controller.
 
-Implemented so far: the stat and starting-hand keys.  The rest of the relic
-runtime (reshuffle triggers, per-turn orbs and coins, attack economy, spell
-hooks) lands with the relic pass.
+``SideRuntime`` holds the bookkeeping a side needs across a battle: which
+units it has already buffed, whether its deck has reshuffled, and whether it
+has cast a spell yet.  The controller owns one per side and calls into it.
+
+A handful of relics need core to read a number it cannot know about
+(healing size, minimum damage, overheal shields).  Those travel through
+``tower_*`` attributes stashed on the game state by ``install_side_channels``
+- core reads them with a ``getattr`` default, so no other mode is affected.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from shared import card_code
+
+from tower import enchant_runtime
+
 if TYPE_CHECKING:
     from core.game_state import GameState
 
 
 BASE_HAND_SIZE: int = 3
+GHOST_SPELLS: tuple[str, ...] = ("HEAL", "CUBES", "MOVE")
+MAGIC_CODES: frozenset[str] = frozenset({"HEAL", "CUBES", "MOVE", "MOVEO"})
 
 
-def maintain_unit_buffs(effects: dict, gs: "GameState", player_name: str,
-                        buffed_ids: set[str]) -> None:
-    """Apply flat buffs to units the moment they show up on the board."""
-    hp_plus = effects.get("unit_hp_plus", 0)
-    dmg_plus = effects.get("unit_damage_plus", 0)
-    job_hp = effects.get("job_hp_plus", {})
-    job_dmg = effects.get("job_damage_plus", {})
-    first_hp = effects.get("first_unit_hp_plus", 0)
-    first_dmg = effects.get("first_unit_damage_plus", 0)
-
-    if not (hp_plus or dmg_plus or job_hp or job_dmg or first_hp or first_dmg):
-        return
-
-    for card in gs.get_player(player_name).on_board:
-        if card.instance_id in buffed_ids:
-            continue
-        first = not buffed_ids
-        hp = hp_plus + job_hp.get(card.job, 0) + (first_hp if first else 0)
-        dmg = dmg_plus + job_dmg.get(card.job, 0) + (first_dmg if first else 0)
-        if hp:
-            card.health = max(1, card.health + hp)
-            card.max_health = max(1, card.max_health + hp)
-            card.display_health = card.health
-        if dmg:
-            card.damage = max(0, card.damage + dmg)
-            card.original_damage = max(0, card.original_damage + dmg)
-        buffed_ids.add(card.instance_id)
+def install_side_channels(gs: "GameState", effects_by_side: dict[str, dict]) -> None:
+    gs.tower_heal_bonus = {
+        side: int(effects.get("heal_bonus", 0))
+        for side, effects in effects_by_side.items()
+    }
+    gs.tower_min_damage = {
+        side: int(effects.get("min_damage", 0))
+        for side, effects in effects_by_side.items()
+    }
+    gs.tower_overheal_mult = {
+        side: max(1, int(effects.get("overheal_shield_mult", 1)))
+        for side, effects in effects_by_side.items()
+    }
 
 
-def apply_initial_hand(effects: dict, gs: "GameState", player_name: str) -> None:
-    hand_plus = int(effects.get("hand_plus", 0))
-    if not hand_plus:
-        return
-    player = gs.get_player(player_name)
-    target = max(1, BASE_HAND_SIZE + hand_plus)
-    while len(player.hand) < target:
-        before = len(player.hand)
-        player.draw_card(gs)
-        if len(player.hand) == before:
-            break
-    while len(player.hand) > target:
-        player.discard_pile.append(player.hand.pop())
+def _suppress_numbing(card) -> None:
+    """Blasting Wand: an AP unit keeps its ability but stops numbing targets."""
+    original = card.ability
+
+    def ability(target, game_state) -> bool:
+        was_numb = target.numbness
+        result = original(target, game_state)
+        target.numbness = was_numb
+        return result
+
+    card.ability = ability
 
 
-def apply_per_turn(effects: dict, gs: "GameState", player_name: str) -> None:
-    """Reserved for the relic runtime pass."""
-    return
+class SideRuntime:
+
+    def __init__(self, effects: dict, player_name: str):
+        self.effects: dict = dict(effects)
+        self.name: str = player_name
+        self.buffed_ids: set[str] = set()
+        self.started: bool = False
+        self.own_turns: int = 0
+        self._last_turn: int = -1
+        self._prev_draw_len: int = -1
+        self._prev_tokens: int = 0
+        self._spell_counts: dict[str, int] = {}
+        self._spell_turn: int = -1
+        self._spell_used: bool = False
+
+    # ---------------- battle start ----------------
+
+    def on_battle_start(self, gs: "GameState") -> None:
+        self._apply_initial_hand(gs)
+        self._prev_draw_len = len(gs.get_player(self.name).draw_pile)
+        self._prev_tokens = gs.players_token.get(self.name, 0)
+        self.started = True
+
+    def _apply_initial_hand(self, gs: "GameState") -> None:
+        hand_plus = int(self.effects.get("hand_plus", 0))
+        if not hand_plus:
+            return
+        player = gs.get_player(self.name)
+        target = max(1, BASE_HAND_SIZE + hand_plus)
+        while len(player.hand) < target:
+            before = len(player.hand)
+            player.draw_card(gs)
+            if len(player.hand) == before:
+                break
+        while len(player.hand) > target:
+            player.discard_pile.append(player.hand.pop())
+
+    # ---------------- every tick ----------------
+
+    def maintain(self, gs: "GameState") -> None:
+        self._maintain_unit_buffs(gs)
+        enchant_runtime.enforce(gs, self.name)
+        if self.started:
+            self._watch_reshuffle(gs)
+            self._watch_spells(gs)
+            self._watch_orbs(gs)
+
+    def _maintain_unit_buffs(self, gs: "GameState") -> None:
+        effects = self.effects
+        hp_plus = effects.get("unit_hp_plus", 0)
+        dmg_plus = effects.get("unit_damage_plus", 0)
+        job_hp = effects.get("job_hp_plus", {})
+        job_dmg = effects.get("job_damage_plus", {})
+        first_hp = effects.get("first_unit_hp_plus", 0)
+        first_dmg = effects.get("first_unit_damage_plus", 0)
+        enchanted_dmg = effects.get("enchanted_damage_plus", 0)
+
+        no_numb = effects.get("ap_no_numb")
+
+        if not (hp_plus or dmg_plus or job_hp or job_dmg
+                or first_hp or first_dmg or enchanted_dmg or no_numb):
+            return
+
+        for card in gs.get_player(self.name).on_board:
+            if card.instance_id in self.buffed_ids:
+                continue
+            first = not self.buffed_ids
+            if no_numb and card.job == "AP":
+                _suppress_numbing(card)
+            hp = hp_plus + job_hp.get(card.job, 0) + (first_hp if first else 0)
+            dmg = dmg_plus + job_dmg.get(card.job, 0) + (first_dmg if first else 0)
+            if enchanted_dmg and getattr(card, "tower_enchants", ()):
+                dmg += enchanted_dmg
+            if hp:
+                card.health = max(1, card.health + hp)
+                card.max_health = max(1, card.max_health + hp)
+                card.display_health = card.health
+            if dmg:
+                card.damage = max(0, card.damage + dmg)
+                card.original_damage = max(0, card.original_damage + dmg)
+            self.buffed_ids.add(card.instance_id)
+
+    def _watch_reshuffle(self, gs: "GameState") -> None:
+        draw_len = len(gs.get_player(self.name).draw_pile)
+        if draw_len > self._prev_draw_len:
+            self._on_reshuffle(gs)
+        self._prev_draw_len = draw_len
+
+    def _on_reshuffle(self, gs: "GameState") -> None:
+        draws = int(self.effects.get("draw_on_reshuffle", 0))
+        if draws:
+            gs.card_to_draw[self.name] = gs.card_to_draw.get(self.name, 0) + draws
+        attacks = int(self.effects.get("attack_on_reshuffle", 0))
+        if attacks:
+            gs.number_of_attacks[self.name] = gs.number_of_attacks.get(self.name, 0) + attacks
+
+    def _watch_orbs(self, gs: "GameState") -> None:
+        """Blue Crystal Ball: an orb threshold firing stings a random enemy."""
+        tokens = gs.players_token.get(self.name, 0)
+        damage = int(self.effects.get("orb_trigger_damage", 0))
+        if damage and tokens < self._prev_tokens:
+            targets = [c for c in gs.get_opponent_cards(self.name) if c.health > 0]
+            if targets:
+                gs.judge.deal(damage, gs.rng.choice(targets), gs)
+        self._prev_tokens = tokens
+
+    def _watch_spells(self, gs: "GameState") -> None:
+        if not self.effects.get("first_spell_draw") or self._spell_used:
+            return
+        counts: dict[str, int] = {}
+        for code in gs.get_player(self.name).hand:
+            plain = card_code.plain_code(code)
+            if plain in MAGIC_CODES:
+                counts[plain] = counts.get(plain, 0) + 1
+
+        if self._spell_turn == gs.turn_number:
+            played = sum(max(0, self._spell_counts.get(code, 0) - counts.get(code, 0))
+                         for code in MAGIC_CODES)
+            if played:
+                self._spell_used = True
+                gs.card_to_draw[self.name] = gs.card_to_draw.get(self.name, 0) + int(
+                    self.effects["first_spell_draw"])
+
+        self._spell_counts = counts
+        self._spell_turn = gs.turn_number
+
+    # ---------------- own turn start ----------------
+
+    def on_turn_start(self, gs: "GameState") -> None:
+        if gs.turn_number == self._last_turn:
+            return
+        self._last_turn = gs.turn_number
+        self.own_turns += 1
+        effects = self.effects
+
+        enchant_runtime.turn_start(gs, self.name)
+
+        tokens = int(effects.get("turn_start_tokens", 0))
+        if tokens:
+            enchant_runtime.gain_token(gs, self.name, tokens)
+
+        coins = int(effects.get("turn_start_coins", 0))
+        if coins:
+            gs.players_coin[self.name] = gs.players_coin.get(self.name, 0) + coins
+
+        draws = int(effects.get("turn_start_draw_plus", 0))
+        if draws:
+            gs.card_to_draw[self.name] = gs.card_to_draw.get(self.name, 0) + draws
+
+        if effects.get("no_attack_gain"):
+            gs.number_of_attacks[self.name] = 0
+        else:
+            bonus = int(effects.get("attacks_plus", 0))
+            if effects.get("attacks_reset"):
+                gs.number_of_attacks[self.name] = 1 + bonus
+            elif bonus:
+                gs.number_of_attacks[self.name] = (
+                    gs.number_of_attacks.get(self.name, 0) + bonus)
+
+        if effects.get("no_turn_start_draw"):
+            gs.skip_turn_draw[self.name] = True
+
+        every = int(effects.get("ghost_spell_every_n_turns", 0))
+        if every and self.own_turns % every == 0:
+            spell = gs.rng.choice(list(GHOST_SPELLS))
+            gs.get_player(self.name).hand.append(
+                card_code.add_enchant(spell, "ghost"))

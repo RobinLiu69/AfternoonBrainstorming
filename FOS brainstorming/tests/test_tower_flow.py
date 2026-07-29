@@ -216,16 +216,15 @@ def test_controller_pushes_run_relics_onto_the_player_units():
 
 
 def test_first_unit_relics_only_touch_the_first_deploy():
-    effects = {"first_unit_damage_plus": 1}
     game_state = make_game_state()
     game_state.player1.hand = ["TANKW", "TANKW"]
     base = CardFactory.create("TANKW", "player1", 0, 0)
 
-    buffed: set[str] = set()
+    side = battle_effects.SideRuntime({"first_unit_damage_plus": 1}, "player1")
     game_state.player1.play_card(1, 1, 0, game_state)
-    battle_effects.maintain_unit_buffs(effects, game_state, "player1", buffed)
+    side.maintain(game_state)
     game_state.player1.play_card(2, 2, 0, game_state)
-    battle_effects.maintain_unit_buffs(effects, game_state, "player1", buffed)
+    side.maintain(game_state)
 
     first, second = game_state.player1.on_board
     assert first.damage == base.damage + 1

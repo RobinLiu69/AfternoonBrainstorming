@@ -308,15 +308,44 @@ def shop_discount(run: dict) -> float:
 
 
 def award_gold(run: dict, base: int) -> int:
+    """Income arrives net of any debt - the Credit Card is paid off first."""
     amount = int(base * gold_multiplier(run))
-    run["gold"] += amount
-    return amount
+    repaid = min(run.get("debt", 0), amount)
+    if repaid:
+        run["debt"] -= repaid
+    run["gold"] += amount - repaid
+    return amount - repaid
+
+
+def credit_limit(run: dict) -> int:
+    return int(merged_effects(run).get("credit_limit", 0))
+
+
+def credit_available(run: dict) -> int:
+    return max(0, credit_limit(run) - run.get("debt", 0))
+
+
+def affordable(run: dict, amount: int) -> bool:
+    return run["gold"] + credit_available(run) >= amount
+
+
+def victory_bonus_gold(run: dict) -> int:
+    """Ship in a Bottle: a payout per pirate card in the deck after a win."""
+    per_pirate = int(merged_effects(run).get("victory_gold_per_pirate", 0))
+    if not per_pirate:
+        return 0
+    pirates = sum(1 for code in run["deck"] if card_pool.color_tag_of(code) == "C")
+    return per_pirate * pirates
 
 
 def spend_gold(run: dict, amount: int) -> bool:
-    if run["gold"] < amount:
+    """Pay in gold, borrowing the shortfall if a Credit Card allows it."""
+    if not affordable(run, amount):
         return False
-    run["gold"] -= amount
+    borrowed = max(0, amount - run["gold"])
+    if borrowed:
+        run["debt"] = run.get("debt", 0) + borrowed
+    run["gold"] -= amount - borrowed
     run["shop_spent"] = True
     return True
 

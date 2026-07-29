@@ -96,15 +96,19 @@ def remove_enchants(name: str) -> str:
 
 
 # --------------------------------------------------------------------------
-# deploy hook
+# deploy hooks
 # --------------------------------------------------------------------------
 # core spawns cards from the base code and then asks whoever owns the
 # enchantment rules to decorate the fresh unit.  Tower mode registers its
-# handler when the mode starts; every other mode leaves this unset.
+# handlers when the mode starts; every other mode leaves these unset, and
+# every function below is then a no-op.
 
 EnchantHook = Callable[[Any, tuple[str, ...], Any], None]
+SpawnResolver = Callable[[str, tuple[str, ...], Any], str]
 
 _enchant_hook: Optional[EnchantHook] = None
+_spawn_resolver: Optional[SpawnResolver] = None
+_ephemeral_keys: frozenset[str] = frozenset()
 
 
 def set_enchant_hook(hook: Optional[EnchantHook]) -> None:
@@ -116,3 +120,28 @@ def run_enchant_hook(card: Any, name: str, game_state: Any) -> None:
     keys = enchant_keys(name)
     if keys and _enchant_hook is not None:
         _enchant_hook(card, keys, game_state)
+
+
+def set_spawn_resolver(resolver: Optional[SpawnResolver]) -> None:
+    global _spawn_resolver
+    _spawn_resolver = resolver
+
+
+def resolve_spawn_code(spawn_name: str, name: str, game_state: Any) -> str:
+    """Let the enchantment owner swap which card class actually gets built."""
+    keys = enchant_keys(name)
+    if keys and _spawn_resolver is not None:
+        return _spawn_resolver(spawn_name, keys, game_state)
+    return spawn_name
+
+
+def set_ephemeral_keys(keys) -> None:
+    """Enchantments whose cards leave play without reaching the discard pile."""
+    global _ephemeral_keys
+    _ephemeral_keys = frozenset(keys)
+
+
+def is_ephemeral(name: str) -> bool:
+    if not _ephemeral_keys:
+        return False
+    return any(key in _ephemeral_keys for key in enchant_keys(name))

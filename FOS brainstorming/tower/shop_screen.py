@@ -47,7 +47,7 @@ def _item_label(item: dict) -> tuple[str, str, tuple[int, int, int]]:
 
 def _buy(game_screen: GameScreen, run: dict, item: dict, price: int,
          rng: random.Random) -> bool:
-    if run["gold"] < price:
+    if not run_state.affordable(run, price):
         return False
 
     if item["kind"] == "orb":
