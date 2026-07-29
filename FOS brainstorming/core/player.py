@@ -79,7 +79,7 @@ class Player:
     def turn_end(self, game_state: GameState) -> None:
         self.selected_card_index = -1
         self.hand = [card for card in self.hand
-                     if card != "MOVEO" and not card_code.is_ephemeral(card)]
+                     if card != "MOVEO" and not card_code.vanishes_at_turn_end(card)]
         game_state.number_of_cubes[self.name] = 0
         game_state.number_of_movings[self.name] = 0
         game_state.number_of_heals[self.name] = 0
@@ -122,7 +122,7 @@ class Player:
     def spend_from_hand(self, index: int) -> str:
         """Play a card out of hand.  Ephemeral cards never reach the discard pile."""
         played = self.hand.pop(index)
-        if not card_code.is_ephemeral(played):
+        if not card_code.skips_discard(played):
             self.discard_pile.append(played)
         return played
 
@@ -197,7 +197,7 @@ class Player:
                 card.on_death(game_state)
                 game_renderer.dying_cards.append(card)
                 code = getattr(card, "tower_code", "") or card.job_and_color
-                if not card_code.is_ephemeral(code):
+                if not card_code.skips_discard(code):
                     self.discard_pile.append(code)
                 game_state.board_dict[card.board_x, card.board_y].occupy = False
                 game_state.game_logger.log_card_recycled(self.name, card.job_and_color, (card.board_x, card.board_y))

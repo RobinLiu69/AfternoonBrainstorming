@@ -356,7 +356,9 @@ class BattlingDispatcher:
                 game_state.game_statistics.add_score_record(game_state.score)
                 if abs(game_state.score) >= game_state.win_threshold:
                     winner = "player1" if game_state.score < 0 else "player2"
-                    return ActionResult(True, message=winner, quit=True)
+                    survives = getattr(game_state, "tower_on_defeat", None)
+                    if survives is None or not survives(game_state, winner):
+                        return ActionResult(True, message=winner, quit=True)
                 game_state.get_player(opponent).turn_start(game_state)
                 return ActionResult(True, end_turn=True)
 

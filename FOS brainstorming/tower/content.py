@@ -88,6 +88,8 @@ ENCHANTS: dict[str, dict] = {
                  "text": "vanishes at end of turn, never returns to the discard pile"},
     "chimera":  {"label": "Chimera", "kind": "normal", "hp": 0, "damage": 0,
                  "text": "this is a chimera"},
+    "borrowed": {"label": "Borrowed", "kind": "normal", "hp": 0, "damage": 0,
+                 "text": "belongs to someone else - never joins the discard pile"},
     "sword":    {"label": "Flying Sword", "kind": "normal", "hp": 0, "damage": 0,
                  "text": "with no enemy in range, attacks the nearest enemy instead"},
 

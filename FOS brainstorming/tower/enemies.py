@@ -228,14 +228,48 @@ def traitor_lord(rng: random.Random) -> dict:
     }
 
 
+def the_forgotten(factions, rng: random.Random) -> dict:
+    """Two lords of the factions you did not pick, back to back.
+
+    Beating the first one resets the score instead of ending the battle; the
+    second lord inherits the board and hand and brings their own deck.
+    """
+    from tower.content import SELECTABLE_FACTIONS
+
+    left_behind = [tag for tag in SELECTABLE_FACTIONS if tag not in factions]
+    if len(left_behind) < 2:
+        left_behind = list(SELECTABLE_FACTIONS)
+    first_tag, second_tag = rng.sample(left_behind, 2)
+
+    first = faction_lord(first_tag, rng)
+    second = faction_lord(second_tag, rng)
+    first.update({
+        "label": "The Forgotten",
+        "phase_label": f"{FACTION_NAMES[first_tag]} Lord",
+        "note": "two lords, one after the other - beating the first only resets the score",
+        "effects": _scaling(3, "boss"),
+        "gold": BATTLE_GOLD["boss"],
+        "next_phase": {
+            "label": "The Forgotten",
+            "phase_label": f"{FACTION_NAMES[second_tag]} Lord",
+            "deck": second["deck"],
+            "strategy": second["strategy"],
+            "strategy_overrides": second["strategy_overrides"],
+            "relics": second["relics"],
+            "effects": _scaling(3, "boss"),
+        },
+    })
+    return first
+
+
 ACT3_BOSSES: dict[str, dict] = {
-    "traitor_lord": {"builder": traitor_lord, "available": True},
+    "traitor_lord": {"builder": lambda factions, rng: traitor_lord(rng),
+                     "available": True},
+    "the_forgotten": {"builder": the_forgotten, "available": True},
     # needs Tidal Surge / Pirate Raid / Maelstrom spells
     "pirate_captain": {"builder": None, "available": False},
     # needs the demon spell and unit set
     "demon": {"builder": None, "available": False},
-    # needs mid-battle deck swap + score reset
-    "the_forgotten": {"builder": None, "available": False},
 }
 
 
@@ -244,6 +278,6 @@ def act_boss(act: int, factions, rng: random.Random) -> dict:
         return head_instructor(rng)
     if act == 2:
         return faction_lord(rng.choice(list(factions)), rng)
-    options = [k for k, v in ACT3_BOSSES.items() if v["available"]]
-    key = rng.choice(sorted(options))
-    return ACT3_BOSSES[key]["builder"](rng)
+    options = sorted(k for k, v in ACT3_BOSSES.items() if v["available"])
+    key = rng.choice(options)
+    return ACT3_BOSSES[key]["builder"](factions, rng)

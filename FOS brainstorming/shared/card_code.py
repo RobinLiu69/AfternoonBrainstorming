@@ -108,7 +108,8 @@ SpawnResolver = Callable[[str, tuple[str, ...], Any], str]
 
 _enchant_hook: Optional[EnchantHook] = None
 _spawn_resolver: Optional[SpawnResolver] = None
-_ephemeral_keys: frozenset[str] = frozenset()
+_vanishing_keys: frozenset[str] = frozenset()
+_no_discard_keys: frozenset[str] = frozenset()
 
 
 def set_enchant_hook(hook: Optional[EnchantHook]) -> None:
@@ -135,13 +136,25 @@ def resolve_spawn_code(spawn_name: str, name: str, game_state: Any) -> str:
     return spawn_name
 
 
-def set_ephemeral_keys(keys) -> None:
+def set_vanishing_keys(keys) -> None:
+    """Enchantments whose cards disappear from hand at end of turn."""
+    global _vanishing_keys
+    _vanishing_keys = frozenset(keys)
+
+
+def set_no_discard_keys(keys) -> None:
     """Enchantments whose cards leave play without reaching the discard pile."""
-    global _ephemeral_keys
-    _ephemeral_keys = frozenset(keys)
+    global _no_discard_keys
+    _no_discard_keys = frozenset(keys)
 
 
-def is_ephemeral(name: str) -> bool:
-    if not _ephemeral_keys:
+def vanishes_at_turn_end(name: str) -> bool:
+    if not _vanishing_keys:
         return False
-    return any(key in _ephemeral_keys for key in enchant_keys(name))
+    return any(key in _vanishing_keys for key in enchant_keys(name))
+
+
+def skips_discard(name: str) -> bool:
+    if not _no_discard_keys:
+        return False
+    return any(key in _no_discard_keys for key in enchant_keys(name))

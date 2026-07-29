@@ -103,6 +103,9 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
         draw_text(ui_common.enemy_label(enemy), game_screen.title_text_font,
                   ui_common.enemy_color(enemy["kind"]),
                   cx - bs * 3.6, cy - bs * 2.4, game_screen.surface)
+        if enemy.get("note"):
+            draw_text(enemy["note"], game_screen.text_font, ui_common.CURSE,
+                      cx - bs * 3.6, cy - bs * 1.9, game_screen.surface)
 
         y = cy - bs * 1.6
         draw_text("enemy deck", game_screen.mid_text_font, WHITE,

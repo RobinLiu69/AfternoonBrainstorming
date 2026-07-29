@@ -44,7 +44,8 @@ from shared import card_code
 from tower import card_pool
 from tower.content import ENCHANTS
 
-EPHEMERAL_KEYS: frozenset[str] = frozenset({"ghost"})
+VANISHING_KEYS: frozenset[str] = frozenset({"ghost"})
+NO_DISCARD_KEYS: frozenset[str] = frozenset({"ghost", "borrowed"})
 PLATED_REDUCTION: int = 1
 RADIANT_BONUS: int = 1
 BURN_SCORE: int = 2
@@ -218,10 +219,12 @@ def turn_start(game_state: Any, player_name: str) -> None:
 def install() -> None:
     card_code.set_enchant_hook(apply)
     card_code.set_spawn_resolver(resolve_spawn)
-    card_code.set_ephemeral_keys(EPHEMERAL_KEYS)
+    card_code.set_vanishing_keys(VANISHING_KEYS)
+    card_code.set_no_discard_keys(NO_DISCARD_KEYS)
 
 
 def uninstall() -> None:
     card_code.set_enchant_hook(None)
     card_code.set_spawn_resolver(None)
-    card_code.set_ephemeral_keys(())
+    card_code.set_vanishing_keys(())
+    card_code.set_no_discard_keys(())
