@@ -38,7 +38,7 @@ def enter(game_screen: GameScreen, run: dict, room: dict, rng: random.Random) ->
                            [f"you dig out {gained} gold."], run=run, color=ui_common.GOLD)
 
     elif kind == "relic_chest":
-        grants.offer_relics(game_screen, run, rng, "Relic Chest", allow_skip=True)
+        grants.offer_relic(game_screen, run, rng, "Relic Chest")
 
     elif kind == "shop":
         stock = shop.generate_stock(run, rng)

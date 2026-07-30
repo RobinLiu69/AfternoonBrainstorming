@@ -26,6 +26,7 @@ from tower import (
     battle_builder, battle_effects, card_pool, enchant_runtime, grants,
     run_state, shop, tower_map,
 )
+from tower.content import RELICS
 from tower.tower_ai import TowerAIController
 
 from tests.helpers import make_game_state
@@ -188,6 +189,89 @@ def test_card_prices_sit_well_under_relic_prices():
     assert card_pool.card_price("ADCR*sharp") > card_pool.card_price("ADCR")
     assert max(card_pool.card_price(c) for c in ("HEAL", "ADCR", "TANKB")) < min(
         shop.RELIC_PRICE[tier] for tier in ("common", "rare", "power", "special"))
+
+
+def answer_screens(monkeypatch, choices):
+    """Feed grants' screens the choices a player would click."""
+    queue = list(choices)
+    monkeypatch.setattr(grants.choice_screen, "main",
+                        lambda *a, **k: queue.pop(0) if queue else None)
+    monkeypatch.setattr(grants.card_picker, "main", lambda *a, **k: None)
+
+
+def test_a_relic_is_offered_one_at_a_time(monkeypatch):
+    run = make_run(1)
+    answer_screens(monkeypatch, [0])
+    taken = grants.offer_relic(None, run, random.Random(2), "Spoils")
+
+    assert taken is not None
+    assert run["relics"] == [taken]
+    assert run["gold"] == 0
+
+
+def test_declining_a_relic_pays_a_little_gold(monkeypatch):
+    run = make_run(1)
+    answer_screens(monkeypatch, [1])
+    assert grants.offer_relic(None, run, random.Random(2), "Spoils") is None
+    assert run["relics"] == []
+    assert run["gold"] == grants.DECLINE_RELIC_GOLD
+
+
+def test_backing_out_of_a_relic_offer_is_a_decline(monkeypatch):
+    run = make_run(1)
+    answer_screens(monkeypatch, [None])
+    assert grants.offer_relic(None, run, random.Random(2), "Spoils") is None
+    assert run["relics"] == []
+
+
+def test_only_boss_spoils_can_roll_a_special_relic(monkeypatch):
+    specials = {r for r, v in RELICS.items() if v["tier"] == "special"}
+    seen = set()
+    for seed in range(60):
+        run = make_run(seed)
+        answer_screens(monkeypatch, [0])
+        taken = grants.offer_relic(None, run, random.Random(seed), "Spoils")
+        seen.add(taken)
+    assert not (seen & specials)
+
+    boss_seen = set()
+    for seed in range(60):
+        run = make_run(seed)
+        answer_screens(monkeypatch, [0])
+        boss_seen.add(grants.offer_relic(None, run, random.Random(seed), "Spoils",
+                                         include_special=True))
+    assert boss_seen & specials
+
+
+def test_an_empty_pool_offers_nothing(monkeypatch):
+    run = make_run(1)
+    answer_screens(monkeypatch, [0])
+    assert grants.offer_relic(None, run, random.Random(1), "Spoils",
+                              tier="not_a_tier") is None
+    assert run["relics"] == []
+
+
+def test_curses_are_still_a_choice_of_three(monkeypatch):
+    run = make_run(1)
+    seen_counts = []
+    monkeypatch.setattr(grants.choice_screen, "main",
+                        lambda gs, title, options, **k: seen_counts.append(len(options)) or 0)
+    monkeypatch.setattr(grants.card_picker, "main", lambda *a, **k: None)
+
+    taken = grants.choose_relic(None, run, random.Random(3), "Take one curse",
+                               tier="curse")
+    assert seen_counts == [3]
+    assert RELICS[taken]["tier"] == "curse"
+
+
+def test_the_devils_bargain_blessing_pays_orbs_for_one_curse(monkeypatch):
+    run = make_run(1)
+    answer_screens(monkeypatch, [0])
+    grants.apply_blessing(None, run, "orbs_and_curse", random.Random(1))
+
+    assert run["orbs"] == 3
+    assert len(run["relics"]) == 1
+    assert RELICS[run["relics"][0]]["tier"] == "curse"
 
 
 def test_battle_deck_is_the_deck_only_and_keeps_enchant_codes():

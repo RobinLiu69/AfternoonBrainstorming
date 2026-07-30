@@ -150,8 +150,8 @@ def _battle_reward(game_screen: GameScreen, run: dict, enemy: dict,
 
     if enemy["kind"] in ("elite", "boss") or rng.random() < RELIC_DROP_CHANCE:
         # a special relic is only ever won off a boss
-        grants.offer_relics(game_screen, run, rng, "Spoils", allow_skip=True,
-                            include_special=enemy["kind"] == "boss")
+        grants.offer_relic(game_screen, run, rng, "Spoils",
+                           include_special=enemy["kind"] == "boss")
 
     grants.offer_cards(game_screen, run, rng, "Pick a card")
 

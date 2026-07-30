@@ -35,6 +35,7 @@ from tower.content import BLESSING_ENCHANTS, ENCHANTS, RELICS
 
 MAGIC_REWARD_WEIGHT: float = 0.12
 SKIP_CARD_GOLD: int = 30
+DECLINE_RELIC_GOLD: int = 50
 
 
 # --------------------------------------------------------------------------
@@ -154,22 +155,43 @@ def _apply_pickup_enchant(game_screen: GameScreen, run: dict, relic_id: str,
     run_state.enchant_card(run, zone, index, key)
 
 
-def offer_relics(game_screen: GameScreen, run: dict, rng: random.Random,
-                 title: str = "Pick a relic", tier: str = "", count: int = 3,
-                 allow_skip: bool = False, include_special: bool = False) -> Optional[str]:
+def offer_relic(game_screen: GameScreen, run: dict, rng: random.Random,
+                title: str = "A relic", tier: str = "",
+                include_special: bool = False,
+                decline_gold: int = DECLINE_RELIC_GOLD) -> Optional[str]:
+    """One relic, take it or leave it.
+
+    Picking the best of three made every drop an upgrade; a single relic makes
+    the run's shape depend on what the tower hands you.
+    """
     pool = run_state.relic_offers(run, tier=tier, include_special=include_special)
     if not pool:
         return None
+
+    relic_id = rng.choice(pool)
+    decline = {"label": "leave it", "color": ui_common.DIM,
+               "lines": [f"+{decline_gold} gold"] if decline_gold else []}
+    choice = choice_screen.main(game_screen, title,
+                                [relic_option(relic_id), decline], run=run,
+                                subtitle="take it or leave it")
+    if choice != 0:
+        run["gold"] += decline_gold
+        return None
+    return relic_id if grant_relic(game_screen, run, relic_id, rng) else None
+
+
+def choose_relic(game_screen: GameScreen, run: dict, rng: random.Random,
+                 title: str, tier: str, count: int = 3) -> Optional[str]:
+    """Pick one of several - only used where the design calls for a choice,
+    which today means picking which curse to accept."""
+    pool = run_state.relic_offers(run, tier=tier)
+    if not pool:
+        return None
     picks = rng.sample(pool, min(count, len(pool)))
-    choice = choice_screen.main(
-        game_screen, title, [relic_option(r) for r in picks], run=run,
-        skip_label="skip  (+50 gold)" if allow_skip else "",
-    )
-    if choice is None:
-        return None
-    if choice == choice_screen.SKIP:
-        run["gold"] += 50
-        return None
+    choice = choice_screen.main(game_screen, title,
+                                [relic_option(r) for r in picks], run=run)
+    if choice is None or choice == choice_screen.SKIP:
+        choice = 0
     relic_id = picks[choice]
     return relic_id if grant_relic(game_screen, run, relic_id, rng) else None
 
@@ -216,7 +238,7 @@ def apply_blessing(game_screen: GameScreen, run: dict, blessing_id: str,
 
     elif blessing_id == "orbs_and_curse":
         run["orbs"] += 3
-        offer_relics(game_screen, run, rng, "Take one curse", tier="curse")
+        choose_relic(game_screen, run, rng, "Take one curse", tier="curse")
 
     elif blessing_id == "power_and_curse":
         grant_random_relic(game_screen, run, rng, tier="power")
