@@ -105,9 +105,11 @@ def remove_enchants(name: str) -> str:
 
 EnchantHook = Callable[[Any, tuple[str, ...], Any], None]
 SpawnResolver = Callable[[str, tuple[str, ...], Any], str]
+EnchantDescriber = Callable[[tuple[str, ...]], list[str]]
 
 _enchant_hook: Optional[EnchantHook] = None
 _spawn_resolver: Optional[SpawnResolver] = None
+_enchant_describer: Optional[EnchantDescriber] = None
 _vanishing_keys: frozenset[str] = frozenset()
 _no_discard_keys: frozenset[str] = frozenset()
 
@@ -134,6 +136,19 @@ def resolve_spawn_code(spawn_name: str, name: str, game_state: Any) -> str:
     if keys and _spawn_resolver is not None:
         return _spawn_resolver(spawn_name, keys, game_state)
     return spawn_name
+
+
+def set_enchant_describer(describer: Optional[EnchantDescriber]) -> None:
+    global _enchant_describer
+    _enchant_describer = describer
+
+
+def describe_enchants(name: str) -> list[str]:
+    """Human-readable lines for a card's enchantments, for tooltips."""
+    keys = enchant_keys(name)
+    if not keys or _enchant_describer is None:
+        return []
+    return _enchant_describer(keys)
 
 
 def set_vanishing_keys(keys) -> None:

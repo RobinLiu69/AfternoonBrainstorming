@@ -121,6 +121,16 @@ def _attack_min(act: int, kind: str) -> float:
     return max(6.0, base - act)
 
 
+# act 1 always lets the player open; after that the tower sometimes moves first
+ENEMY_FIRST_CHANCE: float = 0.35
+
+
+def _enemy_first(act: int, kind: str, rng: random.Random) -> bool:
+    if act == 1 or kind == "weak":
+        return False
+    return rng.random() < ENEMY_FIRST_CHANCE
+
+
 def weak_enemy(rng: random.Random, index: int) -> dict:
     """The very first squad fields understrength units, so act 1 opens below par."""
     deck = list(WEAK_DECKS[index % len(WEAK_DECKS)])
@@ -133,6 +143,7 @@ def weak_enemy(rng: random.Random, index: int) -> dict:
         "strategy_overrides": {"attack_min_score": 11.0},
         "relics": [],
         "effects": {"unit_hp_plus": -1, "unit_damage_plus": -1} if first else {},
+        "enemy_first": False,
         "gold": BATTLE_GOLD["weak"],
     }
 
@@ -150,6 +161,7 @@ def normal_enemy(act: int, factions, rng: random.Random) -> dict:
         "strategy_overrides": {"attack_min_score": _attack_min(act, "normal")},
         "relics": [],
         "effects": {},
+        "enemy_first": _enemy_first(act, "normal", rng),
         "gold": BATTLE_GOLD["normal"],
     }
 
@@ -168,6 +180,7 @@ def elite_enemy(act: int, factions, rng: random.Random) -> dict:
         "strategy_overrides": {"attack_min_score": _attack_min(act, "elite")},
         "relics": list(formation["relics"][:count]),
         "effects": {},
+        "enemy_first": _enemy_first(act, "elite", rng),
         "gold": BATTLE_GOLD["elite"],
     }
 
@@ -185,6 +198,7 @@ def faction_lord(tag: str, rng: random.Random) -> dict:
         "strategy_overrides": {"beam_width": 6, "depth_cap": 4},
         "relics": relics,
         "effects": {},
+        "enemy_first": _enemy_first(2, "boss", rng),
         "gold": BATTLE_GOLD["boss"],
     }
 
@@ -210,6 +224,7 @@ def head_instructor(rng: random.Random) -> dict:
         "strategy_overrides": {"beam_width": 5, "depth_cap": 3},
         "relics": ["dorans_shield", "prepared_pack"],
         "effects": {},
+        "enemy_first": False,
         "gold": BATTLE_GOLD["boss"],
     }
 
@@ -225,6 +240,7 @@ def traitor_lord(rng: random.Random) -> dict:
         "strategy_overrides": {"beam_width": 8, "depth_cap": 5},
         "relics": ["emblem_HF", "sewing_kit", "prepared_pack", "amulet_TANK"],
         "effects": {},
+        "enemy_first": _enemy_first(3, "boss", rng),
         "gold": BATTLE_GOLD["boss"],
     }
 

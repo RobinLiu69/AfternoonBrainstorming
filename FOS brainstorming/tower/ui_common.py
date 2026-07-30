@@ -20,11 +20,32 @@
 
 from __future__ import annotations
 
+import textwrap
+
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text
 from core.UI import Button
 
 from tower.content import ENEMY_LABELS, RELICS, ROOM_LABELS
+
+# free text is wrapped to a fixed width so descriptions never overlap
+# whatever is drawn beside or below them
+DESC_WRAP: int = 40
+RELIC_WRAP: int = 30
+PANEL_WRAP: int = 52
+
+
+def wrap(text: str, width: int = DESC_WRAP) -> list[str]:
+    if not text:
+        return []
+    return textwrap.wrap(text, width) or [text]
+
+
+def wrap_all(lines, width: int = DESC_WRAP) -> list[str]:
+    out: list[str] = []
+    for line in lines:
+        out.extend(wrap(line, width))
+    return out
 
 
 GOLD: tuple[int, int, int] = (255, 215, 0)
@@ -105,12 +126,23 @@ def draw_run_bar(game_screen: GameScreen, run: dict) -> None:
                   bs * 8.2, y, game_screen.surface)
 
 
-def draw_relic_strip(game_screen: GameScreen, run: dict) -> None:
-    """One line per relic down the right edge."""
+def draw_relic_strip(game_screen: GameScreen, run: dict, detailed: bool = False) -> None:
+    """Relic names down the right edge; [F] adds what each one does."""
     bs = game_screen.block_size
-    x = game_screen.display_width - bs * 3.4
+    relics = run.get("relics", [])
+    if not relics:
+        return
+
+    x = game_screen.display_width - bs * (3.9 if detailed else 2.6)
     y = bs * 1.1
-    for relic_id in run.get("relics", []):
-        draw_text(relic_label(relic_id), game_screen.small_text_font,
+    step = bs * 0.26
+    for relic_id in relics:
+        draw_text(relic_label(relic_id), game_screen.text_font,
                   relic_color(relic_id), x, y, game_screen.surface)
-        y += bs * 0.3
+        y += step
+        if detailed:
+            for line in wrap(relic_text(relic_id), RELIC_WRAP):
+                draw_text(line, game_screen.small_text_font, DIM,
+                          x + bs * 0.12, y, game_screen.surface)
+                y += bs * 0.2
+            y += bs * 0.04

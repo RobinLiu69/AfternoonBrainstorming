@@ -152,8 +152,7 @@ def _battle_reward(game_screen: GameScreen, run: dict, enemy: dict,
     if enemy["kind"] == "boss":
         # a boss earns a real choice, and is the only source of special relics
         grants.choose_relic(game_screen, run, rng, "Boss spoils",
-                            include_special=True,
-                            decline_gold=grants.DECLINE_RELIC_GOLD)
+                            include_special=True, declinable=True)
     elif enemy["kind"] == "elite" or rng.random() < RELIC_DROP_CHANCE:
         grants.offer_relic(game_screen, run, rng, "Spoils")
 

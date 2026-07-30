@@ -216,9 +216,16 @@ def turn_start(game_state: Any, player_name: str) -> None:
 # install
 # --------------------------------------------------------------------------
 
+def describe(keys: tuple[str, ...]) -> list[str]:
+    """Tooltip lines for an enchanted card, shown by the in-battle [F] hint."""
+    return [f"{ENCHANTS[k]['label']}: {ENCHANTS[k]['text']}"
+            for k in keys if k in ENCHANTS]
+
+
 def install() -> None:
     card_code.set_enchant_hook(apply)
     card_code.set_spawn_resolver(resolve_spawn)
+    card_code.set_enchant_describer(describe)
     card_code.set_vanishing_keys(VANISHING_KEYS)
     card_code.set_no_discard_keys(NO_DISCARD_KEYS)
 
@@ -226,5 +233,6 @@ def install() -> None:
 def uninstall() -> None:
     card_code.set_enchant_hook(None)
     card_code.set_spawn_resolver(None)
+    card_code.set_enchant_describer(None)
     card_code.set_vanishing_keys(())
     card_code.set_no_discard_keys(())

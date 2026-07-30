@@ -56,14 +56,11 @@ class Player:
         self.revealed_deck: list[str] = list(self.deck[:6])
 
     def initialize(self, game_state: GameState) -> None:
-        match self.name:
-            case "player1":
-                self.discard_pile = self.deck.copy()
-                for _ in range(3): self.draw_card(game_state)
-                game_state.number_of_attacks[self.name] += 1
-            case "player2":
-                self.discard_pile = self.deck.copy()
-                for _ in range(3): self.draw_card(game_state)
+        self.discard_pile = self.deck.copy()
+        for _ in range(3): self.draw_card(game_state)
+        # whoever the turn counter starts on opens with an attack
+        if self.name == game_state.seat_on_turn():
+            game_state.number_of_attacks[self.name] += 1
     
     def turn_start(self, game_state: GameState) -> None:
         game_state.game_logger.log_turn_start(self.name, game_state.turn_number)

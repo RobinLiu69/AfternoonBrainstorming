@@ -22,6 +22,7 @@ import pygame
 
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text, QuitGame
+from core.setting_config import load_setting
 from core.UI import Button
 from utils.controls import key_pressed
 
@@ -77,6 +78,7 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
     back = ui_common.back_button(game_screen, "back")
 
     result = "back"
+    hint_on = load_setting("hint_on")
     clock = pygame.time.Clock()
 
     while running:
@@ -86,8 +88,11 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
-                if key_pressed(pygame.key.get_pressed()) == pygame.K_ESCAPE:
+                key = key_pressed(pygame.key.get_pressed())
+                if key == pygame.K_ESCAPE:
                     running = False
+                if key == pygame.K_f:
+                    hint_on = not hint_on
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if back.touch(mouse_x, mouse_y):
                     running = False
@@ -100,70 +105,82 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
                 raise QuitGame
 
         ui_common.draw_run_bar(game_screen, run)
-        ui_common.draw_relic_strip(game_screen, run)
 
         draw_text(ui_common.enemy_label(enemy), game_screen.title_text_font,
                   ui_common.enemy_color(enemy["kind"]),
-                  cx - bs * 3.6, cy - bs * 2.4, game_screen.surface)
+                  cx - bs * 3.6, cy - bs * 2.5, game_screen.surface)
+        first_text, first_color = (("they move first", ui_common.CURSE)
+                                   if enemy.get("enemy_first")
+                                   else ("you move first", ui_common.HILITE))
+        draw_text(first_text, game_screen.big_text_font, first_color,
+                  cx - bs * 3.6, cy - bs * 2.0, game_screen.surface)
         if enemy.get("note"):
-            draw_text(enemy["note"], game_screen.text_font, ui_common.CURSE,
-                      cx - bs * 3.6, cy - bs * 1.9, game_screen.surface)
+            for i, line in enumerate(ui_common.wrap(enemy["note"], 34)):
+                draw_text(line, game_screen.text_font, ui_common.CURSE,
+                          cx - bs * 1.5, cy - bs * (2.0 - 0.26 * i), game_screen.surface)
 
-        y = cy - bs * 1.6
+        y = cy - bs * 1.55
         draw_text("enemy deck", game_screen.mid_text_font, WHITE,
                   cx - bs * 3.6, y, game_screen.surface)
-        y += bs * 0.35
-        for chunk in _wrap(sorted(enemy["deck"]), 6):
+        y += bs * 0.34
+        for chunk in _wrap(sorted(enemy["deck"]), 5):
             draw_text("  ".join(chunk), game_screen.text_font, WHITE,
                       cx - bs * 3.6, y, game_screen.surface)
-            y += bs * 0.28
+            y += bs * 0.27
 
         if enemy.get("relics"):
             y += bs * 0.1
             for relic_id in enemy["relics"]:
-                draw_text(f"{ui_common.relic_label(relic_id)} - {ui_common.relic_text(relic_id)}",
-                          game_screen.small_text_font, ui_common.RELIC,
-                          cx - bs * 3.6, y, game_screen.surface)
-                y += bs * 0.26
+                draw_text(ui_common.relic_label(relic_id), game_screen.text_font,
+                          ui_common.RELIC, cx - bs * 3.6, y, game_screen.surface)
+                y += bs * 0.25
+                if hint_on:
+                    for line in ui_common.wrap(ui_common.relic_text(relic_id), 34):
+                        draw_text(line, game_screen.small_text_font, ui_common.DIM,
+                                  cx - bs * 3.45, y, game_screen.surface)
+                        y += bs * 0.21
 
-        y += bs * 0.15
+        y += bs * 0.1
         for line in _effect_lines(enemy_effects, "enemy"):
-            draw_text(line, game_screen.small_text_font, ui_common.CURSE,
+            draw_text(line, game_screen.text_font, ui_common.CURSE,
                       cx - bs * 3.6, y, game_screen.surface)
-            y += bs * 0.26
+            y += bs * 0.25
 
-        y = cy - bs * 1.6
+        y = cy - bs * 1.55
         draw_text(f"your deck  ({len(run['deck'])})", game_screen.mid_text_font, WHITE,
-                  cx + bs * 0.6, y, game_screen.surface)
-        y += bs * 0.35
+                  cx + bs * 0.4, y, game_screen.surface)
+        y += bs * 0.34
         names = [card_pool.display_name(c) for c in run["deck"]]
         rows = _wrap(names, 2)
         for chunk in rows[:DECK_ROWS]:
-            draw_text("   ".join(chunk), game_screen.small_text_font, WHITE,
-                      cx + bs * 0.6, y, game_screen.surface)
-            y += bs * 0.26
+            draw_text("  ".join(chunk), game_screen.text_font, WHITE,
+                      cx + bs * 0.4, y, game_screen.surface)
+            y += bs * 0.25
         hidden = sum(len(chunk) for chunk in rows[DECK_ROWS:])
         if hidden:
-            draw_text(f"+{hidden} more", game_screen.small_text_font, ui_common.DIM,
-                      cx + bs * 0.6, y, game_screen.surface)
-            y += bs * 0.26
+            draw_text(f"+{hidden} more  ([D] on the map for the full list)",
+                      game_screen.small_text_font, ui_common.DIM,
+                      cx + bs * 0.4, y, game_screen.surface)
+            y += bs * 0.25
 
         if run["bench"]:
-            y += bs * 0.15
+            y += bs * 0.1
             draw_text(f"bench  ({len(run['bench'])}/{run_state.bench_limit(run)})",
-                      game_screen.text_font, card_picker.BENCH_COLOR,
-                      cx + bs * 0.6, y, game_screen.surface)
-            y += bs * 0.3
+                      game_screen.mid_text_font, card_picker.BENCH_COLOR,
+                      cx + bs * 0.4, y, game_screen.surface)
+            y += bs * 0.32
             for code in run["bench"]:
-                draw_text(card_pool.display_name(code), game_screen.small_text_font,
-                          card_picker.BENCH_COLOR, cx + bs * 0.6, y, game_screen.surface)
-                y += bs * 0.26
+                draw_text(card_pool.display_name(code), game_screen.text_font,
+                          card_picker.BENCH_COLOR, cx + bs * 0.4, y, game_screen.surface)
+                y += bs * 0.25
 
-        y += bs * 0.15
+        y += bs * 0.1
         for line in _effect_lines(player_effects, "your"):
-            draw_text(line, game_screen.small_text_font, ui_common.HILITE,
-                      cx + bs * 0.6, y, game_screen.surface)
-            y += bs * 0.26
+            draw_text(line, game_screen.text_font, ui_common.HILITE,
+                      cx + bs * 0.4, y, game_screen.surface)
+            y += bs * 0.25
+
+        _draw_own_relics(game_screen, run, hint_on)
 
         if can_swap:
             swap.update(game_screen)
@@ -178,3 +195,25 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
 
 def _wrap(items, per_row: int) -> list[list[str]]:
     return [items[i:i + per_row] for i in range(0, len(items), per_row)]
+
+
+def _draw_own_relics(game_screen: GameScreen, run: dict, detailed: bool) -> None:
+    """Your relics along the right edge; [F] spells out what each one does."""
+    bs = game_screen.block_size
+    relics = run.get("relics", [])
+    if not relics:
+        return
+    x = game_screen.display_width - bs * (3.4 if detailed else 2.4)
+    y = game_screen.display_height / 2 - bs * 1.55
+    draw_text("[F] your relics", game_screen.text_font, ui_common.DIM,
+              x, y, game_screen.surface)
+    y += bs * 0.3
+    for relic_id in relics:
+        draw_text(ui_common.relic_label(relic_id), game_screen.text_font,
+                  ui_common.relic_color(relic_id), x, y, game_screen.surface)
+        y += bs * 0.25
+        if detailed:
+            for line in ui_common.wrap(ui_common.relic_text(relic_id), 30):
+                draw_text(line, game_screen.small_text_font, ui_common.DIM,
+                          x + bs * 0.12, y, game_screen.surface)
+                y += bs * 0.21

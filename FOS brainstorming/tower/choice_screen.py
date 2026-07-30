@@ -45,6 +45,10 @@ from tower import ui_common
 
 SKIP: int = -1
 
+# option text is wrapped so neighbouring columns never run into each other
+LABEL_WRAP: int = 20
+OPTION_WRAP: int = 24
+
 _COLUMN_SLOTS: dict[int, list[float]] = {
     1: [1.5],
     2: [0.5, 2.5],
@@ -128,7 +132,7 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
 
         if run is not None:
             ui_common.draw_run_bar(game_screen, run)
-            ui_common.draw_relic_strip(game_screen, run)
+            ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
 
         draw_text(title, game_screen.title_text_font, WHITE,
                   cx - bs * 3.4, cy - bs * 3.0, game_screen.surface)
@@ -146,13 +150,18 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
             else:
                 pygame.draw.rect(game_screen.surface, color, rect, box_width)
 
-            draw_text(option.get("label", ""), game_screen.text_font, color,
-                      rect.x - bs * 0.25, rect.y - bs * 0.45, game_screen.surface)
+            label_lines = ui_common.wrap(option.get("label", ""), LABEL_WRAP)
+            label_y = rect.y - bs * 0.5 - bs * 0.3 * (len(label_lines) - 1)
+            for line in label_lines:
+                draw_text(line, game_screen.mid_text_font, color,
+                          rect.x - bs * 0.3, label_y, game_screen.surface)
+                label_y += bs * 0.3
+
             line_y = rect.y + bs * 1.15
-            for line in option.get("lines", []):
-                draw_text(line, game_screen.small_text_font, color,
-                          rect.x - bs * 0.25, line_y, game_screen.surface)
-                line_y += bs * 0.28
+            for line in ui_common.wrap_all(option.get("lines", []), OPTION_WRAP):
+                draw_text(line, game_screen.text_font, color,
+                          rect.x - bs * 0.3, line_y, game_screen.surface)
+                line_y += bs * 0.26
 
             if i == hover:
                 pygame.draw.rect(game_screen.surface, ui_common.HILITE,
@@ -165,8 +174,7 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
 
         hint_box.turn_on = hint_on
         if hint_on and hover >= 0 and options[hover].get("card"):
-            hint_box.update(mouse_x, mouse_y,
-                            card_code.plain_code(options[hover]["card"]), game_screen)
+            hint_box.update(mouse_x, mouse_y, options[hover]["card"], game_screen)
 
         pygame.display.update()
         clock.tick(60)

@@ -79,7 +79,7 @@ def main(game_screen: GameScreen, run: dict, title: str,
                      start_x + col * (btn_w + bs * 0.15),
                      start_y + row * (btn_h + bs * 0.12),
                      position="Left", padding=bs * 0.12, box_width=box_width,
-                     font=game_screen.small_text_font,
+                     font=game_screen.text_font,
                      text=label, text_color=color, box_color=color)
         buttons.append((btn, zone, index, code, usable))
 
@@ -117,10 +117,12 @@ def main(game_screen: GameScreen, run: dict, title: str,
                 raise QuitGame
 
         ui_common.draw_run_bar(game_screen, run)
-        draw_text(title, game_screen.big_big_text_font, WHITE,
-                  cx - bs * 3.4, cy - bs * 2.6, game_screen.surface)
+        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+        for i, line in enumerate(ui_common.wrap(title, ui_common.PANEL_WRAP)):
+            draw_text(line, game_screen.big_big_text_font, WHITE,
+                      cx - bs * 3.4, cy - bs * (2.6 - 0.4 * i), game_screen.surface)
         if subtitle:
-            draw_text(subtitle, game_screen.text_font, ui_common.GOLD,
+            draw_text(subtitle, game_screen.mid_text_font, ui_common.GOLD,
                       cx - bs * 3.4, cy - bs * 2.1, game_screen.surface)
 
         for btn, _zone, _index, _code, _usable in buttons:
@@ -129,16 +131,16 @@ def main(game_screen: GameScreen, run: dict, title: str,
             cancel.update(game_screen)
 
         if hovered_code:
-            lines = card_pool.enchant_lines(hovered_code)[:3]
             y = cy + bs * 1.25
-            for line in lines:
-                draw_text(line, game_screen.text_font, ENCHANT_COLOR,
+            for line in ui_common.wrap_all(card_pool.enchant_lines(hovered_code),
+                                           ui_common.PANEL_WRAP)[:4]:
+                draw_text(line, game_screen.mid_text_font, ENCHANT_COLOR,
                           cx - bs * 3.4, y, game_screen.surface)
-                y += bs * 0.3
+                y += bs * 0.32
 
         hint_box.turn_on = hint_on
         if hint_on and hovered_code:
-            hint_box.update(mouse_x, mouse_y, card_code.plain_code(hovered_code), game_screen)
+            hint_box.update(mouse_x, mouse_y, hovered_code, game_screen)
 
         pygame.display.update()
         clock.tick(60)

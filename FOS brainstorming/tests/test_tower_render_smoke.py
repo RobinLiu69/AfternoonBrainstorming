@@ -38,8 +38,8 @@ from core.game_screen import GameScreen
 
 from tower import (
     battle_prep, card_picker, choice_screen, events, faction_select, map_screen,
-    menu_screen, notice_screen, rooms, run_state, shop, shop_screen, tower_map,
-    ui_common,
+    menu_screen, notice_screen, rooms, roster_screen, run_state, shop,
+    shop_screen, tower_map, ui_common,
 )
 
 FACTIONS = ["R", "B", "C", "BR"]
@@ -183,6 +183,48 @@ def test_battle_prep_renders(game_screen, escape, run):
     enemy_effects = run_state.effects_from_relics(enemy["relics"], enemy["effects"])
     assert battle_prep.main(game_screen, run, enemy,
                             run_state.battle_effects(run), enemy_effects) == "back"
+
+
+def test_roster_screen_renders(game_screen, escape, run):
+    escape(roster_screen)
+    roster_screen.main(game_screen, run)
+
+
+def test_roster_screen_renders_a_full_deck_and_many_relics(game_screen, escape, run):
+    escape(roster_screen)
+    run["deck"] = ["TANKW"] * 12
+    run["bench"] = ["SPB", "ADCR*sharp"]
+    for relic_id in ("courier", "first_aid_kit", "dorans_shield", "prepared_pack",
+                     "sewing_kit", "torn_wallet", "fog_of_war"):
+        run_state.add_relic(run, relic_id)
+    roster_screen.main(game_screen, run)
+
+
+def test_roster_screen_renders_an_empty_run(game_screen, escape):
+    escape(roster_screen)
+    bare = run_state.new_run(FACTIONS, seed=1)
+    bare["deck"] = ["TANKW"]
+    roster_screen.main(game_screen, bare)
+
+
+def test_wrapping_keeps_lines_inside_the_limit():
+    long_text = "shields from overhealing are doubled and then some more words"
+    for width in (20, 30, 40):
+        lines = ui_common.wrap(long_text, width)
+        assert lines
+        assert all(len(line) <= width for line in lines)
+    assert ui_common.wrap("") == []
+    assert ui_common.wrap_all(["a", "b"], 10) == ["a", "b"]
+
+
+@pytest.mark.parametrize("enemy_first", [False, True])
+def test_battle_prep_shows_who_moves_first(game_screen, escape, run, enemy_first):
+    escape(battle_prep)
+    enemy = dict(tower_map.boss_of(run_state.current_map(run)))
+    enemy["enemy_first"] = enemy_first
+    effects = run_state.effects_from_relics(enemy["relics"], enemy["effects"])
+    assert battle_prep.main(game_screen, run, enemy,
+                            run_state.battle_effects(run), effects) == "back"
 
 
 def test_shop_screen_renders(game_screen, escape, run):

@@ -130,7 +130,7 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
             else:
                 text = f"{label}   [{shop.price_of(item, discount)}]"
             out.append((Button(btn_w, btn_h, x, y, position="Left", padding=bs * 0.12,
-                               box_width=box_width, font=game_screen.text_font,
+                               box_width=box_width, font=game_screen.mid_text_font,
                                text=text, text_color=color, box_color=color), item))
         return out
 
@@ -138,7 +138,7 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
         y = cy + bs * 1.4
         return {
             "burn": Button(bs * 2.2, bs * 0.55, cx - bs * 3.8, y, box_width=box_width,
-                           font=game_screen.text_font,
+                           font=game_screen.mid_text_font,
                            text=f"burn a card  (orbs: {run.get('orbs', 0)})"),
             "scrap": Button(bs * 2.2, bs * 0.55, cx - bs * 1.4, y, box_width=box_width,
                             font=game_screen.text_font,
@@ -202,11 +202,11 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
                 raise QuitGame
 
         ui_common.draw_run_bar(game_screen, run)
-        ui_common.draw_relic_strip(game_screen, run)
+        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
 
         draw_text("Merchant", game_screen.title_text_font, ui_common.GOLD,
                   cx - bs * 3.8, cy - bs * 2.5, game_screen.surface)
-        draw_text(grants.slot_hint(run), game_screen.text_font, WHITE,
+        draw_text(grants.slot_hint(run), game_screen.mid_text_font, WHITE,
                   cx - bs * 3.8, cy - bs * 2.0, game_screen.surface)
 
         for btn, _item in buttons:
@@ -223,19 +223,21 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
 
         if hovered is not None:
             _label, text, color = _item_label(hovered)
-            if text:
-                draw_text(text, game_screen.text_font, color,
-                          cx - bs * 3.8, cy + bs * 1.05, game_screen.surface)
+            y = cy + bs * 1.0
+            for line in ui_common.wrap(text, ui_common.PANEL_WRAP):
+                draw_text(line, game_screen.mid_text_font, color,
+                          cx - bs * 3.8, y, game_screen.surface)
+                y += bs * 0.3
             if hovered["kind"] == "card":
-                for i, line in enumerate(card_pool.enchant_lines(hovered["card"])):
-                    draw_text(line, game_screen.small_text_font, card_picker.ENCHANT_COLOR,
-                              cx - bs * 3.8, cy + bs * (1.05 + 0.26 * (i + 1)),
-                              game_screen.surface)
+                for line in ui_common.wrap_all(card_pool.enchant_lines(hovered["card"]),
+                                               ui_common.PANEL_WRAP):
+                    draw_text(line, game_screen.text_font, card_picker.ENCHANT_COLOR,
+                              cx - bs * 3.8, y, game_screen.surface)
+                    y += bs * 0.26
 
         hint_box.turn_on = hint_on
         if hint_on and hovered is not None and hovered["kind"] == "card":
-            hint_box.update(mouse_x, mouse_y,
-                            card_code.plain_code(hovered["card"]), game_screen)
+            hint_box.update(mouse_x, mouse_y, hovered["card"], game_screen)
 
         pygame.display.update()
         clock.tick(60)

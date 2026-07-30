@@ -23,7 +23,7 @@ import random
 from shared import card_code
 from cards.factory import CardFactory
 from tower import (
-    battle_builder, battle_effects, card_pool, enchant_runtime, grants,
+    battle_builder, battle_effects, card_pool, enchant_runtime, enemies, grants,
     run_state, shop, tower_map,
 )
 from tower.content import RELICS
@@ -325,6 +325,80 @@ def test_the_devils_bargain_blessing_pays_orbs_for_one_curse(monkeypatch):
     assert run["orbs"] == 3
     assert len(run["relics"]) == 1
     assert RELICS[run["relics"][0]]["tier"] == "curse"
+
+
+def test_skipping_a_card_reward_pays_nothing(monkeypatch):
+    run = make_run(1)
+    monkeypatch.setattr(grants.choice_screen, "main",
+                        lambda *a, **k: grants.choice_screen.SKIP)
+    monkeypatch.setattr(grants.card_picker, "main", lambda *a, **k: None)
+
+    assert grants.offer_cards(None, run, random.Random(1)) is None
+    assert run["gold"] == 0
+    assert run_state.all_cards(run) == list(run["deck"])
+
+
+def test_declining_a_relic_pays_nothing(monkeypatch):
+    run = make_run(1)
+    answer_screens(monkeypatch, [1])
+    assert grants.offer_relic(None, run, random.Random(2), "Spoils") is None
+    assert run["gold"] == 0
+    assert run["relics"] == []
+
+
+def test_enemies_never_move_first_in_act_one():
+    for seed in range(20):
+        for enemy in (enemies.weak_enemy(random.Random(seed), 0),
+                      enemies.normal_enemy(1, FACTIONS, random.Random(seed)),
+                      enemies.head_instructor(random.Random(seed))):
+            assert enemy["enemy_first"] is False
+
+
+def test_later_acts_sometimes_let_the_enemy_open():
+    seen = set()
+    for seed in range(60):
+        seen.add(enemies.normal_enemy(2, FACTIONS, random.Random(seed))["enemy_first"])
+    assert seen == {True, False}
+
+
+def test_every_enemy_declares_who_moves_first():
+    for act in (1, 2, 3):
+        for seed in range(10):
+            act_map = tower_map.build_act(act, FACTIONS, random.Random(seed))
+            for layer in act_map["layers"]:
+                found = [layer["enemy"]] if "enemy" in layer else []
+                found += [o["enemy"] for o in layer.get("options", []) if "enemy" in o]
+                for enemy in found:
+                    assert isinstance(enemy["enemy_first"], bool)
+
+
+def test_an_enemy_first_battle_starts_on_the_enemy_turn():
+    run = make_run(4)
+    enemy = dict(enemies.normal_enemy(2, FACTIONS, random.Random(1)))
+
+    enemy["enemy_first"] = False
+    assert battle_builder.build_game_state(run, enemy).turn_number == 0
+
+    enemy["enemy_first"] = True
+    game_state = battle_builder.build_game_state(run, enemy)
+    assert game_state.turn_number == 1
+    assert game_state.seat_on_turn() == "player2"
+
+
+def test_the_opening_attack_goes_to_whoever_starts():
+    for turn, opener in ((0, "player1"), (1, "player2")):
+        game_state = make_game_state()
+        game_state.turn_number = turn
+        game_state.player1.deck = ["TANKW"] * 6
+        game_state.player2.deck = ["TANKW"] * 6
+        game_state.player1.initialize(game_state)
+        game_state.player2.initialize(game_state)
+
+        assert game_state.number_of_attacks[opener] == 1
+        assert game_state.number_of_attacks[
+            "player2" if opener == "player1" else "player1"] == 0
+        assert len(game_state.player1.hand) == 3
+        assert len(game_state.player2.hand) == 3
 
 
 def test_battle_deck_is_the_deck_only_and_keeps_enchant_codes():

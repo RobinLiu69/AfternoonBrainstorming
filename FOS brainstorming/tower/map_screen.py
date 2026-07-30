@@ -28,10 +28,11 @@ import pygame
 
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text, QuitGame
+from core.setting_config import load_setting
 from core.UI import Button
 from utils.controls import key_pressed
 
-from tower import run_state, tower_map, ui_common
+from tower import roster_screen, run_state, tower_map, ui_common
 from tower.content import ENEMY_LABELS
 
 SHORT_ENEMY: dict[str, str] = {
@@ -40,6 +41,9 @@ SHORT_ENEMY: dict[str, str] = {
 SHORT_ROOM: dict[str, str] = {
     "event": "Event", "shop": "Shop", "gold_mine": "Gold", "relic_chest": "Relic",
 }
+
+# route columns sit 2.8 blocks apart, so their text wraps well before that
+ROUTE_WRAP: int = 26
 
 
 def _blind_flags(run: dict) -> tuple[bool, bool]:
@@ -89,6 +93,8 @@ def _option_lines(option: dict, blind: tuple[bool, bool]) -> list[str]:
         else:
             lines.append(f"then: {ui_common.enemy_label(enemy)}")
             lines.append(f"({len(enemy['deck'])} cards, {ENEMY_LABELS[enemy['kind']]})")
+            if enemy.get("enemy_first"):
+                lines.append("they move first")
     return lines
 
 
@@ -130,7 +136,12 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
             font=game_screen.big_text_font, text=_enter_label(layer)), None))
 
     leave = ui_common.back_button(game_screen, "leave")
+    roster = Button(bs * 2.6, bs * 0.6, bs * 2.2,
+                    game_screen.display_height - bs * 0.85,
+                    box_width=box_width, font=game_screen.mid_text_font,
+                    text="[D] deck & relics")
 
+    hint_on = load_setting("hint_on")
     result: Optional[tuple[str, Optional[int]]] = None
     clock = pygame.time.Clock()
 
@@ -140,11 +151,18 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
-                if key_pressed(pygame.key.get_pressed()) == pygame.K_ESCAPE:
+                key = key_pressed(pygame.key.get_pressed())
+                if key == pygame.K_ESCAPE:
                     running = False
+                if key == pygame.K_d:
+                    roster_screen.main(game_screen, run)
+                if key == pygame.K_f:
+                    hint_on = not hint_on
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if leave.touch(mouse_x, mouse_y):
                     running = False
+                elif roster.touch(mouse_x, mouse_y):
+                    roster_screen.main(game_screen, run)
                 for btn, pick in action_buttons:
                     if btn.touch(mouse_x, mouse_y):
                         result = ("enter", pick)
@@ -154,7 +172,7 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
                 raise QuitGame
 
         ui_common.draw_run_bar(game_screen, run)
-        ui_common.draw_relic_strip(game_screen, run)
+        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
 
         boss = tower_map.boss_of(act_map)
         draw_text(f"act {run['act']}  -  {boss['label']} waits at the top",
@@ -181,6 +199,7 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
         for btn, _pick in action_buttons:
             btn.update(game_screen)
         leave.update(game_screen)
+        roster.update(game_screen)
 
         pygame.display.update()
         clock.tick(60)
@@ -213,9 +232,9 @@ def _draw_panel(game_screen: GameScreen, run: dict, layer: dict,
         for i, option in enumerate(options):
             x = cx - total / 2 + i * (btn_w + bs * 0.2)
             y = panel_y + bs * 0.25
-            for line in _option_lines(option, blind):
+            for line in ui_common.wrap_all(_option_lines(option, blind), ROUTE_WRAP):
                 draw_text(line, game_screen.text_font, WHITE, x, y, game_screen.surface)
-                y += bs * 0.3
+                y += bs * 0.28
         return
 
     resolved = run_state.current_layer(run)
@@ -225,14 +244,25 @@ def _draw_panel(game_screen: GameScreen, run: dict, layer: dict,
         enemy = resolved["enemy"]
         draw_text(ui_common.enemy_label(enemy), game_screen.big_big_text_font,
                   ui_common.enemy_color(enemy["kind"]), cx - bs * 2.0, y, game_screen.surface)
-        y += bs * 0.7
-        draw_text(f"deck: {' '.join(sorted(set(enemy['deck'])))}",
-                  game_screen.small_text_font, WHITE, cx - bs * 2.0, y, game_screen.surface)
-        y += bs * 0.3
+        y += bs * 0.55
+        if enemy.get("enemy_first"):
+            draw_text("they move first", game_screen.mid_text_font, ui_common.CURSE,
+                      cx - bs * 2.0, y, game_screen.surface)
+        else:
+            draw_text("you move first", game_screen.mid_text_font, ui_common.HILITE,
+                      cx - bs * 2.0, y, game_screen.surface)
+        y += bs * 0.42
+        for line in ui_common.wrap(f"deck: {' '.join(sorted(set(enemy['deck'])))}",
+                                   ui_common.PANEL_WRAP):
+            draw_text(line, game_screen.text_font, WHITE,
+                      cx - bs * 2.0, y, game_screen.surface)
+            y += bs * 0.26
         if enemy.get("relics"):
             names = ", ".join(ui_common.relic_label(r) for r in enemy["relics"])
-            draw_text(f"relics: {names}", game_screen.small_text_font,
-                      ui_common.RELIC, cx - bs * 2.0, y, game_screen.surface)
+            for line in ui_common.wrap(f"relics: {names}", ui_common.PANEL_WRAP):
+                draw_text(line, game_screen.text_font, ui_common.RELIC,
+                          cx - bs * 2.0, y, game_screen.surface)
+                y += bs * 0.26
     elif kind == "room":
         draw_text(ui_common.room_label(resolved["room"]["kind"]),
                   game_screen.big_big_text_font, ui_common.GOLD,

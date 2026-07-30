@@ -274,6 +274,25 @@ def test_non_cyan_cards_never_gain_an_upgrade_marker():
     assert game_state.player1.hand == ["TANKW*sharp", "HEAL"]
 
 
+def test_the_hint_box_describes_enchantments():
+    from shared import card_code
+    from tower.content import ENCHANTS
+
+    lines = card_code.describe_enchants("TANKW*sharp")
+    assert len(lines) == 1
+    assert ENCHANTS["sharp"]["label"] in lines[0]
+    assert ENCHANTS["sharp"]["text"] in lines[0]
+
+    assert card_code.describe_enchants("TANKW") == []
+    assert len(card_code.describe_enchants("TANKW*sharp.fort")) == 2
+
+
+def test_no_enchant_descriptions_once_the_runtime_is_gone():
+    from shared import card_code
+    enchant_runtime.uninstall()
+    assert card_code.describe_enchants("TANKW*sharp") == []
+
+
 def test_the_hint_box_finds_stats_for_an_enchanted_card():
     from core.card_hint import get_stat_prefix
     assert get_stat_prefix("TANKW*sharp") == get_stat_prefix("TANKW")

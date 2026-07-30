@@ -35,7 +35,12 @@ def build_game_state(run: dict, enemy: dict) -> GameState:
     game_state = GameState(player1, player2, Neutral(), BoardConfig(), game_logger=logger)
     game_state.timer_mode = "timer"
 
-    logger.info(f"tower act {run['act']} layer {run['layer']} vs {enemy['label']}")
+    # an odd starting turn number hands the opening turn (and its attack) to the enemy
+    if enemy.get("enemy_first"):
+        game_state.turn_number = 1
+
+    logger.info(f"tower act {run['act']} layer {run['layer']} vs {enemy['label']}"
+                f" ({'enemy' if enemy.get('enemy_first') else 'player'} first)")
     logger.info(f"player1 deck {'-'.join(player1.deck)}")
     logger.info(f"player2 deck {'-'.join(player2.deck)}")
     logger.info(f"rng_seed {game_state.rng_seed}", rng_seed=game_state.rng_seed)

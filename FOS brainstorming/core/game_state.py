@@ -108,6 +108,11 @@ class GameState:
         for card in self.neutral.on_board:
             card.update(self)
 
+    def seat_on_turn(self) -> str:
+        """Whose turn the counter currently points at.  Battles normally open on
+        turn 0 (player1); starting at 1 hands the first turn to player2."""
+        return "player1" if self.turn_number % 2 == 0 else "player2"
+
     def get_opponent_name(self, owner: str) -> str:
         return "player2" if owner == "player1" else "player1"
     

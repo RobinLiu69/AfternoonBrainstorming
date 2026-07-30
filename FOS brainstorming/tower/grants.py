@@ -34,8 +34,11 @@ from tower import card_picker, card_pool, choice_screen, run_state, ui_common
 from tower.content import BLESSING_ENCHANTS, ENCHANTS, RELICS
 
 MAGIC_REWARD_WEIGHT: float = 0.12
-SKIP_CARD_GOLD: int = 30
-DECLINE_RELIC_GOLD: int = 50
+
+# turning a reward down pays nothing - skipping is for keeping your deck lean,
+# not a way to farm gold
+SKIP_CARD_GOLD: int = 0
+DECLINE_RELIC_GOLD: int = 0
 
 
 # --------------------------------------------------------------------------
@@ -92,7 +95,7 @@ def offer_cards(game_screen: GameScreen, run: dict, rng: random.Random,
     choice = choice_screen.main(
         game_screen, title, options, run=run,
         subtitle=slot_hint(run),
-        skip_label=f"skip  (+{SKIP_CARD_GOLD} gold)" if allow_skip else "",
+        skip_label="take none" if allow_skip else "",
     )
     if choice is None:
         return None
@@ -175,7 +178,8 @@ def offer_relic(game_screen: GameScreen, run: dict, rng: random.Random,
                                 [relic_option(relic_id), decline], run=run,
                                 subtitle="take it or leave it")
     if choice != 0:
-        run["gold"] += decline_gold
+        if decline_gold:
+            run["gold"] += decline_gold
         return None
     return relic_id if grant_relic(game_screen, run, relic_id, rng) else None
 
@@ -183,26 +187,31 @@ def offer_relic(game_screen: GameScreen, run: dict, rng: random.Random,
 def choose_relic(game_screen: GameScreen, run: dict, rng: random.Random,
                  title: str, tier: str = "", count: int = 3,
                  include_special: bool = False,
-                 decline_gold: int = 0) -> Optional[str]:
+                 decline_gold: int = 0, declinable: bool = False) -> Optional[str]:
     """Pick one of several.  Boss spoils earn a real choice; so does deciding
     which curse hurts least.  Everything else gets ``offer_relic`` instead."""
     pool = run_state.relic_offers(run, tier=tier, include_special=include_special)
     if not pool:
         return None
 
+    label = "leave them"
+    if decline_gold:
+        label = f"leave them  (+{decline_gold} gold)"
+
     picks = rng.sample(pool, min(count, len(pool)))
     choice = choice_screen.main(
         game_screen, title, [relic_option(r) for r in picks], run=run,
-        skip_label=f"leave them  (+{decline_gold} gold)" if decline_gold else "",
+        skip_label=label if (declinable or decline_gold) else "",
     )
     if choice == choice_screen.SKIP:
-        run["gold"] += decline_gold
+        if decline_gold:
+            run["gold"] += decline_gold
         return None
     if choice is None:
-        # backing out of a choice you must make takes the first one
-        choice = 0 if not decline_gold else None
-        if choice is None:
+        if declinable or decline_gold:
             return None
+        # a choice you have to make - backing out takes the first one
+        choice = 0
     relic_id = picks[choice]
     return relic_id if grant_relic(game_screen, run, relic_id, rng) else None
 
