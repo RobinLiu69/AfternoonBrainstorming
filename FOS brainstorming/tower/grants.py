@@ -156,8 +156,8 @@ def _apply_pickup_enchant(game_screen: GameScreen, run: dict, relic_id: str,
 
 def offer_relics(game_screen: GameScreen, run: dict, rng: random.Random,
                  title: str = "Pick a relic", tier: str = "", count: int = 3,
-                 allow_skip: bool = False) -> Optional[str]:
-    pool = run_state.relic_offers(run, tier=tier)
+                 allow_skip: bool = False, include_special: bool = False) -> Optional[str]:
+    pool = run_state.relic_offers(run, tier=tier, include_special=include_special)
     if not pool:
         return None
     picks = rng.sample(pool, min(count, len(pool)))

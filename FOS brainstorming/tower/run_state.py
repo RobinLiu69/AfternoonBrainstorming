@@ -211,12 +211,13 @@ def swap_deck_bench(run: dict, deck_index: int, bench_index: int) -> bool:
 
 
 def enchant_card(run: dict, zone: str, index: int, key: str) -> bool:
+    """A card holds one enchantment - a new one replaces whatever was there."""
     if key not in ENCHANTS:
         return False
     target = run.get(zone)
     if not isinstance(target, list) or not (0 <= index < len(target)):
         return False
-    target[index] = card_code.add_enchant(target[index], key)
+    target[index] = card_code.with_enchants(target[index], [key])
     return True
 
 
@@ -257,12 +258,17 @@ def can_take_relic(run: dict, relic_id: str) -> bool:
     return True
 
 
-def relic_offers(run: dict, tier: str = "", source: str = "") -> list[str]:
+def relic_offers(run: dict, tier: str = "", source: str = "",
+                 include_special: bool = False) -> list[str]:
+    """Relics on offer.  Curses are never offered by name, and the special tier
+    only shows up where the caller allows it - which is boss spoils only."""
     out: list[str] = []
     for relic_id, relic in sorted(RELICS.items()):
         if tier and relic["tier"] != tier:
             continue
         if not tier and relic["tier"] == "curse":
+            continue
+        if not tier and relic["tier"] == "special" and not include_special:
             continue
         relic_source = relic.get("source", "")
         if relic_source and source and relic_source != source:
@@ -280,14 +286,6 @@ def add_relic(run: dict, relic_id: str) -> bool:
     if not can_take_relic(run, relic_id):
         return False
     run["relics"].append(relic_id)
-    return True
-
-
-def sell_relic(run: dict, relic_id: str, price: int) -> bool:
-    if not has_relic(run, relic_id):
-        return False
-    run["relics"].remove(relic_id)
-    run["gold"] += price
     return True
 
 
@@ -406,13 +404,13 @@ def pick_for(run: dict, layer_index: int):
 
 
 def is_last_layer(run: dict) -> bool:
-    return run["layer"] >= tower_map.BOSS_LAYER
+    return run["layer"] >= tower_map.boss_layer(run["act"])
 
 
 def advance_layer(run: dict) -> str:
     """Move to the next layer, or the next act.  Returns "layer"|"act"|"win"."""
     run["pending"] = None
-    if run["layer"] < tower_map.BOSS_LAYER:
+    if run["layer"] < tower_map.boss_layer(run["act"]):
         run["layer"] += 1
         floor_upkeep(run)
         return "layer"

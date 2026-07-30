@@ -19,6 +19,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+from shared import card_code
 from core.game_action import GameAction
 from campaign import ai_query, ai_evaluator
 from campaign.ai_strategies.base import Strategy
@@ -230,9 +231,10 @@ class AIController:
         if not (0 <= play.hand_index < len(hand)):
             return None
         name = hand[play.hand_index]
-        if name.endswith(" (+)") or not name.endswith("C"):
+        plain = card_code.plain_code(name)
+        if name.endswith(" (+)") or not plain.endswith("C"):
             return None
-        job = name[:-1]
+        job = plain[:-1]
         if job not in CARD_SETTING["Cyan"]:
             return None
         if gs.players_coin.get(self.player_name, 0) < self._cyan_upgrade_price(gs, job):

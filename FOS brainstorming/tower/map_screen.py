@@ -104,8 +104,11 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
     layer = tower_map.layer_at(act_map, current)
     blind = _blind_flags(run)
 
-    strip_w, strip_h = bs * 0.95, bs * 0.75
+    # later acts are longer, so the strip shrinks to keep every layer on screen
     strip_gap = bs * 0.06
+    usable = game_screen.display_width - bs * 0.8
+    strip_w = min(bs * 0.95, (usable - strip_gap * (len(layers) - 1)) / len(layers))
+    strip_h = bs * 0.75
     strip_x0 = (game_screen.display_width - (len(layers) * (strip_w + strip_gap) - strip_gap)) / 2
     strip_y = bs * 1.05
 
@@ -170,8 +173,8 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
                                  rect.inflate(int(bs * 0.12), int(bs * 0.12)), box_width)
             draw_text(str(entry["index"]), game_screen.small_text_font, color,
                       rect.x + bs * 0.06, rect.y + bs * 0.04, game_screen.surface)
-            draw_text(tag, game_screen.text_font, color,
-                      rect.x + bs * 0.1, rect.y + bs * 0.32, game_screen.surface)
+            draw_text(tag, game_screen.small_text_font, color,
+                      rect.x + bs * 0.08, rect.y + bs * 0.35, game_screen.surface)
 
         _draw_panel(game_screen, run, layer, options, panel_y, blind)
 

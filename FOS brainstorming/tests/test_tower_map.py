@@ -31,9 +31,40 @@ def _act(act: int, seed: int = 7):
     return tower_map.build_act(act, FACTIONS, random.Random(seed))
 
 
-def test_act_has_nine_layers_in_order():
-    act_map = _act(1)
-    assert [layer["index"] for layer in act_map["layers"]] == list(range(9))
+def test_layers_are_numbered_in_order():
+    for act in (1, 2, 3):
+        act_map = _act(act)
+        assert [layer["index"] for layer in act_map["layers"]] == list(
+            range(tower_map.layers_in_act(act)))
+
+
+def test_later_acts_are_longer():
+    lengths = [tower_map.layers_in_act(act) for act in (1, 2, 3)]
+    assert lengths == [9, 11, 13]
+    for act in (1, 2, 3):
+        assert len(_act(act)["layers"]) == tower_map.layers_in_act(act)
+
+
+def test_back_to_back_rooms_never_repeat_a_kind():
+    """Events may repeat; a shop, mine or chest may not follow itself."""
+    for act in (1, 2, 3):
+        for seed in range(30):
+            act_map = tower_map.build_act(act, FACTIONS, random.Random(seed))
+            previous: set[str] = set()
+            for layer in act_map["layers"]:
+                if layer["kind"] != "branch":
+                    continue
+                options = layer["options"]
+                if "room" in options[0]:
+                    kinds = {o["room"]["kind"] for o in options}
+                    assert not (kinds & previous) - tower_map.REPEATABLE_ROOMS
+                    previous = kinds
+                else:
+                    firsts = {o["rooms"][0]["kind"] for o in options}
+                    assert not (firsts & previous) - tower_map.REPEATABLE_ROOMS
+                    for option in options:
+                        first, second = (r["kind"] for r in option["rooms"])
+                        assert first != second or first in tower_map.REPEATABLE_ROOMS
 
 
 def test_only_act_one_opens_with_a_blessing():
@@ -41,13 +72,18 @@ def test_only_act_one_opens_with_a_blessing():
     assert tower_map.layer_at(_act(2), 0)["kind"] == "skip"
 
 
+def _final_branch(act: int) -> int:
+    return tower_map.boss_layer(act) - 2
+
+
 def test_branch_layers_offer_the_documented_option_counts():
-    act_map = _act(1)
-    assert len(tower_map.layer_at(act_map, 2)["options"]) == 2
-    assert len(tower_map.layer_at(act_map, 4)["options"]) == 2
-    layer6 = tower_map.layer_at(act_map, 6)
-    assert len(layer6["options"]) == 3
-    assert all(len(option["rooms"]) == 2 for option in layer6["options"])
+    for act in (1, 2, 3):
+        act_map = _act(act)
+        for pair in range(tower_map.branch_pairs(act)):
+            assert len(tower_map.layer_at(act_map, 2 + 2 * pair)["options"]) == 2
+        final = tower_map.layer_at(act_map, _final_branch(act))
+        assert len(final["options"]) == 3
+        assert all(len(option["rooms"]) == 2 for option in final["options"])
 
 
 def test_linked_layers_follow_the_branch_pick():
@@ -58,8 +94,9 @@ def test_linked_layers_follow_the_branch_pick():
         assert resolved["kind"] == "battle"
         assert resolved["enemy"] is expected
 
-    resolved = tower_map.resolve_layer(act_map, 7, {"6": 2})
-    expected_room = tower_map.layer_at(act_map, 6)["options"][2]["rooms"][1]
+    final = _final_branch(2)
+    resolved = tower_map.resolve_layer(act_map, final + 1, {str(final): 2})
+    expected_room = tower_map.layer_at(act_map, final)["options"][2]["rooms"][1]
     assert resolved["kind"] == "room"
     assert resolved["room"] is expected_room
 
@@ -82,7 +119,7 @@ def test_act_one_only_fields_weak_enemies_before_the_boss():
     act_map = _act(1)
     kinds = []
     for layer in act_map["layers"]:
-        if layer["kind"] == "battle" and layer["index"] != tower_map.BOSS_LAYER:
+        if layer["kind"] == "battle" and layer["index"] != tower_map.boss_layer(1):
             kinds.append(layer["enemy"]["kind"])
         for option in layer.get("options", []):
             if "enemy" in option:
@@ -128,7 +165,7 @@ def test_enemy_decks_stay_inside_the_run_factions():
         for act in (1, 2):
             act_map = tower_map.build_act(act, FACTIONS, random.Random(seed))
             for layer in act_map["layers"]:
-                if layer["index"] == tower_map.BOSS_LAYER:
+                if layer["index"] == tower_map.boss_layer(act):
                     continue
                 decks = [layer["enemy"]["deck"]] if "enemy" in layer else []
                 decks += [o["enemy"]["deck"] for o in layer.get("options", []) if "enemy" in o]

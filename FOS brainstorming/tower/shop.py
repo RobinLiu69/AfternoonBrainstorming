@@ -29,7 +29,6 @@ STOCK_SIZE: int = 8
 ORB_PRICE: int = 120
 REROLL_PRICE: int = 50
 CURSE_REMOVAL_PRICE: int = 100
-SELL_RATE: float = 0.33
 
 RELIC_PRICE: dict[str, int] = {
     "common": 150, "rare": 220, "power": 300, "special": 380, "curse": 0,
@@ -40,12 +39,12 @@ def relic_price(relic_id: str) -> int:
     return RELIC_PRICE.get(RELICS.get(relic_id, {}).get("tier", "common"), 150)
 
 
-def sell_price(relic_id: str) -> int:
-    return int(relic_price(relic_id) * SELL_RATE)
-
-
 def is_curse(relic_id: str) -> bool:
     return RELICS.get(relic_id, {}).get("tier") == "curse"
+
+
+def curses_held(run: dict) -> list[str]:
+    return [r for r in run.get("relics", []) if is_curse(r)]
 
 
 def price_of(item: dict, discount: float) -> int:
@@ -67,7 +66,7 @@ def generate_stock(run: dict, rng: random.Random) -> dict:
                       "price": card_pool.card_price(code), "sold": False})
 
     rng.shuffle(items)
-    return {"items": items, "rerolls": 0, "relic_sold": False, "free_rerolls_used": 0}
+    return {"items": items, "rerolls": 0, "curse_scrapped": False, "free_rerolls_used": 0}
 
 
 def free_rerolls(run: dict) -> int:

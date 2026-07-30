@@ -21,6 +21,7 @@ import threading
 import time
 from typing import TYPE_CHECKING, Optional
 
+from shared import card_code
 from core.game_action import GameAction, ActionResult
 from core.game_state import GameState
 
@@ -332,7 +333,7 @@ class BattlingDispatcher:
                     name = player.hand[action.hand_index]
                     if name.endswith(" (+)"):
                         player.hand[action.hand_index] = name[:-4]
-                    elif name.endswith("C"):
+                    elif card_code.plain_code(name).endswith("C"):
                         player.hand[action.hand_index] = name + " (+)"
                 return ActionResult(success=True)
             

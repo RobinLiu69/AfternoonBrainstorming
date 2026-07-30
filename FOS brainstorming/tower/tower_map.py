@@ -16,17 +16,18 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-"""Act maps: 3 acts, 9 layers each (layer 0 only exists in act 1).
+"""Act maps.  Every act runs the same shape, but the later ones are longer::
 
-    0  opening blessing        (act 1 only)
-    1  weak battle
-    2  branch of 2: a room now, and the enemy waiting on layer 3
-    3  the enemy chosen on layer 2
-    4  branch of 2
-    5  the enemy chosen on layer 4
-    6  branch of 3: each route holds two rooms
-    7  the second room of the route chosen on layer 6
-    8  act boss
+    0            opening blessing        (act 1 only)
+    1            first battle
+    2, 4, ...    branch of 2: a room now, and the enemy on the next layer
+    3, 5, ...    the enemy chosen on the branch below
+    n-2          branch of 3: each route holds two rooms
+    n-1          the second room of the route chosen on layer n-2
+    n            act boss
+
+Act 1 gets two branch-and-battle pairs, act 2 three, act 3 four, so the acts
+run 9, 11 and 13 layers.
 
 A layer's content is fixed when the act is generated, so the player can see
 the rooms and the enemies ahead (unless a curse relic hides them).
@@ -41,9 +42,10 @@ from tower.content import ROOM_KINDS
 
 FIRST_ACT: int = 1
 LAST_ACT: int = 3
-LAYERS_PER_ACT: int = 9
 BLESSING_LAYER: int = 0
-BOSS_LAYER: int = 8
+
+# branch-then-battle pairs per act; the acts get longer as you climb
+BRANCH_PAIRS: dict[int, int] = {1: 2, 2: 3, 3: 4}
 
 ROOM_WEIGHTS: dict[str, float] = {
     "event": 0.40,
@@ -55,9 +57,28 @@ ROOM_WEIGHTS: dict[str, float] = {
 # rooms whose screen does not exist yet - they are simply not generated
 DISABLED_ROOMS: frozenset[str] = frozenset()
 
+# back-to-back rooms should not repeat, but two events in a row are fine
+REPEATABLE_ROOMS: frozenset[str] = frozenset({"event"})
 
-def _roll_room(rng: random.Random) -> dict:
-    kinds = [k for k in ROOM_KINDS if k not in DISABLED_ROOMS]
+
+def branch_pairs(act: int) -> int:
+    return BRANCH_PAIRS.get(act, BRANCH_PAIRS[LAST_ACT])
+
+
+def boss_layer(act: int) -> int:
+    """battle, then a branch+battle per pair, then branch-of-3, its room, boss."""
+    return 4 + 2 * branch_pairs(act)
+
+
+def layers_in_act(act: int) -> int:
+    return boss_layer(act) + 1
+
+
+def _roll_room(rng: random.Random, avoid=()) -> dict:
+    blocked = {k for k in avoid if k not in REPEATABLE_ROOMS}
+    kinds = [k for k in ROOM_KINDS if k not in DISABLED_ROOMS and k not in blocked]
+    if not kinds:
+        kinds = [k for k in ROOM_KINDS if k not in DISABLED_ROOMS]
     weights = [ROOM_WEIGHTS[k] for k in kinds]
     return {"kind": rng.choices(kinds, weights=weights)[0]}
 
@@ -96,23 +117,33 @@ def build_act(act: int, factions, rng: random.Random) -> dict:
     if first_kind == "weak":
         weak_index += 1
 
-    for layer_index in (2, 4):
+    pairs = branch_pairs(act)
+    previous_kinds: set[str] = set()
+
+    for pair in range(pairs):
+        layer_index = 2 + 2 * pair
         options: list[dict] = []
         for enemy_kind in _branch_enemy_kinds(act, rng):
             enemy = _battle_enemy(act, factions, rng, weak_index, enemy_kind)
             if enemy_kind == "weak":
                 weak_index += 1
-            options.append({"room": _roll_room(rng), "enemy": enemy})
+            options.append({"room": _roll_room(rng, previous_kinds), "enemy": enemy})
+        previous_kinds = {option["room"]["kind"] for option in options}
         layers.append({"index": layer_index, "kind": "branch", "options": options})
-        layers.append({"index": layer_index + 1, "kind": "battle_linked", "source": layer_index})
+        layers.append({"index": layer_index + 1, "kind": "battle_linked",
+                       "source": layer_index})
 
+    routes: list[dict] = []
+    for _ in range(3):
+        first = _roll_room(rng, previous_kinds)
+        second = _roll_room(rng, {first["kind"]})
+        routes.append({"rooms": [first, second]})
+
+    final_branch = 2 + 2 * pairs
+    layers.append({"index": final_branch, "kind": "branch", "options": routes})
+    layers.append({"index": final_branch + 1, "kind": "room_linked", "source": final_branch})
     layers.append({
-        "index": 6, "kind": "branch",
-        "options": [{"rooms": [_roll_room(rng), _roll_room(rng)]} for _ in range(3)],
-    })
-    layers.append({"index": 7, "kind": "room_linked", "source": 6})
-    layers.append({
-        "index": BOSS_LAYER, "kind": "battle",
+        "index": boss_layer(act), "kind": "battle",
         "enemy": enemies.act_boss(act, factions, rng),
     })
 
@@ -173,8 +204,12 @@ def branch_choice_room(act_map: dict, index: int, pick: int) -> dict:
     return option["room"] if "room" in option else option["rooms"][0]
 
 
+def boss_layer_of(act_map: dict) -> int:
+    return boss_layer(act_map["act"])
+
+
 def boss_of(act_map: dict) -> dict:
-    return layer_at(act_map, BOSS_LAYER)["enemy"]
+    return layer_at(act_map, boss_layer_of(act_map))["enemy"]
 
 
 def act_seed(seed: int, act: int) -> int:

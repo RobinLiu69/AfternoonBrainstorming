@@ -98,10 +98,10 @@ def enchant_lines(code: str) -> list[str]:
     return [ENCHANTS[k]["text"] for k in card_code.enchant_keys(code) if k in ENCHANTS]
 
 
-MAGIC_PRICE: int = 35
-UNIT_PRICE: int = 50
-BIG_UNIT_PRICE: int = 60
-ENCHANT_SURCHARGE: int = 25
+MAGIC_PRICE: int = 45
+UNIT_PRICE: int = 65
+BIG_UNIT_PRICE: int = 75
+ENCHANT_SURCHARGE: int = 30
 
 # White is the starter faction, so it shows up less often than a faction you chose
 WHITE_REWARD_WEIGHT: float = 0.35

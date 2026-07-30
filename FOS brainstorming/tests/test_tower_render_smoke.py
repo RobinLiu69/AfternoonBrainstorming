@@ -149,6 +149,18 @@ def test_map_screen_renders_every_layer_shape(game_screen, escape, run, layer):
     assert map_screen.main(game_screen, run) is None
 
 
+@pytest.mark.parametrize("act", [1, 2, 3])
+def test_map_screen_fits_every_act_length(game_screen, escape, run, act):
+    escape(map_screen)
+    run["act"] = act
+    run["layer"] = 1
+    assert map_screen.main(game_screen, run) is None
+
+    escape(map_screen)
+    run["layer"] = tower_map.boss_layer(act)
+    assert map_screen.main(game_screen, run) is None
+
+
 def test_map_screen_renders_a_linked_layer(game_screen, escape, run):
     escape(map_screen)
     run["layer"] = 2

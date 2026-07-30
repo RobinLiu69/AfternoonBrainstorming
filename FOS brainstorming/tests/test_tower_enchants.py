@@ -228,6 +228,66 @@ def test_enchantments_stack_with_each_other():
     assert game_state.score == -2
 
 
+def test_an_enchanted_cyan_card_can_still_be_upgraded():
+    from core.battling_dispatcher import BattlingDispatcher
+    from core.game_action import GameAction
+
+    game_state = make_game_state()
+    game_state.player1.hand = ["APC*mana", "APC"]
+    dispatcher = BattlingDispatcher(game_state=game_state, mode="local")
+
+    for index in (0, 1):
+        dispatcher.dispatch(GameAction(player="player1", action_type="toggle_upgrade",
+                                       hand_index=index), game_state)
+    assert game_state.player1.hand == ["APC*mana (+)", "APC (+)"]
+
+    dispatcher.dispatch(GameAction(player="player1", action_type="toggle_upgrade",
+                                   hand_index=0), game_state)
+    assert game_state.player1.hand[0] == "APC*mana"
+
+
+def test_an_enchanted_cyan_card_deploys_upgraded():
+    game_state = make_game_state()
+    game_state.players_coin["player1"] = 50
+    plain = CardFactory.create("APC", "display", 0, 0)
+
+    game_state.player1.hand = ["APC*fort (+)"]
+    game_state.player1.play_card(1, 1, 0, game_state)
+
+    unit = game_state.player1.on_board[-1]
+    assert unit.job_and_color == "APC"
+    assert getattr(unit, "upgrade", False) is True
+    assert unit.max_health > plain.health + 2 - 1
+    assert unit.tower_code == "APC*fort (+)"
+
+
+def test_non_cyan_cards_never_gain_an_upgrade_marker():
+    from core.battling_dispatcher import BattlingDispatcher
+    from core.game_action import GameAction
+
+    game_state = make_game_state()
+    game_state.player1.hand = ["TANKW*sharp", "HEAL"]
+    dispatcher = BattlingDispatcher(game_state=game_state, mode="local")
+    for index in (0, 1):
+        dispatcher.dispatch(GameAction(player="player1", action_type="toggle_upgrade",
+                                       hand_index=index), game_state)
+    assert game_state.player1.hand == ["TANKW*sharp", "HEAL"]
+
+
+def test_the_hint_box_finds_stats_for_an_enchanted_card():
+    from core.card_hint import get_stat_prefix
+    assert get_stat_prefix("TANKW*sharp") == get_stat_prefix("TANKW")
+    assert get_stat_prefix("TANKW*sharp") != ""
+    assert get_stat_prefix("APC*mana (+)") == get_stat_prefix("APC (+)")
+
+
+def test_the_ai_still_recognises_an_enchanted_unit_card():
+    from campaign import ai_query
+    assert ai_query.is_playable_unit_card("TANKW*sharp") is True
+    assert ai_query.is_playable_unit_card("HEAL*ghost") is False
+    assert ai_query.is_playable_unit_card("MOVEO") is False
+
+
 def test_uninstalled_runtime_leaves_cards_plain():
     enchant_runtime.uninstall()
     game_state = make_game_state()

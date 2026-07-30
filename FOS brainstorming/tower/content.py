@@ -310,11 +310,7 @@ RELICS.update({
         "text": "if every unit in your deck is a TANK, they gain +3 HP and double effects",
         "effects": {}, "conditional": "tank_bloodline",
     },
-    "current_emblem": {
-        "label": "Current Emblem", "tier": "special",
-        "text": "at the start of your turn, cast Tidal Surge",
-        "effects": {"turn_start_tidal": 1},
-    },
+    # Current Emblem waits for the Tidal Surge spell to exist - see DESIGN.md
 
     # ---------------- curses ----------------
     "worn_pack": {
@@ -375,8 +371,7 @@ ADDITIVE_EFFECTS: frozenset[str] = frozenset({
 })
 FLAG_EFFECTS: frozenset[str] = frozenset({
     "ap_no_numb", "no_turn_start_draw", "attacks_reset", "no_attack_gain",
-    "free_bench", "hide_rooms", "hide_enemies", "turn_start_tidal",
-    "double_tank_effects",
+    "free_bench", "hide_rooms", "hide_enemies", "double_tank_effects",
 })
 MULTIPLIED_EFFECTS: frozenset[str] = frozenset({"gold_mult", "shop_discount"})
 JOB_EFFECTS: frozenset[str] = frozenset({"job_hp_plus", "job_damage_plus"})

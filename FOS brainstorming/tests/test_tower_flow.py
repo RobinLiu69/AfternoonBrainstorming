@@ -60,7 +60,9 @@ def test_a_whole_climb_resolves_every_layer():
             run = make_run(seed)
             visited = walk_run(run, pick)
             # act 1 opens on the blessing layer, later acts start at layer 1
-            assert len(visited) == 9 + 8 + 8
+            expected = tower_map.layers_in_act(1) + sum(
+                tower_map.layers_in_act(act) - 1 for act in (2, 3))
+            assert len(visited) == expected
             assert run["act"] == tower_map.LAST_ACT
 
 
@@ -69,7 +71,8 @@ def test_every_battle_on_the_way_up_has_a_usable_enemy():
     registry = set(CardFactory._registry)
     run = make_run(11)
     battles = [entry for entry in walk_run(run) if entry["kind"] == "battle"]
-    assert len(battles) == 3 * 4
+    # one opener plus one per branch pair plus the boss, in each act
+    assert len(battles) == sum(2 + tower_map.branch_pairs(act) for act in (1, 2, 3))
     for entry in battles:
         enemy = entry["enemy"]
         assert enemy["deck"] and all(code in registry for code in enemy["deck"])
@@ -106,6 +109,25 @@ def test_shop_stock_matches_the_design():
         assert sum(1 for i in items if i["kind"] == "orb") == 1
         assert 2 <= sum(1 for i in items if i["kind"] == "relic") <= 3
         assert all(i["price"] > 0 for i in items)
+
+
+def test_the_shop_never_buys_a_relic_back():
+    run = make_run(3)
+    run_state.add_relic(run, "piggy_bank")
+    stock = shop.generate_stock(run, random.Random(1))
+
+    assert not hasattr(run_state, "sell_relic")
+    assert not hasattr(shop, "sell_price")
+    assert stock["curse_scrapped"] is False
+    assert shop.curses_held(run) == []
+
+
+def test_only_curses_can_be_paid_off():
+    run = make_run(3)
+    run_state.add_relic(run, "piggy_bank")
+    run_state.add_relic(run, "worn_pack")
+    assert shop.curses_held(run) == ["worn_pack"]
+    assert shop.CURSE_REMOVAL_PRICE > 0
 
 
 def test_shop_never_stocks_a_relic_you_cannot_take():
@@ -162,7 +184,7 @@ def test_spells_and_white_cards_are_the_rare_ones():
 def test_card_prices_sit_well_under_relic_prices():
     from tower import shop
     for code in ("HEAL", "ADCR", "TANKB"):
-        assert card_pool.card_price(code) <= 60
+        assert card_pool.card_price(code) <= card_pool.BIG_UNIT_PRICE
     assert card_pool.card_price("ADCR*sharp") > card_pool.card_price("ADCR")
     assert max(card_pool.card_price(c) for c in ("HEAL", "ADCR", "TANKB")) < min(
         shop.RELIC_PRICE[tier] for tier in ("common", "rare", "power", "special"))

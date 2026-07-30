@@ -23,6 +23,7 @@ from typing import cast
 import pygame
 
 from core.game_screen import GameScreen, draw_text
+from shared import card_code
 from shared.setting import BLACK, WHITE, RED, GREEN, CARD_SETTING, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
 from cards.base import Card, COLOR_TAG_LIST
 
@@ -52,7 +53,7 @@ def get_job_and_color_name(card_type: str) -> tuple[str, str]:
 
 def get_stat_prefix(card_type: str) -> str:
     upgraded = card_type.endswith("(+)")
-    job, color_name = get_job_and_color_name(card_type.split()[0])
+    job, color_name = get_job_and_color_name(card_code.plain_code(card_type))
     settings = CARD_SETTING.get(color_name, {}).get(job)
     if not settings:
         return ""
@@ -151,7 +152,8 @@ class HintBox:
             self.surface = pygame.Surface((self.width, game_screen.block_size*1.5), pygame.SRCALPHA)
         if self.turn_on:
             if isinstance(card, str):
-                card_type = card
+                # hand cards may carry an enchantment suffix; hints key off the base
+                card_type = card_code.base_code(card)
             elif isinstance(card, Card):
                 card_type = card.job_and_color
             else:

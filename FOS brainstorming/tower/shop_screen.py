@@ -70,35 +70,28 @@ def _buy(game_screen: GameScreen, run: dict, item: dict, price: int,
     return True
 
 
-def _sell_relic(game_screen: GameScreen, run: dict, stock: dict) -> bool:
-    owned = list(run.get("relics", []))
-    if not owned:
+def _scrap_curse(game_screen: GameScreen, run: dict, stock: dict) -> bool:
+    """Relics are never bought back - a curse can only be paid to remove."""
+    cursed = shop.curses_held(run)
+    if not cursed:
         return False
 
-    options = []
-    for relic_id in owned:
-        curse = shop.is_curse(relic_id)
-        cost = shop.CURSE_REMOVAL_PRICE if curse else shop.sell_price(relic_id)
-        options.append({
-            "label": ui_common.relic_label(relic_id),
-            "lines": [ui_common.relic_text(relic_id),
-                      f"costs {cost} to remove" if curse else f"sells for {cost}"],
-            "color": ui_common.relic_color(relic_id),
-        })
+    options = [{
+        "label": ui_common.relic_label(relic_id),
+        "lines": [ui_common.relic_text(relic_id),
+                  f"costs {shop.CURSE_REMOVAL_PRICE} to be rid of it"],
+        "color": ui_common.relic_color(relic_id),
+    } for relic_id in cursed]
 
-    choice = choice_screen.main(game_screen, "Sell or scrap a relic", options,
+    choice = choice_screen.main(game_screen, "Scrap a curse", options,
                                 run=run, cancel_label="cancel")
     if choice is None or choice == choice_screen.SKIP:
         return False
+    if not run_state.spend_gold(run, shop.CURSE_REMOVAL_PRICE):
+        return False
 
-    relic_id = owned[choice]
-    if shop.is_curse(relic_id):
-        if not run_state.spend_gold(run, shop.CURSE_REMOVAL_PRICE):
-            return False
-        run["relics"].remove(relic_id)
-    else:
-        run_state.sell_relic(run, relic_id, shop.sell_price(relic_id))
-    stock["relic_sold"] = True
+    run["relics"].remove(cursed[choice])
+    stock["curse_scrapped"] = True
     return True
 
 
@@ -147,8 +140,9 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
             "burn": Button(bs * 2.2, bs * 0.55, cx - bs * 3.8, y, box_width=box_width,
                            font=game_screen.text_font,
                            text=f"burn a card  (orbs: {run.get('orbs', 0)})"),
-            "sell": Button(bs * 2.2, bs * 0.55, cx - bs * 1.4, y, box_width=box_width,
-                           font=game_screen.text_font, text="sell a relic"),
+            "scrap": Button(bs * 2.2, bs * 0.55, cx - bs * 1.4, y, box_width=box_width,
+                            font=game_screen.text_font,
+                            text=f"scrap a curse  [{shop.CURSE_REMOVAL_PRICE}]"),
             "reroll": Button(bs * 2.2, bs * 0.55, cx + bs * 1.0, y, box_width=box_width,
                              font=game_screen.text_font,
                              text=f"reroll  [{shop.reroll_price(run, stock)}]"),
@@ -184,8 +178,8 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
                 elif actions["burn"].touch(mouse_x, mouse_y):
                     _burn_card(game_screen, run)
                     buttons, actions = build_items(), build_actions()
-                elif actions["sell"].touch(mouse_x, mouse_y) and not stock["relic_sold"]:
-                    _sell_relic(game_screen, run, stock)
+                elif actions["scrap"].touch(mouse_x, mouse_y) and not stock["curse_scrapped"]:
+                    _scrap_curse(game_screen, run, stock)
                     buttons, actions = build_items(), build_actions()
                 elif actions["reroll"].touch(mouse_x, mouse_y) and shop.can_reroll(run, stock):
                     price = shop.reroll_price(run, stock)
@@ -219,7 +213,7 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
             btn.update(game_screen)
 
         for name, btn in actions.items():
-            if name == "sell" and stock["relic_sold"]:
+            if name == "scrap" and (stock["curse_scrapped"] or not shop.curses_held(run)):
                 btn.text_color = btn.box_color = ui_common.DIM
             if name == "reroll" and not shop.can_reroll(run, stock):
                 btn.text_color = btn.box_color = ui_common.DIM

@@ -117,6 +117,17 @@ def test_enchanting_writes_into_the_card_code():
     assert run_state.enchant_card(run, "deck", 0, "not_a_real_enchant") is False
 
 
+def test_a_card_only_ever_holds_one_enchantment():
+    run = make_run()
+    run_state.enchant_card(run, "deck", 0, "sharp")
+    run_state.enchant_card(run, "deck", 0, "fort")
+    assert card_code.enchant_keys(run["deck"][0]) == ("fort",)
+
+    run_state.enchant_random_card(run, "burn", random.Random(1))
+    for code in run_state.all_cards(run):
+        assert len(card_code.enchant_keys(code)) <= 1
+
+
 def test_random_enchant_hits_a_card_in_the_run():
     run = make_run()
     touched = run_state.enchant_random_card(run, "burn", random.Random(3))
@@ -149,6 +160,24 @@ def test_relic_offers_hide_curses_and_respect_the_source_flag():
     stock = run_state.relic_offers(run, source="shop")
     assert "coupon" not in stock
     assert "unchanging_stone" in stock
+
+
+def test_special_relics_are_boss_spoils_only():
+    run = make_run()
+    specials = {r for r, v in RELICS.items() if v["tier"] == "special"}
+    assert specials
+
+    for offers in (run_state.relic_offers(run),
+                   run_state.relic_offers(run, source="shop")):
+        assert not (set(offers) & specials)
+
+    boss_spoils = set(run_state.relic_offers(run, include_special=True))
+    assert boss_spoils & specials
+    assert all(RELICS[r]["tier"] != "curse" for r in boss_spoils)
+
+
+def test_the_current_emblem_is_not_in_the_game_yet():
+    assert "current_emblem" not in RELICS
 
 
 def test_gold_multiplier_and_award():
@@ -231,9 +260,9 @@ def test_blessing_offers_are_three_distinct_and_seed_stable():
 
 def test_advance_walks_layers_then_acts_then_wins():
     run = make_run()
-    run["layer"] = tower_map.BOSS_LAYER - 1
+    run["layer"] = tower_map.boss_layer(1) - 1
     assert run_state.advance_layer(run) == "layer"
-    assert run["layer"] == tower_map.BOSS_LAYER
+    assert run["layer"] == tower_map.boss_layer(1)
 
     run["picks"] = {"2": 1}
     assert run_state.advance_layer(run) == "act"
@@ -241,7 +270,7 @@ def test_advance_walks_layers_then_acts_then_wins():
     assert run["picks"] == {}
 
     run["act"] = tower_map.LAST_ACT
-    run["layer"] = tower_map.BOSS_LAYER
+    run["layer"] = tower_map.boss_layer(tower_map.LAST_ACT)
     assert run_state.advance_layer(run) == "win"
 
 
