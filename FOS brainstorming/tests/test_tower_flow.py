@@ -251,17 +251,70 @@ def test_an_empty_pool_offers_nothing(monkeypatch):
     assert run["relics"] == []
 
 
+def count_options(monkeypatch, answer=0):
+    """Record how many options each screen showed, and answer with `answer`."""
+    seen: list[int] = []
+    monkeypatch.setattr(grants.choice_screen, "main",
+                        lambda gs, title, options, **k: seen.append(len(options)) or answer)
+    monkeypatch.setattr(grants.card_picker, "main", lambda *a, **k: None)
+    return seen
+
+
 def test_curses_are_still_a_choice_of_three(monkeypatch):
     run = make_run(1)
-    seen_counts = []
-    monkeypatch.setattr(grants.choice_screen, "main",
-                        lambda gs, title, options, **k: seen_counts.append(len(options)) or 0)
+    seen = count_options(monkeypatch)
+
+    taken = grants.choose_relic(None, run, random.Random(3), "Take one curse",
+                                tier="curse")
+    assert seen == [3]
+    assert RELICS[taken]["tier"] == "curse"
+
+
+def test_a_curse_choice_cannot_be_walked_away_from(monkeypatch):
+    run = make_run(1)
+    monkeypatch.setattr(grants.choice_screen, "main", lambda *a, **k: None)
     monkeypatch.setattr(grants.card_picker, "main", lambda *a, **k: None)
 
     taken = grants.choose_relic(None, run, random.Random(3), "Take one curse",
-                               tier="curse")
-    assert seen_counts == [3]
-    assert RELICS[taken]["tier"] == "curse"
+                                tier="curse")
+    assert taken is not None
+    assert run["relics"] == [taken]
+
+
+def test_boss_spoils_are_a_choice_of_three(monkeypatch):
+    run = make_run(1)
+    seen = count_options(monkeypatch)
+
+    taken = grants.choose_relic(None, run, random.Random(3), "Boss spoils",
+                                include_special=True,
+                                decline_gold=grants.DECLINE_RELIC_GOLD)
+    assert seen == [3]
+    assert run["relics"] == [taken]
+
+
+def test_boss_spoils_can_be_turned_down(monkeypatch):
+    run = make_run(1)
+    monkeypatch.setattr(grants.choice_screen, "main",
+                        lambda *a, **k: grants.choice_screen.SKIP)
+    monkeypatch.setattr(grants.card_picker, "main", lambda *a, **k: None)
+
+    assert grants.choose_relic(None, run, random.Random(3), "Boss spoils",
+                               decline_gold=grants.DECLINE_RELIC_GOLD) is None
+    assert run["relics"] == []
+    assert run["gold"] == grants.DECLINE_RELIC_GOLD
+
+
+def test_the_final_boss_is_the_only_battle_with_no_reward():
+    run = make_run(1)
+    assert run_state.is_final_battle(run) is False
+
+    run["act"] = tower_map.LAST_ACT
+    run["layer"] = tower_map.boss_layer(tower_map.LAST_ACT)
+    assert run_state.is_final_battle(run) is True
+
+    run["act"] = 2
+    run["layer"] = tower_map.boss_layer(2)
+    assert run_state.is_final_battle(run) is False
 
 
 def test_the_devils_bargain_blessing_pays_orbs_for_one_curse(monkeypatch):

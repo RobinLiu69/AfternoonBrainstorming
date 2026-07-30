@@ -126,7 +126,8 @@ def _claim_blessing(game_screen: GameScreen, run: dict, rng: random.Random) -> N
 
 def _fight(game_screen: GameScreen, run: dict, enemy: dict, rng: random.Random) -> str:
     result = battle_flow.fight(game_screen, run, enemy)
-    if result == "win":
+    # the last boss ends the climb, so there is nothing left to spend a reward on
+    if result == "win" and not run_state.is_final_battle(run):
         _battle_reward(game_screen, run, enemy, rng)
     return result
 
@@ -148,10 +149,13 @@ def _battle_reward(game_screen: GameScreen, run: dict, enemy: dict,
 
     notice_screen.main(game_screen, "Victory", lines, run=run, color=ui_common.HILITE)
 
-    if enemy["kind"] in ("elite", "boss") or rng.random() < RELIC_DROP_CHANCE:
-        # a special relic is only ever won off a boss
-        grants.offer_relic(game_screen, run, rng, "Spoils",
-                           include_special=enemy["kind"] == "boss")
+    if enemy["kind"] == "boss":
+        # a boss earns a real choice, and is the only source of special relics
+        grants.choose_relic(game_screen, run, rng, "Boss spoils",
+                            include_special=True,
+                            decline_gold=grants.DECLINE_RELIC_GOLD)
+    elif enemy["kind"] == "elite" or rng.random() < RELIC_DROP_CHANCE:
+        grants.offer_relic(game_screen, run, rng, "Spoils")
 
     grants.offer_cards(game_screen, run, rng, "Pick a card")
 

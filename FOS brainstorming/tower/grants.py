@@ -181,17 +181,28 @@ def offer_relic(game_screen: GameScreen, run: dict, rng: random.Random,
 
 
 def choose_relic(game_screen: GameScreen, run: dict, rng: random.Random,
-                 title: str, tier: str, count: int = 3) -> Optional[str]:
-    """Pick one of several - only used where the design calls for a choice,
-    which today means picking which curse to accept."""
-    pool = run_state.relic_offers(run, tier=tier)
+                 title: str, tier: str = "", count: int = 3,
+                 include_special: bool = False,
+                 decline_gold: int = 0) -> Optional[str]:
+    """Pick one of several.  Boss spoils earn a real choice; so does deciding
+    which curse hurts least.  Everything else gets ``offer_relic`` instead."""
+    pool = run_state.relic_offers(run, tier=tier, include_special=include_special)
     if not pool:
         return None
+
     picks = rng.sample(pool, min(count, len(pool)))
-    choice = choice_screen.main(game_screen, title,
-                                [relic_option(r) for r in picks], run=run)
-    if choice is None or choice == choice_screen.SKIP:
-        choice = 0
+    choice = choice_screen.main(
+        game_screen, title, [relic_option(r) for r in picks], run=run,
+        skip_label=f"leave them  (+{decline_gold} gold)" if decline_gold else "",
+    )
+    if choice == choice_screen.SKIP:
+        run["gold"] += decline_gold
+        return None
+    if choice is None:
+        # backing out of a choice you must make takes the first one
+        choice = 0 if not decline_gold else None
+        if choice is None:
+            return None
     relic_id = picks[choice]
     return relic_id if grant_relic(game_screen, run, relic_id, rng) else None
 

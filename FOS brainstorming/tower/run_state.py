@@ -407,6 +407,11 @@ def is_last_layer(run: dict) -> bool:
     return run["layer"] >= tower_map.boss_layer(run["act"])
 
 
+def is_final_battle(run: dict) -> bool:
+    """The last boss of the last act - winning it ends the climb."""
+    return run["act"] >= tower_map.LAST_ACT and is_last_layer(run)
+
+
 def advance_layer(run: dict) -> str:
     """Move to the next layer, or the next act.  Returns "layer"|"act"|"win"."""
     run["pending"] = None
