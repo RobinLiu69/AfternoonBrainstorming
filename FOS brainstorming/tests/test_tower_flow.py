@@ -87,12 +87,13 @@ def test_each_act_ends_on_its_boss():
 
 
 def test_boss_relics_reach_the_enemy_effect_bundle():
-    rng = random.Random(4)
     from tower import enemies
-    lord = enemies.faction_lord("BR", rng)
+    lord = enemies.faction_lord("BR", random.Random(4))
     effects = run_state.effects_from_relics(lord["relics"], lord["effects"])
     assert effects["job_hp_plus"]["TANK"] >= 1
-    assert effects["unit_hp_plus"] >= 1
+    # all of a boss's difficulty comes from its relics, never a global stat buff
+    assert lord["effects"] == {}
+    assert "unit_hp_plus" not in effects
 
 
 def test_shop_stock_matches_the_design():
@@ -137,6 +138,34 @@ def test_card_options_are_distinct_and_from_the_run_pool():
         assert len(options) == 3
         assert len(set(options)) == 3
         assert set(options) <= pool
+
+
+def test_spells_and_white_cards_are_the_rare_ones():
+    run = make_run(4)
+    spells = whites = chosen = 0
+    for seed in range(400):
+        for code in grants.card_options(run, random.Random(seed), 3):
+            if card_pool.is_magic(code):
+                spells += 1
+            elif card_pool.color_tag_of(code) == "W":
+                whites += 1
+            else:
+                chosen += 1
+
+    total = spells + whites + chosen
+    assert spells / total < 0.16
+    # White is 1 of 5 factions in the pool, so an even split would be ~20%
+    assert whites / total < 0.12
+    assert chosen / total > 0.7
+
+
+def test_card_prices_sit_well_under_relic_prices():
+    from tower import shop
+    for code in ("HEAL", "ADCR", "TANKB"):
+        assert card_pool.card_price(code) <= 60
+    assert card_pool.card_price("ADCR*sharp") > card_pool.card_price("ADCR")
+    assert max(card_pool.card_price(c) for c in ("HEAL", "ADCR", "TANKB")) < min(
+        shop.RELIC_PRICE[tier] for tier in ("common", "rare", "power", "special"))
 
 
 def test_battle_deck_is_the_deck_only_and_keeps_enchant_codes():

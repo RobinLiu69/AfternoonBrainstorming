@@ -58,16 +58,22 @@ ELITE_FORMATIONS: dict[str, dict] = {
     "tank_wall": {
         "label": "Tank Wall",
         "template": {"TANK": 5, "APT": 2, "HF": 2, "AP": 1, "ADC": 1, "SP": 1},
+        "relics": ("amulet_TANK", "dorans_shield"),
     },
     "assassins": {
         "label": "Assassin Cell",
         "template": {"ASS": 5, "LF": 2, "ADC": 2, "AP": 1, "SP": 2},
+        "relics": ("emblem_ASS", "prepared_pack"),
     },
     "skirmishers": {
         "label": "Skirmisher Line",
         "template": {"LF": 4, "ADC": 3, "HF": 2, "AP": 1, "ASS": 1, "SP": 1},
+        "relics": ("emblem_LF", "pocket_watch"),
     },
 }
+
+# an elite carries one relic in act 2 and two in act 3 - never a stat buff
+ELITE_RELIC_COUNT: dict[int, int] = {1: 0, 2: 1, 3: 2}
 
 # two thematic relics each faction lord always carries
 LORD_RELICS: dict[str, tuple[str, str]] = {
@@ -109,21 +115,10 @@ def _strategy_for(deck) -> str:
     return FALLBACK_STRATEGY
 
 
-def _scaling(act: int, kind: str) -> dict:
-    effects: dict = {}
-    hp = {1: 0, 2: 1, 3: 2}.get(act, 2)
-    if kind == "elite":
-        hp += 1
-    if kind == "boss":
-        hp += 1
-    if hp:
-        effects["unit_hp_plus"] = hp
-    hand = {1: 0, 2: 1, 3: 1}.get(act, 1)
-    if kind in ("elite", "boss"):
-        hand += 1
-    if hand:
-        effects["hand_plus"] = hand
-    return effects
+def _attack_min(act: int, kind: str) -> float:
+    """Difficulty comes from the AI playing better, not from bigger numbers."""
+    base = 11.0 if kind == "normal" else 10.0
+    return max(6.0, base - act)
 
 
 def weak_enemy(rng: random.Random, index: int) -> dict:
@@ -152,9 +147,9 @@ def normal_enemy(act: int, factions, rng: random.Random) -> dict:
         "label": f"{names} {ENEMY_LABELS['normal']}",
         "deck": deck,
         "strategy": _strategy_for(deck),
-        "strategy_overrides": {"attack_min_score": max(7.0, 11.0 - act)},
+        "strategy_overrides": {"attack_min_score": _attack_min(act, "normal")},
         "relics": [],
-        "effects": _scaling(act, "normal"),
+        "effects": {},
         "gold": BATTLE_GOLD["normal"],
     }
 
@@ -164,14 +159,15 @@ def elite_enemy(act: int, factions, rng: random.Random) -> dict:
     formation = ELITE_FORMATIONS[key]
     tags = rng.sample(list(factions), min(2, len(factions))) if factions else ["W"]
     deck = _fill_template(formation["template"], tags, rng)
+    count = ELITE_RELIC_COUNT.get(act, 2)
     return {
         "kind": "elite",
         "label": f"{ENEMY_LABELS['elite']}: {formation['label']}",
         "deck": deck,
         "strategy": _strategy_for(deck),
-        "strategy_overrides": {"attack_min_score": max(6.0, 10.0 - act)},
-        "relics": [],
-        "effects": _scaling(act, "elite"),
+        "strategy_overrides": {"attack_min_score": _attack_min(act, "elite")},
+        "relics": list(formation["relics"][:count]),
+        "effects": {},
         "gold": BATTLE_GOLD["elite"],
     }
 
@@ -188,7 +184,7 @@ def faction_lord(tag: str, rng: random.Random) -> dict:
         "strategy": "claude",
         "strategy_overrides": {"beam_width": 6, "depth_cap": 4},
         "relics": relics,
-        "effects": _scaling(2, "boss"),
+        "effects": {},
         "gold": BATTLE_GOLD["boss"],
     }
 
@@ -227,8 +223,8 @@ def traitor_lord(rng: random.Random) -> dict:
         "deck": deck,
         "strategy": "claude",
         "strategy_overrides": {"beam_width": 8, "depth_cap": 5},
-        "relics": ["emblem_HF", "sewing_kit", "prepared_pack"],
-        "effects": _scaling(3, "boss"),
+        "relics": ["emblem_HF", "sewing_kit", "prepared_pack", "amulet_TANK"],
+        "effects": {},
         "gold": BATTLE_GOLD["boss"],
     }
 
@@ -252,7 +248,7 @@ def the_forgotten(factions, rng: random.Random) -> dict:
         "label": "The Forgotten",
         "phase_label": f"{FACTION_NAMES[first_tag]} Lord",
         "note": "two lords, one after the other - beating the first only resets the score",
-        "effects": _scaling(3, "boss"),
+        "effects": {},
         "gold": BATTLE_GOLD["boss"],
         "next_phase": {
             "label": "The Forgotten",
@@ -261,7 +257,7 @@ def the_forgotten(factions, rng: random.Random) -> dict:
             "strategy": second["strategy"],
             "strategy_overrides": second["strategy_overrides"],
             "relics": second["relics"],
-            "effects": _scaling(3, "boss"),
+            "effects": {},
         },
     })
     return first

@@ -98,15 +98,35 @@ def enchant_lines(code: str) -> list[str]:
     return [ENCHANTS[k]["text"] for k in card_code.enchant_keys(code) if k in ENCHANTS]
 
 
+MAGIC_PRICE: int = 35
+UNIT_PRICE: int = 50
+BIG_UNIT_PRICE: int = 60
+ENCHANT_SURCHARGE: int = 25
+
+# White is the starter faction, so it shows up less often than a faction you chose
+WHITE_REWARD_WEIGHT: float = 0.35
+
+
 def card_price(code: str) -> int:
     plain = card_code.plain_code(code)
     if plain in MAGIC_POOL:
-        return 60
+        return MAGIC_PRICE
     job = job_of(plain)
-    price = 90 if job in ("TANK", "HF") else 80
+    price = BIG_UNIT_PRICE if job in ("TANK", "HF") else UNIT_PRICE
     if card_code.enchant_keys(code):
-        price += 40
+        price += ENCHANT_SURCHARGE
     return price
+
+
+def reward_weight(code: str) -> float:
+    return WHITE_REWARD_WEIGHT if color_tag_of(code) == "W" else 1.0
+
+
+def weighted_pick(codes: list[str], rng) -> str:
+    """Pick one code, weighted so White comes up less than the chosen factions."""
+    if not codes:
+        return ""
+    return rng.choices(codes, weights=[reward_weight(c) for c in codes])[0]
 
 
 def deck_summary(deck) -> dict[str, int]:

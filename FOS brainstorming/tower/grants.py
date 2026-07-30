@@ -33,7 +33,7 @@ from core.game_screen import GameScreen
 from tower import card_picker, card_pool, choice_screen, run_state, ui_common
 from tower.content import BLESSING_ENCHANTS, ENCHANTS, RELICS
 
-MAGIC_REWARD_WEIGHT: float = 0.25
+MAGIC_REWARD_WEIGHT: float = 0.12
 SKIP_CARD_GOLD: int = 30
 
 
@@ -42,15 +42,21 @@ SKIP_CARD_GOLD: int = 30
 # --------------------------------------------------------------------------
 
 def card_options(run: dict, rng: random.Random, count: int = 3) -> list[str]:
+    """Reward and shop cards: mostly units of the chosen factions.
+
+    Spells are rare, and White units are rarer than the factions the player
+    drafted - the starter deck is already all White.
+    """
     units = card_pool.run_unit_pool(run["factions"])
     magic = list(card_pool.MAGIC_POOL)
     picks: list[str] = []
+
     while len(picks) < count and (units or magic):
-        source = magic if (magic and rng.random() < MAGIC_REWARD_WEIGHT) else units
-        if not source:
-            source = units or magic
-        code = rng.choice(source)
-        source.remove(code)
+        if magic and (not units or rng.random() < MAGIC_REWARD_WEIGHT):
+            code = magic.pop(rng.randrange(len(magic)))
+        else:
+            code = card_pool.weighted_pick(units, rng)
+            units.remove(code)
         if code not in picks:
             picks.append(code)
     return picks

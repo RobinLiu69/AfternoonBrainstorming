@@ -100,16 +100,56 @@ def test_the_act_one_boss_gets_relics_but_no_stat_boost():
     assert "unit_damage_plus" not in effects
 
 
-def test_act_one_never_scales_enemy_stats_up():
+def enemies_of(act: int, seed: int) -> list[dict]:
+    out: list[dict] = []
+    act_map = tower_map.build_act(act, FACTIONS, random.Random(seed))
+    for layer in act_map["layers"]:
+        if "enemy" in layer:
+            out.append(layer["enemy"])
+        out += [o["enemy"] for o in layer.get("options", []) if "enemy" in o]
+    return out
+
+
+def test_no_enemy_anywhere_gets_a_global_stat_buff():
+    """Difficulty is relics and AI skill only - never bigger numbers."""
+    for act in (1, 2, 3):
+        for seed in range(10):
+            for enemy in enemies_of(act, seed):
+                effects = enemy["effects"]
+                assert effects.get("unit_hp_plus", 0) <= 0
+                assert effects.get("unit_damage_plus", 0) <= 0
+                assert effects.get("hand_plus", 0) <= 0
+                assert effects.get("luck_plus", 0) <= 0
+                phase = enemy.get("next_phase")
+                if phase:
+                    assert phase["effects"] == {}
+
+
+def test_only_the_opening_squad_is_debuffed():
+    for act in (1, 2, 3):
+        for seed in range(10):
+            for enemy in enemies_of(act, seed):
+                if enemy["effects"]:
+                    assert enemy["label"] == "Raw Recruits"
+
+
+def test_elites_carry_relics_instead_and_more_of_them_later():
     for seed in range(10):
-        act_map = tower_map.build_act(1, FACTIONS, random.Random(seed))
-        for layer in act_map["layers"]:
-            enemy_list = [layer["enemy"]] if "enemy" in layer else []
-            enemy_list += [o["enemy"] for o in layer.get("options", []) if "enemy" in o]
-            for enemy in enemy_list:
-                assert enemy["effects"].get("unit_hp_plus", 0) <= 0
-                assert enemy["effects"].get("unit_damage_plus", 0) <= 0
-                assert enemy["effects"].get("hand_plus", 0) <= 0
+        for act in (2, 3):
+            elite = enemies.elite_enemy(act, FACTIONS, random.Random(seed))
+            assert elite["effects"] == {}
+            assert len(elite["relics"]) == enemies.ELITE_RELIC_COUNT[act]
+
+
+def test_every_enemy_relic_is_a_real_relic():
+    from tower.content import RELICS
+    for act in (1, 2, 3):
+        for seed in range(10):
+            for enemy in enemies_of(act, seed):
+                for relic_id in enemy.get("relics", []):
+                    assert relic_id in RELICS
+                for relic_id in (enemy.get("next_phase") or {}).get("relics", []):
+                    assert relic_id in RELICS
 
 
 def test_act_three_only_rolls_finished_bosses():
