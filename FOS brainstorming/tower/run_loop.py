@@ -150,9 +150,8 @@ def _battle_reward(game_screen: GameScreen, run: dict, enemy: dict,
     notice_screen.main(game_screen, "Victory", lines, run=run, color=ui_common.HILITE)
 
     if enemy["kind"] == "boss":
-        # a boss earns a real choice, and is the only source of special relics
-        grants.choose_relic(game_screen, run, rng, "Boss spoils",
-                            include_special=True, declinable=True)
+        # an enchanted unit, then a choice of three that always holds a special
+        grants.boss_drop(game_screen, run, rng)
     elif enemy["kind"] == "elite" or rng.random() < RELIC_DROP_CHANCE:
         grants.offer_relic(game_screen, run, rng, "Spoils")
 

@@ -75,6 +75,9 @@ def validate_run(run: dict) -> dict | None:
     run.setdefault("shop_spent", False)
     run.setdefault("shop_rerolls", 0)
     run.setdefault("battles_won", 0)
+    run["events_seen"] = [e for e in run.get("events_seen", []) if isinstance(e, str)]
+    run["altar_deals_used"] = [d for d in run.get("altar_deals_used", [])
+                               if isinstance(d, str)]
 
     if not run["deck"]:
         return None

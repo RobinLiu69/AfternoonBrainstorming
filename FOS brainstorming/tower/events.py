@@ -54,8 +54,6 @@ ALTAR_DEALS: tuple[dict, ...] = (
      "text": "offer 50 gold for a random spell"},
     {"id": "card_choice", "label": "Petition", "cost": 100,
      "text": "offer 100 gold to choose a card"},
-    {"id": "gold_50", "label": "Small Blessing", "cost": 0,
-     "text": "the altar gives you 50 gold"},
     {"id": "gold_100", "label": "Blessing", "cost": 0,
      "text": "the altar gives you 100 gold"},
     {"id": "gold_150", "label": "Great Blessing", "cost": 0,
@@ -105,10 +103,20 @@ def _enchanted_indices(run: dict, curse_free: bool = False) -> set[tuple[str, in
 # events
 # --------------------------------------------------------------------------
 
+def altar_deals_left(run: dict) -> list[dict]:
+    spent = set(run.get("altar_deals_used", []))
+    return [deal for deal in ALTAR_DEALS if deal["id"] not in spent]
+
+
 def _altar(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
-    """Two of the eight rites are on offer, so there is always a decision."""
+    """The altar can come round again, but never with a rite it already offered."""
     tag = _run_faction(run, rng)
-    deals = rng.sample(list(ALTAR_DEALS), ALTAR_OFFER_COUNT)
+    remaining = altar_deals_left(run)
+    if not remaining:
+        return _wanderer(game_screen, run, rng)
+
+    deals = rng.sample(remaining, min(ALTAR_OFFER_COUNT, len(remaining)))
+    run.setdefault("altar_deals_used", []).extend(deal["id"] for deal in deals)
 
     options = [_option(deal["label"], deal["text"], ui_common.GOLD,
                        run_state.affordable(run, deal["cost"]))
@@ -149,6 +157,11 @@ def _altar(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
 
 
 def _altar_available(run: dict) -> bool:
+    """Once every rite has been offered the altar has nothing left to say."""
+    return bool(altar_deals_left(run))
+
+
+def _always(run: dict) -> bool:
     return True
 
 
@@ -397,20 +410,31 @@ EVENTS: dict[str, dict] = {
     "tinker": {"label": "Tinker", "acts": (1, 2, 3), "weight": _tinker_weight,
                "handler": _tinker, "available": _tinker_available},
     "visitor": {"label": "Visitor", "acts": (2,), "weight": 1.2,
-                "handler": _visitor, "available": _altar_available},
+                "handler": _visitor, "available": _always},
     "beast_statue": {"label": "Statue of the Raging Beast", "acts": (3,), "weight": 1.0,
                      "handler": _beast_statue, "available": _beast_statue_available},
     "prism": {"label": "Prism", "acts": (3,), "weight": 1.0,
               "handler": _prism, "available": _prism_available},
     "wanderer": {"label": "Wandering Trader", "acts": (1, 2, 3), "weight": 0.3,
-                 "handler": _wanderer, "available": _altar_available},
+                 "handler": _wanderer, "available": _always},
 }
 
 
-def candidates(run: dict) -> list[str]:
+# events you can run into again; everything else is once per climb
+REPEATABLE_EVENTS: frozenset[str] = frozenset({"altar", "wanderer"})
+
+
+def candidates(run: dict, ignore_seen: bool = False) -> list[str]:
     act = run.get("act", 1)
-    return [name for name, entry in sorted(EVENTS.items())
-            if act in entry["acts"] and entry["available"](run)]
+    seen = set(run.get("events_seen", []))
+    out = []
+    for name, entry in sorted(EVENTS.items()):
+        if act not in entry["acts"] or not entry["available"](run):
+            continue
+        if not ignore_seen and name in seen and name not in REPEATABLE_EVENTS:
+            continue
+        out.append(name)
+    return out
 
 
 def weight_of(run: dict, name: str) -> float:
@@ -421,11 +445,16 @@ def weight_of(run: dict, name: str) -> float:
 def pick(run: dict, rng: random.Random) -> str:
     names = candidates(run)
     if not names:
-        return "wanderer"
+        # everything has been seen; fall back to the ones that can come round again
+        names = [n for n in candidates(run, ignore_seen=True)
+                 if n in REPEATABLE_EVENTS] or ["wanderer"]
     return rng.choices(names, weights=[weight_of(run, n) for n in names])[0]
 
 
 def enter(game_screen: GameScreen, run: dict, rng: random.Random,
           name: Optional[str] = None) -> str:
     name = name or pick(run, rng)
+    seen = run.setdefault("events_seen", [])
+    if name not in seen:
+        seen.append(name)
     return EVENTS[name]["handler"](game_screen, run, rng)

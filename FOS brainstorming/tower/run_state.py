@@ -26,7 +26,7 @@ from shared import card_code
 
 from tower import card_pool, tower_map
 from tower.content import (
-    ADDITIVE_EFFECTS, BENCH_LIMIT, BLESSINGS, BLESSING_OFFER_COUNT,
+    ADDITIVE_EFFECTS, BENCH_LIMIT, BLESSING_POOLS, BLESSING_POOL_ORDER,
     DECK_LIMIT, ENCHANTS, FLAG_EFFECTS, JOB_EFFECTS, MAX_EFFECTS,
     MIN_EFFECTS, MULTIPLIED_EFFECTS, RELICS, STARTER_DECK,
 )
@@ -53,6 +53,8 @@ def new_run(factions, seed: int | None = None) -> dict:
         "shop_spent": False,
         "shop_rerolls": 0,
         "battles_won": 0,
+        "events_seen": [],
+        "altar_deals_used": [],
     }
 
 
@@ -134,7 +136,8 @@ def deck_limit(run: dict) -> int:
 
 
 def bench_limit(run: dict) -> int:
-    return BENCH_LIMIT + int(run.get("bench_bonus", 0))
+    return (BENCH_LIMIT + int(run.get("bench_bonus", 0))
+            + int(merged_effects(run).get("bench_plus", 0)))
 
 
 def free_bench(run: dict) -> bool:
@@ -245,9 +248,15 @@ def has_relic(run: dict, relic_id: str) -> bool:
     return relic_id in run.get("relics", [])
 
 
+def curse_immune(run: dict) -> bool:
+    return bool(merged_effects(run).get("curse_immune"))
+
+
 def can_take_relic(run: dict, relic_id: str) -> bool:
     relic = RELICS.get(relic_id)
     if relic is None or has_relic(run, relic_id):
+        return False
+    if relic["tier"] == "curse" and curse_immune(run):
         return False
     faction = relic.get("faction")
     if faction and faction not in run.get("factions", []):
@@ -379,8 +388,9 @@ def floor_upkeep(run: dict) -> dict:
 # --------------------------------------------------------------------------
 
 def blessing_offers(run: dict) -> list[dict]:
+    """One offer out of each pool, so the three never rhyme."""
     rng = layer_rng(run, salt=11)
-    return rng.sample(list(BLESSINGS), min(BLESSING_OFFER_COUNT, len(BLESSINGS)))
+    return [rng.choice(list(BLESSING_POOLS[pool])) for pool in BLESSING_POOL_ORDER]
 
 
 # --------------------------------------------------------------------------

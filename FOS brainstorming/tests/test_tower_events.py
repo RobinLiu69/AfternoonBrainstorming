@@ -153,12 +153,66 @@ def test_the_altar_always_puts_two_rites_on_the_table(run, answer, monkeypatch):
     seen: list = []
     monkeypatch.setattr(events.choice_screen, "main",
                         lambda screen, title, options, **k: seen.append(options) or None)
-    for seed in range(10):
+    seed = 0
+    while events.altar_deals_left(run):
         events._altar(None, run, random.Random(seed))
-    for options in seen:
+        seed += 1
+    for options in seen[:-1]:
         assert len(options) == events.ALTAR_OFFER_COUNT + 1
         labels = [o["label"] for o in options[:-1]]
         assert len(set(labels)) == events.ALTAR_OFFER_COUNT
+
+
+def test_the_altar_never_offers_the_same_rite_twice(run, answer, monkeypatch):
+    offered: list[str] = []
+    monkeypatch.setattr(
+        events.choice_screen, "main",
+        lambda screen, title, options, **k: offered.extend(
+            o["label"] for o in options[:-1]) or None)
+
+    seed = 0
+    while events.altar_deals_left(run):
+        events._altar(None, run, random.Random(seed))
+        seed += 1
+
+    assert len(offered) == len(set(offered))
+    assert len(offered) == len(events.ALTAR_DEALS)
+
+
+def test_a_spent_altar_stops_showing_up(run):
+    run["act"] = 1
+    assert "altar" in events.candidates(run)
+    run["altar_deals_used"] = [deal["id"] for deal in events.ALTAR_DEALS]
+    assert "altar" not in events.candidates(run)
+
+
+def test_the_altar_no_longer_offers_the_smallest_purse():
+    assert "gold_50" not in {deal["id"] for deal in events.ALTAR_DEALS}
+
+
+def test_an_event_you_have_seen_does_not_come_round_again(run):
+    run["act"] = 3
+    run_state.enchant_card(run, "deck", 0, "sharp")
+    assert "tinker" in events.candidates(run)
+
+    run["events_seen"] = ["tinker", "prism"]
+    assert "tinker" not in events.candidates(run)
+    assert "prism" not in events.candidates(run)
+    # the altar and the trader can still come round
+    assert "altar" in events.candidates(run)
+
+
+def test_entering_an_event_records_it(run, answer):
+    answer(choices=[1])
+    events.enter(None, run, random.Random(1), "prism")
+    assert run["events_seen"] == ["prism"]
+
+
+def test_pick_falls_back_to_repeatables_once_everything_is_seen(run):
+    run["act"] = 3
+    run["events_seen"] = list(events.EVENTS)
+    for seed in range(10):
+        assert events.pick(run, random.Random(seed)) in events.REPEATABLE_EVENTS
 
 
 # --------------------------------------------------------------------------

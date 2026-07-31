@@ -100,6 +100,17 @@ ENCHANTS: dict[str, dict] = {
     "art_mend":  {"label": "Artisan: Mend", "kind": "artisan", "hp": 0, "damage": 0,
                   "text": "heals 1 HP at the start of each of your turns"},
 
+    "vigor":     {"label": "Vigor", "kind": "normal", "hp": 0, "damage": 0,
+                  "text": "heals 1 HP at the end of each of your turns"},
+    "flight":    {"label": "Flight", "kind": "normal", "hp": 0, "damage": 0,
+                  "text": "can move to any empty square on the board"},
+    "carver":    {"label": "Carver", "kind": "normal", "hp": 0, "damage": 0,
+                  "text": "engraves 1 totem whenever it deals damage"},
+    "gigantism": {"label": "Gigantism", "kind": "normal", "hp": 0, "damage": 0,
+                  "text": "double HP and damage, but it cannot attack"},
+    "echo":      {"label": "Echo", "kind": "normal", "hp": 0, "damage": 0,
+                  "text": "with 3+ attacks banked, attacking costs 2 and hits twice as hard"},
+
     "burn":  {"label": "Burning", "kind": "curse", "hp": 0, "damage": 0,
               "text": "the first time it is played, the enemy scores 2"},
     "bleed": {"label": "Bleeding", "kind": "curse", "hp": 0, "damage": 0,
@@ -109,6 +120,10 @@ ENCHANTS: dict[str, dict] = {
 }
 
 ARTISAN_ENCHANTS: tuple[str, ...] = ("art_hero", "art_guard", "art_mend")
+# a boss drop hands over a unit already carrying one of these
+BOSS_DROP_ENCHANTS: tuple[str, ...] = (
+    "sharp", "fort", "radiant", "plated", "steady", "vigor", "art_hero",
+)
 CURSE_ENCHANTS: tuple[str, ...] = ("burn", "bleed", "rust")
 BLESSING_ENCHANTS: tuple[str, ...] = ("sharp", "fort")
 
@@ -205,7 +220,79 @@ RELICS.update({
         "effects": {"victory_gold_per_pirate": 20},
     },
 
+    "palanquin": {
+        "label": "Palanquin", "tier": "common",
+        "text": "+2 bench slots",
+        "effects": {"bench_plus": 2},
+    },
+    "rabbits_foot": {
+        "label": "Rabbit's Foot", "tier": "common", "faction": "G",
+        "text": "you start battles with +15 luck",
+        "effects": {"luck_plus": 15},
+    },
+    "mob_pigeon": {
+        "label": "Mob Pigeon", "tier": "common", "faction": "O",
+        "text": "on your fourth turn, gain a move spell",
+        "effects": {"move_spell_on_turn": 4},
+    },
+    "giant_mushroom": {
+        "label": "Giant Mushroom", "tier": "common", "faction": "BR",
+        "text": "on pickup, enchant a card with Gigantism",
+        "effects": {}, "on_pickup": {"enchant": "gigantism"},
+    },
+    "ninja_scroll": {
+        "label": "Ninja Scroll", "tier": "common", "faction": "F",
+        "text": "hitting the same enemy twice in one attack deals 2 extra damage",
+        "effects": {"double_hit_damage": 2},
+    },
+
     # ---------------- rare ----------------
+    "curse_ward": {
+        "label": "Curse Ward", "tier": "rare",
+        "text": "you no longer receive curse relics",
+        "effects": {"curse_immune": 1},
+    },
+    "strategists_fan": {
+        "label": "Strategist's Fan", "tier": "rare",
+        "text": "while you hold no units on the board, score 1 extra point a turn",
+        "effects": {"empty_board_score": 1},
+    },
+    "burning_blood": {
+        "label": "Burning Blood", "tier": "rare", "faction": "R",
+        "text": "on pickup, enchant a card with Vigor",
+        "effects": {}, "on_pickup": {"enchant": "vigor"},
+    },
+    "talaria": {
+        "label": "Talaria", "tier": "rare", "faction": "O",
+        "text": "on pickup, enchant a card with Flight",
+        "effects": {}, "on_pickup": {"enchant": "flight"},
+    },
+    "razor_hat": {
+        "label": "Razor Hat", "tier": "rare", "faction": "O",
+        "text": "after any unit moves, deal 1 damage to a random enemy",
+        "effects": {"damage_on_move": 1},
+    },
+    "radiant_totem": {
+        "label": "Radiant Totem", "tier": "rare", "faction": "DKG",
+        "text": "score 1 extra point for every 20 totems you hold",
+        "effects": {"score_per_totem": 20},
+    },
+    "carvers_licence": {
+        "label": "Carver's Licence", "tier": "rare", "faction": "DKG",
+        "text": "on pickup, enchant a card with Carver",
+        "effects": {}, "on_pickup": {"enchant": "carver"},
+    },
+    "hidden_dagger": {
+        "label": "Hidden Dagger", "tier": "rare", "faction": "F",
+        "text": "at end of turn, deal 1 damage to enemies standing on a shadow",
+        "effects": {"shadow_damage": 1},
+    },
+    "unchanging_stone": {
+        "label": "Unchanging Stone", "tier": "rare", "source": "shop",
+        "text": "on pickup, enchant a card with Steady",
+        "effects": {}, "on_pickup": {"enchant": "steady"},
+    },
+
     "prepared_pack": {
         "label": "Prepared Pack", "tier": "rare",
         "text": "start battles with +1 card",
@@ -268,10 +355,20 @@ RELICS.update({
         "text": "on pickup, enchant a card with Flying Sword",
         "effects": {}, "on_pickup": {"enchant": "sword"},
     },
-    "unchanging_stone": {
-        "label": "Unchanging Stone", "tier": "power", "source": "shop",
-        "text": "on pickup, enchant a card with Steady",
-        "effects": {}, "on_pickup": {"enchant": "steady"},
+    "oni_mask": {
+        "label": "Oni Mask", "tier": "power",
+        "text": "every time one of your units grows 2 damage, it gains 1 armor",
+        "effects": {"armor_per_growth": 2},
+    },
+    "carving_knife": {
+        "label": "Carving Knife", "tier": "power", "faction": "DKG",
+        "text": "engrave 1 totem at the start of your turn",
+        "effects": {"turn_start_totem": 1},
+    },
+    "echo_stone": {
+        "label": "Echo Stone", "tier": "power",
+        "text": "on pickup, enchant a card with Echo",
+        "effects": {}, "on_pickup": {"enchant": "echo"},
     },
     "wax_furnace": {
         "label": "Wax Furnace", "tier": "power", "source": "shop",
@@ -353,6 +450,11 @@ RELICS.update({
         "text": "enemies are hidden until you fight them",
         "effects": {"hide_enemies": 1},
     },
+    "chipped_crown": {
+        "label": "Chipped Crown", "tier": "curse",
+        "text": "you start every battle a point behind",
+        "effects": {"start_score_penalty": 1},
+    },
 })
 
 
@@ -360,22 +462,28 @@ RELIC_TIERS: tuple[str, ...] = ("common", "rare", "power", "special", "curse")
 
 # numeric effect keys that merge additively / multiplicatively
 ADDITIVE_EFFECTS: frozenset[str] = frozenset({
-    "unit_hp_plus", "unit_damage_plus", "hand_plus",
+    "unit_hp_plus", "unit_damage_plus", "hand_plus", "luck_plus",
     "first_unit_hp_plus", "first_unit_damage_plus",
     "heal_bonus", "min_damage", "enchanted_damage_plus",
     "free_rerolls", "extra_rerolls", "credit_limit",
     "draw_on_reshuffle", "attack_on_reshuffle",
     "turn_start_tokens", "turn_start_coins", "turn_start_draw_plus",
-    "attacks_plus", "gold_per_floor", "victory_gold_per_pirate",
-    "orb_trigger_damage", "first_spell_draw",
+    "turn_start_totem", "attacks_plus", "gold_per_floor",
+    "victory_gold_per_pirate", "orb_trigger_damage", "first_spell_draw",
+    "bench_plus", "double_hit_damage", "empty_board_score", "damage_on_move",
+    "shadow_damage", "start_score_penalty",
 })
 FLAG_EFFECTS: frozenset[str] = frozenset({
     "ap_no_numb", "no_turn_start_draw", "attacks_reset", "no_attack_gain",
     "free_bench", "hide_rooms", "hide_enemies", "double_tank_effects",
+    "curse_immune",
 })
 MULTIPLIED_EFFECTS: frozenset[str] = frozenset({"gold_mult", "shop_discount"})
 JOB_EFFECTS: frozenset[str] = frozenset({"job_hp_plus", "job_damage_plus"})
-MIN_EFFECTS: frozenset[str] = frozenset({"ghost_spell_every_n_turns"})
+MIN_EFFECTS: frozenset[str] = frozenset({
+    "ghost_spell_every_n_turns", "move_spell_on_turn", "score_per_totem",
+    "armor_per_growth",
+})
 MAX_EFFECTS: frozenset[str] = frozenset({
     "interest_rate", "debt_rate", "deck_limit_override", "overheal_shield_mult",
 })
@@ -393,24 +501,46 @@ def relic_group(relic_id: str) -> str:
 # opening blessings - three are offered, the player keeps one
 # --------------------------------------------------------------------------
 
-BLESSINGS: tuple[dict, ...] = (
-    {"id": "two_cards", "label": "Recruitment Drive",
-     "text": "pick a card to add, twice"},
-    {"id": "one_orb", "label": "Clear Mind",
-     "text": "gain 1 Forgetting Orb"},
-    {"id": "one_relic", "label": "Lucky Find",
-     "text": "gain 1 random relic"},
-    {"id": "bench_plus", "label": "Wider Camp",
-     "text": "+2 bench slots"},
-    {"id": "enchant_unit", "label": "Blessed Steel",
-     "text": "enchant one of your units (Sharp or Fortified)"},
-    {"id": "orbs_and_curse", "label": "Devil's Bargain",
-     "text": "gain 3 Forgetting Orbs, then take one curse relic of your choice"},
-    {"id": "power_and_curse", "label": "Cursed Power",
-     "text": "gain 1 power relic and 1 random curse relic"},
+# Three pools, one offer drawn from each, so the opening choice is never
+# three flavours of the same thing.
+BLESSING_POOLS: dict[str, tuple[dict, ...]] = {
+    "boon": (
+        {"id": "two_cards", "label": "Recruitment Drive",
+         "text": "pick a card to add, twice"},
+        {"id": "enchant_unit", "label": "Blessed Steel",
+         "text": "enchant one of your units (Sharp or Fortified)"},
+        {"id": "one_relic", "label": "Lucky Find",
+         "text": "gain 1 random relic"},
+        {"id": "gold_150", "label": "Full Purse",
+         "text": "gain 150 gold"},
+    ),
+    "logistics": (
+        {"id": "bench_plus", "label": "Wider Camp",
+         "text": "+2 bench slots"},
+        {"id": "one_orb", "label": "Clear Mind",
+         "text": "gain 1 Forgetting Orb"},
+    ),
+    "bargain": (
+        {"id": "orbs_and_curse", "label": "Devil's Bargain",
+         "text": "gain 3 Forgetting Orbs, then take one curse relic of your choice"},
+        {"id": "power_and_curse", "label": "Cursed Power",
+         "text": "choose 1 of 3 power relics, and take 1 random curse relic"},
+        {"id": "relics_and_curse", "label": "Grave Robbery",
+         "text": "gain 2 relics and 1 random curse relic"},
+        {"id": "gold_and_curse", "label": "Blood Money",
+         "text": "gain 300 gold and 1 random curse relic"},
+    ),
+}
+
+BLESSING_POOL_ORDER: tuple[str, ...] = ("boon", "logistics", "bargain")
+
+BLESSINGS: tuple[dict, ...] = tuple(
+    entry for pool in BLESSING_POOL_ORDER for entry in BLESSING_POOLS[pool]
 )
 
-BLESSING_OFFER_COUNT: int = 3
+BLESSING_GOLD: int = 150
+BARGAIN_GOLD: int = 300
+BARGAIN_RELIC_COUNT: int = 2
 
 
 # --------------------------------------------------------------------------

@@ -50,6 +50,7 @@ class TowerAIController(AIController):
         self.next_phase: dict | None = enemy.get("next_phase")
         self.phase_label: str = enemy.get("phase_label", "")
         self._channels_installed: bool = False
+        self._last_turn_number: int = -1
 
     def _apply_overrides(self, overrides: dict) -> None:
         for key, value in overrides.items():
@@ -104,6 +105,13 @@ class TowerAIController(AIController):
             self._install_channels(gs)
             gs.tower_on_defeat = self.on_defeat
             self._channels_installed = True
+
+        if gs.turn_number != self._last_turn_number:
+            if self._last_turn_number >= 0:
+                finished = self.player if self._last_turn_number % 2 == 0 else self.enemy
+                if finished.started:
+                    finished.on_turn_end(gs)
+            self._last_turn_number = gs.turn_number
 
         self.enemy.maintain(gs)
         self.player.maintain(gs)

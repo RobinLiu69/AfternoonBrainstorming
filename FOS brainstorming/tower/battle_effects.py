@@ -41,6 +41,7 @@ if TYPE_CHECKING:
 
 
 BASE_HAND_SIZE: int = 3
+BASE_LUCK: int = 50
 GHOST_SPELLS: tuple[str, ...] = ("HEAL", "CUBES", "MOVE")
 MAGIC_CODES: frozenset[str] = frozenset({"HEAL", "CUBES", "MOVE", "MOVEO"})
 
@@ -58,6 +59,19 @@ def install_side_channels(gs: "GameState", effects_by_side: dict[str, dict]) -> 
         side: max(1, int(effects.get("overheal_shield_mult", 1)))
         for side, effects in effects_by_side.items()
     }
+
+
+def _punish_double_hits(card, extra: int) -> None:
+    """Ninja Scroll: landing on the same enemy twice in one swing hurts more."""
+    original = card.after_damage_calculated
+
+    def after_damage_calculated(target, value: int, game_state) -> bool:
+        result = original(target, value, game_state)
+        if card.hit_cards.count(target) == 2 and target.health > 0:
+            game_state.judge.deal(extra, target, game_state)
+        return result
+
+    card.after_damage_calculated = after_damage_calculated
 
 
 def _suppress_numbing(card) -> None:
@@ -87,6 +101,8 @@ class SideRuntime:
         self._spell_counts: dict[str, int] = {}
         self._spell_turn: int = -1
         self._spell_used: bool = False
+        self._positions: dict[str, tuple[int, int]] = {}
+        self._damage_seen: dict[str, int] = {}
 
     # ---------------- battle start ----------------
 
@@ -94,6 +110,15 @@ class SideRuntime:
         self._apply_initial_hand(gs)
         self._prev_draw_len = len(gs.get_player(self.name).draw_pile)
         self._prev_tokens = gs.players_token.get(self.name, 0)
+
+        luck = int(self.effects.get("luck_plus", 0))
+        if luck:
+            gs.players_luck[self.name] = max(0, min(100, BASE_LUCK + luck))
+
+        penalty = int(self.effects.get("start_score_penalty", 0))
+        if penalty:
+            gs.score += penalty if self.name == "player1" else -penalty
+
         self.started = True
 
     def _apply_initial_hand(self, gs: "GameState") -> None:
@@ -119,6 +144,8 @@ class SideRuntime:
             self._watch_reshuffle(gs)
             self._watch_spells(gs)
             self._watch_orbs(gs)
+            self._watch_moves(gs)
+            self._watch_growth(gs)
 
     def _maintain_unit_buffs(self, gs: "GameState") -> None:
         effects = self.effects
@@ -131,9 +158,10 @@ class SideRuntime:
         enchanted_dmg = effects.get("enchanted_damage_plus", 0)
 
         no_numb = effects.get("ap_no_numb")
+        double_hit = int(effects.get("double_hit_damage", 0))
 
         if not (hp_plus or dmg_plus or job_hp or job_dmg
-                or first_hp or first_dmg or enchanted_dmg or no_numb):
+                or first_hp or first_dmg or enchanted_dmg or no_numb or double_hit):
             return
 
         for card in gs.get_player(self.name).on_board:
@@ -142,6 +170,8 @@ class SideRuntime:
             first = not self.buffed_ids
             if no_numb and card.job == "AP":
                 _suppress_numbing(card)
+            if double_hit:
+                _punish_double_hits(card, double_hit)
             hp = hp_plus + job_hp.get(card.job, 0) + (first_hp if first else 0)
             dmg = dmg_plus + job_dmg.get(card.job, 0) + (first_dmg if first else 0)
             if enchanted_dmg and getattr(card, "tower_enchants", ()):
@@ -178,6 +208,36 @@ class SideRuntime:
             if targets:
                 gs.judge.deal(damage, gs.rng.choice(targets), gs)
         self._prev_tokens = tokens
+
+    def _watch_moves(self, gs: "GameState") -> None:
+        """Razor Hat: any unit changing square draws blood from a random enemy."""
+        damage = int(self.effects.get("damage_on_move", 0))
+        moved = False
+        positions: dict[str, tuple[int, int]] = {}
+        for card in gs.get_both_player_cards():
+            positions[card.instance_id] = (card.board_x, card.board_y)
+            was = self._positions.get(card.instance_id)
+            if was is not None and was != positions[card.instance_id]:
+                moved = True
+        self._positions = positions
+
+        if damage and moved:
+            targets = [c for c in gs.get_opponent_cards(self.name) if c.health > 0]
+            if targets:
+                gs.judge.deal(damage, gs.rng.choice(targets), gs)
+
+    def _watch_growth(self, gs: "GameState") -> None:
+        """Oni Mask: armor for every couple of points of damage a unit gains."""
+        step = int(self.effects.get("armor_per_growth", 0))
+        if not step:
+            return
+        for card in gs.get_player(self.name).on_board:
+            grown = max(0, card.damage - card.original_damage)
+            paid = self._damage_seen.get(card.instance_id, 0)
+            awards = grown // step - paid // step
+            if awards > 0:
+                card.armor += awards
+            self._damage_seen[card.instance_id] = grown
 
     def _watch_spells(self, gs: "GameState") -> None:
         if not self.effects.get("first_spell_draw") or self._spell_used:
@@ -235,8 +295,44 @@ class SideRuntime:
         if effects.get("no_turn_start_draw"):
             gs.skip_turn_draw[self.name] = True
 
+        totems = int(effects.get("turn_start_totem", 0))
+        if totems:
+            gs.players_totem[self.name] = gs.players_totem.get(self.name, 0) + totems
+
+        move_turn = int(effects.get("move_spell_on_turn", 0))
+        if move_turn and self.own_turns == move_turn:
+            gs.get_player(self.name).hand.append("MOVE")
+
         every = int(effects.get("ghost_spell_every_n_turns", 0))
         if every and self.own_turns % every == 0:
             spell = gs.rng.choice(list(GHOST_SPELLS))
             gs.get_player(self.name).hand.append(
                 card_code.add_enchant(spell, "ghost"))
+
+    # ---------------- own turn end ----------------
+
+    def on_turn_end(self, gs: "GameState") -> None:
+        """Runs once when this side hands the turn over."""
+        enchant_runtime.turn_end(gs, self.name)
+        effects = self.effects
+
+        shadow_damage = int(effects.get("shadow_damage", 0))
+        if shadow_damage:
+            shadows = {(c.board_x, c.board_y)
+                       for c in gs.get_player(self.name).on_board
+                       if c.job_and_color == "SHADOW"}
+            for enemy in list(gs.get_opponent_cards(self.name)):
+                if enemy.health > 0 and (enemy.board_x, enemy.board_y) in shadows:
+                    gs.judge.deal(shadow_damage, enemy, gs)
+
+        bonus = 0
+        empty = int(effects.get("empty_board_score", 0))
+        if empty and not [c for c in gs.get_player(self.name).on_board if c.health > 0]:
+            bonus += empty
+
+        per_totem = int(effects.get("score_per_totem", 0))
+        if per_totem:
+            bonus += gs.players_totem.get(self.name, 0) // per_totem
+
+        if bonus:
+            gs.score += -bonus if self.name == "player1" else bonus

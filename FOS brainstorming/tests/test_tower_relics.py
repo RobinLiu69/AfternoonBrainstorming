@@ -364,6 +364,156 @@ def test_without_a_credit_card_you_cannot_overspend():
     assert run["debt"] == 0
 
 
+def test_carving_knife_engraves_every_turn():
+    game_state = make_game_state()
+    side = started(side_for(["carving_knife"]), game_state)
+    take_turn(side, game_state, 0)
+    take_turn(side, game_state, 2)
+    assert game_state.players_totem["player1"] == 2
+
+
+def test_mob_pigeon_delivers_on_the_fourth_turn():
+    game_state = make_game_state()
+    side = started(side_for(["mob_pigeon"]), game_state)
+    for turn in (0, 2, 4):
+        take_turn(side, game_state, turn)
+    assert game_state.player1.hand == []
+
+    take_turn(side, game_state, 6)
+    assert game_state.player1.hand == ["MOVE"]
+
+
+def test_rabbits_foot_raises_starting_luck():
+    game_state = make_game_state()
+    started(side_for(["rabbits_foot"]), game_state)
+    assert game_state.players_luck["player1"] == 65
+
+
+def test_chipped_crown_starts_you_a_point_behind():
+    game_state = make_game_state()
+    started(side_for(["chipped_crown"]), game_state)
+    assert game_state.score == 1
+
+    other = make_game_state()
+    started(side_for(["chipped_crown"], "player2"), other)
+    assert other.score == -1
+
+
+def test_strategists_fan_scores_while_your_board_is_empty():
+    game_state = make_game_state()
+    side = started(side_for(["strategists_fan"]), game_state)
+
+    side.on_turn_end(game_state)
+    assert game_state.score == -1
+
+    place_card(game_state, "TANKW", "player1", 1, 1)
+    side.on_turn_end(game_state)
+    assert game_state.score == -1
+
+
+def test_radiant_totem_pays_per_twenty():
+    game_state = make_game_state()
+    side = started(side_for(["radiant_totem"]), game_state)
+
+    game_state.players_totem["player1"] = 19
+    side.on_turn_end(game_state)
+    assert game_state.score == 0
+
+    game_state.players_totem["player1"] = 45
+    side.on_turn_end(game_state)
+    assert game_state.score == -2
+
+
+def test_razor_hat_bleeds_an_enemy_whenever_anything_moves():
+    game_state = make_game_state()
+    side = started(side_for(["razor_hat"]), game_state)
+    mover = place_card(game_state, "TANKW", "player1", 1, 1)
+    target = place_card(game_state, "TANKW", "player2", 3, 0)
+    side.maintain(game_state)
+    before = target.health
+
+    mover.moving = True
+    mover.move(1, 2, game_state)
+    side.maintain(game_state)
+    assert target.health == before - 1
+
+    side.maintain(game_state)
+    assert target.health == before - 1
+
+
+def test_oni_mask_pays_armor_for_growth():
+    game_state = make_game_state()
+    side = started(side_for(["oni_mask"]), game_state)
+    unit = place_card(game_state, "TANKW", "player1", 1, 1)
+    side.maintain(game_state)
+    assert unit.armor == 0
+
+    unit.damage += 1
+    side.maintain(game_state)
+    assert unit.armor == 0
+
+    unit.damage += 1
+    side.maintain(game_state)
+    assert unit.armor == 1
+
+    unit.damage += 2
+    side.maintain(game_state)
+    assert unit.armor == 2
+
+
+def test_ninja_scroll_punishes_a_second_hit_on_the_same_target():
+    game_state = make_game_state()
+    side = started(side_for(["ninja_scroll"]), game_state)
+    attacker = place_card(game_state, "TANKW", "player1", 1, 1)
+    target = place_card(game_state, "TANKW", "player2", 1, 2)
+    side.maintain(game_state)
+    attacker.numbness = False
+    base = attacker.damage
+
+    before = target.health
+    attacker.attack(game_state)
+    assert before - target.health == base
+
+    before = target.health
+    attacker.hit_cards.append(target)
+    attacker.attack(game_state)
+    assert before - target.health == base + 2
+
+
+def test_hidden_dagger_cuts_enemies_standing_on_shadows():
+    from cards.card_fuchsia import Shadow
+
+    game_state = make_game_state()
+    side = started(side_for(["hidden_dagger"]), game_state)
+    caster = place_card(game_state, "ADCF", "player1", 0, 1)
+    shadow = Shadow("player1", 2, 1, caster, "", False)
+    game_state.player1.on_board.append(shadow)
+    on_shadow = place_card(game_state, "TANKW", "player2", 2, 1)
+    elsewhere = place_card(game_state, "TANKW", "player2", 0, 0)
+    hurt, safe = on_shadow.health, elsewhere.health
+
+    side.on_turn_end(game_state)
+    assert on_shadow.health == hurt - 1
+    assert elsewhere.health == safe
+    assert shadow.health > 0
+
+
+def test_curse_ward_turns_curses_away():
+    run = run_state.new_run(FACTIONS, seed=1)
+    assert run_state.can_take_relic(run, "worn_pack") is True
+
+    run_state.add_relic(run, "curse_ward")
+    assert run_state.can_take_relic(run, "worn_pack") is False
+    assert run_state.add_relic(run, "worn_pack") is False
+
+
+def test_palanquin_widens_the_bench():
+    run = run_state.new_run(FACTIONS, seed=1)
+    before = run_state.bench_limit(run)
+    run_state.add_relic(run, "palanquin")
+    assert run_state.bench_limit(run) == before + 2
+
+
 def test_every_relic_effect_key_is_known_to_the_merger():
     from tower.content import (
         ADDITIVE_EFFECTS, FLAG_EFFECTS, JOB_EFFECTS, MAX_EFFECTS,

@@ -51,6 +51,9 @@ RADIANT_BONUS: int = 1
 BURN_SCORE: int = 2
 BLEED_DAMAGE: int = 1
 MEND_HEAL: int = 1
+VIGOR_HEAL: int = 1
+CARVER_TOTEM: int = 1
+ECHO_THRESHOLD: int = 3
 
 
 # --------------------------------------------------------------------------
@@ -73,6 +76,8 @@ def apply(card: Any, keys: tuple[str, ...], game_state: Any) -> None:
         card.damage = max(0, card.damage + damage)
         card.original_damage = max(0, card.original_damage + damage)
 
+    if "gigantism" in keys:
+        _apply_gigantism(card)
     if "steady" in keys:
         card.numbness = False
     if "radiant" in keys:
@@ -81,6 +86,12 @@ def apply(card: Any, keys: tuple[str, ...], game_state: Any) -> None:
         _wrap_plated(card)
     if "sword" in keys:
         _wrap_sword(card)
+    if "flight" in keys:
+        _wrap_flight(card)
+    if "carver" in keys:
+        _wrap_carver(card)
+    if "echo" in keys:
+        _wrap_echo(card)
     if "mana" in keys:
         gain_token(game_state, card.owner, 1)
     if "burn" in keys:
@@ -131,6 +142,95 @@ def _wrap_sword(card: Any) -> None:
         return hit
 
     card.on_attack = on_attack
+
+
+def _apply_gigantism(card: Any) -> None:
+    """The giant trade: twice the body, no attack.  SPBR clears the drawback."""
+    card.health *= 2
+    card.max_health *= 2
+    card.display_health = card.health
+    card.damage *= 2
+    card.original_damage = card.damage
+    card.tower_giant = True
+    card.attack_types = ""
+
+
+def clear_giant_drawback(card: Any) -> None:
+    """Brown SP removes its giants' side effects - here, the attack ban."""
+    if not getattr(card, "tower_giant", False):
+        return
+    card.tower_giant = False
+    if not card.attack_types:
+        card.attack_types = card.get_attack_type()
+
+
+def _wrap_flight(card: Any) -> None:
+    original = card.custom_move
+
+    def custom_move(board_x: int, board_y: int, game_state: Any) -> bool:
+        if original(board_x, board_y, game_state):
+            return True
+        if not card.moving or not game_state.board_config.is_valid_position(board_x, board_y):
+            return False
+        if game_state.board_dict[board_x, board_y].occupy:
+            return False
+        return _teleport(card, board_x, board_y, game_state)
+
+    card.custom_move = custom_move
+
+
+def _teleport(card: Any, board_x: int, board_y: int, game_state: Any) -> bool:
+    from shared.combat_event import CombatEvent
+    from shared.stat_type import StatType
+
+    from_x, from_y = card.board_x, card.board_y
+    game_state.game_statistics.increment(StatType.MOVE, card.get_uid(), 1)
+    game_state.board_dict[from_x, from_y].occupy = False
+    card.board_x, card.board_y = board_x, board_y
+    game_state.board_dict[board_x, board_y].occupy = True
+    card.moving = False
+    game_state.pending_combat_events.append(
+        CombatEvent(kind="move", board_x=board_x, board_y=board_y,
+                    target_x=from_x, target_y=from_y))
+    if not card.nullify:
+        card.after_movement(board_x, board_y, game_state)
+    for other in game_state.get_all_cards():
+        if not other.nullify:
+            other.on_card_moved(card, game_state)
+    return True
+
+
+def _wrap_carver(card: Any) -> None:
+    original = card.after_damage_calculated
+
+    def after_damage_calculated(target: Any, value: int, game_state: Any) -> bool:
+        if value > 0:
+            game_state.players_totem[card.owner] = (
+                game_state.players_totem.get(card.owner, 0) + CARVER_TOTEM)
+        return original(target, value, game_state)
+
+    card.after_damage_calculated = after_damage_calculated
+
+
+def _wrap_echo(card: Any) -> None:
+    """With attacks to spare, swing twice as hard for twice the cost."""
+    original_cost = card.attack_cost
+    original_bonus = card.damage_bonus
+
+    def attack_cost(game_state: Any) -> int:
+        base = original_cost(game_state)
+        if game_state.number_of_attacks.get(card.owner, 0) >= ECHO_THRESHOLD:
+            return base * 2
+        return base
+
+    def damage_bonus(value: int, victim: Any, game_state: Any) -> int:
+        value = original_bonus(value, victim, game_state)
+        if game_state.number_of_attacks.get(card.owner, 0) >= ECHO_THRESHOLD:
+            return value * 2
+        return value
+
+    card.attack_cost = attack_cost
+    card.damage_bonus = damage_bonus
 
 
 def _burn(card: Any, game_state: Any) -> None:
@@ -200,6 +300,8 @@ def enforce(game_state: Any, player_name: str) -> None:
             card.numbness = False
         if "rust" in keys and card.armor:
             card.armor = 0
+        if "gigantism" in keys and getattr(card, "tower_giant", False):
+            card.attack_types = ""
 
 
 def turn_start(game_state: Any, player_name: str) -> None:
@@ -210,6 +312,14 @@ def turn_start(game_state: Any, player_name: str) -> None:
             card.heal(MEND_HEAL, game_state)
         if "bleed" in keys:
             game_state.judge.deal(BLEED_DAMAGE, card, game_state)
+
+
+def turn_end(game_state: Any, player_name: str) -> None:
+    for card, keys in _enchanted_units(game_state, player_name):
+        if card.nullify or card.health <= 0:
+            continue
+        if "vigor" in keys and card.health < card.max_health:
+            card.heal(VIGOR_HEAL, game_state)
 
 
 # --------------------------------------------------------------------------

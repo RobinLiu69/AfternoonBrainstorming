@@ -27,11 +27,15 @@ from __future__ import annotations
 import random
 from typing import Optional
 
+from shared import card_code
 from shared.setting import WHITE
 from core.game_screen import GameScreen
 
 from tower import card_picker, card_pool, choice_screen, run_state, ui_common
-from tower.content import BLESSING_ENCHANTS, ENCHANTS, RELICS
+from tower.content import (
+    BARGAIN_GOLD, BARGAIN_RELIC_COUNT, BLESSING_ENCHANTS, BLESSING_GOLD,
+    BOSS_DROP_ENCHANTS, ENCHANTS, RELICS,
+)
 
 MAGIC_REWARD_WEIGHT: float = 0.12
 
@@ -184,9 +188,28 @@ def offer_relic(game_screen: GameScreen, run: dict, rng: random.Random,
     return relic_id if grant_relic(game_screen, run, relic_id, rng) else None
 
 
+def boss_drop(game_screen: GameScreen, run: dict, rng: random.Random) -> None:
+    """A boss hands over an enchanted unit, then a choice of three relics."""
+    units = card_pool.run_unit_pool(run["factions"])
+    if units:
+        code = card_code.with_enchants(card_pool.weighted_pick(units, rng),
+                                       [rng.choice(list(BOSS_DROP_ENCHANTS))])
+        choice = choice_screen.main(
+            game_screen, "The boss drops a prize", [{
+                "label": card_pool.display_name(code),
+                "lines": card_pool.enchant_lines(code),
+                "color": WHITE, "card": code,
+            }], run=run, subtitle=slot_hint(run), skip_label="leave it")
+        if choice == 0:
+            grant_card(game_screen, run, code)
+
+    choose_relic(game_screen, run, rng, "Boss spoils",
+                 include_special=True, guarantee_special=True, declinable=True)
+
+
 def choose_relic(game_screen: GameScreen, run: dict, rng: random.Random,
                  title: str, tier: str = "", count: int = 3,
-                 include_special: bool = False,
+                 include_special: bool = False, guarantee_special: bool = False,
                  decline_gold: int = 0, declinable: bool = False) -> Optional[str]:
     """Pick one of several.  Boss spoils earn a real choice; so does deciding
     which curse hurts least.  Everything else gets ``offer_relic`` instead."""
@@ -199,6 +222,8 @@ def choose_relic(game_screen: GameScreen, run: dict, rng: random.Random,
         label = f"leave them  (+{decline_gold} gold)"
 
     picks = rng.sample(pool, min(count, len(pool)))
+    if guarantee_special:
+        picks = _seed_with_special(run, picks, rng)
     choice = choice_screen.main(
         game_screen, title, [relic_option(r) for r in picks], run=run,
         skip_label=label if (declinable or decline_gold) else "",
@@ -214,6 +239,19 @@ def choose_relic(game_screen: GameScreen, run: dict, rng: random.Random,
         choice = 0
     relic_id = picks[choice]
     return relic_id if grant_relic(game_screen, run, relic_id, rng) else None
+
+
+def _seed_with_special(run: dict, picks: list[str], rng: random.Random) -> list[str]:
+    """Make sure at least one of the offered relics is a special."""
+    if any(RELICS[r]["tier"] == "special" for r in picks):
+        return picks
+    specials = [r for r in run_state.relic_offers(run, tier="special")
+                if r not in picks]
+    if not specials:
+        return picks
+    picks = list(picks)
+    picks[rng.randrange(len(picks))] = rng.choice(specials)
+    return picks
 
 
 def grant_random_relic(game_screen: GameScreen, run: dict, rng: random.Random,
@@ -256,10 +294,22 @@ def apply_blessing(game_screen: GameScreen, run: dict, blessing_id: str,
         else:
             run_state.enchant_card(run, picked[0], picked[1], key)
 
+    elif blessing_id == "gold_150":
+        run["gold"] += BLESSING_GOLD
+
     elif blessing_id == "orbs_and_curse":
         run["orbs"] += 3
         choose_relic(game_screen, run, rng, "Take one curse", tier="curse")
 
     elif blessing_id == "power_and_curse":
-        grant_random_relic(game_screen, run, rng, tier="power")
+        choose_relic(game_screen, run, rng, "Choose a power relic", tier="power")
+        grant_random_relic(game_screen, run, rng, tier="curse")
+
+    elif blessing_id == "relics_and_curse":
+        for _ in range(BARGAIN_RELIC_COUNT):
+            grant_random_relic(game_screen, run, rng)
+        grant_random_relic(game_screen, run, rng, tier="curse")
+
+    elif blessing_id == "gold_and_curse":
+        run["gold"] += BARGAIN_GOLD
         grant_random_relic(game_screen, run, rng, tier="curse")

@@ -307,6 +307,97 @@ def test_the_ai_still_recognises_an_enchanted_unit_card():
     assert ai_query.is_playable_unit_card("MOVEO") is False
 
 
+def test_vigor_heals_at_the_end_of_your_turn():
+    game_state = make_game_state()
+    unit = play(game_state, "TANKW*vigor")
+    unit.health -= 3
+    wounded = unit.health
+
+    enchant_runtime.turn_start(game_state, "player1")
+    assert unit.health == wounded
+
+    enchant_runtime.turn_end(game_state, "player1")
+    assert unit.health == wounded + 1
+
+
+def test_gigantism_doubles_the_body_and_takes_the_attack_away():
+    game_state = make_game_state()
+    reference = CardFactory.create("TANKW", "display", 0, 0)
+    unit = play(game_state, "TANKW*gigantism")
+
+    assert unit.max_health == reference.health * 2
+    assert unit.damage == reference.damage * 2
+    assert unit.attack_types == ""
+    unit.numbness = False
+    assert unit.attack(game_state) is False
+
+
+def test_brown_sp_clears_the_giant_drawback():
+    game_state = make_game_state()
+    unit = play(game_state, "TANKW*gigantism")
+    enchant_runtime.clear_giant_drawback(unit)
+
+    assert unit.attack_types == CardFactory.create("TANKW", "display", 0, 0).attack_types
+    enchant_runtime.enforce(game_state, "player1")
+    assert unit.attack_types != ""
+
+
+def test_flight_reaches_across_the_whole_board():
+    game_state = make_game_state()
+    unit = play(game_state, "TANKW*flight", 0, 0)
+    unit.moving = True
+
+    assert unit.move(3, 2, game_state) is True
+    assert (unit.board_x, unit.board_y) == (3, 2)
+    assert game_state.board_dict[0, 0].occupy is False
+    assert game_state.board_dict[3, 2].occupy is True
+
+
+def test_flight_still_refuses_an_occupied_square():
+    game_state = make_game_state()
+    unit = play(game_state, "TANKW*flight", 0, 0)
+    place_card(game_state, "TANKW", "player2", 3, 2)
+    unit.moving = True
+    assert unit.move(3, 2, game_state) is False
+
+
+def test_a_plain_unit_cannot_fly():
+    game_state = make_game_state()
+    unit = play(game_state, "TANKW", 0, 0)
+    unit.moving = True
+    assert unit.move(3, 2, game_state) is False
+
+
+def test_carver_engraves_a_totem_on_every_hit():
+    game_state = make_game_state()
+    attacker = play(game_state, "TANKW*carver", 1, 1)
+    place_card(game_state, "TANKW", "player2", 1, 2)
+    attacker.numbness = False
+
+    attacker.attack(game_state)
+    assert game_state.players_totem["player1"] == 1
+
+
+def test_echo_doubles_damage_and_cost_when_attacks_are_banked():
+    game_state = make_game_state()
+    attacker = play(game_state, "TANKW*echo", 1, 1)
+    target = place_card(game_state, "TANKW", "player2", 1, 2)
+    attacker.numbness = False
+    base = CardFactory.create("TANKW", "display", 0, 0).damage
+
+    game_state.number_of_attacks["player1"] = 1
+    assert attacker.attack_cost(game_state) == 1
+    before = target.health
+    attacker.attack(game_state)
+    assert before - target.health == base
+
+    game_state.number_of_attacks["player1"] = 3
+    assert attacker.attack_cost(game_state) == 2
+    before = target.health
+    attacker.attack(game_state)
+    assert before - target.health == base * 2
+
+
 def test_uninstalled_runtime_leaves_cards_plain():
     enchant_runtime.uninstall()
     game_state = make_game_state()
