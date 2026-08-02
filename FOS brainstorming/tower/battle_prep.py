@@ -1,0 +1,219 @@
+# -----------------------------------------------------------------
+# Afternoon Brainstorming
+# Copyright (C) 2024 Robin Liu, Angus Yu / Five O'clock Shadow Studio
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+# -----------------------------------------------------------------
+
+"""Last stop before a fight: see the enemy, and shuffle the bench if you want."""
+
+import pygame
+
+from shared.setting import WHITE
+from core.game_screen import GameScreen, draw_text, QuitGame
+from core.setting_config import load_setting
+from core.UI import Button
+from utils.controls import key_pressed
+
+from tower import card_picker, card_pool, run_state, ui_common
+
+DECK_ROWS: int = 7
+
+
+def _effect_lines(effects: dict, subject: str) -> list[str]:
+    lines: list[str] = []
+    if effects.get("unit_hp_plus"):
+        lines.append(f"{subject} units {effects['unit_hp_plus']:+d} HP")
+    if effects.get("unit_damage_plus"):
+        lines.append(f"{subject} units {effects['unit_damage_plus']:+d} damage")
+    for job, amount in sorted(effects.get("job_hp_plus", {}).items()):
+        lines.append(f"{subject} {job} {amount:+d} HP")
+    for job, amount in sorted(effects.get("job_damage_plus", {}).items()):
+        lines.append(f"{subject} {job} {amount:+d} damage")
+    if effects.get("hand_plus"):
+        lines.append(f"{subject} start with {effects['hand_plus']:+d} cards")
+    return lines
+
+
+def _swap_bench(game_screen: GameScreen, run: dict) -> None:
+    picked_bench = card_picker.main(
+        game_screen, run, "Swap: pick a bench card",
+        subtitle="it will trade places with a card in your deck",
+        allowed=lambda zone, index, code: zone == "bench",
+    )
+    if picked_bench is None:
+        return
+    picked_deck = card_picker.main(
+        game_screen, run, "Swap: pick the deck card it replaces",
+        allowed=lambda zone, index, code: zone == "deck",
+    )
+    if picked_deck is None:
+        return
+    run_state.swap_deck_bench(run, picked_deck[1], picked_bench[1])
+
+
+def main(game_screen: GameScreen, run: dict, enemy: dict,
+         player_effects: dict, enemy_effects: dict) -> str:
+    running = True
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    box_width = ui_common.box_width(game_screen)
+
+    start = Button(bs * 2.2, bs * 0.6, cx - bs * 0.3, cy + bs * 1.9,
+                   box_width=box_width, font=game_screen.big_text_font, text="fight")
+    swap = Button(bs * 2.2, bs * 0.6, cx - bs * 2.8, cy + bs * 1.9,
+                  box_width=box_width, font=game_screen.big_text_font, text="swap bench")
+    back = ui_common.back_button(game_screen, "back")
+
+    result = "back"
+    hint_on = load_setting("hint_on")
+    clock = pygame.time.Clock()
+
+    while running:
+        game_screen.render()
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        can_swap = bool(run["bench"])
+
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                key = key_pressed(pygame.key.get_pressed())
+                if key == pygame.K_ESCAPE:
+                    running = False
+                if key == pygame.K_f:
+                    hint_on = not hint_on
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if back.touch(mouse_x, mouse_y):
+                    running = False
+                elif start.touch(mouse_x, mouse_y):
+                    result = "start"
+                    running = False
+                elif can_swap and swap.touch(mouse_x, mouse_y):
+                    _swap_bench(game_screen, run)
+            if event.type == pygame.QUIT:
+                raise QuitGame
+
+        ui_common.draw_run_bar(game_screen, run)
+
+        draw_text(ui_common.enemy_label(enemy), game_screen.title_text_font,
+                  ui_common.enemy_color(enemy["kind"]),
+                  cx - bs * 3.6, cy - bs * 2.5, game_screen.surface)
+        first_text, first_color = (("they move first", ui_common.CURSE)
+                                   if enemy.get("enemy_first")
+                                   else ("you move first", ui_common.HILITE))
+        draw_text(first_text, game_screen.big_text_font, first_color,
+                  cx - bs * 3.6, cy - bs * 2.0, game_screen.surface)
+        if enemy.get("note"):
+            for i, line in enumerate(ui_common.wrap(enemy["note"], 34)):
+                draw_text(line, game_screen.text_font, ui_common.CURSE,
+                          cx - bs * 1.5, cy - bs * (2.0 - 0.26 * i), game_screen.surface)
+
+        y = cy - bs * 1.55
+        draw_text("enemy deck", game_screen.mid_text_font, WHITE,
+                  cx - bs * 3.6, y, game_screen.surface)
+        y += bs * 0.34
+        for chunk in _wrap(sorted(enemy["deck"]), 5):
+            draw_text("  ".join(chunk), game_screen.text_font, WHITE,
+                      cx - bs * 3.6, y, game_screen.surface)
+            y += bs * 0.27
+
+        if enemy.get("relics"):
+            y += bs * 0.1
+            for relic_id in enemy["relics"]:
+                draw_text(ui_common.relic_label(relic_id), game_screen.text_font,
+                          ui_common.RELIC, cx - bs * 3.6, y, game_screen.surface)
+                y += bs * 0.25
+                if hint_on:
+                    for line in ui_common.wrap(ui_common.relic_text(relic_id), 34):
+                        draw_text(line, game_screen.small_text_font, ui_common.DIM,
+                                  cx - bs * 3.45, y, game_screen.surface)
+                        y += bs * 0.21
+
+        y += bs * 0.1
+        for line in _effect_lines(enemy_effects, "enemy"):
+            draw_text(line, game_screen.text_font, ui_common.CURSE,
+                      cx - bs * 3.6, y, game_screen.surface)
+            y += bs * 0.25
+
+        y = cy - bs * 1.55
+        draw_text(f"your deck  ({len(run['deck'])})", game_screen.mid_text_font, WHITE,
+                  cx + bs * 0.4, y, game_screen.surface)
+        y += bs * 0.34
+        names = [card_pool.display_name(c) for c in run["deck"]]
+        rows = _wrap(names, 2)
+        for chunk in rows[:DECK_ROWS]:
+            draw_text("  ".join(chunk), game_screen.text_font, WHITE,
+                      cx + bs * 0.4, y, game_screen.surface)
+            y += bs * 0.25
+        hidden = sum(len(chunk) for chunk in rows[DECK_ROWS:])
+        if hidden:
+            draw_text(f"+{hidden} more  ([D] on the map for the full list)",
+                      game_screen.small_text_font, ui_common.DIM,
+                      cx + bs * 0.4, y, game_screen.surface)
+            y += bs * 0.25
+
+        if run["bench"]:
+            y += bs * 0.1
+            draw_text(f"bench  ({len(run['bench'])}/{run_state.bench_limit(run)})",
+                      game_screen.mid_text_font, card_picker.BENCH_COLOR,
+                      cx + bs * 0.4, y, game_screen.surface)
+            y += bs * 0.32
+            for code in run["bench"]:
+                draw_text(card_pool.display_name(code), game_screen.text_font,
+                          card_picker.BENCH_COLOR, cx + bs * 0.4, y, game_screen.surface)
+                y += bs * 0.25
+
+        y += bs * 0.1
+        for line in _effect_lines(player_effects, "your"):
+            draw_text(line, game_screen.text_font, ui_common.HILITE,
+                      cx + bs * 0.4, y, game_screen.surface)
+            y += bs * 0.25
+
+        _draw_own_relics(game_screen, run, hint_on)
+
+        if can_swap:
+            swap.update(game_screen)
+        start.update(game_screen)
+        back.update(game_screen)
+
+        pygame.display.update()
+        clock.tick(60)
+
+    return result
+
+
+def _wrap(items, per_row: int) -> list[list[str]]:
+    return [items[i:i + per_row] for i in range(0, len(items), per_row)]
+
+
+def _draw_own_relics(game_screen: GameScreen, run: dict, detailed: bool) -> None:
+    """Your relics along the right edge; [F] spells out what each one does."""
+    bs = game_screen.block_size
+    relics = run.get("relics", [])
+    if not relics:
+        return
+    x = game_screen.display_width - bs * (3.4 if detailed else 2.4)
+    y = game_screen.display_height / 2 - bs * 1.55
+    draw_text("[F] your relics", game_screen.text_font, ui_common.DIM,
+              x, y, game_screen.surface)
+    y += bs * 0.3
+    for relic_id in relics:
+        draw_text(ui_common.relic_label(relic_id), game_screen.text_font,
+                  ui_common.relic_color(relic_id), x, y, game_screen.surface)
+        y += bs * 0.25
+        if detailed:
+            for line in ui_common.wrap(ui_common.relic_text(relic_id), 30):
+                draw_text(line, game_screen.small_text_font, ui_common.DIM,
+                          x + bs * 0.12, y, game_screen.surface)
+                y += bs * 0.21

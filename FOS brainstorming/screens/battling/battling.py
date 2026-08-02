@@ -130,11 +130,11 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
     if is_server and server:
         server.broadcast_scene_for("battling", game_state.to_dict_for)
 
-    controller: str = "player1"
+    controller: str = game_state.seat_on_turn()
     hint_on = load_setting("hint_on")
     picked_hand_card = ["None", 0]
- 
-    game_state.game_logger.log_turn_start("player1", game_state.turn_number)
+
+    game_state.game_logger.log_turn_start(controller, game_state.turn_number)
  
     winner: str = "None"
     confirming_quit: bool = False

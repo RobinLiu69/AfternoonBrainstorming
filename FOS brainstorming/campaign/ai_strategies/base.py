@@ -20,6 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
+from shared import card_code
 from campaign import ai_evaluator, ai_query
 from campaign.config_loader import CAMPAIGN_SETTINGS
 
@@ -58,7 +59,7 @@ class Strategy:
         for hi, card_name in enumerate(player.hand):
             if not ai_query.is_playable_unit_card(card_name):
                 continue
-            real_name = card_name[:-4] if card_name.endswith(" (+)") else card_name
+            real_name = card_code.plain_code(card_name)
             for (x, y) in empties:
                 score = ai_evaluator.evaluate_placement(real_name, (x, y), gs, owner)
                 score = self.placement_bonus(real_name, (x, y), gs, owner, score)

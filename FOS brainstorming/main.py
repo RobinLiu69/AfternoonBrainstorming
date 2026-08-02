@@ -27,7 +27,7 @@ from screens import playback
 from screens.menu import start_screen, settings_screen, play_screen
 
 from campaign import run_loop as campaign_run_loop
-from endless import run_loop as endless_run_loop
+from tower import run_loop as tower_run_loop
 
 CardFactory.register_all()
 
@@ -45,7 +45,7 @@ def main() -> None:
                 case "campaign":
                     campaign_run_loop.main(game_screen)
                 case "tower":
-                    endless_run_loop.main(game_screen)
+                    tower_run_loop.main(game_screen)
                 case "playback":
                     playback.main(game_screen)
                 case "settings":
