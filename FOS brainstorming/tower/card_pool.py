@@ -23,7 +23,9 @@ from __future__ import annotations
 from cards.factory import CardFactory
 from shared import card_code
 
-from tower.content import ENCHANTS, FACTION_NAMES, JOBS, MAGIC_POOL
+from tower.content import (
+    ENCHANTS, FACTION_NAMES, JOBS, MAGIC_POOL, UNIVERSAL_FACTIONS,
+)
 
 
 # longest first so "ADCBR" reads as Brown, not Red, and "APDKG" as DarkGreen
@@ -61,8 +63,9 @@ def faction_units(tag: str) -> list[str]:
 
 
 def run_unit_pool(factions) -> list[str]:
-    """Every unit that may show up this run: White plus the chosen factions."""
-    tags = ["W"] + [t for t in factions if t != "W"]
+    """Every unit this run may offer: the universal factions plus the drafted ones."""
+    tags = list(UNIVERSAL_FACTIONS)
+    tags += [t for t in factions if t not in UNIVERSAL_FACTIONS]
     pool: list[str] = []
     for tag in tags:
         pool.extend(faction_units(tag))
@@ -103,8 +106,8 @@ UNIT_PRICE: int = 65
 BIG_UNIT_PRICE: int = 75
 ENCHANT_SURCHARGE: int = 30
 
-# White is the starter faction, so it shows up less often than a faction you chose
-WHITE_REWARD_WEIGHT: float = 0.35
+# the universal factions turn up whatever you drafted, so they turn up rarely
+UNIVERSAL_REWARD_WEIGHT: float = 0.35
 
 
 def card_price(code: str) -> int:
@@ -118,12 +121,16 @@ def card_price(code: str) -> int:
     return price
 
 
+def is_universal(code: str) -> bool:
+    return color_tag_of(code) in UNIVERSAL_FACTIONS
+
+
 def reward_weight(code: str) -> float:
-    return WHITE_REWARD_WEIGHT if color_tag_of(code) == "W" else 1.0
+    return UNIVERSAL_REWARD_WEIGHT if is_universal(code) else 1.0
 
 
 def weighted_pick(codes: list[str], rng) -> str:
-    """Pick one code, weighted so White comes up less than the chosen factions."""
+    """Pick one code, weighted so the universal factions stay uncommon."""
     if not codes:
         return ""
     return rng.choices(codes, weights=[reward_weight(c) for c in codes])[0]

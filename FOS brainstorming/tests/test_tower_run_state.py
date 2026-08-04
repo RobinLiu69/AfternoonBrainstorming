@@ -20,7 +20,9 @@ import random
 
 from shared import card_code
 from tower import card_pool, run_state, tower_map, tower_save
-from tower.content import BENCH_LIMIT, DECK_LIMIT, RELICS, STARTER_DECK
+from tower.content import (
+    BENCH_LIMIT, DECK_LIMIT, RELICS, SELECTABLE_FACTIONS, STARTER_DECK,
+)
 
 FACTIONS = ["R", "B", "C", "BR"]
 
@@ -286,11 +288,22 @@ def test_current_layer_follows_recorded_picks():
     assert resolved["enemy"] is expected
 
 
-def test_run_pool_only_contains_white_and_the_chosen_factions():
+def test_run_pool_holds_the_universal_factions_and_the_chosen_ones():
+    from tower.content import UNIVERSAL_FACTIONS
+
     pool = card_pool.run_card_pool(FACTIONS)
     tags = {card_pool.color_tag_of(c) for c in pool if not card_pool.is_magic(c)}
-    assert tags == set(FACTIONS) | {"W"}
-    assert "TANKP" not in pool
+    assert tags == set(FACTIONS) | set(UNIVERSAL_FACTIONS)
+    # Purple is never draftable but its four cards can still turn up as rewards
+    assert "TANKP" in pool
+    assert "P" not in SELECTABLE_FACTIONS
+
+
+def test_a_faction_you_did_not_draft_stays_out_of_the_pool():
+    pool = card_pool.run_card_pool(["R", "B", "C", "BR"])
+    tags = {card_pool.color_tag_of(c) for c in pool if not card_pool.is_magic(c)}
+    assert "G" not in tags
+    assert "O" not in tags
 
 
 def test_save_validation_drops_unknown_content_but_keeps_the_run():

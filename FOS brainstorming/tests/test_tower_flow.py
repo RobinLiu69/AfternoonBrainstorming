@@ -163,23 +163,27 @@ def test_card_options_are_distinct_and_from_the_run_pool():
         assert set(options) <= pool
 
 
-def test_spells_and_white_cards_are_the_rare_ones():
+def test_spells_and_the_universal_factions_are_the_rare_ones():
     run = make_run(4)
-    spells = whites = chosen = 0
+    spells = universal = chosen = 0
+    purple = 0
     for seed in range(400):
         for code in grants.card_options(run, random.Random(seed), 3):
             if card_pool.is_magic(code):
                 spells += 1
-            elif card_pool.color_tag_of(code) == "W":
-                whites += 1
+            elif card_pool.is_universal(code):
+                universal += 1
+                purple += card_pool.color_tag_of(code) == "P"
             else:
                 chosen += 1
 
-    total = spells + whites + chosen
+    total = spells + universal + chosen
     assert spells / total < 0.16
-    # White is 1 of 5 factions in the pool, so an even split would be ~20%
-    assert whites / total < 0.12
+    # White and Purple are 2 of 6 factions in the pool but weighted right down
+    assert universal / total < 0.15
     assert chosen / total > 0.7
+    # Purple is in there, just seldom
+    assert 0 < purple / total < 0.08
 
 
 def test_card_prices_sit_well_under_relic_prices():

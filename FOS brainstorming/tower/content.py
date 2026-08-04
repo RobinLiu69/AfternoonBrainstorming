@@ -47,7 +47,11 @@ FACTION_BLURBS: dict[str, str] = {
     "BR": "giant bruisers",
 }
 
-# Purple only has 4 implemented cards, so it is boss-only content.
+# Always in the reward pool whatever you drafted, and rarer for it.  White is
+# the starter faction; Purple only has four cards, too few to draft but fine as
+# the occasional oddity.
+UNIVERSAL_FACTIONS: tuple[str, ...] = ("W", "P")
+
 SELECTABLE_FACTIONS: tuple[str, ...] = ("R", "G", "B", "O", "DKG", "C", "F", "BR")
 FACTION_PICK_COUNT: int = 4
 
