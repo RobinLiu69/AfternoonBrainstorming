@@ -48,6 +48,24 @@ def wrap_all(lines, width: int = DESC_WRAP) -> list[str]:
     return out
 
 
+def wrap_to_width(text: str, font, max_width: float) -> list[str]:
+    """Wrap by measuring the font, so a line can never run past its column."""
+    if not text:
+        return []
+    lines: list[str] = []
+    current = ""
+    for word in text.split():
+        candidate = f"{current} {word}".strip()
+        if not current or font.size(candidate)[0] <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines
+
+
 GOLD: tuple[int, int, int] = (255, 215, 0)
 ORB: tuple[int, int, int] = (150, 210, 255)
 RELIC: tuple[int, int, int] = (255, 215, 0)

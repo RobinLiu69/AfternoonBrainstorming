@@ -32,7 +32,7 @@ from core.setting_config import load_setting
 from core.UI import Button
 from utils.controls import key_pressed
 
-from tower import roster_screen, run_state, tower_map, ui_common
+from tower import relic_screen, roster_screen, run_state, tower_map, ui_common
 from tower.content import ENEMY_LABELS
 
 SHORT_ENEMY: dict[str, str] = {
@@ -136,10 +136,14 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
             font=game_screen.big_text_font, text=_enter_label(layer)), None))
 
     leave = ui_common.back_button(game_screen, "leave")
-    roster = Button(bs * 2.6, bs * 0.6, bs * 2.2,
+    roster = Button(bs * 2.4, bs * 0.6, bs * 2.2,
                     game_screen.display_height - bs * 0.85,
                     box_width=box_width, font=game_screen.mid_text_font,
-                    text="[D] deck & relics")
+                    text="[D] deck")
+    relics = Button(bs * 2.4, bs * 0.6, bs * 4.8,
+                    game_screen.display_height - bs * 0.85,
+                    box_width=box_width, font=game_screen.mid_text_font,
+                    text="[R] relics")
 
     hint_on = load_setting("hint_on")
     result: Optional[tuple[str, Optional[int]]] = None
@@ -156,6 +160,8 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
                     running = False
                 if key == pygame.K_d:
                     roster_screen.main(game_screen, run)
+                if key == pygame.K_r:
+                    relic_screen.main(game_screen, run)
                 if key == pygame.K_f:
                     hint_on = not hint_on
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -163,6 +169,8 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
                     running = False
                 elif roster.touch(mouse_x, mouse_y):
                     roster_screen.main(game_screen, run)
+                elif relics.touch(mouse_x, mouse_y):
+                    relic_screen.main(game_screen, run)
                 for btn, pick in action_buttons:
                     if btn.touch(mouse_x, mouse_y):
                         result = ("enter", pick)
@@ -200,6 +208,7 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
             btn.update(game_screen)
         leave.update(game_screen)
         roster.update(game_screen)
+        relics.update(game_screen)
 
         pygame.display.update()
         clock.tick(60)
