@@ -45,26 +45,82 @@ def test_later_acts_are_longer():
         assert len(_act(act)["layers"]) == tower_map.layers_in_act(act)
 
 
+def test_the_two_routes_on_a_branch_are_never_the_same_room():
+    """left event / right event is not a choice."""
+    for act in (1, 2, 3):
+        for seed in range(40):
+            act_map = tower_map.build_act(act, FACTIONS, random.Random(seed))
+            for pair in range(tower_map.branch_pairs(act)):
+                options = tower_map.layer_at(act_map, 2 + 2 * pair)["options"]
+                kinds = [option["room"]["kind"] for option in options]
+                assert len(kinds) == len(set(kinds))
+
+
+def test_no_two_final_routes_are_identical():
+    for act in (1, 2, 3):
+        for seed in range(40):
+            act_map = tower_map.build_act(act, FACTIONS, random.Random(seed))
+            routes = tower_map.layer_at(act_map, _final_branch(act))["options"]
+            shapes = [tuple(r["kind"] for r in route["rooms"]) for route in routes]
+            assert len(shapes) == len(set(shapes))
+
+
+def test_siblings_stay_distinct_even_when_the_previous_layer_blocks_kinds():
+    """The sibling rule is never waived, even if honouring both is impossible."""
+    everything = set(tower_map.ROOM_KINDS)
+    first = tower_map._roll_room(random.Random(1), soft_avoid=everything,
+                                 hard_avoid=set())
+    second = tower_map._roll_room(random.Random(1), soft_avoid=everything,
+                                  hard_avoid={first["kind"]})
+    assert second["kind"] != first["kind"]
+
+
 def test_back_to_back_rooms_never_repeat_a_kind():
-    """Events may repeat; a shop, mine or chest may not follow itself."""
+    """Events may repeat; a shop, mine or chest may not follow itself.
+
+    Only checked on the two-way branches.  The final layer needs three
+    distinct opening rooms, and with four room kinds that cannot always also
+    dodge the layer below - there, sibling distinctness wins.
+    """
     for act in (1, 2, 3):
         for seed in range(30):
             act_map = tower_map.build_act(act, FACTIONS, random.Random(seed))
             previous: set[str] = set()
-            for layer in act_map["layers"]:
-                if layer["kind"] != "branch":
-                    continue
-                options = layer["options"]
-                if "room" in options[0]:
-                    kinds = {o["room"]["kind"] for o in options}
-                    assert not (kinds & previous) - tower_map.REPEATABLE_ROOMS
-                    previous = kinds
-                else:
-                    firsts = {o["rooms"][0]["kind"] for o in options}
-                    assert not (firsts & previous) - tower_map.REPEATABLE_ROOMS
-                    for option in options:
-                        first, second = (r["kind"] for r in option["rooms"])
-                        assert first != second or first in tower_map.REPEATABLE_ROOMS
+            for pair in range(tower_map.branch_pairs(act)):
+                options = tower_map.layer_at(act_map, 2 + 2 * pair)["options"]
+                kinds = {o["room"]["kind"] for o in options}
+                assert not (kinds & previous) - tower_map.REPEATABLE_ROOMS
+                previous = kinds
+
+
+def test_a_route_never_walks_the_same_room_twice_running():
+    """Except events, which are different content each visit."""
+    for act in (1, 2, 3):
+        for seed in range(30):
+            act_map = tower_map.build_act(act, FACTIONS, random.Random(seed))
+            routes = tower_map.layer_at(act_map, _final_branch(act))["options"]
+            for route in routes:
+                first, second = (r["kind"] for r in route["rooms"])
+                assert first != second or first in tower_map.REPEATABLE_ROOMS
+
+
+def test_routes_may_share_a_room_kind_as_long_as_the_shape_differs():
+    """event->shop against shop->event is a real choice, so it is allowed."""
+    shapes = tower_map.route_shapes()
+    assert ("event", "shop") in shapes
+    assert ("shop", "event") in shapes
+    assert ("event", "event") in shapes
+    assert ("shop", "shop") not in shapes
+
+    seen_shared_kind = False
+    for seed in range(60):
+        act_map = tower_map.build_act(3, FACTIONS, random.Random(seed))
+        routes = tower_map.layer_at(act_map, _final_branch(3))["options"]
+        openers = [route["rooms"][0]["kind"] for route in routes]
+        if len(set(openers)) < len(openers):
+            seen_shared_kind = True
+            break
+    assert seen_shared_kind, "routes should be free to share an opening room"
 
 
 def test_only_act_one_opens_with_a_blessing():

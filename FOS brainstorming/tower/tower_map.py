@@ -74,11 +74,48 @@ def layers_in_act(act: int) -> int:
     return boss_layer(act) + 1
 
 
-def _roll_room(rng: random.Random, avoid=()) -> dict:
-    blocked = {k for k in avoid if k not in REPEATABLE_ROOMS}
-    kinds = [k for k in ROOM_KINDS if k not in DISABLED_ROOMS and k not in blocked]
-    if not kinds:
-        kinds = [k for k in ROOM_KINDS if k not in DISABLED_ROOMS]
+def _enabled_rooms() -> list[str]:
+    return [k for k in ROOM_KINDS if k not in DISABLED_ROOMS]
+
+
+def route_shapes() -> list[tuple[str, ...]]:
+    """Every legal shape for a run of rooms: no kind follows itself, bar events."""
+    kinds = _enabled_rooms()
+    return [(first, second) for first in kinds for second in kinds
+            if first != second or first in REPEATABLE_ROOMS]
+
+
+def _pick_route(rng: random.Random, soft_avoid, used) -> tuple[str, ...]:
+    """Pick a room run whose *combination* has not been offered yet.
+
+    Two rooms in a row only have to differ as a pair - route A being
+    event-then-shop and route B shop-then-event is a real choice, even though
+    the same two kinds appear.  What must never repeat is the whole shape.
+    """
+    fresh = [shape for shape in route_shapes() if shape not in used]
+    preferred = [shape for shape in fresh
+                 if shape[0] not in soft_avoid or shape[0] in REPEATABLE_ROOMS]
+    pool = preferred or fresh or route_shapes()
+    weights = [ROOM_WEIGHTS[first] * ROOM_WEIGHTS[second] for first, second in pool]
+    return rng.choices(pool, weights=weights)[0]
+
+
+def _roll_room(rng: random.Random, soft_avoid=(), hard_avoid=()) -> dict:
+    """Roll a room kind.
+
+    ``soft_avoid`` is the previous layer - two events in a row are fine, since
+    an event is different content every time, so the repeatable kinds are
+    spared.  ``hard_avoid`` is the choice the player is comparing this against
+    and is never waived: offering event-or-event is not a choice.
+    """
+    hard = set(hard_avoid)
+    soft = hard | {k for k in soft_avoid if k not in REPEATABLE_ROOMS}
+
+    for blocked in (soft, hard, set()):
+        kinds = [k for k in _enabled_rooms() if k not in blocked]
+        if kinds:
+            break
+
     weights = [ROOM_WEIGHTS[k] for k in kinds]
     return {"kind": rng.choices(kinds, weights=weights)[0]}
 
@@ -123,21 +160,26 @@ def build_act(act: int, factions, rng: random.Random) -> dict:
     for pair in range(pairs):
         layer_index = 2 + 2 * pair
         options: list[dict] = []
+        siblings: set[str] = set()
         for enemy_kind in _branch_enemy_kinds(act, rng):
             enemy = _battle_enemy(act, factions, rng, weak_index, enemy_kind)
             if enemy_kind == "weak":
                 weak_index += 1
-            options.append({"room": _roll_room(rng, previous_kinds), "enemy": enemy})
-        previous_kinds = {option["room"]["kind"] for option in options}
+            room = _roll_room(rng, soft_avoid=previous_kinds, hard_avoid=siblings)
+            siblings.add(room["kind"])
+            options.append({"room": room, "enemy": enemy})
+        previous_kinds = siblings
         layers.append({"index": layer_index, "kind": "branch", "options": options})
         layers.append({"index": layer_index + 1, "kind": "battle_linked",
                        "source": layer_index})
 
+    # the three routes must differ as whole combinations, not room by room
     routes: list[dict] = []
+    used: set[tuple[str, ...]] = set()
     for _ in range(3):
-        first = _roll_room(rng, previous_kinds)
-        second = _roll_room(rng, {first["kind"]})
-        routes.append({"rooms": [first, second]})
+        shape = _pick_route(rng, previous_kinds, used)
+        used.add(shape)
+        routes.append({"rooms": [{"kind": kind} for kind in shape]})
 
     final_branch = 2 + 2 * pairs
     layers.append({"index": final_branch, "kind": "branch", "options": routes})
