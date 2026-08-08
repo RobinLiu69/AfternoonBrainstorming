@@ -61,12 +61,12 @@ def main(game_screen: GameScreen, title: str, lines: Sequence[str],
             ui_common.draw_run_bar(game_screen, run)
             ui_common.draw_relic_strip(game_screen, run)
 
-        draw_text(title, game_screen.title_text_font, color,
-                  cx - bs * 2.6, cy - bs * 1.6, game_screen.surface)
+        ui_common.draw_auto(game_screen, title, "title_text_font", color,
+                            cx - bs * 2.6, cy - bs * 1.6)
         y = cy - bs * 0.7
         for line in lines:
-            draw_text(line, game_screen.big_text_font, WHITE,
-                      cx - bs * 2.6, y, game_screen.surface)
+            ui_common.draw_auto(game_screen, line, "big_text_font", WHITE,
+                                cx - bs * 2.6, y)
             y += bs * 0.45
 
         button.update(game_screen)

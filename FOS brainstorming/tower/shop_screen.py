@@ -130,7 +130,8 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
             else:
                 text = f"{label}   [{shop.price_of(item, discount)}]"
             out.append((Button(btn_w, btn_h, x, y, position="Left", padding=bs * 0.12,
-                               box_width=box_width, font=game_screen.mid_text_font,
+                               box_width=box_width,
+                               font=ui_common.auto_font(game_screen, text, "mid_text_font"),
                                text=text, text_color=color, box_color=color), item))
         return out
 
@@ -225,14 +226,14 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
             _label, text, color = _item_label(hovered)
             y = cy + bs * 1.0
             for line in ui_common.wrap(text, ui_common.PANEL_WRAP):
-                draw_text(line, game_screen.mid_text_font, color,
-                          cx - bs * 3.8, y, game_screen.surface)
+                ui_common.draw_auto(game_screen, line, "mid_text_font", color,
+                                    cx - bs * 3.8, y)
                 y += bs * 0.3
             if hovered["kind"] == "card":
                 for line in ui_common.wrap_all(card_pool.enchant_lines(hovered["card"]),
                                                ui_common.PANEL_WRAP):
-                    draw_text(line, game_screen.text_font, card_picker.ENCHANT_COLOR,
-                              cx - bs * 3.8, y, game_screen.surface)
+                    ui_common.draw_auto(game_screen, line, "text_font",
+                                        card_picker.ENCHANT_COLOR, cx - bs * 3.8, y)
                     y += bs * 0.26
 
         hint_box.turn_on = hint_on

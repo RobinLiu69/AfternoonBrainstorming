@@ -145,12 +145,30 @@ def test_relics_are_grouped_by_tier(game_screen):
 
 
 def test_each_block_says_what_the_relic_does(game_screen):
-    layout = blocks_of(game_screen, ["piggy_bank"])
-    block = layout.pages[0][0]
-    assert "Piggy Bank" in block.heading
-    assert "common" in block.heading
-    assert block.lines
-    assert "gold" in " ".join(block.lines)
+    from tower import language
+
+    language.use(language.ENGLISH)
+    try:
+        block = blocks_of(game_screen, ["piggy_bank"]).pages[0][0]
+        assert "Piggy Bank" in block.heading
+        assert "common" in block.heading
+        assert block.lines
+        assert "gold" in " ".join(block.lines)
+    finally:
+        language.use(None)
+
+
+def test_a_block_speaks_chinese_when_the_setting_says_so(game_screen):
+    from tower import language
+
+    language.use(language.CHINESE)
+    try:
+        block = blocks_of(game_screen, ["piggy_bank"]).pages[0][0]
+        assert "小豬撲滿" in block.heading
+        assert "普通" in block.heading
+        assert "25%" in " ".join(block.lines)
+    finally:
+        language.use(None)
 
 
 # --------------------------------------------------------------------------

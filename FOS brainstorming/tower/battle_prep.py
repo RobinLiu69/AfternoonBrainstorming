@@ -131,13 +131,13 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
         if enemy.get("relics"):
             y += bs * 0.1
             for relic_id in enemy["relics"]:
-                draw_text(ui_common.relic_label(relic_id), game_screen.text_font,
-                          ui_common.RELIC, cx - bs * 3.6, y, game_screen.surface)
+                ui_common.draw_auto(game_screen, ui_common.relic_label(relic_id),
+                                    "text_font", ui_common.RELIC, cx - bs * 3.6, y)
                 y += bs * 0.25
                 if hint_on:
                     for line in ui_common.wrap(ui_common.relic_text(relic_id), 34):
-                        draw_text(line, game_screen.small_text_font, ui_common.DIM,
-                                  cx - bs * 3.45, y, game_screen.surface)
+                        ui_common.draw_auto(game_screen, line, "small_text_font",
+                                            ui_common.DIM, cx - bs * 3.45, y)
                         y += bs * 0.21
 
         y += bs * 0.1
@@ -153,8 +153,8 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
         names = [card_pool.display_name(c) for c in run["deck"]]
         rows = _wrap(names, 2)
         for chunk in rows[:DECK_ROWS]:
-            draw_text("  ".join(chunk), game_screen.text_font, WHITE,
-                      cx + bs * 0.4, y, game_screen.surface)
+            ui_common.draw_auto(game_screen, "  ".join(chunk), "text_font", WHITE,
+                                cx + bs * 0.4, y)
             y += bs * 0.25
         hidden = sum(len(chunk) for chunk in rows[DECK_ROWS:])
         if hidden:
@@ -170,8 +170,8 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
                       cx + bs * 0.4, y, game_screen.surface)
             y += bs * 0.32
             for code in run["bench"]:
-                draw_text(card_pool.display_name(code), game_screen.text_font,
-                          card_picker.BENCH_COLOR, cx + bs * 0.4, y, game_screen.surface)
+                ui_common.draw_auto(game_screen, card_pool.display_name(code), "text_font",
+                                    card_picker.BENCH_COLOR, cx + bs * 0.4, y)
                 y += bs * 0.25
 
         y += bs * 0.1
@@ -209,11 +209,11 @@ def _draw_own_relics(game_screen: GameScreen, run: dict, detailed: bool) -> None
               x, y, game_screen.surface)
     y += bs * 0.3
     for relic_id in relics:
-        draw_text(ui_common.relic_label(relic_id), game_screen.text_font,
-                  ui_common.relic_color(relic_id), x, y, game_screen.surface)
+        ui_common.draw_auto(game_screen, ui_common.relic_label(relic_id), "text_font",
+                            ui_common.relic_color(relic_id), x, y)
         y += bs * 0.25
         if detailed:
             for line in ui_common.wrap(ui_common.relic_text(relic_id), 30):
-                draw_text(line, game_screen.small_text_font, ui_common.DIM,
-                          x + bs * 0.12, y, game_screen.surface)
+                ui_common.draw_auto(game_screen, line, "small_text_font", ui_common.DIM,
+                                    x + bs * 0.12, y)
                 y += bs * 0.21

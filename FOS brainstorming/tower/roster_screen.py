@@ -100,8 +100,7 @@ def main(game_screen: GameScreen, run: dict) -> None:
             label = card_pool.display_name(code)
             if zone == "bench":
                 label = f"[bench] {label}"
-            draw_text(label, game_screen.text_font, color,
-                      rect.x, rect.y, game_screen.surface)
+            ui_common.draw_auto(game_screen, label, "text_font", color, rect.x, rect.y)
             if code == hovered:
                 pygame.draw.rect(game_screen.surface, ui_common.HILITE, rect,
                                  ui_common.box_width(game_screen))
@@ -112,8 +111,8 @@ def main(game_screen: GameScreen, run: dict) -> None:
             y = cy + bs * 1.9
             for line in ui_common.wrap_all(card_pool.enchant_lines(hovered),
                                            ui_common.PANEL_WRAP):
-                draw_text(line, game_screen.mid_text_font, card_picker.ENCHANT_COLOR,
-                          grid_x, y, game_screen.surface)
+                ui_common.draw_auto(game_screen, line, "mid_text_font",
+                                    card_picker.ENCHANT_COLOR, grid_x, y)
                 y += bs * 0.32
 
         back.update(game_screen)
@@ -140,12 +139,12 @@ def _draw_relics(game_screen: GameScreen, run: dict, detailed: bool) -> None:
         return
 
     for relic_id in relics:
-        draw_text(ui_common.relic_label(relic_id), game_screen.text_font,
-                  ui_common.relic_color(relic_id), x, y, game_screen.surface)
+        ui_common.draw_auto(game_screen, ui_common.relic_label(relic_id), "text_font",
+                            ui_common.relic_color(relic_id), x, y)
         y += bs * 0.28
         if detailed:
             for line in ui_common.wrap(ui_common.relic_text(relic_id), 34):
-                draw_text(line, game_screen.small_text_font, ui_common.DIM,
-                          x + bs * 0.12, y, game_screen.surface)
+                ui_common.draw_auto(game_screen, line, "small_text_font", ui_common.DIM,
+                                    x + bs * 0.12, y)
                 y += bs * 0.22
             y += bs * 0.04

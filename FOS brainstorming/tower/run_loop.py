@@ -26,8 +26,8 @@ from core.game_screen import GameScreen
 
 from tower import (
     battle_flow, choice_screen, enchant_runtime, faction_select, grants,
-    map_screen, menu_screen, notice_screen, rooms, run_state, tower_map,
-    tower_save, ui_common,
+    language, map_screen, menu_screen, notice_screen, rooms, run_state,
+    tower_map, tower_save, ui_common,
 )
 from tower.content import ORB_DROP_CHANCE, RELIC_DROP_CHANCE
 
@@ -115,10 +115,13 @@ def _visit(game_screen: GameScreen, state: dict, run: dict, room: dict,
 
 def _claim_blessing(game_screen: GameScreen, run: dict, rng: random.Random) -> None:
     offers = run_state.blessing_offers(run)
-    options = [{"label": b["label"], "lines": [b["text"]], "color": ui_common.HILITE}
-               for b in offers]
-    choice = choice_screen.main(game_screen, "Opening blessing", options, run=run,
-                                subtitle="one of the three is yours")
+    options = [{"label": ui_common.blessing_label(b),
+                "lines": [ui_common.blessing_text(b)],
+                "color": ui_common.HILITE} for b in offers]
+    choice = choice_screen.main(
+        game_screen,
+        language.event_text("blessing_title", "Opening blessing"), options, run=run,
+        subtitle=language.event_text("blessing_subtitle", "one of the three is yours"))
     if choice is None or choice == choice_screen.SKIP:
         choice = 0
     grants.apply_blessing(game_screen, run, offers[choice]["id"], rng)

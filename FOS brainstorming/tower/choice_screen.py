@@ -41,7 +41,7 @@ from cards.factory import CardFactory
 from rendering.card_renderer import CardRenderer
 from utils.controls import key_pressed
 
-from tower import ui_common
+from tower import language, ui_common
 
 SKIP: int = -1
 
@@ -150,16 +150,18 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
             else:
                 pygame.draw.rect(game_screen.surface, color, rect, box_width)
 
+            label_font = language.font(game_screen, "mid_text_font")
             label_lines = ui_common.wrap(option.get("label", ""), LABEL_WRAP)
             label_y = rect.y - bs * 0.5 - bs * 0.3 * (len(label_lines) - 1)
             for line in label_lines:
-                draw_text(line, game_screen.mid_text_font, color,
+                draw_text(line, label_font, color,
                           rect.x - bs * 0.3, label_y, game_screen.surface)
                 label_y += bs * 0.3
 
             line_y = rect.y + bs * 1.15
+            body_font = language.font(game_screen, "text_font")
             for line in ui_common.wrap_all(option.get("lines", []), OPTION_WRAP):
-                draw_text(line, game_screen.text_font, color,
+                draw_text(line, body_font, color,
                           rect.x - bs * 0.3, line_y, game_screen.surface)
                 line_y += bs * 0.26
 

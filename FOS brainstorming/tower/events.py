@@ -37,7 +37,7 @@ from core.game_screen import GameScreen
 
 from tower import (
     battle_flow, card_picker, card_pool, choice_screen, enemies, grants,
-    notice_screen, run_state, ui_common,
+    language, notice_screen, run_state, ui_common,
 )
 from tower.content import (
     ARTISAN_ENCHANTS, ENCHANTS, FACTION_NAMES, RELICS,
@@ -81,7 +81,14 @@ def _run_faction(run: dict, rng: random.Random) -> str:
 
 
 def _leave(label: str = "leave") -> dict:
-    return {"label": label, "lines": [], "color": ui_common.DIM}
+    return {"label": language.event_text("leave", label), "lines": [],
+            "color": ui_common.DIM}
+
+
+def _deal_option(deal: dict, affordable: bool) -> dict:
+    label, text = language.event_option(f"deal_{deal['id']}",
+                                        (deal["label"], deal["text"]))
+    return _option(label, text, ui_common.GOLD, affordable)
 
 
 def _option(label: str, text: str, color=WHITE, affordable: bool = True) -> dict:
@@ -118,14 +125,17 @@ def _altar(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
     deals = rng.sample(remaining, min(ALTAR_OFFER_COUNT, len(remaining)))
     run.setdefault("altar_deals_used", []).extend(deal["id"] for deal in deals)
 
-    options = [_option(deal["label"], deal["text"], ui_common.GOLD,
-                       run_state.affordable(run, deal["cost"]))
+    options = [_deal_option(deal, run_state.affordable(run, deal["cost"]))
                for deal in deals]
     options.append(_leave())
 
     choice = choice_screen.main(
-        game_screen, f"{FACTION_NAMES[tag]} Altar", options, run=run,
-        subtitle="the stone hums when you step close")
+        game_screen,
+        language.event_text("altar_title", f"{FACTION_NAMES[tag]} Altar",
+                            faction=FACTION_NAMES[tag]),
+        options, run=run,
+        subtitle=language.event_text("altar_subtitle",
+                                     "the stone hums when you step close"))
     if choice is None or choice >= len(deals):
         return ""
 
@@ -137,7 +147,7 @@ def _altar(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
 
     if deal["id"] == "orb":
         run["orbs"] += 1
-        notice_screen.main(game_screen, "Accepted", ["+1 Forgetting Orb"],
+        notice_screen.main(game_screen, language.event_text("altar_accepted", "Accepted"), ["+1 Forgetting Orb"],
                            run=run, color=ui_common.ORB)
     elif deal["id"] == "relic":
         grants.grant_random_relic(game_screen, run, rng)
@@ -151,7 +161,7 @@ def _altar(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
     else:
         gold = int(deal["id"].split("_")[1])
         run["gold"] += gold
-        notice_screen.main(game_screen, "Accepted", [f"+{gold} gold"],
+        notice_screen.main(game_screen, language.event_text("altar_accepted", "Accepted"), [f"+{gold} gold"],
                            run=run, color=ui_common.GOLD)
     return ""
 
@@ -194,8 +204,9 @@ def _relic_trader(game_screen: GameScreen, run: dict, rng: random.Random) -> str
     } for mine, theirs in pairs]
     options.append(_leave())
 
-    choice = choice_screen.main(game_screen, "Relic Trader", options, run=run,
-                                subtitle="one of yours for one of mine")
+    choice = choice_screen.main(
+        game_screen, language.event_text("trader_title", "Relic Trader"), options, run=run,
+        subtitle=language.event_text("trader_subtitle", "one of yours for one of mine"))
     if choice is None or choice >= len(pairs):
         return ""
 
@@ -215,19 +226,27 @@ def _tinker(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
     grade = rng.choice(list(ARTISAN_ENCHANTS))
     reforgeable = _enchanted_indices(run, curse_free=True)
 
+    grade_label = card_pool.enchant_label(grade)
     options = [
-        _option("strip", "remove an enchantment from a card", ui_common.HILITE),
-        _option("reforge", f"turn a card's enchantment into {ENCHANTS[grade]['label']}",
-                ui_common.HILITE, bool(reforgeable)),
+        _option(*language.event_option(
+            "tinker_strip", ("strip", "remove an enchantment from a card")),
+            ui_common.HILITE),
+        _option(*language.event_option(
+            "tinker_reforge",
+            ("reforge", f"turn a card's enchantment into {grade_label}"),
+            grade=grade_label),
+            ui_common.HILITE, bool(reforgeable)),
         _leave(),
     ]
-    choice = choice_screen.main(game_screen, "Tinker", options, run=run,
-                                subtitle=ENCHANTS[grade]["text"])
+    choice = choice_screen.main(
+        game_screen, language.event_text("tinker_title", "Tinker"), options, run=run,
+        subtitle=card_pool.enchant_text(grade))
 
     if choice == 0:
         enchanted = _enchanted_indices(run)
         picked = card_picker.main(
-            game_screen, run, "Strip which card?",
+            game_screen, run,
+            language.event_text("tinker_strip_prompt", "Strip which card?"),
             allowed=lambda zone, index, code: (zone, index) in enchanted)
         if picked is not None:
             zone, index = picked
@@ -235,7 +254,9 @@ def _tinker(game_screen: GameScreen, run: dict, rng: random.Random) -> str:
 
     elif choice == 1 and reforgeable:
         picked = card_picker.main(
-            game_screen, run, f"Reforge into {ENCHANTS[grade]['label']}?",
+            game_screen, run,
+            language.event_text("tinker_reforge_prompt",
+                                f"Reforge into {grade_label}?", grade=grade_label),
             allowed=lambda zone, index, code: (zone, index) in reforgeable)
         if picked is not None:
             zone, index = picked

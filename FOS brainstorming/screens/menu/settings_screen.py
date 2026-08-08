@@ -83,12 +83,20 @@ def _build_display_buttons(game_screen: GameScreen) -> tuple[list[tuple[str, But
     return option_buttons, back_button
 
 
-def _build_gameplay_buttons(game_screen: GameScreen, hint_on: bool) -> tuple[Button, Button]:
+TOWER_LANGUAGE_LABELS: dict[str, str] = {"en": "English", "zh": "中文"}
+
+
+def _tower_language_label(language: str) -> str:
+    return f"Tower text : {TOWER_LANGUAGE_LABELS.get(language, language)}"
+
+
+def _build_gameplay_buttons(game_screen: GameScreen, hint_on: bool,
+                            tower_language: str) -> tuple[Button, Button, Button]:
     bs = game_screen.block_size
     box_width = int(bs / 30)
     cx = game_screen.display_width / 2
 
-    btn_w, btn_h = bs * 2.6, bs * 0.7
+    btn_w, btn_h = bs * 3.4, bs * 0.7
     btn_x = cx - btn_w / 2
     top_y = game_screen.display_height / 2 - bs * 1.8
 
@@ -97,9 +105,15 @@ def _build_gameplay_buttons(game_screen: GameScreen, hint_on: bool) -> tuple[But
                          box_width=box_width, font=game_screen.big_big_text_font,
                          text=f"Hint on : {hint_on}")
 
-    back_button = Button(btn_w, btn_h, btn_x, top_y + bs * 0.9 + bs * 0.35,
+    # the label carries Chinese, so it needs the face that can draw it
+    language_button = Button(btn_w, btn_h, btn_x, top_y + bs * 0.9,
+                             position="Left", padding=bs * 0.25,
+                             box_width=box_width, font=game_screen.big_big_text_fontCHI,
+                             text=_tower_language_label(tower_language))
+
+    back_button = Button(btn_w, btn_h, btn_x, top_y + bs * 1.8 + bs * 0.35,
                          box_width=box_width, font=game_screen.big_big_text_font, text="back")
-    return hint_button, back_button
+    return hint_button, language_button, back_button
 
 
 def _name_label(name: str, editing: bool, caret: str) -> str:
@@ -135,7 +149,9 @@ def main(game_screen: GameScreen) -> None:
 
     hint_on = load_setting("hint_on")
     player_name = load_setting("player_name")
-    hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
+    tower_language = load_setting("tower_language")
+    hint_button, language_button, gameplay_back_button = _build_gameplay_buttons(
+        game_screen, hint_on, tower_language)
     name_button, user_back_button = _build_user_buttons(game_screen, player_name)
 
     editing_name = False
@@ -187,7 +203,8 @@ def main(game_screen: GameScreen) -> None:
                             game_screen.apply_display_mode(mode)
                             tab_buttons = _build_tab_buttons(game_screen, active_tab)
                             option_buttons, display_back_button = _build_display_buttons(game_screen)
-                            hint_button, gameplay_back_button = _build_gameplay_buttons(game_screen, hint_on)
+                            hint_button, language_button, gameplay_back_button = (
+                                _build_gameplay_buttons(game_screen, hint_on, tower_language))
                             name_button, user_back_button = _build_user_buttons(game_screen, player_name)
                             break
                     if display_back_button.touch(mouse_x, mouse_y):
@@ -197,6 +214,10 @@ def main(game_screen: GameScreen) -> None:
                         hint_on = not hint_on
                         save_setting("hint_on", hint_on)
                         hint_button.text = f"Hint on : {hint_on}"
+                    if language_button.touch(mouse_x, mouse_y):
+                        tower_language = "zh" if tower_language == "en" else "en"
+                        save_setting("tower_language", tower_language)
+                        language_button.text = _tower_language_label(tower_language)
                     if gameplay_back_button.touch(mouse_x, mouse_y):
                         running = False
                 elif active_tab == "user":
@@ -218,6 +239,7 @@ def main(game_screen: GameScreen) -> None:
             display_back_button.update(game_screen)
         elif active_tab == "gameplay":
             hint_button.update(game_screen)
+            language_button.update(game_screen)
             gameplay_back_button.update(game_screen)
         elif active_tab == "user":
             caret = "_" if (blink // 30) % 2 == 0 else " "

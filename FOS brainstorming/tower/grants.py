@@ -126,10 +126,9 @@ def slot_hint(run: dict) -> str:
 # --------------------------------------------------------------------------
 
 def relic_option(relic_id: str) -> dict:
-    relic = RELICS[relic_id]
     return {
-        "label": relic["label"],
-        "lines": [relic["text"]],
+        "label": ui_common.relic_label(relic_id),
+        "lines": [ui_common.relic_text(relic_id)],
         "color": ui_common.relic_color(relic_id),
     }
 

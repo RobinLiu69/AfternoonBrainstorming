@@ -36,6 +36,11 @@ color_code = "G"
 class GreenCard(Card):
     @staticmethod
     def lucky_effects(target: Card, game_state: GameState, AP: bool=False, AP_target: bool=False, TANK: bool=False) -> None:
+        # luck belongs to a side.  Damage can come from something that has no
+        # side - the Judge deals relic and enchantment damage and lives off the
+        # board - and there is nothing to roll for or to buff there.
+        if target.owner not in game_state.players_luck:
+            return
         if not AP_target and game_state.rng.randint(1, 100) <= game_state.players_luck[target.owner]:
             if AP_target or TANK: return
             game_state.players_luck[target.owner] += 1

@@ -276,15 +276,34 @@ def test_non_cyan_cards_never_gain_an_upgrade_marker():
 
 def test_the_hint_box_describes_enchantments():
     from shared import card_code
+    from tower import language
     from tower.content import ENCHANTS
 
-    lines = card_code.describe_enchants("TANKW*sharp")
-    assert len(lines) == 1
-    assert ENCHANTS["sharp"]["label"] in lines[0]
-    assert ENCHANTS["sharp"]["text"] in lines[0]
+    language.use(language.ENGLISH)
+    try:
+        lines = card_code.describe_enchants("TANKW*sharp")
+        assert len(lines) == 1
+        assert ENCHANTS["sharp"]["label"] in lines[0]
+        assert ENCHANTS["sharp"]["text"] in lines[0]
 
-    assert card_code.describe_enchants("TANKW") == []
-    assert len(card_code.describe_enchants("TANKW*sharp.fort")) == 2
+        assert card_code.describe_enchants("TANKW") == []
+        assert len(card_code.describe_enchants("TANKW*sharp.fort")) == 2
+    finally:
+        language.use(None)
+
+
+def test_the_hint_box_describes_enchantments_in_chinese_too():
+    from shared import card_code
+    from tower import language
+    from tower.content_zh import ENCHANTS_ZH
+
+    language.use(language.CHINESE)
+    try:
+        lines = card_code.describe_enchants("TANKW*sharp")
+        assert ENCHANTS_ZH["sharp"][0] in lines[0]
+        assert ENCHANTS_ZH["sharp"][1] in lines[0]
+    finally:
+        language.use(None)
 
 
 def test_no_enchant_descriptions_once_the_runtime_is_gone():

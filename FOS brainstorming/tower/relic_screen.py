@@ -36,7 +36,7 @@ from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from utils.controls import key_pressed
 
-from tower import ui_common
+from tower import language, ui_common
 from tower.content import RELICS
 
 COLUMNS: int = 2
@@ -63,8 +63,10 @@ class _Layout:
 
     def __init__(self, game_screen: GameScreen, relics: Sequence[str]):
         bs = game_screen.block_size
-        self.name_font = game_screen.mid_text_font
-        self.text_font = game_screen.text_font
+        # measured with the face they will be drawn in, so Chinese lines are
+        # sized against the Chinese font rather than the latin one
+        self.name_font = language.font(game_screen, "mid_text_font")
+        self.text_font = language.font(game_screen, "text_font")
 
         self.top = bs * 1.35
         self.bottom = game_screen.display_height - bs * 1.15
@@ -83,7 +85,7 @@ class _Layout:
         self._build(sorted(relics, key=_sort_key))
 
     def _measure(self, relic_id: str) -> tuple[str, list[str], float]:
-        tier = RELICS.get(relic_id, {}).get("tier", "common")
+        tier = ui_common.tier_label(RELICS.get(relic_id, {}).get("tier", "common"))
         heading = f"{ui_common.relic_label(relic_id)}  -  {tier}"
         lines = ui_common.wrap_to_width(ui_common.relic_text(relic_id),
                                         self.text_font, self.column_width)
@@ -165,7 +167,7 @@ def main(game_screen: GameScreen, run: dict) -> None:
         if not relics:
             draw_text("nothing yet - beat an elite or crack open a chest",
                       game_screen.mid_text_font, ui_common.DIM,
-                      layout.margin, layout.top, game_screen.surface)
+                      layout.margin, layout.top, game_screen.surface)  # chrome
         else:
             for block in layout.pages[page]:
                 draw_text(block.heading, layout.name_font,

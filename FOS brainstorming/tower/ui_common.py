@@ -26,6 +26,7 @@ from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text
 from core.UI import Button
 
+from tower import language
 from tower.content import ENEMY_LABELS, RELICS, ROOM_LABELS
 
 # free text is wrapped to a fixed width so descriptions never overlap
@@ -35,10 +36,77 @@ RELIC_WRAP: int = 30
 PANEL_WRAP: int = 52
 
 
+def is_cjk(char: str) -> bool:
+    return any(start <= ord(char) <= end for start, end in (
+        (0x3000, 0x303F),    # punctuation
+        (0x3400, 0x4DBF),    # ideographs extension A
+        (0x4E00, 0x9FFF),    # ideographs
+        (0xFF00, 0xFFEF),    # fullwidth forms
+    ))
+
+
+def has_cjk(text: str) -> bool:
+    return any(is_cjk(char) for char in text)
+
+
+def _chunks(text: str) -> list[str]:
+    """Split into wrappable pieces.
+
+    Latin text breaks on spaces.  Chinese has none, so it breaks between
+    glyphs - but never *before* closing punctuation, which would strand a
+    comma at the start of a line, and never inside a run of latin characters,
+    so "25%" and "TANK" stay whole.  Spaces the author wrote are kept, riding
+    along on the piece that follows them.
+    """
+    if not has_cjk(text):
+        return text.split()
+
+    trailing = "，。、；：）」』？！%"
+    pieces: list[str] = []
+    pending_space = False
+    for char in text:
+        if char.isspace():
+            pending_space = True
+            continue
+        glue = pieces and (
+            char in trailing
+            or (not is_cjk(char) and not pending_space and not is_cjk(pieces[-1][-1]))
+        )
+        if glue:
+            pieces[-1] += char
+        else:
+            pieces.append((" " if pending_space and pieces else "") + char)
+        pending_space = False
+    return pieces
+
+
+def _join(pieces: list[str], spaced: bool) -> str:
+    return (" ".join(pieces) if spaced else "".join(pieces)).strip()
+
+
 def wrap(text: str, width: int = DESC_WRAP) -> list[str]:
+    """Wrap to a column count.  A Chinese glyph counts as two."""
     if not text:
         return []
-    return textwrap.wrap(text, width) or [text]
+    if not has_cjk(text):
+        return textwrap.wrap(text, width) or [text]
+
+    def cost(chunk: str) -> int:
+        return sum(2 if is_cjk(c) else 1 for c in chunk)
+
+    lines: list[str] = []
+    current: list[str] = []
+    used = 0
+    for piece in _chunks(text):
+        size = cost(piece)
+        if current and used + size > width:
+            lines.append(_join(current, spaced=False))
+            current, used = [], 0
+        current.append(piece)
+        used += size
+    if current:
+        lines.append(_join(current, spaced=False))
+    return lines or [text]
 
 
 def wrap_all(lines, width: int = DESC_WRAP) -> list[str]:
@@ -49,20 +117,26 @@ def wrap_all(lines, width: int = DESC_WRAP) -> list[str]:
 
 
 def wrap_to_width(text: str, font, max_width: float) -> list[str]:
-    """Wrap by measuring the font, so a line can never run past its column."""
+    """Wrap by measuring the font, so a line can never run past its column.
+
+    Works for Chinese too: ``_chunks`` hands back single glyphs when there are
+    no spaces to break on.  Measure with the face you will draw with - the
+    latin font under-reports CJK and the line would overflow anyway.
+    """
     if not text:
         return []
+    spaced = not has_cjk(text)
     lines: list[str] = []
-    current = ""
-    for word in text.split():
-        candidate = f"{current} {word}".strip()
+    current: list[str] = []
+    for piece in _chunks(text):
+        candidate = _join(current + [piece], spaced)
         if not current or font.size(candidate)[0] <= max_width:
-            current = candidate
+            current.append(piece)
         else:
-            lines.append(current)
-            current = word
+            lines.append(_join(current, spaced))
+            current = [piece]
     if current:
-        lines.append(current)
+        lines.append(_join(current, spaced))
     return lines
 
 
@@ -89,12 +163,19 @@ def relic_color(relic_id: str) -> tuple[int, int, int]:
     return TIER_COLORS.get(RELICS.get(relic_id, {}).get("tier", "common"), WHITE)
 
 
+def tier_label(tier: str) -> str:
+    if language.is_chinese():
+        from tower.content_zh import TIERS_ZH
+        return TIERS_ZH.get(tier, tier)
+    return tier
+
+
 def relic_label(relic_id: str) -> str:
-    return RELICS.get(relic_id, {}).get("label", relic_id)
+    return language.relic_label(relic_id, RELICS.get(relic_id, {}).get("label", relic_id))
 
 
 def relic_text(relic_id: str) -> str:
-    return RELICS.get(relic_id, {}).get("text", "")
+    return language.relic_text(relic_id, RELICS.get(relic_id, {}).get("text", ""))
 
 
 def enemy_color(kind: str) -> tuple[int, int, int]:
@@ -106,11 +187,37 @@ def enemy_color(kind: str) -> tuple[int, int, int]:
 
 
 def room_label(kind: str) -> str:
-    return ROOM_LABELS.get(kind, kind)
+    return language.room_label(kind, ROOM_LABELS.get(kind, kind))
+
+
+def blessing_label(entry: dict) -> str:
+    return language.blessing_label(entry["id"], entry["label"])
+
+
+def blessing_text(entry: dict) -> str:
+    return language.blessing_text(entry["id"], entry["text"])
 
 
 def enemy_label(enemy: dict) -> str:
     return enemy.get("label", ENEMY_LABELS.get(enemy.get("kind", ""), "?"))
+
+
+def auto_font(game_screen: GameScreen, text: str, size: str = "text_font"):
+    """The face that can actually draw ``text``.
+
+    Picked from the string itself rather than from the language setting, so
+    anywhere a translated name might turn up renders correctly without every
+    call site having to know whether its text was translated.  The latin face
+    has no CJK glyphs and would draw blanks.
+    """
+    if has_cjk(text):
+        return language.chinese_font(game_screen, size)
+    return getattr(game_screen, size)
+
+
+def draw_auto(game_screen: GameScreen, text: str, size: str, color,
+              x: float, y: float) -> None:
+    draw_text(text, auto_font(game_screen, text, size), color, x, y, game_screen.surface)
 
 
 def box_width(game_screen: GameScreen) -> int:
@@ -151,16 +258,18 @@ def draw_relic_strip(game_screen: GameScreen, run: dict, detailed: bool = False)
     if not relics:
         return
 
+    name_font = language.font(game_screen, "text_font")
+    body_font = language.font(game_screen, "small_text_font")
     x = game_screen.display_width - bs * (3.9 if detailed else 2.6)
     y = bs * 1.1
     step = bs * 0.26
     for relic_id in relics:
-        draw_text(relic_label(relic_id), game_screen.text_font,
+        draw_text(relic_label(relic_id), name_font,
                   relic_color(relic_id), x, y, game_screen.surface)
         y += step
         if detailed:
-            for line in wrap(relic_text(relic_id), RELIC_WRAP):
-                draw_text(line, game_screen.small_text_font, DIM,
+            for line in wrap_to_width(relic_text(relic_id), body_font, bs * 3.6):
+                draw_text(line, body_font, DIM,
                           x + bs * 0.12, y, game_screen.surface)
                 y += bs * 0.2
             y += bs * 0.04

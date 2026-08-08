@@ -242,7 +242,7 @@ def _draw_panel(game_screen: GameScreen, run: dict, layer: dict,
             x = cx - total / 2 + i * (btn_w + bs * 0.2)
             y = panel_y + bs * 0.25
             for line in ui_common.wrap_all(_option_lines(option, blind), ROUTE_WRAP):
-                draw_text(line, game_screen.text_font, WHITE, x, y, game_screen.surface)
+                ui_common.draw_auto(game_screen, line, "text_font", WHITE, x, y)
                 y += bs * 0.28
         return
 
@@ -269,13 +269,12 @@ def _draw_panel(game_screen: GameScreen, run: dict, layer: dict,
         if enemy.get("relics"):
             names = ", ".join(ui_common.relic_label(r) for r in enemy["relics"])
             for line in ui_common.wrap(f"relics: {names}", ui_common.PANEL_WRAP):
-                draw_text(line, game_screen.text_font, ui_common.RELIC,
-                          cx - bs * 2.0, y, game_screen.surface)
+                ui_common.draw_auto(game_screen, line, "text_font",
+                                    ui_common.RELIC, cx - bs * 2.0, y)
                 y += bs * 0.26
     elif kind == "room":
-        draw_text(ui_common.room_label(resolved["room"]["kind"]),
-                  game_screen.big_big_text_font, ui_common.GOLD,
-                  cx - bs * 1.2, y, game_screen.surface)
+        ui_common.draw_auto(game_screen, ui_common.room_label(resolved["room"]["kind"]),
+                            "big_big_text_font", ui_common.GOLD, cx - bs * 1.2, y)
     elif kind == "blessing":
         draw_text("An opening blessing awaits.", game_screen.big_text_font, ui_common.HILITE,
                   cx - bs * 1.8, y, game_screen.surface)

@@ -23,6 +23,7 @@ from __future__ import annotations
 from cards.factory import CardFactory
 from shared import card_code
 
+from tower import language
 from tower.content import (
     ENCHANTS, FACTION_NAMES, JOBS, MAGIC_POOL, UNIVERSAL_FACTIONS,
 )
@@ -88,17 +89,25 @@ def is_valid_code(code: str) -> bool:
     return all(key in ENCHANTS for key in card_code.enchant_keys(code))
 
 
+def enchant_label(key: str) -> str:
+    return language.enchant_label(key, ENCHANTS.get(key, {}).get("label", key))
+
+
+def enchant_text(key: str) -> str:
+    return language.enchant_text(key, ENCHANTS.get(key, {}).get("text", ""))
+
+
 def display_name(code: str) -> str:
-    """`TANKW*sharp` -> `TANKW [Sharp]`."""
+    """`TANKW*sharp` -> `TANKW [Sharp]`.  The card code itself stays as it is."""
     keys = card_code.enchant_keys(code)
     if not keys:
         return code
-    labels = ", ".join(ENCHANTS[k]["label"] for k in keys if k in ENCHANTS)
+    labels = ", ".join(enchant_label(k) for k in keys if k in ENCHANTS)
     return f"{card_code.base_code(code)} [{labels}]"
 
 
 def enchant_lines(code: str) -> list[str]:
-    return [ENCHANTS[k]["text"] for k in card_code.enchant_keys(code) if k in ENCHANTS]
+    return [enchant_text(k) for k in card_code.enchant_keys(code) if k in ENCHANTS]
 
 
 MAGIC_PRICE: int = 45

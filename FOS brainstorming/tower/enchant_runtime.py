@@ -327,8 +327,13 @@ def turn_end(game_state: Any, player_name: str) -> None:
 # --------------------------------------------------------------------------
 
 def describe(keys: tuple[str, ...]) -> list[str]:
-    """Tooltip lines for an enchanted card, shown by the in-battle [F] hint."""
-    return [f"{ENCHANTS[k]['label']}: {ENCHANTS[k]['text']}"
+    """Tooltip lines for an enchanted card, shown by the in-battle [F] hint.
+
+    The hint box already draws card text in Chinese, so these follow the
+    tower content language rather than always being English.
+    """
+    from tower import card_pool
+    return [f"{card_pool.enchant_label(k)}: {card_pool.enchant_text(k)}"
             for k in keys if k in ENCHANTS]
 
 

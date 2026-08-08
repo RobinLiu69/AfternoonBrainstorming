@@ -30,7 +30,7 @@ from core.card_hint import HintBox
 from core.setting_config import load_setting
 from utils.controls import key_pressed
 
-from tower import card_pool, ui_common
+from tower import card_pool, language, ui_common
 
 BENCH_COLOR: tuple[int, int, int] = (255, 170, 60)
 ENCHANT_COLOR: tuple[int, int, int] = (170, 230, 255)
@@ -79,7 +79,7 @@ def main(game_screen: GameScreen, run: dict, title: str,
                      start_x + col * (btn_w + bs * 0.15),
                      start_y + row * (btn_h + bs * 0.12),
                      position="Left", padding=bs * 0.12, box_width=box_width,
-                     font=game_screen.text_font,
+                     font=ui_common.auto_font(game_screen, label, "text_font"),
                      text=label, text_color=color, box_color=color)
         buttons.append((btn, zone, index, code, usable))
 
@@ -119,11 +119,11 @@ def main(game_screen: GameScreen, run: dict, title: str,
         ui_common.draw_run_bar(game_screen, run)
         ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
         for i, line in enumerate(ui_common.wrap(title, ui_common.PANEL_WRAP)):
-            draw_text(line, game_screen.big_big_text_font, WHITE,
-                      cx - bs * 3.4, cy - bs * (2.6 - 0.4 * i), game_screen.surface)
+            ui_common.draw_auto(game_screen, line, "big_big_text_font", WHITE,
+                                cx - bs * 3.4, cy - bs * (2.6 - 0.4 * i))
         if subtitle:
-            draw_text(subtitle, game_screen.mid_text_font, ui_common.GOLD,
-                      cx - bs * 3.4, cy - bs * 2.1, game_screen.surface)
+            ui_common.draw_auto(game_screen, subtitle, "mid_text_font", ui_common.GOLD,
+                                cx - bs * 3.4, cy - bs * 2.1)
 
         for btn, _zone, _index, _code, _usable in buttons:
             btn.update(game_screen)
@@ -132,9 +132,10 @@ def main(game_screen: GameScreen, run: dict, title: str,
 
         if hovered_code:
             y = cy + bs * 1.25
+            body_font = language.font(game_screen, "mid_text_font")
             for line in ui_common.wrap_all(card_pool.enchant_lines(hovered_code),
                                            ui_common.PANEL_WRAP)[:4]:
-                draw_text(line, game_screen.mid_text_font, ENCHANT_COLOR,
+                draw_text(line, body_font, ENCHANT_COLOR,
                           cx - bs * 3.4, y, game_screen.surface)
                 y += bs * 0.32
 
