@@ -120,9 +120,11 @@ def _roll_room(rng: random.Random, soft_avoid=(), hard_avoid=()) -> dict:
     return {"kind": rng.choices(kinds, weights=weights)[0]}
 
 
-def _battle_enemy(act: int, factions, rng: random.Random, weak_index: int, kind: str) -> dict:
+def _battle_enemy(act: int, factions, rng: random.Random, kind: str,
+                  weak_order: list[str], weak_index: int) -> dict:
     if kind == "weak":
-        return enemies.weak_enemy(rng, weak_index)
+        key = weak_order[weak_index % len(weak_order)]
+        return enemies.weak_enemy(key, first=weak_index == 0)
     if kind == "elite":
         return enemies.elite_enemy(act, factions, rng)
     return enemies.normal_enemy(act, factions, rng)
@@ -140,6 +142,8 @@ def _branch_enemy_kinds(act: int, rng: random.Random) -> list[str]:
 def build_act(act: int, factions, rng: random.Random) -> dict:
     layers: list[dict] = []
     weak_index = 0
+    # a fresh shuffle per act, so no two squads in it field the same deck
+    weak_order = enemies.weak_formation_order(rng)
 
     if act == FIRST_ACT:
         layers.append({"index": BLESSING_LAYER, "kind": "blessing"})
@@ -149,7 +153,7 @@ def build_act(act: int, factions, rng: random.Random) -> dict:
     first_kind = "weak" if act == FIRST_ACT else "normal"
     layers.append({
         "index": 1, "kind": "battle",
-        "enemy": _battle_enemy(act, factions, rng, weak_index, first_kind),
+        "enemy": _battle_enemy(act, factions, rng, first_kind, weak_order, weak_index),
     })
     if first_kind == "weak":
         weak_index += 1
@@ -162,7 +166,8 @@ def build_act(act: int, factions, rng: random.Random) -> dict:
         options: list[dict] = []
         siblings: set[str] = set()
         for enemy_kind in _branch_enemy_kinds(act, rng):
-            enemy = _battle_enemy(act, factions, rng, weak_index, enemy_kind)
+            enemy = _battle_enemy(act, factions, rng, enemy_kind,
+                                  weak_order, weak_index)
             if enemy_kind == "weak":
                 weak_index += 1
             room = _roll_room(rng, soft_avoid=previous_kinds, hard_avoid=siblings)

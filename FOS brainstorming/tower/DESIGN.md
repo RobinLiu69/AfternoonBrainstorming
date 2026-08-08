@@ -225,6 +225,21 @@ APC*mana (+)       附魔「魔力」的淺藍圓形，且已進化（沿用既�
 1. **遺物** —— 想讓敵人更強就給它遺物，玩家在戰前畫面看得到，也就知道要怎麼應對。
 2. **AI 強度** —— `attack_min_score` 隨關數下降、BOSS 用搜尋型策略（`claude`）。
 
+### 第一關的敵人池
+
+第一關的小怪是**五種 6-7 張的小隊**，每種只有一個主題，一場戰鬥教一件事：
+
+| 小隊 | 牌組 |
+| --- | --- |
+| White Warriors | ASSW ASSW LFW LFW SPW TANKW |
+| White Mages | APW APW APTW APTW TANKW TANKW |
+| White Heavies | ADCW ADCW HFW HFW SPW TANKW |
+| White Legion | ADCW APW LFW HFW SPW TANKW APTW（7 張） |
+| White Bulwark | SPW HFW APTW APTW TANKW TANKW |
+
+每一關開始時洗一次順序（`weak_formation_order`），依序取用，所以**同一關不會遇到重複的小隊**。
+第一場（含在這五種裡隨機）額外 -1 生命 -1 攻擊。
+
 | | 遺物數 | 備註 |
 | --- | --- | --- |
 | 弱怪 | 0 | 第一關第一場額外 **-1 生命 -1 攻擊**（全場唯一的數值調整，而且是往下調） |
@@ -238,7 +253,7 @@ APC*mana (+)       附魔「魔力」的淺藍圓形，且已進化（沿用既�
 
 | 關 | BOSS |
 | --- | --- |
-| 1 | 「Head Instructor」（名字是暫定的，筆記留白）：白色牌組 ＋ 多蘭盾 ＋ 準備背包，不強化。 |
+| 1 | **白色領主**：12 張完整白色牌組（八個職業到齊）＋ **1 個隨機遺物**，用 white 策略 |
 | 2 | 派系領主（本場選到的 4 派系之一）：純色完整牌組 ＋ 2 固定遺物 ＋ 1 隨機遺物 |
 | 3 | 叛徒首領 / 被遺忘者們（已完成）；海盜船長 / 惡魔（等特殊卡牌） |
 

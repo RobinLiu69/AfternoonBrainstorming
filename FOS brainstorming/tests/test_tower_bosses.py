@@ -81,23 +81,55 @@ def test_both_lords_bring_relics():
 
 
 def test_the_opening_squad_fields_understrength_units():
-    first = enemies.weak_enemy(random.Random(1), 0)
+    first = enemies.weak_enemy("warriors", first=True)
     assert first["effects"] == {"unit_hp_plus": -1, "unit_damage_plus": -1}
+    assert first["raw"] is True
 
-    for index in (1, 2):
-        assert enemies.weak_enemy(random.Random(1), index)["effects"] == {}
+    later = enemies.weak_enemy("warriors")
+    assert later["effects"] == {}
+    assert later["raw"] is False
 
 
-def test_the_act_one_boss_gets_relics_but_no_stat_boost():
-    boss = enemies.head_instructor(random.Random(1))
-    assert boss["effects"] == {}
-    assert set(boss["relics"]) == {"dorans_shield", "prepared_pack"}
+def test_every_act_one_squad_is_a_small_white_formation():
+    for key, formation in enemies.WEAK_FORMATIONS.items():
+        enemy = enemies.weak_enemy(key)
+        assert enemy["deck"] == list(formation["deck"])
+        assert 6 <= len(enemy["deck"]) <= 7
+        assert all(code.endswith("W") for code in enemy["deck"])
+        assert enemy["relics"] == []
 
-    effects = run_state.effects_from_relics(boss["relics"], boss["effects"])
-    assert effects["first_unit_hp_plus"] == 2
-    assert effects["hand_plus"] == 1
-    assert "unit_hp_plus" not in effects
-    assert "unit_damage_plus" not in effects
+
+def test_an_act_fields_each_squad_at_most_once():
+    for act in (1, 2, 3):
+        for seed in range(30):
+            formations = [e["formation"] for e in enemies_of(act, seed)
+                          if e["kind"] == "weak"]
+            assert len(formations) == len(set(formations))
+
+
+def test_the_act_one_boss_is_a_white_lord_with_one_relic():
+    for seed in range(20):
+        boss = enemies.white_lord(random.Random(seed))
+        assert boss["label"] == "White Lord"
+        assert boss["effects"] == {}
+        assert len(boss["relics"]) == 1
+        assert boss["relics"][0] in enemies.LORD_RANDOM_RELIC_POOL
+        assert len(boss["deck"]) == 12
+        assert all(code.endswith("W") for code in boss["deck"])
+
+
+def test_the_white_lord_fields_the_whole_faction():
+    from tower import card_pool
+
+    boss = enemies.white_lord(random.Random(1))
+    jobs = {card_pool.job_of(code) for code in boss["deck"]}
+    assert jobs == {"ADC", "AP", "TANK", "HF", "LF", "ASS", "APT", "SP"}
+
+
+def test_which_relic_the_white_lord_carries_varies():
+    seen = {enemies.white_lord(random.Random(seed))["relics"][0]
+            for seed in range(40)}
+    assert len(seen) > 1
 
 
 def enemies_of(act: int, seed: int) -> list[dict]:
@@ -130,7 +162,7 @@ def test_only_the_opening_squad_is_debuffed():
         for seed in range(10):
             for enemy in enemies_of(act, seed):
                 if enemy["effects"]:
-                    assert enemy["label"] == "Raw Recruits"
+                    assert enemy.get("raw") is True
 
 
 def test_elites_carry_relics_instead_and_more_of_them_later():

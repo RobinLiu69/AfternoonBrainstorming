@@ -352,9 +352,9 @@ def test_declining_a_relic_pays_nothing(monkeypatch):
 
 def test_enemies_never_move_first_in_act_one():
     for seed in range(20):
-        for enemy in (enemies.weak_enemy(random.Random(seed), 0),
+        for enemy in (enemies.weak_enemy("warriors", first=True),
                       enemies.normal_enemy(1, FACTIONS, random.Random(seed)),
-                      enemies.head_instructor(random.Random(seed))):
+                      enemies.white_lord(random.Random(seed))):
             assert enemy["enemy_first"] is False
 
 

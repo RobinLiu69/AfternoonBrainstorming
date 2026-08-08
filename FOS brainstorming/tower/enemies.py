@@ -43,6 +43,35 @@ WEAK_DECKS: tuple[tuple[str, ...], ...] = (
      "HFW", "HFW", "APW", "APW", "TANKW", "SPW"),
 )
 
+# Act 1 trash: small single-shape White squads, so each fight teaches one idea.
+WEAK_FORMATIONS: dict[str, dict] = {
+    "warriors": {
+        "label": "White Warriors",
+        "deck": ("ASSW", "ASSW", "LFW", "LFW", "SPW", "TANKW"),
+    },
+    "mages": {
+        "label": "White Mages",
+        "deck": ("APW", "APW", "APTW", "APTW", "TANKW", "TANKW"),
+    },
+    "heavies": {
+        "label": "White Heavies",
+        "deck": ("ADCW", "ADCW", "HFW", "HFW", "SPW", "TANKW"),
+    },
+    "legion": {
+        "label": "White Legion",
+        "deck": ("ADCW", "APW", "LFW", "HFW", "SPW", "TANKW", "APTW"),
+    },
+    "bulwark": {
+        "label": "White Bulwark",
+        "deck": ("SPW", "HFW", "APTW", "APTW", "TANKW", "TANKW"),
+    },
+}
+
+WHITE_LORD_DECK: tuple[str, ...] = (
+    "ADCW", "ADCW", "LFW", "HFW", "TANKW", "LFW",
+    "HFW", "TANKW", "APW", "ASSW", "APTW", "SPW",
+)
+
 DECK_TEMPLATES: dict[str, dict[str, int]] = {
     "balanced": {"ADC": 2, "AP": 1, "TANK": 2, "HF": 2, "LF": 1, "ASS": 2, "APT": 1, "SP": 1},
     "aggro":    {"ADC": 2, "AP": 1, "HF": 2, "LF": 2, "ASS": 3, "SP": 2},
@@ -131,14 +160,20 @@ def _enemy_first(act: int, kind: str, rng: random.Random) -> bool:
     return rng.random() < ENEMY_FIRST_CHANCE
 
 
-def weak_enemy(rng: random.Random, index: int) -> dict:
+def weak_formation_order(rng: random.Random) -> list[str]:
+    """Every squad an act fields, in a random order and without repeats."""
+    return rng.sample(sorted(WEAK_FORMATIONS), len(WEAK_FORMATIONS))
+
+
+def weak_enemy(formation_key: str, first: bool = False) -> dict:
     """The very first squad fields understrength units, so act 1 opens below par."""
-    deck = list(WEAK_DECKS[index % len(WEAK_DECKS)])
-    first = index == 0
+    formation = WEAK_FORMATIONS[formation_key]
     return {
         "kind": "weak",
-        "label": "Raw Recruits" if first else f"{ENEMY_LABELS['weak']} Squad",
-        "deck": deck,
+        "label": f"Raw {formation['label']}" if first else formation["label"],
+        "deck": list(formation["deck"]),
+        "formation": formation_key,
+        "raw": first,
         "strategy": "white",
         "strategy_overrides": {"attack_min_score": 11.0},
         "relics": [],
@@ -209,20 +244,15 @@ def faction_lord(tag: str, rng: random.Random) -> dict:
 # `available` marks bosses whose cards all exist today.  The ones that need
 # unimplemented special spells stay out of the rotation until those land.
 
-def head_instructor(rng: random.Random) -> dict:
-    """Act 1 boss.  Not in the design notes - placeholder, see DESIGN.md.
-
-    Two relics and nothing else: act 1 should never go above a plain deck.
-    """
-    deck = ["ADCW", "ADCW", "TANKW", "TANKW", "HFW", "HFW",
-            "LFW", "LFW", "ASSW", "ASSW", "APTW", "SPW"]
+def white_lord(rng: random.Random) -> dict:
+    """Act 1 boss: a full White deck carrying a single relic."""
     return {
         "kind": "boss",
-        "label": "Head Instructor",
-        "deck": deck,
-        "strategy": "claude",
-        "strategy_overrides": {"beam_width": 5, "depth_cap": 3},
-        "relics": ["dorans_shield", "prepared_pack"],
+        "label": "White Lord",
+        "deck": list(WHITE_LORD_DECK),
+        "strategy": "white",
+        "strategy_overrides": {"attack_min_score": 8.0},
+        "relics": [rng.choice(list(LORD_RANDOM_RELIC_POOL))],
         "effects": {},
         "enemy_first": False,
         "gold": BATTLE_GOLD["boss"],
@@ -292,7 +322,7 @@ ACT3_BOSSES: dict[str, dict] = {
 
 def act_boss(act: int, factions, rng: random.Random) -> dict:
     if act == 1:
-        return head_instructor(rng)
+        return white_lord(rng)
     if act == 2:
         return faction_lord(rng.choice(list(factions)), rng)
     options = sorted(k for k, v in ACT3_BOSSES.items() if v["available"])
