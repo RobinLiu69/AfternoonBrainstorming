@@ -76,7 +76,8 @@ def test_every_battle_on_the_way_up_has_a_usable_enemy():
     assert len(battles) == sum(2 + tower_map.branch_pairs(act) for act in (1, 2, 3))
     for entry in battles:
         enemy = entry["enemy"]
-        assert enemy["deck"] and all(code in registry for code in enemy["deck"])
+        assert enemy["deck"]
+        assert all(card_code.plain_code(code) in registry for code in enemy["deck"])
         assert enemy["strategy"]
         assert enemy["gold"] > 0
 

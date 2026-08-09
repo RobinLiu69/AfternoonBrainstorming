@@ -173,6 +173,112 @@ def test_elites_carry_relics_instead_and_more_of_them_later():
             assert len(elite["relics"]) == enemies.ELITE_RELIC_COUNT[act]
 
 
+def test_relic_counts_climb_with_the_acts():
+    assert enemies.NORMAL_RELIC_COUNT[1] == 0
+    assert enemies.ELITE_RELIC_COUNT[1] == 0
+    for counts in (enemies.NORMAL_RELIC_COUNT, enemies.ELITE_RELIC_COUNT):
+        assert counts[1] < counts[2] < counts[3]
+    for act in (2, 3):
+        assert enemies.ELITE_RELIC_COUNT[act] > enemies.NORMAL_RELIC_COUNT[act]
+
+
+def test_regular_warbands_start_carrying_relics_from_act_two():
+    for seed in range(10):
+        assert enemies.normal_enemy(1, FACTIONS, random.Random(seed))["relics"] == []
+        for act in (2, 3):
+            enemy = enemies.normal_enemy(act, FACTIONS, random.Random(seed))
+            assert len(enemy["relics"]) == enemies.NORMAL_RELIC_COUNT[act]
+
+
+def test_an_enemy_never_holds_two_relics_of_the_same_group():
+    from tower.content import RELICS
+    for act in (2, 3):
+        for seed in range(40):
+            for enemy in (enemies.normal_enemy(act, FACTIONS, random.Random(seed)),
+                          enemies.elite_enemy(act, FACTIONS, random.Random(seed))):
+                groups = [RELICS[r].get("group") for r in enemy["relics"]]
+                groups = [g for g in groups if g]
+                assert len(groups) == len(set(groups))
+                assert len(enemy["relics"]) == len(set(enemy["relics"]))
+
+
+def test_enemy_relics_are_ones_an_ai_can_actually_use():
+    from tower.content import RELICS
+    for relic_id in enemies.ENEMY_RELIC_POOL:
+        assert relic_id in RELICS
+        assert RELICS[relic_id]["tier"] != "curse"
+        # nothing that only pays out between battles
+        assert not (set(RELICS[relic_id].get("effects", {})) & {
+            "gold_mult", "shop_discount", "gold_per_floor", "interest_rate",
+            "free_rerolls", "credit_limit", "bench_plus", "deck_limit_override"})
+
+
+def test_faction_locked_relics_only_reach_the_right_enemies():
+    from tower.content import RELICS
+    for act in (2, 3):
+        for seed in range(30):
+            enemy = enemies.elite_enemy(act, ["R", "B", "C", "BR"], random.Random(seed))
+            for relic_id in enemy["relics"]:
+                faction = RELICS[relic_id].get("faction")
+                if faction:
+                    assert faction in {card_pool.color_tag_of(c)
+                                       for c in enemy["deck"]}
+
+
+# --------------------------------------------------------------------------
+# act 3 enchanted units
+# --------------------------------------------------------------------------
+
+def enchanted_count(deck) -> int:
+    return sum(1 for code in deck if card_code.is_enchanted(code))
+
+
+def test_only_act_three_fields_enchanted_units():
+    for seed in range(20):
+        for act in (1, 2):
+            for enemy in enemies_of(act, seed):
+                assert enchanted_count(enemy["deck"]) == 0
+
+
+def test_act_three_enemies_bring_enchanted_units():
+    for seed in range(20):
+        for enemy in enemies_of(3, seed):
+            expected = enemies.ENCHANTED_UNIT_COUNT[enemy["kind"]]
+            assert enchanted_count(enemy["deck"]) == expected
+
+
+def test_enemy_enchantments_are_ones_an_ai_can_use():
+    from tower.content import ENCHANTS
+    for key in enemies.ENEMY_ENCHANTS:
+        assert key in ENCHANTS
+        assert ENCHANTS[key]["kind"] != "curse"
+    # a unit that cannot attack or that evaporates is no use to the tower
+    assert "gigantism" not in enemies.ENEMY_ENCHANTS
+    assert "ghost" not in enemies.ENEMY_ENCHANTS
+
+
+def test_an_enchanted_enemy_unit_carries_exactly_one_enchantment():
+    for seed in range(20):
+        for enemy in enemies_of(3, seed):
+            for code in enemy["deck"]:
+                assert len(card_code.enchant_keys(code)) <= 1
+
+
+def test_spells_in_an_enemy_deck_are_left_alone():
+    for seed in range(20):
+        for enemy in enemies_of(3, seed):
+            for code in enemy["deck"]:
+                if card_pool.is_magic(code):
+                    assert not card_code.is_enchanted(code)
+
+
+def test_both_forgotten_lords_field_enchanted_units():
+    boss = forgotten(5)
+    assert enchanted_count(boss["deck"]) == enemies.ENCHANTED_UNIT_COUNT["boss"]
+    assert enchanted_count(boss["next_phase"]["deck"]) == \
+        enemies.ENCHANTED_UNIT_COUNT["boss"]
+
+
 def test_every_enemy_relic_is_a_real_relic():
     from tower.content import RELICS
     for act in (1, 2, 3):

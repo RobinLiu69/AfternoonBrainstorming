@@ -32,7 +32,7 @@ from core.setting_config import load_setting
 from core.UI import Button
 from utils.controls import key_pressed
 
-from tower import relic_screen, roster_screen, run_state, tower_map, ui_common
+from tower import card_pool, relic_screen, roster_screen, run_state, tower_map, ui_common
 from tower.content import ENEMY_LABELS
 
 SHORT_ENEMY: dict[str, str] = {
@@ -261,10 +261,10 @@ def _draw_panel(game_screen: GameScreen, run: dict, layer: dict,
             draw_text("you move first", game_screen.mid_text_font, ui_common.HILITE,
                       cx - bs * 2.0, y, game_screen.surface)
         y += bs * 0.42
-        for line in ui_common.wrap(f"deck: {' '.join(sorted(set(enemy['deck'])))}",
-                                   ui_common.PANEL_WRAP):
-            draw_text(line, game_screen.text_font, WHITE,
-                      cx - bs * 2.0, y, game_screen.surface)
+        names = sorted({card_pool.display_name(c) for c in enemy["deck"]})
+        for line in ui_common.wrap(f"deck: {' '.join(names)}", ui_common.PANEL_WRAP):
+            ui_common.draw_auto(game_screen, line, "text_font", WHITE,
+                                cx - bs * 2.0, y)
             y += bs * 0.26
         if enemy.get("relics"):
             names = ", ".join(ui_common.relic_label(r) for r in enemy["relics"])

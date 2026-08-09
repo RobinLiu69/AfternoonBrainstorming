@@ -23,8 +23,9 @@ from __future__ import annotations
 import random
 
 from cards.factory import CardFactory
+from shared import card_code
 
-from tower.content import BATTLE_GOLD, ENEMY_LABELS, FACTION_NAMES
+from tower.content import BATTLE_GOLD, ENEMY_LABELS, FACTION_NAMES, RELICS
 from tower import card_pool
 
 
@@ -101,8 +102,76 @@ ELITE_FORMATIONS: dict[str, dict] = {
     },
 }
 
-# an elite carries one relic in act 2 and two in act 3 - never a stat buff
-ELITE_RELIC_COUNT: dict[int, int] = {1: 0, 2: 1, 3: 2}
+# Relics are the only lever for enemy difficulty, so the later acts pull it
+# harder.  Act 1 stays clean - it is the tutorial.
+NORMAL_RELIC_COUNT: dict[int, int] = {1: 0, 2: 1, 3: 2}
+ELITE_RELIC_COUNT: dict[int, int] = {1: 0, 2: 3, 3: 4}
+
+# Relics worth handing an AI.  The economy ones (gold, shops, orbs) and the
+# ones that need spells cast from hand would be dead weight on it.
+ENEMY_RELIC_POOL: tuple[str, ...] = (
+    "prepared_pack", "dorans_shield", "dorans_blade", "first_aid_kit",
+    "sewing_kit", "ring_of_healing", "cuckoo_clock", "pocket_watch",
+    "battle_focus", "oni_mask", "razor_hat", "ninja_scroll", "wax_furnace",
+    "rabbits_foot", "mana_spring", "carving_knife", "strategists_fan",
+    "amulet_TANK", "amulet_ADC", "amulet_HF", "amulet_LF", "amulet_ASS",
+    "emblem_ADC", "emblem_LF", "emblem_ASS", "emblem_HF", "emblem_AP",
+)
+
+# From act 3 the tower fields enchanted units.  Only enchantments that make a
+# unit harder to kill or hit harder - Gigantism forbids attacking and Ghostly
+# would evaporate, neither of which an AI can use.
+ENEMY_ENCHANTS: tuple[str, ...] = (
+    "sharp", "fort", "rage", "plated", "steady", "radiant", "vigor",
+    "art_hero", "art_guard",
+)
+
+ENCHANTED_UNIT_COUNT: dict[str, int] = {"normal": 3, "elite": 4, "boss": 5}
+
+
+def _pick_enemy_relics(count: int, themed, rng: random.Random, factions=()) -> list[str]:
+    """Themed relics first, then filler - never two from the same group."""
+    chosen: list[str] = []
+    groups: set[str] = set()
+
+    def take(relic_id: str) -> None:
+        relic = RELICS.get(relic_id)
+        if relic is None or relic_id in chosen:
+            return
+        faction = relic.get("faction")
+        if faction and faction not in factions:
+            return
+        group = relic.get("group", "")
+        if group and group in groups:
+            return
+        chosen.append(relic_id)
+        if group:
+            groups.add(group)
+
+    for relic_id in themed:
+        if len(chosen) >= count:
+            return chosen
+        take(relic_id)
+
+    filler = [r for r in ENEMY_RELIC_POOL if r not in chosen]
+    rng.shuffle(filler)
+    for relic_id in filler:
+        if len(chosen) >= count:
+            break
+        take(relic_id)
+    return chosen
+
+
+def _enchant_deck(deck: list[str], count: int, rng: random.Random) -> list[str]:
+    """Give `count` of the deck's units one enchantment each."""
+    units = [i for i, code in enumerate(deck) if not card_pool.is_magic(code)]
+    if not units:
+        return deck
+    deck = list(deck)
+    for index in rng.sample(units, min(count, len(units))):
+        deck[index] = card_code.with_enchants(
+            deck[index], [rng.choice(list(ENEMY_ENCHANTS))])
+    return deck
 
 # two thematic relics each faction lord always carries
 LORD_RELICS: dict[str, tuple[str, str]] = {
@@ -188,13 +257,16 @@ def normal_enemy(act: int, factions, rng: random.Random) -> dict:
     tags = rng.sample(list(factions), min(2, len(factions))) if factions else ["W"]
     deck = _fill_template(template, tags, rng)
     names = " / ".join(FACTION_NAMES[t] for t in tags)
+    strategy = _strategy_for(deck)
+    if act >= 3:
+        deck = _enchant_deck(deck, ENCHANTED_UNIT_COUNT["normal"], rng)
     return {
         "kind": "normal",
         "label": f"{names} {ENEMY_LABELS['normal']}",
         "deck": deck,
-        "strategy": _strategy_for(deck),
+        "strategy": strategy,
         "strategy_overrides": {"attack_min_score": _attack_min(act, "normal")},
-        "relics": [],
+        "relics": _pick_enemy_relics(NORMAL_RELIC_COUNT.get(act, 2), (), rng, tags),
         "effects": {},
         "enemy_first": _enemy_first(act, "normal", rng),
         "gold": BATTLE_GOLD["normal"],
@@ -206,14 +278,17 @@ def elite_enemy(act: int, factions, rng: random.Random) -> dict:
     formation = ELITE_FORMATIONS[key]
     tags = rng.sample(list(factions), min(2, len(factions))) if factions else ["W"]
     deck = _fill_template(formation["template"], tags, rng)
-    count = ELITE_RELIC_COUNT.get(act, 2)
+    strategy = _strategy_for(deck)
+    if act >= 3:
+        deck = _enchant_deck(deck, ENCHANTED_UNIT_COUNT["elite"], rng)
     return {
         "kind": "elite",
         "label": f"{ENEMY_LABELS['elite']}: {formation['label']}",
         "deck": deck,
-        "strategy": _strategy_for(deck),
+        "strategy": strategy,
         "strategy_overrides": {"attack_min_score": _attack_min(act, "elite")},
-        "relics": list(formation["relics"][:count]),
+        "relics": _pick_enemy_relics(ELITE_RELIC_COUNT.get(act, 4),
+                                     formation["relics"], rng, tags),
         "effects": {},
         "enemy_first": _enemy_first(act, "elite", rng),
         "gold": BATTLE_GOLD["elite"],
@@ -260,8 +335,10 @@ def white_lord(rng: random.Random) -> dict:
 
 
 def traitor_lord(rng: random.Random) -> dict:
-    deck = ["TANKP", "TANKP", "TANKP", "HFP", "HFP", "HFP",
-            "APP", "APP", "APP", "ASSP", "ASSP", "ASSP"]
+    deck = _enchant_deck(
+        ["TANKP", "TANKP", "TANKP", "HFP", "HFP", "HFP",
+         "APP", "APP", "APP", "ASSP", "ASSP", "ASSP"],
+        ENCHANTED_UNIT_COUNT["boss"], rng)
     return {
         "kind": "boss",
         "label": "Traitor Lord",
@@ -290,6 +367,9 @@ def the_forgotten(factions, rng: random.Random) -> dict:
 
     first = faction_lord(first_tag, rng)
     second = faction_lord(second_tag, rng)
+    # act 3, so both lords field enchanted units
+    first["deck"] = _enchant_deck(first["deck"], ENCHANTED_UNIT_COUNT["boss"], rng)
+    second["deck"] = _enchant_deck(second["deck"], ENCHANTED_UNIT_COUNT["boss"], rng)
     first.update({
         "label": "The Forgotten",
         "phase_label": f"{FACTION_NAMES[first_tag]} Lord",

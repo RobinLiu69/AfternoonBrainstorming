@@ -21,6 +21,7 @@ import random
 import pytest
 
 from cards.factory import CardFactory
+from shared import card_code
 from tower import card_pool, tower_map
 from tower.content import ROOM_KINDS
 
@@ -212,7 +213,8 @@ def test_generated_enemy_decks_only_use_real_cards():
                         decks.append(option["enemy"]["deck"])
                 for deck in decks:
                     assert deck
-                    assert all(code in registry for code in deck)
+                    # act 3 decks carry enchantment suffixes
+                    assert all(card_code.plain_code(code) in registry for code in deck)
 
 
 def test_enemy_decks_stay_inside_the_run_factions():

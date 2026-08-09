@@ -123,9 +123,10 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
         draw_text("enemy deck", game_screen.mid_text_font, WHITE,
                   cx - bs * 3.6, y, game_screen.surface)
         y += bs * 0.34
-        for chunk in _wrap(sorted(enemy["deck"]), 5):
-            draw_text("  ".join(chunk), game_screen.text_font, WHITE,
-                      cx - bs * 3.6, y, game_screen.surface)
+        enemy_names = sorted(card_pool.display_name(c) for c in enemy["deck"])
+        for chunk in _wrap(enemy_names, 3):
+            ui_common.draw_auto(game_screen, "  ".join(chunk), "text_font", WHITE,
+                                cx - bs * 3.6, y)
             y += bs * 0.27
 
         if enemy.get("relics"):
