@@ -18,12 +18,18 @@
 
 from tests.helpers import make_game_state, place_card, do_attack
 from cards.factory import CardFactory
-from cards.card_white import Ap as WhiteAp
-from cards.card_blue import Tank as BlueTank, Apt as BlueApt
-from cards.card_cyan import Adc as CyanAdc, Apt as CyanApt
-from cards.card_red import Adc as RedAdc, Tank as RedTank, Hf as RedHf
-from cards.card_fuchsia import Apt as FuchsiaApt, Ass as FuchsiaAss
-from cards.card_purple import Ap as PurpleAp
+from cards.definitions.white import Ap as WhiteAp
+from cards.definitions.blue import Tank as BlueTank, Apt as BlueApt
+from cards.definitions.cyan import Adc as CyanAdc, Apt as CyanApt
+from cards.definitions.red import Adc as RedAdc, Tank as RedTank, Hf as RedHf
+from cards.definitions.fuchsia import Apt as FuchsiaApt, Ass as FuchsiaAss
+from cards.definitions.purple import Ap as PurpleAp
+from tests.effect_helpers import (
+    card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+
 
 
 class TestNullifiedAttacker:
@@ -34,7 +40,7 @@ class TestNullifiedAttacker:
         target.numbness = False
         before = target.health
 
-        ap.nullify = True
+        silence(ap)
         do_attack(ap, gs)
 
         assert target.numbness is False
@@ -47,7 +53,7 @@ class TestNullifiedAttacker:
         enemy = place_card(gs, RedTank, "player2", 1, 0)
         before = enemy.health
 
-        adc.nullify = True
+        silence(adc)
         do_attack(adc, gs)
 
         assert enemy.health == before - adc.damage
@@ -69,11 +75,11 @@ class TestNullifiedAttacker:
         victim = place_card(gs, RedAdc, "player2", 2, 2)
         victim.health = 1
 
-        ass.nullify = True
+        silence(ass)
         do_attack(ass, gs)
 
         assert victim.health == 0
-        assert len(ass.shadows) == 0
+        assert len(ass.companions) == 0
 
 
 class TestNullifiedVictim:
@@ -83,7 +89,7 @@ class TestNullifiedVictim:
         tank = place_card(gs, BlueTank, "player2", 1, 0)
         before = tank.health
 
-        tank.nullify = True
+        silence(tank)
         do_attack(attacker, gs)
 
         assert gs.players_token["player2"] == 0
@@ -101,7 +107,7 @@ class TestNullifiedVictim:
         apt.damage_calculate(5, attacker, gs)
         assert apt.health == 8
 
-        apt.nullify = True
+        silence(apt)
         apt.damage_calculate(5, attacker, gs)
         assert apt.health == 3
 
@@ -112,7 +118,7 @@ class TestNullifiedVictim:
 
         assert hf.can_be_killed(gs) is False
 
-        hf.nullify = True
+        silence(hf)
         assert hf.can_be_killed(gs) is True
 
 
@@ -140,12 +146,12 @@ class TestNullifiedFieldEffects:
         gs = make_game_state()
         apt = place_card(gs, FuchsiaApt, "player1", 0, 0)
         apt.deploy(gs)
-        shadow = apt.shadows[0]
+        shadow = apt.companions[0]
         ally = place_card(gs, RedAdc, "player1", shadow.board_x, shadow.board_y)
         attacker = place_card(gs, RedAdc, "player2", 1, 0)
         before = ally.health
 
-        apt.nullify = True
+        silence(apt)
         ally.damage_calculate(4, attacker, gs)
 
         assert apt.armor == 0
@@ -177,7 +183,7 @@ class TestNullifiedColorHooks:
         tank.got_token(gs)
         assert apt.armor == 1
 
-        apt.nullify = True
+        silence(apt)
         tank.got_token(gs)
         assert apt.armor == 1
 
@@ -186,7 +192,7 @@ class TestNullifySerialization:
     def test_nullify_round_trips_through_dict(self) -> None:
         gs = make_game_state()
         card = place_card(gs, RedAdc, "player1", 0, 0)
-        card.nullify = True
+        silence(card)
 
         data = card.to_dict()
         assert data["nullify"] is True

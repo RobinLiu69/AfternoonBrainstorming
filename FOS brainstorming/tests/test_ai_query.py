@@ -17,7 +17,7 @@
 # -----------------------------------------------------------------
 
 from campaign import ai_query
-from cards.card_white import Adc, Tank, Ass
+from cards.definitions.white import Adc, Tank, Ass
 from tests.helpers import make_game_state, place_card
 
 

@@ -18,9 +18,18 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_cyan import Adc, Ap, Tank, Hf, Lf, Ass, Apt
-from cards.card_red import Adc as RedAdc, Tank as RedTank
-from cards.card_green import LuckyBlock
+from cards.definitions.cyan import Adc, Ap, Tank, Hf, Lf, Ass, Apt
+from cards.definitions.red import Adc as RedAdc, Tank as RedTank
+from cards.definitions.green import LuckyBlock
+from tests.effect_helpers import (
+    drawbacks_off, rage_ally, set_bonus, card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+from cards.statuses import (
+    FIRST_STRIKE, LAST_STAND, RAGING, RAMPAGE, SPENT, UNDYING, WARDED,
+)
+
 
 S = CARD_SETTING["Cyan"]
 
@@ -76,13 +85,13 @@ class TestCyanTank:
         enemy = place_card(gs, RedAdc, "player2", 2, 1)
 
         before = gs.players_coin["player1"]
-        tank.on_attacked_by(enemy, 1, gs)
+        damage_taken(gs, tank, enemy, 1)
         assert gs.players_coin["player1"] == before + S["TANK"]["coin_gain"]
 
     def test_upgrade_damage_block_absorbs_hit(self) -> None:
         gs = make_game_state()
         tank = place_card(gs, Tank, "player1", 0, 0)
-        tank.anger = True
+        tank.statuses.add(WARDED)
         enemy = place_card(gs, RedAdc, "player2", 1, 0)
 
         blocked = tank.damage_block(5, enemy, gs)
@@ -107,14 +116,14 @@ class TestCyanHf:
         enemy = place_card(gs, RedAdc, "player2", 1, 0)
 
         before_damage = hf.damage
-        hf.on_killed_by(enemy, gs)
+        on_killed(gs, hf, enemy)
         assert hf.anger is True
         assert hf.damage == before_damage + S["HF"]["damage_bonus"]
 
     def test_can_be_killed_false_when_angry(self) -> None:
         gs = make_game_state()
         hf = place_card(gs, Hf, "player1", 0, 0)
-        hf.anger = True
+        hf.statuses.add(UNDYING)
 
         assert hf.can_be_killed(gs) is False
 
@@ -170,7 +179,7 @@ class TestCyanAss:
         gs = make_game_state()
         ass = place_card(gs, Ass, "player1", 0, 0)
         target = place_card(gs, RedAdc, "player2", 1, 0)
-        ass.extra_damage = S["ASS"]["damage_bonus"]
+        set_bonus(ass, S["ASS"]["damage_bonus"])
 
         result = ass.damage_bonus(3, target, gs)
         assert result == 3 + S["ASS"]["damage_bonus"]
@@ -208,5 +217,5 @@ class TestCyanApt:
         apt = place_card(gs, Apt, "player1", 0, 0)
 
         before = gs.players_coin["player1"]
-        apt.on_refresh(gs)
+        apt.refresh(gs)
         assert gs.players_coin["player1"] == before + S["APT"]["coin_gain"]

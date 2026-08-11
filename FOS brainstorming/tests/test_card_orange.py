@@ -18,8 +18,14 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_orange import Adc, Ap, Tank, Hf, Lf, Ass, Apt, Sp
-from cards.card_red import Adc as RedAdc, Tank as RedTank
+from cards.definitions.orange import Adc, Ap, Tank, Hf, Lf, Ass, Apt, Sp
+from cards.definitions.red import Adc as RedAdc, Tank as RedTank
+from tests.effect_helpers import (
+    card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+
 
 S = CARD_SETTING["Orange"]
 
@@ -63,7 +69,7 @@ class TestOrangeAp:
         ap = place_card(gs, Ap, "player1", 0, 0)
 
         before = len(gs.get_player("player1").hand)
-        ap.on_refresh(gs)
+        ap.refresh(gs)
         assert len(gs.get_player("player1").hand) == before + 1
         assert gs.get_player("player1").hand[-1] == "MOVEO"
 
@@ -75,7 +81,7 @@ class TestOrangeTank:
         enemy = place_card(gs, RedAdc, "player2", 2, 1)
 
         before = len(gs.get_player("player1").hand)
-        tank.on_attacked_by(enemy, 1, gs)
+        damage_taken(gs, tank, enemy, 1)
         assert len(gs.get_player("player1").hand) == before + 1
         assert gs.get_player("player1").hand[-1] == "MOVEO"
 
@@ -86,7 +92,7 @@ class TestOrangeHf:
         hf = place_card(gs, Hf, "player1", 0, 0)
 
         before = hf.extra_damage
-        hf.after_movement(1, 0, gs)
+        moved(gs, hf)
         assert hf.extra_damage == before + S["HF"]["move_damage_gain"]
         assert hf.anger is True
 
@@ -116,7 +122,7 @@ class TestOrangeLf:
         enemy = place_card(gs, RedAdc, "player2", 2, 1)
 
         before = enemy.health
-        lf.after_movement(1, 1, gs)
+        moved(gs, lf)
         assert enemy.health < before
 
 
@@ -125,7 +131,7 @@ class TestOrangeAss:
         gs = make_game_state()
         ass = place_card(gs, Ass, "player1", 0, 0)
 
-        ass.after_movement(1, 0, gs)
+        moved(gs, ass)
         assert ass.anger is True
 
     def test_kill_with_anger_increases_attack_count(self) -> None:
@@ -158,7 +164,7 @@ class TestOrangeApt:
         apt.armor = 1
 
         before_damage = apt.damage
-        apt.after_movement(1, 0, gs)
+        moved(gs, apt)
         assert apt.damage == before_damage + 1
         assert apt.armor == 0
 
@@ -169,7 +175,7 @@ class TestOrangeApt:
 
         before_apt = apt.armor
         before_ally = ally.armor
-        apt.on_card_moved(ally, gs)
+        card_moved(gs, apt, ally)
         assert apt.armor == before_apt + S["APT"]["move_armor_gain"]
         assert ally.armor == before_ally + S["APT"]["move_armor_gain"]
 
@@ -182,5 +188,5 @@ class TestOrangeSp:
         enemy = place_card(gs, RedAdc, "player2", 3, 3)
 
         before = enemy.health
-        sp.on_card_moved(ally, gs)
+        card_moved(gs, sp, ally)
         assert enemy.health < before

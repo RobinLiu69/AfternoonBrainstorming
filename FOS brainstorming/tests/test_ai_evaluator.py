@@ -17,8 +17,14 @@
 # -----------------------------------------------------------------
 
 from campaign import ai_evaluator
-from cards.card_white import Adc, Tank, Ass, Sp
+from cards.definitions.white import Adc, Tank, Ass, Sp
 from tests.helpers import make_game_state, place_card
+from tests.effect_helpers import (
+    card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+
 
 
 def test_parse_card_name_white_adc():
@@ -219,7 +225,7 @@ def test_evaluate_attack_kill_bonus_higher_for_sp_than_equal_damage_unit():
     attacker2.numbness = False
     ass_target = place_card(gs2, Ass, "player2", 1, 0)
     ass_target.numbness = False
-    ass_target.damage = 5  # same damage as SP for fair comparison
+    set_damage(ass_target, 5)  # same damage as SP for fair comparison
     ass_score, _ = ai_evaluator.evaluate_attack(attacker2, gs2)
 
     assert sp_score > ass_score

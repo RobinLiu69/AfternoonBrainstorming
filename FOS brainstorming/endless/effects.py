@@ -19,6 +19,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from cards.stats import DAMAGE, MAX_HEALTH
+
 if TYPE_CHECKING:
     from core.game_state import GameState
 
@@ -40,12 +42,11 @@ def maintain_side_unit_buffs(effects: dict, gs: "GameState", player_name: str, b
         hp = hp_plus + job_hp.get(c.job, 0)
         dmg = dmg_plus + job_dmg.get(c.job, 0)
         if hp:
+            c.add_permanent(MAX_HEALTH, hp)
             c.health = max(1, c.health + hp)
-            c.max_health = max(1, c.max_health + hp)
             c.display_health = c.health
         if dmg:
-            c.damage = max(0, c.damage + dmg)
-            c.original_damage = max(0, c.original_damage + dmg)
+            c.add_permanent(DAMAGE, dmg)
         buffed_ids.add(c.instance_id)
 
 

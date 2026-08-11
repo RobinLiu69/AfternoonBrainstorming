@@ -19,7 +19,7 @@
 import pytest
 
 from campaign.ai_controller import AIController, AI_TURN_START_DELAY_MS, AI_ACTION_DELAY_MS
-from cards.card_white import Adc, Ass
+from cards.definitions.white import Adc, Ass
 from tests.helpers import make_game_state, place_card
 
 
@@ -240,7 +240,7 @@ def test_heal_not_emitted_when_no_heal_counter():
     wounded = place_card(gs, "TANKW", "player2", 0, 0)
     wounded.numbness = False
     wounded.health = 3
-    wounded.max_health = 15
+    set_max_health(wounded, 15)
 
     ai.tick(gs, 0)
     actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1)
@@ -259,7 +259,7 @@ def test_heal_targets_wounded_friendly_when_counter_available():
     wounded = place_card(gs, "TANKW", "player2", 0, 0)
     wounded.numbness = False
     wounded.health = 3
-    wounded.max_health = 15
+    set_max_health(wounded, 15)
 
     ai.tick(gs, 0)
     actions = ai.tick(gs, AI_TURN_START_DELAY_MS + 1)
@@ -278,7 +278,7 @@ def test_heal_skipped_when_deficit_too_small():
 
     almost_full = place_card(gs, "TANKW", "player2", 0, 0)
     almost_full.numbness = False
-    almost_full.max_health = 15
+    set_max_health(almost_full, 15)
     almost_full.health = 14
 
     ai.tick(gs, 0)
@@ -297,12 +297,12 @@ def test_heal_picks_critical_unit_over_lightly_chipped_one():
 
     critical = place_card(gs, "TANKW", "player2", 0, 0)
     critical.numbness = False
-    critical.max_health = 15
+    set_max_health(critical, 15)
     critical.health = 2
 
     chipped = place_card(gs, "TANKW", "player2", 3, 3)
     chipped.numbness = False
-    chipped.max_health = 15
+    set_max_health(chipped, 15)
     chipped.health = 10
 
     ai.tick(gs, 0)
@@ -328,7 +328,7 @@ def test_heal_runs_after_lethal_attack_priority():
 
     wounded = place_card(gs, "TANKW", "player2", 3, 3)
     wounded.numbness = False
-    wounded.max_health = 15
+    set_max_health(wounded, 15)
     wounded.health = 3
 
     ai.tick(gs, 0)

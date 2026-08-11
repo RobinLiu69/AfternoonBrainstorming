@@ -17,79 +17,93 @@
 # -----------------------------------------------------------------
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, TypeVar, overload
+
+from typing import TYPE_CHECKING, overload
+
+from cards.defs import CARD_DEFS, CardDef
+from cards.events import Event
 
 if TYPE_CHECKING:
     from core.game_state import GameState
-    from cards.base import Card
-
-_CardType = TypeVar("_CardType", bound="Card")
+    from cards.runtime import Card
 
 
 class CardFactory:
-    _registry = {}
-    _all_registered = False
+    """Builds cards from their definitions.
+
+    ``_registry`` is the live definition table, so existing callers that test
+    membership (``"ADCR" in CardFactory._registry``) keep working.
+    """
+
+    _registry: dict[str, CardDef] = CARD_DEFS
 
     @classmethod
-    def register(cls, card_name: str, card_class: type) -> None:
-        cls._registry[card_name] = card_class
+    def register(cls, card_name: str, definition: CardDef) -> None:
+        cls._registry[card_name] = definition
 
     @classmethod
     def register_all(cls) -> None:
-        if cls._all_registered:
-            return
-        cls._all_registered = True
-        from cards import (
-            base, card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
-            card_green, card_orange, card_purple, card_white, card_brown,
-        )
+        from cards.definitions import load_all
+        load_all()
 
     @overload
     @classmethod
-    def create(cls, card_name: type[_CardType], owner: str, board_x: int, board_y: int, **kwargs) -> _CardType: ...
+    def create(cls, card_name: CardDef, owner: str, board_x: int, board_y: int, **kwargs) -> "Card": ...
     @overload
     @classmethod
     def create(cls, card_name: str, owner: str, board_x: int, board_y: int, **kwargs) -> "Card": ...
 
     @classmethod
-    def create(cls, card_name, owner: str, board_x: int, board_y: int, **kwargs):
-        if isinstance(card_name, type):
+    def create(cls, card_name, owner: str, board_x: int, board_y: int, **kwargs) -> "Card":
+        if isinstance(card_name, CardDef):
             return card_name(owner, board_x, board_y, **kwargs)
-        card_class = cls._registry.get(card_name)
-        if card_class:
-            return card_class(owner, board_x, board_y, **kwargs)
-        raise ValueError(f"Unknown card: {card_name}")
+        cls.register_all()
+        definition = cls._registry.get(card_name)
+        if definition is None:
+            raise ValueError(f"Unknown card: {card_name}")
+        return definition(owner, board_x, board_y, **kwargs)
 
     @classmethod
     def from_dict(cls, data: dict) -> "Card":
-        card_class = cls._registry.get(data["job_and_color"])
-        if card_class is None:
+        from cards.runtime import Card
+        cls.register_all()
+        if data["job_and_color"] not in cls._registry:
             raise ValueError(f"Unknown job_and_color: {data['job_and_color']!r}")
-        
-        try:
-            init_args = card_class.init_args_from_dict(data)
-            card = card_class(**init_args)
-        except TypeError as e:
-            print(f"[factory] fallback to __new__ for {data['job_and_color']}: {e}")
-            card = card_class.__new__(card_class)
-            card.__post_init__()
-        
-        card.instance_id = data["instance_id"]
-        card.apply_dict(data)
-        return card
+        return Card.from_dict(data)
 
 
-def spawn_card(board_x: int, board_y: int, card_name: str, owner: str, target_board: list[Card], game_state: GameState, **kwargs) -> bool:
-    if not spawn_check(board_x, board_y, game_state): return False
-    card = CardFactory.create(card_name, owner, board_x, board_y, **kwargs)
-    price_check = getattr(card, "price_check", None)
-    if price_check is not None and not price_check(game_state):
+def spawn_card(
+    board_x: int,
+    board_y: int,
+    card_name: str,
+    owner: str,
+    target_board: list,
+    game_state: "GameState",
+    **kwargs,
+) -> bool:
+    """Place a card, if the square is free and the card can be paid for."""
+    if not spawn_check(board_x, board_y, game_state):
         return False
+
+    from cards.actions import DeployCost
+    card = CardFactory.create(card_name, owner, board_x, board_y, **kwargs)
+    card.bind(game_state)
+
+    cost = DeployCost(card=card, gs=game_state)
+    game_state.effects.replace(game_state, Event.DEPLOY_COST, cost, [card])
+    if cost.cancelled:
+        return False
+
+    # Deployment resolves before the card joins the board, so an arrival effect
+    # sees the state it is arriving into. Several cards depend on this.
     card.deploy(game_state)
     game_state.board_dict[board_x, board_y].occupy = True
     target_board.append(card)
     return True
 
 
-def spawn_check(board_x: int, board_y: int, game_state: GameState) -> bool:
-    return game_state.board_config.is_valid_position(board_x, board_y) and not game_state.board_dict[board_x, board_y].occupy
+def spawn_check(board_x: int, board_y: int, game_state: "GameState") -> bool:
+    return (
+        game_state.board_config.is_valid_position(board_x, board_y)
+        and not game_state.board_dict[board_x, board_y].occupy
+    )

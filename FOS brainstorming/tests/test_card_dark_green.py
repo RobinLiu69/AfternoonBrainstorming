@@ -18,8 +18,14 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_dark_green import Adc, Ap, Tank, Hf, Lf, Ass, Apt
-from cards.card_red import Adc as RedAdc
+from cards.definitions.dark_green import Adc, Ap, Tank, Hf, Lf, Ass, Apt
+from cards.definitions.red import Adc as RedAdc
+from tests.effect_helpers import (
+    card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+
 
 S = CARD_SETTING["DarkGreen"]
 
@@ -70,7 +76,7 @@ class TestDarkGreenTank:
         enemy = place_card(gs, RedAdc, "player2", 2, 1)
 
         before = gs.players_totem["player1"]
-        tank.on_attacked_by(enemy, 1, gs)
+        damage_taken(gs, tank, enemy, 1)
         assert gs.players_totem["player1"] == before + S["TANK"]["engraved_totem"]
 
 
@@ -91,7 +97,7 @@ class TestDarkGreenHf:
 
         before_health = hf.health
         before_totem = gs.players_totem["player1"]
-        hf.on_refresh(gs)
+        hf.refresh(gs)
         assert hf.health < before_health
         assert gs.players_totem["player1"] == before_totem + S["HF"]["engraved_totem"]
 
@@ -102,7 +108,7 @@ class TestDarkGreenHf:
         hf.update(gs)
         assert hf.extra_damage == S["HF"]["damage_bonus"]
 
-        hf.on_refresh(gs)
+        hf.refresh(gs)
         assert hf.health == 4 - S["HF"]["turn_start_health_loss"]
 
     def test_attack_still_applies_low_health_bonus(self) -> None:
@@ -165,5 +171,5 @@ class TestDarkGreenApt:
         target = place_card(gs, RedAdc, "player2", 1, 0)
 
         before = apt.armor
-        apt.after_damage_calculated(target, 6, gs)
+        damage_dealt(gs, apt, target, 6)
         assert apt.armor == before + 3

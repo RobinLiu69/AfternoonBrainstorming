@@ -18,7 +18,7 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_red import Adc, Ap, Tank, Hf, Lf, Ass, Apt, Sp
+from cards.definitions.red import Adc, Ap, Tank, Hf, Lf, Ass, Apt, Sp
 
 S = CARD_SETTING["Red"]
 

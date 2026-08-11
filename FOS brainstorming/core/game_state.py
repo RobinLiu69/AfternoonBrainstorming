@@ -32,7 +32,12 @@ from core.neutral import Neutral
 from core.board_block import Board
 from core.board_config import BoardConfig
 from cards.base import Card, Judge
+from cards.engine import EffectEngine
+from cards.events import Event, Resource
+from shared.stat_type import StatType
 from utils.logger import GameLogger
+
+COIN_CAP: int = 50
 
 if TYPE_CHECKING:
     from rendering.game_renderer import GameRenderer
@@ -97,8 +102,109 @@ class GameState:
     net_my_ping: "float | None" = None
     net_awaiting_ack: bool = False
 
+    effects: EffectEngine = field(default_factory=EffectEngine)
+    _modifier_seq: int = 0
+
     def __post_init__(self) -> None:
         self.rng = _py_random.Random(self.rng_seed)
+
+    # --- effect system plumbing -----------------------------------------
+
+    def next_modifier_seq(self) -> int:
+        """Monotonic timestamp so modifier fold order is total and reproducible."""
+        self._modifier_seq += 1
+        return self._modifier_seq
+
+    @property
+    def attack_draining(self) -> bool:
+        return self._attack_draining
+
+    @attack_draining.setter
+    def attack_draining(self, value: bool) -> None:
+        self._attack_draining = value
+
+    @property
+    def attack_anim_cursor(self) -> float:
+        return self._attack_anim_cursor
+
+    @attack_anim_cursor.setter
+    def attack_anim_cursor(self, value: float) -> None:
+        self._attack_anim_cursor = value
+
+    def bind_cards(self) -> None:
+        """Give every card a reference to this game so its auras can resolve."""
+        for card in self.get_all_cards():
+            card.bind(self)
+            for companion in getattr(card, "companions", ()):
+                companion.bind(self)
+
+    # --- per-player economies -------------------------------------------
+
+    def _resource_pool(self, name: str) -> dict[str, int]:
+        match name:
+            case Resource.LUCK:
+                return self.players_luck
+            case Resource.TOKEN:
+                return self.players_token
+            case Resource.TOTEM:
+                return self.players_totem
+            case Resource.COIN:
+                return self.players_coin
+            case Resource.ATTACKS:
+                return self.number_of_attacks
+            case Resource.MOVES:
+                return self.number_of_movings
+        raise ValueError(f"unknown resource: {name!r}")
+
+    def resource(self, name: str, seat: str) -> int:
+        return self._resource_pool(name).get(seat, 0)
+
+    def spend_resource(self, name: str, seat: str, amount: int) -> bool:
+        pool = self._resource_pool(name)
+        if pool.get(seat, 0) < amount:
+            return False
+        pool[seat] -= amount
+        return True
+
+    def gain_resource(self, name: str, seat: str, amount: int, source=None) -> None:
+        """Add to an economy, one unit at a time so per-unit triggers fire.
+
+        The token-to-card conversion is a rule of the game rather than an
+        ability of any one card, so it lives here instead of being duplicated
+        across the blue cards.
+        """
+        from cards.actions import ResourceContext
+
+        pool = self._resource_pool(name)
+        if seat not in pool:
+            return
+
+        step = 1 if amount >= 0 else -1
+        for _ in range(abs(amount)):
+            pool[seat] = pool[seat] + step
+            if name == Resource.COIN:
+                pool[seat] = min(pool[seat], COIN_CAP)
+            self.effects.dispatch(
+                self, Event.RESOURCE_GAINED, self.get_player_cards(seat),
+                lambda card: ResourceContext(
+                    self, card, resource_name=name, seat=seat, amount=step, granter=source
+                ),
+            )
+            if name == Resource.TOKEN and step > 0:
+                self._convert_tokens(seat)
+
+    def _convert_tokens(self, seat: str) -> None:
+        from cards.actions import Context
+        if self.tokens_to_draw_a_card <= 0:
+            return
+        while self.players_token[seat] >= self.tokens_to_draw_a_card:
+            self.players_token[seat] -= self.tokens_to_draw_a_card
+            self.card_to_draw[seat] += 1
+            self.game_statistics.increment(StatType.TOKEN_USE, seat, 1)
+            self.effects.dispatch(
+                self, Event.CARD_DRAWN, self.get_player_cards(seat),
+                lambda card: Context(self, card),
+            )
 
     def update(self) -> None:
         for card in self.player1.on_board:
@@ -235,3 +341,7 @@ class GameState:
         if "rng_seed" in data:
             self.rng_seed = data["rng_seed"]
             self.rng = _py_random.Random(self.rng_seed)
+
+        # Freshly rebuilt cards need a reference to this game before anything
+        # reads a derived stat, since static effects resolve against the board.
+        self.bind_cards()

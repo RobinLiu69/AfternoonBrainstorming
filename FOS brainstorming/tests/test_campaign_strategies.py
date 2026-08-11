@@ -37,6 +37,15 @@ from campaign.ai_strategies.green import GreenStrategy
 from campaign.ai_strategies.orange import OrangeStrategy
 from campaign.ai_strategies.boss import BossStrategy
 from tests.helpers import make_game_state, place_card
+from tests.effect_helpers import (
+    drawbacks_off, rage_ally, set_bonus, card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+from cards.statuses import (
+    FIRST_STRIKE, LAST_STAND, RAGING, RAMPAGE, SPENT, UNDYING, WARDED,
+)
+
 
 
 @pytest.mark.parametrize("stage", ["white", "red", "blue", "green", "orange", "boss"])
@@ -170,7 +179,7 @@ def test_red_hfr_anger_attack_gets_huge_bonus():
     gs = make_game_state()
     hfr = place_card(gs, "HFR", "player2", 1, 1)
     no_anger = s.attack_bonus(hfr, gs, 10.0)
-    hfr.anger = True
+    hfr.statuses.add(LAST_STAND)
     angered = s.attack_bonus(hfr, gs, 10.0)
     assert angered >= no_anger + 20.0
 
@@ -181,7 +190,7 @@ def test_orange_asso_anger_attack_outranks_idle_attack():
     gs = make_game_state()
     asso = place_card(gs, "ASSO", "player2", 1, 1)
     fresh = s.attack_bonus(asso, gs, 10.0)
-    asso.anger = True
+    asso.statuses.add(RAMPAGE)
     angered = s.attack_bonus(asso, gs, 10.0)
     assert angered >= fresh + 18.0
 
@@ -193,10 +202,10 @@ def test_evaluator_skips_suicide_penalty_for_anger_hfr_attacker():
     hfr.health = 3
     danger = place_card(gs, "ADCW", "player1", 2, 2)
     danger.numbness = False
-    danger.damage = 5
+    set_damage(danger, 5)
 
     score_no_anger, _ = ai_evaluator.evaluate_attack(hfr, gs)
-    hfr.anger = True
+    hfr.statuses.add(LAST_STAND)
     score_with_anger, _ = ai_evaluator.evaluate_attack(hfr, gs)
     assert score_with_anger > score_no_anger
 
@@ -209,7 +218,7 @@ def test_evaluator_doesnt_count_kill_on_anger_hfr_target():
     enemy_hfr.numbness = False
     enemy_hfr.health = 1
     no_anger_score, _ = ai_evaluator.evaluate_attack(attacker, gs)
-    enemy_hfr.anger = True
+    enemy_hfr.statuses.add(LAST_STAND)
     anger_score, _ = ai_evaluator.evaluate_attack(attacker, gs)
     assert no_anger_score >= anger_score + 80
 
@@ -396,9 +405,9 @@ def test_boss_placement_prefers_tank_against_high_damage_opponent():
     s = BossStrategy()
     gs = make_game_state()
     adc1 = place_card(gs, "ADCW", "player1", 0, 0)
-    adc1.damage = 5
+    set_damage(adc1, 5)
     adc2 = place_card(gs, "ADCW", "player1", 0, 1)
-    adc2.damage = 5
+    set_damage(adc2, 5)
     with_tank = s.placement_bonus("TANKB", (2, 2), gs, "player2", 10.0)
     with_adc = s.placement_bonus("ADCR", (2, 2), gs, "player2", 10.0)
     assert with_tank > with_adc
@@ -776,7 +785,7 @@ def test_orange_hfo_attack_bonus_scales_with_ramp_and_multitarget():
     multi = s.attack_bonus(hfo, gs, 10.0)
     assert multi > baseline
 
-    hfo.extra_damage = 2
+    set_bonus(hfo, 2)
     ramped = s.attack_bonus(hfo, gs, 10.0)
     assert ramped > multi + 10.0
 
@@ -894,7 +903,7 @@ def test_asso_with_anger_and_killable_target_emits_attack():
     gs.player2.hand = []
     asso = place_card(gs, "ASSO", "player2", 2, 2)
     asso.numbness = False
-    asso.anger = True
+    asso.statuses.add(RAMPAGE)
     enemy = place_card(gs, "ADCW", "player1", 3, 3)
     enemy.numbness = False
     enemy.health = 3
@@ -972,7 +981,7 @@ def test_ai_plays_moveo_then_chains_to_asso_anger_kill():
 
     asso = place_card(gs, "ASSO", "player2", 1, 1)
     asso.numbness = False
-    asso.anger = False
+    asso.statuses.discard(RAMPAGE)
 
     victim = place_card(gs, "ADCW", "player1", 3, 3)
     victim.numbness = False
@@ -1016,7 +1025,7 @@ def test_doomed_attacker_skips_wasted_chip_penalty():
     adcr = place_card(gs, "ADCR", "player2", 3, 3)
     adcr.numbness = False
     adcr.health = 1
-    adcr.damage = 2
+    set_damage(adcr, 2)
 
     place_card(gs, "ADCW", "player1", 0, 3)
     place_card(gs, "ASSW", "player1", 1, 3)
@@ -1034,7 +1043,7 @@ def test_doomed_attacker_skips_suicide_penalty():
     attacker.health = 1
     big = place_card(gs, "TANKW", "player1", 1, 2)
     big.numbness = False
-    big.damage = 5
+    set_damage(big, 5)
 
     score, _ = ai_evaluator.evaluate_attack(attacker, gs)
     assert score >= 0

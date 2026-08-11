@@ -16,37 +16,37 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-"""Public entry point for the card system.
+"""Neutral props and the magic cards.
 
-The card runtime lives in :mod:`cards.runtime`, the abilities in
-:mod:`cards.definitions`. This module re-exports the handful of names the rest
-of the game imports.
+None of these have abilities; they exist so the board and the hand have
+something to render and to occupy space.
 """
 
 from __future__ import annotations
 
-from cards.runtime import Card, CardRenderData, reset_instance_counter
-from shared.setting import JOB_DICTIONARY
-
-COLOR_TAG_LIST: list[str] = sorted(JOB_DICTIONARY["colors_dict"].keys(), key=len, reverse=True)
+from cards.defs import neutral
 
 
-def Judge() -> Card:
-    """The impartial source of damage that has no attacker.
-
-    Chip damage (DarkGreen's self-inflicted bleed, scripted events) is dealt by
-    this card so statistics and logging have a well-formed origin.
-    """
-    from cards.defs import CARD_DEFS
-    from cards.definitions import load_all
-    load_all()
-    return CARD_DEFS["JUDGE"]("None", -1, -1)
+@neutral("CUBE", job="CUBE", pattern="")
+class Cube:
+    """A neutral crate. Blocks a square, never scores."""
 
 
-__all__ = [
-    "Card",
-    "CardRenderData",
-    "COLOR_TAG_LIST",
-    "Judge",
-    "reset_instance_counter",
-]
+@neutral("CUBES", job="CUBES", pattern="")
+class Cubes:
+    """Hand/display face of the crate-placing magic card."""
+
+
+@neutral("JUDGE", job="JUDGE", health=1, damage=0, pattern="", movable=False)
+class Judge:
+    """Not a card in any deck: the origin for damage the game itself deals."""
+
+
+@neutral("MOVE", job="MOVE", health=-1, damage=-1, pattern="", movable=False)
+class Move:
+    """Magic card: grants one movement."""
+
+
+@neutral("HEAL", job="HEAL", health=-1, damage=-1, pattern="", movable=False)
+class Heal:
+    """Magic card: restores health, overflow becoming armour."""

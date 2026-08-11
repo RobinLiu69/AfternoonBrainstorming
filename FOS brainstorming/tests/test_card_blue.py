@@ -18,8 +18,14 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_blue import Adc, Ap, Tank, Hf, Lf, Ass, Apt
-from cards.card_red import Adc as RedAdc, Tank as RedTank
+from cards.definitions.blue import Adc, Ap, Tank, Hf, Lf, Ass, Apt
+from cards.definitions.red import Adc as RedAdc, Tank as RedTank
+from tests.effect_helpers import (
+    card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+
 
 S = CARD_SETTING["Blue"]
 TOKEN_THRESHOLD = 3
@@ -70,7 +76,7 @@ class TestBlueAdc:
         adc = place_card(gs, Adc, "player1", 0, 0)
         adc.numbness = True
 
-        adc.token_draw(gs)
+        card_drawn(gs, adc)
         assert adc.numbness is False
 
     def test_token_draw_enqueues_attack_when_not_numb(self) -> None:
@@ -78,7 +84,7 @@ class TestBlueAdc:
         adc = place_card(gs, Adc, "player1", 0, 0)
         adc.numbness = False
 
-        adc.token_draw(gs)
+        card_drawn(gs, adc)
         assert len(gs.pending_attacks) == 1
 
 
@@ -172,7 +178,7 @@ class TestBlueApt:
         apt = place_card(gs, Apt, "player1", 0, 0)
 
         before = apt.armor
-        apt.after_token(gs)
+        token_gained(gs, apt, Resource.TOKEN)
         assert apt.armor == before + 1
 
     def test_ability_generates_tokens_from_armor(self) -> None:

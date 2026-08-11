@@ -21,6 +21,8 @@ from typing import TYPE_CHECKING
 
 from campaign.config_loader import CAMPAIGN_SETTINGS
 
+from cards.stats import MAX_HEALTH
+
 if TYPE_CHECKING:
     from core.game_state import GameState
 
@@ -61,8 +63,8 @@ def maintain_unit_buffs(stage: str, gs: "GameState", buffed_ids: set[str]) -> No
     for c in gs.player2.on_board:
         if c.instance_id in buffed_ids:
             continue
+        c.add_permanent(MAX_HEALTH, hp_plus)
         c.health += hp_plus
-        c.max_health += hp_plus
         c.display_health = c.health
         buffed_ids.add(c.instance_id)
 

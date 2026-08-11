@@ -18,8 +18,8 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_white import Ap, Apt, Sp
-from cards.card_red import Adc as RedAdc
+from cards.definitions.white import Ap, Apt, Sp
+from cards.definitions.red import Adc as RedAdc
 
 S = CARD_SETTING["White"]
 

@@ -18,8 +18,14 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_purple import Ap, Tank, Hf, Ass
-from cards.card_red import Adc as RedAdc
+from cards.definitions.purple import Ap, Tank, Hf, Ass
+from cards.definitions.red import Adc as RedAdc
+from tests.effect_helpers import (
+    card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+
 
 S = CARD_SETTING["Purple"]
 
@@ -60,7 +66,7 @@ class TestPurpleTank:
         enemy = place_card(gs, RedAdc, "player2", 1, 0)
 
         before = enemy.health
-        tank.on_card_moved(enemy, gs)
+        card_moved(gs, tank, enemy)
         assert enemy.health == before - S["TANK"]["move_strike_damage"]
 
     def test_move_broadcast_does_not_damage_ally(self) -> None:
@@ -69,7 +75,7 @@ class TestPurpleTank:
         ally = place_card(gs, RedAdc, "player1", 0, 1)
 
         before = ally.health
-        result = tank.on_card_moved(ally, gs)
+        result = card_moved(gs, tank, ally)
         assert result is False
         assert ally.health == before
 
@@ -83,7 +89,7 @@ class TestPurpleHf:
         place_card(gs, RedAdc, "player2", 2, 0)
 
         before = gs.number_of_attacks["player1"]
-        hf.on_refresh(gs)
+        hf.refresh(gs)
         assert gs.number_of_attacks["player1"] == before + 1
 
     def test_start_turn_no_bonus_when_fewer_than_three_enemies(self) -> None:
@@ -93,7 +99,7 @@ class TestPurpleHf:
         place_card(gs, RedAdc, "player2", 1, 0)
 
         before = gs.number_of_attacks["player1"]
-        hf.on_refresh(gs)
+        hf.refresh(gs)
         assert gs.number_of_attacks["player1"] == before
 
 

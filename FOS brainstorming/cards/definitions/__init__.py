@@ -16,37 +16,23 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-"""Public entry point for the card system.
+"""Card definitions, one module per colour.
 
-The card runtime lives in :mod:`cards.runtime`, the abilities in
-:mod:`cards.definitions`. This module re-exports the handful of names the rest
-of the game imports.
+Importing this package registers every card into cards.defs.CARD_DEFS.
 """
 
 from __future__ import annotations
 
-from cards.runtime import Card, CardRenderData, reset_instance_counter
-from shared.setting import JOB_DICTIONARY
 
-COLOR_TAG_LIST: list[str] = sorted(JOB_DICTIONARY["colors_dict"].keys(), key=len, reverse=True)
+_LOADED = False
 
 
-def Judge() -> Card:
-    """The impartial source of damage that has no attacker.
-
-    Chip damage (DarkGreen's self-inflicted bleed, scripted events) is dealt by
-    this card so statistics and logging have a well-formed origin.
-    """
-    from cards.defs import CARD_DEFS
-    from cards.definitions import load_all
-    load_all()
-    return CARD_DEFS["JUDGE"]("None", -1, -1)
-
-
-__all__ = [
-    "Card",
-    "CardRenderData",
-    "COLOR_TAG_LIST",
-    "Judge",
-    "reset_instance_counter",
-]
+def load_all() -> None:
+    global _LOADED
+    if _LOADED:
+        return
+    _LOADED = True
+    from cards.definitions import (  # noqa: F401
+        neutral, white, red, purple, brown, blue,
+        orange, dark_green, green, cyan, fuchsia,
+    )

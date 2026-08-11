@@ -17,11 +17,17 @@
 # -----------------------------------------------------------------
 
 from cards.base import Card
-from cards.card_brown import Adc, Ap, Apt, Ass, Hf, Lf, Sp, Tank
-from cards.card_white import Adc as WhiteAdc
+from cards.definitions.brown import Adc, Ap, Apt, Ass, Hf, Lf, Sp, Tank
+from cards.definitions.white import Adc as WhiteAdc
 from core.game_state import GameState
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card
+from tests.effect_helpers import (
+    drawbacks_off, rage_ally, set_bonus, card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+
 
 S = CARD_SETTING["Brown"]
 
@@ -43,7 +49,7 @@ class TestBrownAdc:
     def test_no_self_numbness_while_effects_are_disabled(self) -> None:
         gs = make_game_state()
         adc = place_card(gs, Adc, "player1", 1, 1)
-        adc.effects_disabled = True
+        rage_ally(gs, adc)
         place_card(gs, WhiteAdc, "player2", 1, 2)
 
         assert attack_with(adc, gs) is True
@@ -79,7 +85,7 @@ class TestBrownAp:
     def test_disabled_effects_drop_the_draw_but_keep_the_numbness(self) -> None:
         gs = make_game_state()
         ap = place_card(gs, Ap, "player1", 1, 1)
-        ap.effects_disabled = True
+        rage_ally(gs, ap)
         target = place_card(gs, WhiteAdc, "player2", 1, 2)
         target.numbness = False
 
@@ -104,7 +110,7 @@ class TestBrownTank:
     def test_ally_is_spared_while_effects_are_disabled(self) -> None:
         gs = make_game_state()
         tank = place_card(gs, Tank, "player1", 1, 1)
-        tank.effects_disabled = True
+        rage_ally(gs, tank)
         ally = place_card(gs, WhiteAdc, "player1", 1, 0)
         ally.numbness = False
         enemy = place_card(gs, WhiteAdc, "player2", 1, 2)
@@ -153,7 +159,7 @@ class TestBrownHfAttackCost:
 
     def test_costs_one_blade_while_effects_are_disabled(self) -> None:
         gs, hf, victim = self._setup(1)
-        hf.effects_disabled = True
+        rage_ally(gs, hf)
         before = victim.health
 
         assert hf.attack_cost(gs) == 1
@@ -167,10 +173,10 @@ class TestBrownHfAttackCost:
         sp.numbness = False
 
         assert hf.attack_cost(gs) == 2
-        sp.ability(hf, gs)
+        on_hit(gs, sp, hf)
         assert hf.attack_cost(gs) == 1
 
-        hf.effects_disabled = False
+        rage_ally(gs, hf, False)
         assert hf.attack_cost(gs) == 2
 
 
@@ -208,7 +214,7 @@ class TestBrownLf:
     def test_no_score_while_effects_are_disabled(self) -> None:
         gs = make_game_state()
         lf = place_card(gs, Lf, "player1", 1, 1)
-        lf.effects_disabled = True
+        rage_ally(gs, lf)
         victim = place_card(gs, WhiteAdc, "player2", 1, 2)
         victim.health = 1
 
@@ -240,7 +246,7 @@ class TestBrownAss:
     def test_disabled_effects_keep_the_draw(self) -> None:
         gs = make_game_state()
         ass = place_card(gs, Ass, "player1", 1, 1)
-        ass.effects_disabled = True
+        rage_ally(gs, ass)
         victim = place_card(gs, WhiteAdc, "player2", 2, 2)
         victim.health = 1
 
@@ -280,7 +286,7 @@ class TestBrownApt:
     def test_disabled_effects_shield_nobody(self) -> None:
         gs = make_game_state()
         apt = place_card(gs, Apt, "player1", 0, 0)
-        apt.effects_disabled = True
+        rage_ally(gs, apt)
         enemy = place_card(gs, WhiteAdc, "player2", 3, 3)
 
         apt.deploy(gs)
@@ -315,7 +321,7 @@ class TestBrownApt:
     def test_ally_buff_survives_disabled_effects(self) -> None:
         gs = make_game_state()
         apt = place_card(gs, Apt, "player1", 1, 1)
-        apt.effects_disabled = True
+        rage_ally(gs, apt)
         ally = place_card(gs, WhiteAdc, "player1", 1, 0)
         place_card(gs, WhiteAdc, "player2", 1, 2)
 
@@ -336,11 +342,11 @@ class TestBrownSp:
 
     def test_rage_suppresses_ally_effects(self) -> None:
         gs, hf, sp = self._setup()
-        assert hf.effects_off() is False
+        assert drawbacks_off(hf, gs) is False
 
-        sp.ability(hf, gs)
+        on_hit(gs, sp, hf)
         assert sp.anger is True
-        assert hf.effects_off() is True
+        assert drawbacks_off(hf, gs) is True
         assert hf.attack_cost(gs) == 1
 
     def test_attacking_enters_rage(self) -> None:
@@ -349,67 +355,67 @@ class TestBrownSp:
 
         attack_with(sp, gs)
         assert sp.anger is True
-        assert hf.effects_off() is True
+        assert drawbacks_off(hf, gs) is True
 
     def test_death_restores_ally_effects(self) -> None:
         gs, hf, sp = self._setup()
-        sp.ability(hf, gs)
+        on_hit(gs, sp, hf)
 
         sp.health = 0
-        sp.on_killed_by(hf, gs)
+        on_killed(gs, sp, hf)
 
-        assert hf.effects_off() is False
+        assert drawbacks_off(hf, gs) is False
         assert hf.attack_cost(gs) == 2
 
     def test_nullify_restores_ally_effects(self) -> None:
         gs, hf, sp = self._setup()
-        sp.ability(hf, gs)
+        on_hit(gs, sp, hf)
 
         sp.set_nullify(True, gs)
-        assert hf.effects_off() is False
+        assert drawbacks_off(hf, gs) is False
 
         sp.set_nullify(False, gs)
-        assert hf.effects_off() is True
+        assert drawbacks_off(hf, gs) is True
 
     def test_second_angry_sp_keeps_effects_suppressed(self) -> None:
         gs, hf, sp = self._setup()
         other = place_card(gs, Sp, "player1", 0, 1)
         other.numbness = False
-        sp.ability(hf, gs)
-        other.ability(hf, gs)
+        on_hit(gs, sp, hf)
+        on_hit(gs, other, hf)
 
         sp.health = 0
-        sp.on_killed_by(hf, gs)
+        on_killed(gs, sp, hf)
 
-        assert hf.effects_off() is True
+        assert drawbacks_off(hf, gs) is True
         assert hf.attack_cost(gs) == 1
 
     def test_enemy_angry_sp_does_not_suppress(self) -> None:
         gs, hf, _sp = self._setup()
         enemy_sp = place_card(gs, Sp, "player2", 3, 3)
         enemy_sp.numbness = False
-        enemy_sp.ability(hf, gs)
+        on_hit(gs, enemy_sp, hf)
 
-        assert hf.effects_off() is False
+        assert drawbacks_off(hf, gs) is False
         assert hf.attack_cost(gs) == 2
 
     def test_giant_deployed_after_sp_died_keeps_effects(self) -> None:
         gs, hf, sp = self._setup()
-        sp.ability(hf, gs)
+        on_hit(gs, sp, hf)
         sp.health = 0
-        sp.on_killed_by(hf, gs)
+        on_killed(gs, sp, hf)
 
         latecomer = place_card(gs, Hf, "player1", 2, 2)
         latecomer.deploy(gs)
-        assert latecomer.effects_off() is False
+        assert drawbacks_off(latecomer, gs) is False
 
     def test_giant_deployed_while_sp_is_angry_is_suppressed(self) -> None:
         gs, hf, sp = self._setup()
-        sp.ability(hf, gs)
+        on_hit(gs, sp, hf)
 
         latecomer = place_card(gs, Hf, "player1", 2, 2)
         latecomer.deploy(gs)
-        assert latecomer.effects_off() is True
+        assert drawbacks_off(latecomer, gs) is True
 
 
 class TestOrdinaryCardsStillCostOne:

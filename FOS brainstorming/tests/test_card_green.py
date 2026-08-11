@@ -18,8 +18,14 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_green import Ap, Hf, Ass, Apt, Sp, LuckyBlock
-from cards.card_red import Adc as RedAdc
+from cards.definitions.green import Ap, Hf, Ass, Apt, Sp, LuckyBlock
+from cards.definitions.red import Adc as RedAdc
+from tests.effect_helpers import (
+    card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+
 
 S = CARD_SETTING["Green"]
 
@@ -42,7 +48,7 @@ class TestGreenHf:
         lb = place_card(gs, LuckyBlock, "player2", 1, 0)
 
         before = gs.players_luck["player1"]
-        hf.ability(lb, gs)
+        on_hit(gs, hf, lb)
         assert gs.players_luck["player1"] == before + S["HF"]["luck_increase"]
 
     def test_ability_against_non_luckyblock_no_luck_change(self) -> None:
@@ -51,7 +57,7 @@ class TestGreenHf:
         target = place_card(gs, RedAdc, "player2", 1, 0)
 
         before = gs.players_luck["player1"]
-        hf.ability(target, gs)
+        on_hit(gs, hf, target)
         assert gs.players_luck["player1"] == before
 
 
@@ -75,7 +81,7 @@ class TestGreenApt:
         apt = place_card(gs, Apt, "player1", 1, 1)
 
         before = len(gs.neutral.on_board)
-        apt.on_refresh(gs)
+        apt.refresh(gs)
         assert len(gs.neutral.on_board) == before + 4
 
 

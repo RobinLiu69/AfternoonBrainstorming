@@ -18,8 +18,14 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_fuchsia import Adc, Ap, Ass, Apt, Hf, Sp
-from cards.card_red import Adc as RedAdc, Tank as RedTank
+from cards.definitions.fuchsia import Adc, Ap, Ass, Apt, Hf, Sp
+from cards.definitions.red import Adc as RedAdc, Tank as RedTank
+from tests.effect_helpers import (
+    card_drawn, card_moved, damage_dealt, damage_taken, deployed, moved,
+    on_hit, on_kill, on_killed, set_damage, set_max_health, silence, token_gained,
+)
+from cards.events import Resource
+
 
 S = CARD_SETTING["Fuchsia"]
 
@@ -30,10 +36,10 @@ class TestFuchsiaAdc:
         adc = place_card(gs, Adc, "player1", 0, 0)
 
         adc.deploy(gs)
-        assert len(adc.shadows) == 1
+        assert len(adc.companions) == 1
         sx, sy = gs.board_config.get_symmetric_pos(0, 0)
-        assert adc.shadows[0].board_x == sx
-        assert adc.shadows[0].board_y == sy
+        assert adc.companions[0].board_x == sx
+        assert adc.companions[0].board_y == sy
 
     def test_attack_also_triggers_shadow_attack(self) -> None:
         gs = make_game_state()
@@ -83,9 +89,9 @@ class TestFuchsiaAss:
         enemy.health = 1
 
         do_attack(ass, gs)
-        assert len(ass.shadows) == 1
-        assert ass.shadows[0].board_x == 2
-        assert ass.shadows[0].board_y == 0
+        assert len(ass.companions) == 1
+        assert ass.companions[0].board_x == 2
+        assert ass.companions[0].board_y == 0
 
     def test_spawned_shadow_attacks_normally(self) -> None:
         gs = make_game_state()
@@ -115,8 +121,8 @@ class TestFuchsiaAss:
 
         do_attack(ass, gs)
 
-        assert len(ass.shadows) == 2
-        positions = {(s.board_x, s.board_y) for s in ass.shadows}
+        assert len(ass.companions) == 2
+        positions = {(s.board_x, s.board_y) for s in ass.companions}
         assert (3, 3) in positions
 
 
@@ -130,11 +136,11 @@ class TestFuchsiaSp:
         sp.deploy(gs)
 
         sx, sy = gs.board_config.get_symmetric_pos(0, 0)
-        assert len(far_ally.shadows) == 1
-        assert len(near_ally.shadows) == 0
-        assert (far_ally.shadows[0].board_x, far_ally.shadows[0].board_y) == (sx, sy)
-        assert far_ally.shadows[0].movable is False
-        assert far_ally.shadows[0].attack_types == far_ally.attack_types
+        assert len(far_ally.companions) == 1
+        assert len(near_ally.companions) == 0
+        assert (far_ally.companions[0].board_x, far_ally.companions[0].board_y) == (sx, sy)
+        assert far_ally.companions[0].movable is False
+        assert far_ally.companions[0].attack_types == far_ally.attack_types
 
 
 class TestFuchsiaApt:
@@ -143,13 +149,13 @@ class TestFuchsiaApt:
         apt = place_card(gs, Apt, "player1", 0, 0)
 
         apt.deploy(gs)
-        assert len(apt.shadows) == 1
+        assert len(apt.companions) == 1
 
     def test_shadow_damage_block_gives_linker_armor(self) -> None:
         gs = make_game_state()
         apt = place_card(gs, Apt, "player1", 0, 0)
         apt.deploy(gs)
-        shadow = apt.shadows[0]
+        shadow = apt.companions[0]
 
         attacker = place_card(gs, RedAdc, "player2", 1, 0)
         before = apt.armor
@@ -160,7 +166,7 @@ class TestFuchsiaApt:
         gs = make_game_state()
         apt = place_card(gs, Apt, "player1", 0, 0)
         apt.deploy(gs)
-        shadow = apt.shadows[0]
+        shadow = apt.companions[0]
         ally = place_card(gs, RedAdc, "player1", shadow.board_x, shadow.board_y)
         attacker = place_card(gs, RedAdc, "player2", 1, 0)
 
