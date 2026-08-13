@@ -52,6 +52,8 @@ class Player:
         self.elapsed_time: float = 0
         self.time_out: bool = False
         self.time_display: str = "00:00"
+        self.time_used: float = 0
+        self.time_used_display: str = "00:00"
         self.selected_card_index: int = -1
         self.revealed_deck: list[str] = list(self.deck[:6])
 
@@ -144,6 +146,11 @@ class Player:
             case "CUBES":
                 game_state.number_of_cubes[self.name] += 2
                 self.spend_from_hand(index)
+            case card_code.BARROW_CODE:
+                if spawn_card(board_x, board_y, card_code.WIGHT_CODE, self.name,
+                              self.on_board, game_state):
+                    self.hand.pop(index)
+                    game_state.game_logger.log_card_played(self.name, card_name, (board_x, board_y))
             case _:
                 real_name = card_code.base_code(card_name)
                 kwargs = {}
@@ -194,7 +201,7 @@ class Player:
                 card.on_death(game_state)
                 game_renderer.dying_cards.append(card)
                 code = getattr(card, "tower_code", "") or card.job_and_color
-                if not card_code.skips_discard(code):
+                if not card_code.skips_discard(code) and not card_code.is_token(code):
                     self.discard_pile.append(code)
                 game_state.board_dict[card.board_x, card.board_y].occupy = False
                 game_state.game_logger.log_card_recycled(self.name, card.job_and_color, (card.board_x, card.board_y))
@@ -226,6 +233,7 @@ class Player:
 
     def timer_start(self, game_state: GameState) -> None:
         self.start_time = time.time()
+        self.time_used = 0
         match game_state.timer_mode:
             case "countdown":
                 self.elapsed_time = game_state.countdown_time
@@ -254,6 +262,7 @@ class Player:
         time_minutes = str(int(self.elapsed_time//60)) if len(str(int(self.elapsed_time//60))) > 1 else "0"+str(int(self.elapsed_time//60))
         time_seconds = str(int(self.elapsed_time%60)) if len(str(int(self.elapsed_time%60))) > 1 else "0"+str(int(self.elapsed_time%60))
         self.time_display = time_minutes+":"+time_seconds
+        self.time_used_display = f"{int(self.time_used//60):02d}:{int(self.time_used%60):02d}"
 
     def _update_timer_logic(self, timer_mode: str) -> None:
         match timer_mode:
@@ -264,6 +273,7 @@ class Player:
                 if current_time - self.start_time > 1:
                     self.start_time = -1
                     self.elapsed_time -= 1
+                    self.time_used += 1
                 self._refresh_time_display()
                 self.time_out = self.elapsed_time <= 0
             case "timer":
@@ -287,7 +297,8 @@ class Player:
             "start_time": self.start_time,
             "elapsed_time": self.elapsed_time,
             "time_out": self.time_out,
-            "time_display": self.time_display
+            "time_display": self.time_display,
+            "time_used": self.time_used
         }
 
     def to_dict_for(self, viewer: str) -> dict:
@@ -312,9 +323,11 @@ class Player:
         self.elapsed_time = data["elapsed_time"]
         self.time_out = data["time_out"]
         self.time_display = data.get("time_display", self.time_display)
+        self.time_used = data.get("time_used", 0)
         minutes = int(self.elapsed_time // 60)
         seconds = int(self.elapsed_time % 60)
         self.time_display = f"{minutes:02d}:{seconds:02d}"
+        self.time_used_display = f"{int(self.time_used//60):02d}:{int(self.time_used%60):02d}"
 
         new_on_board = []
         for card_data in data["on_board"]:

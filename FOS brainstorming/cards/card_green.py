@@ -32,6 +32,15 @@ if TYPE_CHECKING:
 card_settings = CARD_SETTING["Green"]
 color_code = "G"
 
+_FORTUNE_DELAY: float = 0.15
+
+
+def float_fortune(game_state: GameState, target: Card, text: str, good: bool) -> None:
+    game_state.pending_combat_events.append(
+        CombatEvent(kind="float", board_x=target.board_x, board_y=target.board_y,
+                    text=text, good=good, delay=_FORTUNE_DELAY)
+    )
+
 
 class GreenCard(Card):
     @staticmethod
@@ -50,21 +59,25 @@ class GreenCard(Card):
             match game_state.rng.randint(1, 5):
                 case 1:
                     target.armor += 4
+                    float_fortune(game_state, target, "+4 ARMOR", True)
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} added 4 armor",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(),
                                                 target_position=target.get_position())
                 case 2:
                     target.damage *= 2
+                    float_fortune(game_state, target, "ATK x2", True)
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} damage multiplied by 2",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(),
                                                 target_position=target.get_position())
                 case 3:
+                    float_fortune(game_state, target, "FREE STRIKE", True)
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} launch attack",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(),
                                                 target_position=target.get_position())
                     target.enqueue_attack(game_state)
                 case 4:
                     target.moving = True
+                    float_fortune(game_state, target, "FREE MOVE", True)
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got moving",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(),
                                                 target_position=target.get_position())
@@ -74,6 +87,7 @@ class GreenCard(Card):
                                                     LogCategory.SPECIAL_ACTION, target=target.get_uid(),
                                                     target_position=target.get_position())
                         return
+                    float_fortune(game_state, target, "SPAWN BLOCKS", True)
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got lucky block spawn",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(),
                                                 target_position=target.get_position())
@@ -97,10 +111,12 @@ class GreenCard(Card):
             match game_state.rng.randint(1, 5):
                 case 1:
                     target.armor = 0
+                    float_fortune(game_state, target, "ARMOR GONE", False)
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} armor was destroyed",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 2:
                     target.numbness = True
+                    float_fortune(game_state, target, "NUMBED", False)
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got numbness",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 3:
@@ -108,10 +124,12 @@ class GreenCard(Card):
                     game_state.pending_combat_events.append(
                         CombatEvent(kind="hurt", board_x=target.board_x, board_y=target.board_y, post_health=target.health)
                     )
+                    float_fortune(game_state, target, "HP HALVED", False)
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health halved",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 4:
                     target.damage //= 2
+                    float_fortune(game_state, target, "ATK HALVED", False)
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} damage halved",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 5:
@@ -120,9 +138,11 @@ class GreenCard(Card):
                         game_state.pending_combat_events.append(
                             CombatEvent(kind="hurt", board_x=target.board_x, board_y=target.board_y, post_health=target.health)
                         )
+                        float_fortune(game_state, target, "-2 HP", False)
                         game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health reduced by 2",
                                                     LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                     else:
+                        float_fortune(game_state, target, "NO EFFECT", False)
                         game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health too low, no effect",
                                                     LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
 

@@ -38,6 +38,7 @@ from utils.logger import GameLogger
 
 P1_DECK = ["ADCW", "APW", "TANKW", "HFW"]
 P2_DECK = ["ADCB", "APB", "TANKB", "HFB"]
+LOBBY_BANS = {"TANKG": "host", "APG": "host", "SPB": "peer"}
 
 
 @pytest.fixture(scope="module")
@@ -58,7 +59,7 @@ def _write_replay(tmp_path, with_names=True, tournament=False, version=None):
     if with_names:
         state.player_names = {"host": "Robin", "peer": "Angus"}
     state.settings = MatchSettings(ruleset="tournament" if tournament else "free play")
-    state.bans = {"TANKG": "host", "APG": "host", "SPB": "peer"}
+    state.bans = dict(LOBBY_BANS)
     ban_deck = (tournament_ban_list() if tournament else []) + list(state.bans)
 
     game_state = make_game_state()
@@ -93,7 +94,7 @@ def test_metadata_extracts_names_bans_and_decks(tmp_path):
 def test_metadata_includes_judge_bans_for_tournament(tmp_path):
     metadata = _write_replay(tmp_path, tournament=True)
 
-    assert metadata["bans"]["judge"] == tournament_ban_list()
+    assert metadata["bans"]["judge"] == [c for c in tournament_ban_list() if c not in LOBBY_BANS]
     assert [banner for banner, _ in replay_prelude._player_bans(metadata)] == ["Robin", "Angus"]
 
 

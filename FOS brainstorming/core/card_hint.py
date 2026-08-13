@@ -28,7 +28,14 @@ from shared.setting import BLACK, WHITE, RED, GREEN, CARD_SETTING, CARDS_HINTS_D
 from cards.base import Card, COLOR_TAG_LIST
 
 
+TAGLESS_UNITS: dict[str, str] = {"LUCKYBLOCK": "Green"}
+
+
 def get_job_and_color(card_type: str) -> tuple[str, tuple[int, int, int]]:
+    color_name = TAGLESS_UNITS.get(card_type)
+    if color_name is not None:
+        r, g, b = JOB_DICTIONARY["RGB_colors"][color_name]
+        return card_type, (r, g, b)
     for tag in COLOR_TAG_LIST:
         if card_type.endswith(tag):
             color_name = JOB_DICTIONARY["colors_dict"][tag]
@@ -41,6 +48,9 @@ def get_job_and_color(card_type: str) -> tuple[str, tuple[int, int, int]]:
 
 
 def get_job_and_color_name(card_type: str) -> tuple[str, str]:
+    color_name = TAGLESS_UNITS.get(card_type)
+    if color_name is not None:
+        return card_type, color_name
     for tag in COLOR_TAG_LIST:
         if card_type.endswith(tag):
             color_name = JOB_DICTIONARY["colors_dict"][tag]
@@ -120,10 +130,15 @@ def get_job_shape(job: str, block_size: float) -> tuple:
                     ((block_size*0.55), (block_size*0.55)),
                     ((block_size*0.55), (block_size*0.45)))
         case "LUCKYBLOCK":
-            return (((block_size*0.4), (block_size*0.4)),
-                    ((block_size*0.4), (block_size*0.6)),
-                    ((block_size*0.6), (block_size*0.6)),
-                    ((block_size*0.6), (block_size*0.4)))
+            return (((block_size*0.20), (block_size*0.20)),
+                    ((block_size*0.20), (block_size*0.64)),
+                    ((block_size*0.64), (block_size*0.64)),
+                    ((block_size*0.64), (block_size*0.20)))
+        case "WIGHT":
+            return (((block_size*0.42), (block_size*0.24)),
+                    ((block_size*0.24), (block_size*0.42)),
+                    ((block_size*0.42), (block_size*0.60)),
+                    ((block_size*0.60), (block_size*0.42)))
     return (((block_size*0.45), (block_size*0.45)),
             ((block_size*0.45), (block_size*0.55)),
             ((block_size*0.55), (block_size*0.55)),
@@ -162,7 +177,7 @@ class HintBox:
                 return
             if card_type not in CARDS_HINTS_DICTIONARY: return
             enchant_lines = card_code.describe_enchants(decorated)
-            if card_type not in ["CUBE", "CUBES", "LUCKYBLOCK", "MOVE", "MOVEO", "HEAL"]:
+            if card_type not in ["CUBE", "CUBES", "MOVE", "MOVEO", "HEAL", card_code.BARROW_CODE]:
                 job, color = get_job_and_color(card_type.split()[0])
                 upgraded = color == (0, 238, 238) and getattr(card, "upgrade", False)
                 if upgraded:
@@ -174,7 +189,14 @@ class HintBox:
                     first_line = f"{card_type} {get_stat_prefix(card_type)}-{hint_lines[0]}"
                 display_lines = [first_line, *hint_lines[1:]]
                 box_height = len(display_lines) if len(display_lines) > 4 else 4
-                box_width = game_screen.block_size* 1.15 + game_screen.block_size*max(map(len, display_lines))/12
+                if isinstance(card, Card):
+                    stats_span = game_screen.block_size*0.07*(
+                        len(card_type) + len(str(card.health+card.armor)) + len(str(card.damage)) + 1)
+                    first_width = stats_span + game_screen.text_fontCHI.size(f"-{hint_lines[0]}")[0]
+                else:
+                    first_width = game_screen.text_fontCHI.size(first_line)[0]
+                box_width = game_screen.block_size*0.75 + max(
+                    [first_width, *(game_screen.text_fontCHI.size(line)[0] for line in display_lines[1:])])
 
                 pygame.draw.rect(self.surface, WHITE, (0, 0, box_width, (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)), 2)
                 pygame.draw.rect(self.surface, BLACK, ((game_screen.thickness//2), (game_screen.thickness//2), box_width-game_screen.thickness,
@@ -190,6 +212,9 @@ class HintBox:
                         pygame.draw.circle(self.surface, color, shape, game_screen.block_size*0.15, int(game_screen.thickness/1.1))
                     case _:
                         pygame.draw.lines(self.surface, color, True, shape, int(game_screen.thickness*1.1))
+                if job == "LUCKYBLOCK":
+                    draw_text("?", game_screen.text_font, color, game_screen.block_size*0.275,
+                              game_screen.block_size*0.245, self.surface)
                 for i, line in enumerate(hint_lines):
                     if i == 0:
                         if isinstance(card, str):
@@ -219,7 +244,8 @@ class HintBox:
             else:
                 spell_lines = CARDS_HINTS_DICTIONARY[card_type].split("\n") + enchant_lines
                 box_height = len(spell_lines) if len(spell_lines) > 4 else 4
-                box_width = game_screen.block_size*max(map(len, spell_lines))/7
+                box_width = game_screen.block_size*0.15 + max(
+                    game_screen.text_fontCHI.size(line)[0] for line in spell_lines)
 
                 pygame.draw.rect(self.surface, WHITE, (0, 0, box_width, (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)), 2)
                 pygame.draw.rect(self.surface, BLACK, ((game_screen.thickness//2), (game_screen.thickness//2), box_width-game_screen.thickness,

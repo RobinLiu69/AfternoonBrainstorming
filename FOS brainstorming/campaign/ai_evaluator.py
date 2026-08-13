@@ -118,7 +118,7 @@ def estimate_score_per_turn(card_name: str) -> int:
     job, color = parse_card_name(card_name)
     if not job:
         return 0
-    if job in ("CUBE", "CUBES", "HEAL", "MOVE", "MOVEO", "LUCKYBLOCK"):
+    if job in ("CUBE", "CUBES", "HEAL", "MOVE", "MOVEO", "LUCKYBLOCK", "WIGHT", "BARROW"):
         return 0
     if job == "SP":
         sp_data = CARD_SETTING.get(color, {}).get("SP", {})

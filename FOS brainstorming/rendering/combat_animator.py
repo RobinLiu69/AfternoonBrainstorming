@@ -42,8 +42,28 @@ _TINT_MAX_ALPHA = 170    # 0-255 — peak red overlay alpha
 _FLOAT_RISE_PX = 28     # total pixels damage number rises before fading
 _MOVE_DURATION = 0.28     # seconds for unit slide from old to new tile
 
+_LUCKY_TEXT_COLOR = (120, 235, 140)
+_JINX_TEXT_COLOR = (255, 130, 95)
+_TEXT_OUTLINE_COLOR = (0, 0, 0)
+
+_FLOAT_TEXT_DURATION = 1.45  # seconds a fortune label stays on screen
+_FLOAT_TEXT_RISE_PX = 34     # total pixels a fortune label rises
+_FLOAT_TEXT_FADE_IN = 0.12   # fraction of the run spent fading in
+_FLOAT_TEXT_HOLD = 0.66      # fraction of the run held at full opacity
+_TEXT_OUTLINE_PX = 2
+
 def _sin_ease(t: float) -> float:
     return math.sin(t * math.pi)
+
+
+def _hold_fade_alpha(t: float) -> int:
+    if t < _FLOAT_TEXT_FADE_IN:
+        alpha = 255 * (t / _FLOAT_TEXT_FADE_IN)
+    elif t < _FLOAT_TEXT_HOLD:
+        alpha = 255
+    else:
+        alpha = 255 * (1.0 - (t - _FLOAT_TEXT_HOLD) / (1.0 - _FLOAT_TEXT_HOLD))
+    return max(0, min(255, int(alpha)))
 
 
 @dataclass
@@ -118,7 +138,16 @@ class CombatAnimator:
                         and active.event.board_y == event.board_y):
                     event.delay = max(event.delay, -active.elapsed + 0.02)
 
+        if event.kind == "float" and event.text:
+            for active in self._active:
+                if (active.event.kind == "float" and active.event.text
+                        and active.event.board_x == event.board_x
+                        and active.event.board_y == event.board_y):
+                    event.delay = max(event.delay, -active.elapsed + _FLOAT_TEXT_DURATION * 0.45)
+
         duration = _DURATIONS.get(event.kind, 0.35)
+        if event.kind == "float" and event.text:
+            duration = _FLOAT_TEXT_DURATION
         self._active.append(_Anim(event=event, elapsed=-event.delay, duration=duration))
 
     def drain_skipped_display_updates(self) -> list[CombatEvent]:
@@ -197,23 +226,44 @@ class CombatAnimator:
                     tint.fill((255, 0, 0, alpha))
                     surface.blit(tint, (int(x), int(y)))
 
-            elif event.kind == "float" and event.damage > 0:
+            elif event.kind == "float" and (event.damage > 0 or event.text):
                 t = active.progress
-                if t < 0.2:
-                    alpha = int(255 * (t/0.2))
-                else:
-                    alpha = int(255 * (1.0 - (t - 0.2) / 0.8))
-                alpha = max(0, min(255, alpha))
-
                 x, y = self._to_screen(event.board_x, event.board_y)
-                rise = t * _FLOAT_RISE_PX
                 cx = x + game_screen.block_size*0.5
-                cy = y + game_screen.block_size*0.15 - rise
 
-                text_surf = game_screen.text_font.render(f"-{event.damage}", True, (255, 70, 70))
-                text_surf.set_alpha(alpha)
+                if event.text:
+                    alpha = _hold_fade_alpha(t)
+                    color = _LUCKY_TEXT_COLOR if event.good else _JINX_TEXT_COLOR
+                    text_surf = self._outlined_label(
+                        game_screen.mid_text_font, event.text, color, alpha
+                    )
+                    cy = y + game_screen.block_size*0.55 - t * _FLOAT_TEXT_RISE_PX
+                else:
+                    if t < 0.2:
+                        alpha = int(255 * (t/0.2))
+                    else:
+                        alpha = int(255 * (1.0 - (t - 0.2) / 0.8))
+                    alpha = max(0, min(255, alpha))
+                    text_surf = game_screen.text_font.render(f"-{event.damage}", True, (255, 70, 70))
+                    text_surf.set_alpha(alpha)
+                    cy = y + game_screen.block_size*0.15 - t * _FLOAT_RISE_PX
+
                 tw, th = text_surf.get_size()
                 surface.blit(text_surf, (int(cx - tw/2), int(cy - th/2)))
+
+    def _outlined_label(self, font, label: str, color: tuple[int, int, int], alpha: int) -> pygame.Surface:
+        main = font.render(label, True, color)
+        edge = font.render(label, True, _TEXT_OUTLINE_COLOR)
+        pad = _TEXT_OUTLINE_PX
+        width, height = main.get_size()
+        surface = pygame.Surface((width + pad*2, height + pad*2), pygame.SRCALPHA)
+        for dx in (-pad, 0, pad):
+            for dy in (-pad, 0, pad):
+                if dx or dy:
+                    surface.blit(edge, (pad + dx, pad + dy))
+        surface.blit(main, (pad, pad))
+        surface.set_alpha(alpha)
+        return surface
 
     def _to_screen(self, board_x: int, board_y: int) -> tuple[float, float]:
         return cell_origin(self._game_screen, board_x, board_y)
