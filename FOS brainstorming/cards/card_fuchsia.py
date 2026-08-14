@@ -51,10 +51,16 @@ class FuchsiaCard(Card):
 
     def get_render_data(self) -> list[CardRenderData]:
         render_objects: list[CardRenderData] = super().get_render_data()
+        if self.nullify:
+            return render_objects
         for shadow in self.shadows:
             render_objects += shadow.get_render_data()
         return render_objects
-    
+
+    def release_shadow_tiles(self, game_state: GameState) -> None:
+        for shadow in self.shadows:
+            shadow.on_death(game_state)
+
     def on_update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
@@ -281,10 +287,14 @@ class Tank(FuchsiaCard):
         for shadow in self.shadows:
             game_state.board_dict[shadow.board_x, shadow.board_y].occupy = True
             shadow.update(game_state)
-    
+
+    def set_nullify(self, nullify: bool, game_state: GameState) -> None:
+        self.nullify = nullify
+        if nullify:
+            self.release_shadow_tiles(game_state)
+
     def on_death(self, game_state: GameState) -> bool:
-        for shadow in self.shadows:
-            shadow.on_death(game_state)
+        self.release_shadow_tiles(game_state)
         return False
 
     
