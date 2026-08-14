@@ -86,9 +86,9 @@ def spawn_card(board_x: int, board_y: int, card_name: str, owner: str, target_bo
     price_check = getattr(card, "price_check", None)
     if price_check is not None and not price_check(game_state):
         return False
-    card.deploy(game_state)
     game_state.board_dict[board_x, board_y].occupy = True
     target_board.append(card)
+    card.deploy(game_state)
     return True
 
 
