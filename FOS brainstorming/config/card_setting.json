@@ -450,13 +450,13 @@
             "damage": 3,
             "on_death_ally_buff": {
                 "armor": 3,
-                "atk": 3
+                "atk": 1
             }
         },
         "SP": {
             "health": 1,
-            "damage": 5,
-            "wight_strike_damage": 2,
+            "damage": 2,
+            "wight_strike_damage": 1,
             "barrow_on_kill": 1
         }
     },

@@ -528,5 +528,10 @@ class TestGrayAnimations:
         hf.on_death(gs)
         apt.on_death(gs)
 
+        debuff = S["HF"]["on_death_enemy_debuff"]
+        buff = S["APT"]["on_death_ally_buff"]
         texts = {e.text: e.good for e in gs.pending_combat_events if e.text}
-        assert texts == {"-1 ATK": False, "+3 SHIELD +3 ATK": True}
+        assert texts == {
+            f"-{debuff['atk']} ATK": False,
+            f"+{buff['armor']} SHIELD +{buff['atk']} ATK": True,
+        }
