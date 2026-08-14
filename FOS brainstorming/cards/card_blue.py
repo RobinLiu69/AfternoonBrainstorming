@@ -160,7 +160,7 @@ class Apt(BlueCard):
         return True
 
     def after_token(self, game_state: GameState) -> bool:
-        self.armor += 1
+        self.adjust_stats(game_state, armor=1)
         return True
 
 

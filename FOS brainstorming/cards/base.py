@@ -382,7 +382,8 @@ class Card(ABC):
     
     @final
     def adjust_stats(self, game_state: GameState, health: int = 0, damage: int = 0,
-                     armor: int = 0, extra_damage: int = 0, anim_delay: float = 0.0) -> None:
+                     armor: int = 0, extra_damage: int = 0, anim_delay: float = 0.0,
+                     announce: bool = True) -> None:
         labels: list[str] = []
 
         if health < 0:
@@ -418,7 +419,7 @@ class Card(ABC):
             self.extra_damage = max(0, self.extra_damage + extra_damage)
             labels.append(f"{extra_damage:+d} ATK")
 
-        if labels:
+        if labels and announce:
             game_state.pending_combat_events.append(
                 CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y,
                             text=" ".join(labels), delay=anim_delay,

@@ -18,7 +18,7 @@
 
 from cards.card_white import Tank as WhiteTank
 from core.game_state import GameState
-from tests.helpers import make_game_state, place_card
+from tests.helpers import make_game_state, place_card, do_attack
 
 
 def labels(game_state: GameState) -> list[str]:
@@ -105,3 +105,106 @@ class TestStatAdjustAnimates:
         card.adjust_stats(gs, damage=1, anim_delay=0.5)
 
         assert [event.delay for event in gs.pending_combat_events] == [0.5]
+
+
+class TestEveryFactionRoutesThroughTheInterface:
+    def test_no_faction_file_adjusts_a_stat_by_hand(self) -> None:
+        import re
+        from pathlib import Path
+
+        pattern = re.compile(r"\.(health|damage|armor|extra_damage)\s*(\+=|-=|\*=|//=)")
+        cards_dir = Path(__file__).resolve().parent.parent / "cards"
+        offenders: list[str] = []
+        for path in sorted(cards_dir.glob("card_*.py")):
+            for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                if pattern.search(line):
+                    offenders.append(f"{path.name}:{number}: {line.strip()}")
+
+        assert offenders == []
+
+
+class TestFactionBuffsAnnounce:
+    def _labels(self, game_state: GameState) -> list[str]:
+        return [event.text for event in game_state.pending_combat_events
+                if event.kind == "float" and event.text]
+
+    def test_a_white_shield_buff_floats_on_every_card_it_touched(self) -> None:
+        from cards.card_white import Apt as WhiteApt
+
+        gs = make_game_state()
+        apt = place_card(gs, WhiteApt, "player1", 0, 0)
+        place_card(gs, WhiteTank, "player1", 1, 0)
+        place_card(gs, WhiteTank, "player2", 0, 1)
+
+        do_attack(apt, gs)
+
+        assert self._labels(gs) == [f"+{apt.damage} SHIELD"] * 2
+
+    def test_a_red_snowball_floats_once_per_card_it_buffed(self) -> None:
+        from cards.card_red import Apt as RedApt, Sp as RedSp
+
+        gs = make_game_state()
+        apt = place_card(gs, RedApt, "player1", 0, 0)
+        place_card(gs, RedSp, "player1", 1, 0)
+        place_card(gs, WhiteTank, "player2", 0, 1)
+
+        do_attack(apt, gs)
+
+        assert len(self._labels(gs)) == 3
+        assert all("SHIELD" in label and "ATK" in label for label in self._labels(gs))
+
+    def test_a_purple_strip_reports_what_it_took(self) -> None:
+        from cards.card_purple import Ap as PurpleAp
+
+        gs = make_game_state()
+        mage = place_card(gs, PurpleAp, "player1", 0, 0)
+        victim = place_card(gs, WhiteTank, "player2", 0, 1)
+        victim.armor = 4
+        victim.damage = victim.original_damage + 3
+        gs.pending_combat_events.clear()
+
+        do_attack(mage, gs)
+
+        assert victim.nullify is True
+        assert victim.armor == 0
+        assert victim.damage == victim.original_damage
+        assert self._labels(gs) == ["-4 SHIELD -3 ATK"]
+
+
+class TestGreenKeepsItsOwnWording:
+    def _labels(self, game_state: GameState) -> list[str]:
+        return [event.text for event in game_state.pending_combat_events
+                if event.kind == "float" and event.text]
+
+    def test_a_fortune_roll_never_adds_a_generic_label(self) -> None:
+        from cards.card_green import GreenCard
+
+        descriptive = {"+4 ARMOR", "ATK x2", "FREE STRIKE", "FREE MOVE", "SPAWN BLOCKS",
+                       "ARMOR GONE", "NUMBED", "HP HALVED", "ATK HALVED", "-2 HP", "NO EFFECT"}
+        for seed in range(120):
+            gs = make_game_state(rng_seed=seed)
+            target = place_card(gs, WhiteTank, "player2", 1, 1)
+            target.armor = 3
+            gs.pending_combat_events.clear()
+
+            GreenCard.lucky_effects(target, gs)
+
+            assert set(self._labels(gs)) <= descriptive
+
+    def test_halving_the_last_health_point_now_plays_a_death(self) -> None:
+        from cards.card_green import GreenCard
+
+        for seed in range(200):
+            gs = make_game_state(rng_seed=seed)
+            target = place_card(gs, WhiteTank, "player2", 1, 1)
+            target.health = 1
+            gs.pending_combat_events.clear()
+
+            GreenCard.lucky_effects(target, gs)
+            if "HP HALVED" in self._labels(gs):
+                assert target.health == 0
+                assert target.pending_death is True
+                assert "death" in {event.kind for event in gs.pending_combat_events}
+                return
+
+        raise AssertionError("no seed rolled the halving jinx")

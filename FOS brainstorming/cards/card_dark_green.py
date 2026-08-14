@@ -130,10 +130,7 @@ class Ass(DarkGreenCard):
         self.extra_damage = game_state.players_totem[self.owner] // card_settings["ASS"]["damage_divisor"]
 
     def on_kill(self, victim: Card, game_state: GameState) -> bool:
-        self.health = 0
-        game_state.pending_combat_events.append(
-            CombatEvent(kind="hurt", board_x=self.board_x, board_y=self.board_y, post_health=0)
-        )
+        self.adjust_stats(game_state, health=-self.health)
         self.engraved_totem(card_settings["ASS"]["engraved_totem"], game_state)
         return True
 
@@ -153,7 +150,7 @@ class Apt(DarkGreenCard):
         return value + self.extra_damage
     
     def after_damage_calculated(self, target: Card, value: int, game_state: GameState) -> bool:
-        self.armor += value//2
+        self.adjust_stats(game_state, armor=value//2)
         return True
     
 

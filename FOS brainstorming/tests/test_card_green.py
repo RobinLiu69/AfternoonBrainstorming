@@ -20,6 +20,7 @@ from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
 from cards.card_green import Ap, Hf, Ass, Apt, Sp, Tank, LuckyBlock
 from cards.card_red import Adc as RedAdc
+from cards.card_white import Adc as WhiteAdc
 
 S = CARD_SETTING["Green"]
 
@@ -108,7 +109,7 @@ class TestFortuneFloats:
         labels: dict[str, bool] = {}
         for seed in range(120):
             gs = make_game_state(rng_seed=seed)
-            breaker = place_card(gs, RedAdc, "player1", 1, 1)
+            breaker = place_card(gs, WhiteAdc, "player1", 1, 1)
             gs.neutral.on_board.append(LuckyBlock("neutral", 1, 2))
             gs.board_dict[(1, 2)].occupy = True
 

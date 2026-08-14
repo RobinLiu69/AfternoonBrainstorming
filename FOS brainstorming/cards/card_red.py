@@ -43,10 +43,11 @@ class Adc(RedCard):
         super().__init__(owner=owner, job_and_color="ADCR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, game_state: GameState) -> bool:
-        self.damage += card_settings["ADC"]["damage_increase"]
+        increase = card_settings["ADC"]["damage_increase"]
+        self.adjust_stats(game_state, damage=increase)
         for card in game_state.get_all_cards():
             if card.owner == self.owner and card.job_and_color == "SPR":
-                card.damage += card_settings["ADC"]["damage_increase"]
+                card.adjust_stats(game_state, damage=increase)
         return True
 
 
@@ -60,11 +61,11 @@ class Ap(RedCard):
     def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
         value = int(target.damage * (card_settings["AP"]["attack_steal_rate"]/100))
-        self.damage += value
-        target.damage -= value
-        
+        self.adjust_stats(game_state, damage=value)
+        target.adjust_stats(game_state, damage=-value)
+
         for card in filter(lambda card: card.job_and_color == "SPR", game_state.get_player(self.owner).on_board):
-            card.damage += value
+            card.adjust_stats(game_state, damage=value)
         return True
 
 
@@ -81,10 +82,10 @@ class Tank(RedCard):
                 lambda card: card != self, game_state.get_player_cards(self.owner)
             ), game_state
         ):
-            card.armor += card_settings["TANK"]["armor_increase"]
-        
+            card.adjust_stats(game_state, armor=card_settings["TANK"]["armor_increase"])
+
         for card in filter(lambda card: card.job_and_color == "SPR", game_state.get_player(self.owner).on_board):
-            card.armor += card_settings["TANK"]["armor_increase"]
+            card.adjust_stats(game_state, armor=card_settings["TANK"]["armor_increase"])
         return True
 
 
@@ -96,19 +97,15 @@ class Hf(RedCard):
         super().__init__(owner=owner, job_and_color="HFR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, game_state: GameState) -> bool:
-        from shared.combat_event import CombatEvent
-        self.health -= card_settings["HF"]["health_decrease"]
-        if self.health == 0:
+        loss = card_settings["HF"]["health_decrease"]
+        increase = card_settings["HF"]["damage_increase"]
+        if self.health - loss <= 0:
             self.anger = True
 
-        game_state.pending_combat_events.append(
-            CombatEvent(kind="hurt", board_x=self.board_x, board_y=self.board_y, post_health=self.health)
-        )
-
-        self.damage += card_settings["HF"]["damage_increase"]
+        self.adjust_stats(game_state, health=-loss, damage=increase)
 
         for card in filter(lambda card: card.job_and_color == "SPR", game_state.get_player(self.owner).on_board):
-            card.damage += card_settings["HF"]["damage_increase"]
+            card.adjust_stats(game_state, damage=increase)
         return True
 
     def on_can_be_killed(self, game_state: GameState) -> bool:
@@ -138,12 +135,12 @@ class Lf(RedCard):
         super().__init__(owner=owner, job_and_color="LFR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, game_state: GameState) -> bool:
-        self.armor += card_settings["LF"]["armor_increase"]
-        self.damage += card_settings["LF"]["damage_increase"]
+        armor = card_settings["LF"]["armor_increase"]
+        increase = card_settings["LF"]["damage_increase"]
+        self.adjust_stats(game_state, armor=armor, damage=increase)
 
         for card in filter(lambda card: card.job_and_color == "SPR", game_state.get_player(self.owner).on_board):
-            card.armor += card_settings["LF"]["armor_increase"]
-            card.damage += card_settings["LF"]["damage_increase"]
+            card.adjust_stats(game_state, armor=armor, damage=increase)
         return True
 
 
@@ -153,11 +150,12 @@ class Ass(RedCard):
         super().__init__(owner=owner, job_and_color="ASSR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def on_kill(self, victim: Card, game_state: GameState) -> bool:
+        increase = card_settings["ASS"]["damage_increase"]
         for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_player(self.owner).on_board), game_state):
-            card.damage += card_settings["ASS"]["damage_increase"]
+            card.adjust_stats(game_state, damage=increase)
 
         for card in filter(lambda card: card.job_and_color == "SPR", game_state.get_player(self.owner).on_board):
-            card.damage += card_settings["ASS"]["damage_increase"]
+            card.adjust_stats(game_state, damage=increase)
         return True
 
 
@@ -167,16 +165,15 @@ class Apt(RedCard):
         super().__init__(owner=owner, job_and_color="APTR", health=health, damage=damage, board_x=board_x, board_y=board_y)
     
     def ability(self, target: Card, game_state: GameState) -> bool:
+        armor = card_settings["APT"]["armor_increase"]
+        increase = card_settings["APT"]["damage_increase"]
         for card in self.detection("nearest", filter(lambda card: card != self, game_state.get_player(self.owner).on_board), game_state):
-            card.armor += card_settings["APT"]["armor_increase"]
-            card.damage += card_settings["APT"]["damage_increase"]
-        
+            card.adjust_stats(game_state, armor=armor, damage=increase)
+
         for card in filter(lambda card: card.owner == self.owner and card.job_and_color == "SPR", game_state.get_player(self.owner).on_board):
-            card.armor += card_settings["APT"]["armor_increase"]
-            card.damage += card_settings["APT"]["damage_increase"]
-        
-        self.armor += card_settings["APT"]["armor_increase"]
-        self.damage += card_settings["APT"]["damage_increase"]
+            card.adjust_stats(game_state, armor=armor, damage=increase)
+
+        self.adjust_stats(game_state, armor=armor, damage=increase)
         return True
 
 

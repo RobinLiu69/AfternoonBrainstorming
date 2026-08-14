@@ -122,7 +122,7 @@ class Shadow(FuchsiaCard):
 
     def damage_block(self, value: int, attacker: "Card", game_state: GameState) -> bool:
         if self.linker.job_and_color == "APTF":
-            self.linker.armor += value//2
+            self.linker.adjust_stats(game_state, armor=value//2)
         return False
     
     def on_kill(self, victim: Card, game_state: GameState) -> bool:
@@ -431,7 +431,7 @@ class Apt(FuchsiaCard):
         for shadow in self.shadows:
             if (self.health > 0 and victim.owner == self.owner and shadow.is_same_location(victim) and victim != self):
                 def absorb_half(current: int) -> int:
-                    self.armor += math.floor(current * 0.5)
+                    self.adjust_stats(game_state, armor=math.floor(current * 0.5))
                     return math.ceil(current * 0.5)
                 return (FIELD_EFFECT_NORMAL, absorb_half)
         return None

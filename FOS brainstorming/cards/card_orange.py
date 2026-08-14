@@ -98,7 +98,7 @@ class Hf(OrangeCard):
             return False
         
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        self.extra_damage += card_settings["HF"]["move_damage_gain"]
+        self.adjust_stats(game_state, extra_damage=card_settings["HF"]["move_damage_gain"])
         self.anger = True
     
     def damage_bonus(self, value: int, victim: Card, game_state: GameState) -> int:
@@ -172,16 +172,16 @@ class Apt(OrangeCard):
         super().__init__(owner=owner, job_and_color="APTO", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     def after_movement(self, board_x: int, board_y: int, game_state: GameState) -> None:
-        self.armor += card_settings["APT"]["move_armor_gain"]
+        self.adjust_stats(game_state, armor=card_settings["APT"]["move_armor_gain"])
         value = self.armor // 2
         if value > 0:
-            self.damage += value
-            self.armor = self.armor % 2
+            self.adjust_stats(game_state, damage=value, armor=-value * 2)
 
     def on_card_moved(self, target: Card, game_state: GameState) -> bool:
         if target.owner == self.owner and target != self:
-            target.armor += card_settings["APT"]["move_armor_gain"]
-            self.armor += card_settings["APT"]["move_armor_gain"]
+            gain = card_settings["APT"]["move_armor_gain"]
+            target.adjust_stats(game_state, armor=gain)
+            self.adjust_stats(game_state, armor=gain)
         return True
     
 
