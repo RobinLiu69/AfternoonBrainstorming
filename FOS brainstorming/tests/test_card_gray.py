@@ -161,12 +161,44 @@ class TestGrayAdc:
         attack_with(adc, gs)
         assert target.health == before - adc.damage
 
-    def test_a_whiffed_attack_conscripts_nobody(self) -> None:
+    def test_with_nothing_to_shoot_anywhere_the_attack_is_refused(self) -> None:
         gs = make_game_state()
         adc = place_card(gs, Adc, "player1", 0, 0)
         place_card(gs, Wight, "player1", 0, 1)
 
         assert attack_with(adc, gs) is False
+
+    def test_an_empty_range_still_attacks_when_a_wight_has_a_target(self) -> None:
+        gs = make_game_state()
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        place_card(gs, Wight, "player1", 0, 1)
+        target = place_card(gs, WhiteTank, "player2", 2, 2)
+        before = target.health
+
+        assert attack_with(adc, gs) is True
+        assert target.health == before - adc.damage
+
+    def test_that_empty_range_attack_costs_a_knife(self) -> None:
+        gs = make_game_state()
+        player = gs.get_player("player1")
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        adc.numbness = False
+        place_card(gs, Wight, "player1", 0, 1)
+        place_card(gs, WhiteTank, "player2", 2, 2)
+        gs.number_of_attacks["player1"] = 1
+
+        assert player.attack(0, 0, gs) is True
+        assert gs.number_of_attacks["player1"] == 0
+
+    def test_a_numb_marksman_conscripts_nobody(self) -> None:
+        gs = make_game_state()
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        place_card(gs, Wight, "player1", 0, 1)
+        target = place_card(gs, WhiteTank, "player2", 2, 2)
+        before = target.health
+
+        assert adc.attack(gs) is False
+        assert target.health == before
 
     def test_dying_hands_out_two_barrows(self) -> None:
         gs = make_game_state()
@@ -243,7 +275,6 @@ class TestGrayHf:
         kill_off(hf, gs)
 
         assert near.health == near_health - debuff["health"]
-        assert near.display_health == near.health
         assert near.damage == near_damage - debuff["atk"]
         assert far.health == far.max_health
 
@@ -367,3 +398,135 @@ class TestGraySp:
 
         attack_with(sp, gs)
         assert barrows(gs, "player1") == S["SP"]["barrow_on_kill"]
+
+    def test_a_kill_by_one_of_its_wights_counts_as_its_own(self) -> None:
+        gs = make_game_state()
+        sp = place_card(gs, Sp, "player1", 0, 0)
+        place_card(gs, Wight, "player1", 0, 1)
+        prey = place_card(gs, WhiteAdc, "player2", 2, 2)
+        prey.health = 1
+        decoy = place_card(gs, WhiteTank, "player2", 3, 3)
+
+        assert attack_with(sp, gs) is True
+        assert decoy.health == decoy.max_health - sp.damage
+        assert prey.health == 0
+        assert barrows(gs, "player1") == S["SP"]["barrow_on_kill"]
+
+    def test_a_marksman_gains_nothing_from_a_wight_kill(self) -> None:
+        gs = make_game_state()
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        place_card(gs, Wight, "player1", 0, 1)
+        prey = place_card(gs, WhiteAdc, "player2", 2, 2)
+        prey.health = 1
+
+        attack_with(adc, gs)
+        assert prey.health == 0
+        assert barrows(gs, "player1") == 0
+
+
+def _events(game_state: GameState, kind: str) -> list:
+    return [event for event in game_state.pending_combat_events if event.kind == kind]
+
+
+class TestGrayAnimations:
+    def test_a_conscripted_wight_lunges_at_its_own_target(self) -> None:
+        gs = make_game_state()
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        place_card(gs, Wight, "player1", 0, 1)
+        place_card(gs, WhiteTank, "player2", 3, 0)
+        place_card(gs, WhiteTank, "player2", 2, 2)
+
+        attack_with(adc, gs)
+
+        lunges = [(e.board_x, e.board_y, e.target_x, e.target_y) for e in _events(gs, "attack")]
+        assert (0, 0, 3, 0) in lunges
+        assert (0, 1, 2, 2) in lunges
+
+    def test_a_wight_strike_lands_after_the_shot_that_conscripted_it(self) -> None:
+        gs = make_game_state()
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        place_card(gs, Wight, "player1", 0, 1)
+        place_card(gs, WhiteTank, "player2", 3, 0)
+        place_card(gs, WhiteTank, "player2", 2, 2)
+
+        attack_with(adc, gs)
+
+        hurts = {(e.board_x, e.board_y): e.delay for e in _events(gs, "hurt")}
+        assert hurts[(2, 2)] > hurts[(3, 0)]
+
+    def test_two_wights_do_not_fire_on_the_same_frame(self) -> None:
+        gs = make_game_state()
+        adc = place_card(gs, Adc, "player1", 0, 0)
+        place_card(gs, Wight, "player1", 0, 1)
+        place_card(gs, Wight, "player1", 1, 0)
+        place_card(gs, WhiteTank, "player2", 3, 0)
+        place_card(gs, WhiteTank, "player2", 2, 2)
+
+        attack_with(adc, gs)
+
+        delays = sorted(e.delay for e in _events(gs, "attack"))
+        assert len(set(delays)) == len(delays)
+
+    def test_the_square_reflect_plays_after_the_hit_that_caused_it(self) -> None:
+        gs = make_game_state()
+        place_card(gs, Tank, "player1", 1, 1)
+        attacker = place_card(gs, WhiteTank, "player2", 1, 2)
+
+        attack_with(attacker, gs)
+
+        hurts = [(e.delay, e.board_x, e.board_y) for e in _events(gs, "hurt")]
+        incoming = min(delay for delay, x, y in hurts if (x, y) == (1, 1))
+        assert all(delay > incoming for delay, x, y in hurts if (x, y) == (1, 2))
+
+    def test_a_trapezoid_debuff_that_kills_still_plays_a_death(self) -> None:
+        gs = make_game_state()
+        hf = place_card(gs, Hf, "player1", 1, 1)
+        doomed = place_card(gs, WhiteTank, "player2", 1, 2)
+        doomed.health = 1
+        gs.pending_combat_events.clear()
+
+        hf.on_death(gs)
+
+        kinds = {e.kind for e in gs.pending_combat_events
+                 if (e.board_x, e.board_y) == (1, 2)}
+        assert kinds == {"hurt", "float", "death"}
+        assert doomed.pending_death is True
+
+    def test_a_trapezoid_debuff_that_only_wounds_plays_no_death(self) -> None:
+        gs = make_game_state()
+        hf = place_card(gs, Hf, "player1", 1, 1)
+        survivor = place_card(gs, WhiteTank, "player2", 1, 2)
+        gs.pending_combat_events.clear()
+
+        hf.on_death(gs)
+
+        kinds = {e.kind for e in gs.pending_combat_events}
+        assert "death" not in kinds
+        assert [e.post_health for e in gs.pending_combat_events if e.kind == "hurt"] == [survivor.health]
+
+    def test_the_assassin_bonus_pops_after_the_kill_that_earned_it(self) -> None:
+        gs = make_game_state()
+        ass = place_card(gs, Ass, "player1", 1, 1)
+        prey = place_card(gs, WhiteAdc, "player2", 2, 2)
+        prey.health = 1
+        gs.pending_combat_events.clear()
+
+        attack_with(ass, gs)
+
+        death = next(e.delay for e in _events(gs, "death"))
+        bonus = next(e.delay for e in gs.pending_combat_events if e.text)
+        assert bonus > death
+
+    def test_the_death_effects_announce_themselves(self) -> None:
+        gs = make_game_state()
+        hf = place_card(gs, Hf, "player1", 1, 1)
+        place_card(gs, WhiteTank, "player2", 1, 2)
+        apt = place_card(gs, Apt, "player1", 2, 2)
+        place_card(gs, WhiteTank, "player1", 2, 3)
+        gs.pending_combat_events.clear()
+
+        hf.on_death(gs)
+        apt.on_death(gs)
+
+        texts = {e.text: e.good for e in gs.pending_combat_events if e.text}
+        assert texts == {"-1 ATK": False, "+3 SHIELD +3 ATK": True}

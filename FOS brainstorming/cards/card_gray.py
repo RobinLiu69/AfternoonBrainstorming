@@ -20,7 +20,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 from shared.card_code import BARROW_CODE, WIGHT_CODE
-from shared.setting import CARD_SETTING
+from shared.combat_event import CombatEvent
+from shared.setting import ANIM_LUNGE_STEP, CARD_SETTING
 from cards.factory import CardFactory
 from cards.base import Card
 
@@ -43,17 +44,31 @@ def friendly_wights(game_state: GameState, owner: str) -> list[Card]:
             if card.job_and_color == WIGHT_CODE and card.health > 0]
 
 
-def wight_strike(source: Card, wights: Iterable[Card], value: int, game_state: GameState) -> None:
+def wight_strike(source: Card, wights: Iterable[Card], value: int, game_state: GameState) -> bool:
     enemies = [card for card in game_state.get_side_cards(source.owner, True) if card.health > 0]
+    struck = False
     for wight in wights:
         if not enemies:
-            return
+            break
         if wight.health <= 0:
             continue
         for target in wight.detection("nearest", enemies, game_state):
-            target.damage_calculate(value, wight, game_state, False)
+            lunge_delay = game_state._attack_anim_cursor
+            game_state.pending_combat_events.append(
+                CombatEvent(kind="attack", board_x=wight.board_x, board_y=wight.board_y,
+                            target_x=target.board_x, target_y=target.board_y, delay=lunge_delay)
+            )
+            before = target.health
+            hit = target.damage_calculate(value, wight, game_state, False,
+                                          anim_delay=lunge_delay + ANIM_LUNGE_STEP * 0.55)
+            game_state._attack_anim_cursor = lunge_delay + ANIM_LUNGE_STEP
+            if hit:
+                struck = True
+                if before > 0 and target.health == 0 and not source.nullify:
+                    source.on_kill(target, game_state)
         wight.hit_cards.clear()
         enemies = [card for card in enemies if card.health > 0]
+    return struck
 
 
 class GrayCard(Card):
@@ -72,11 +87,12 @@ class GrayCard(Card):
                 if (wight.board_x, wight.board_y) in area]
 
     def strike_after_attack(self, wights: list[Card], value: int, game_state: GameState) -> bool:
+        if self.numbness or not self.attack_types:
+            return False
         attacked = self.launch_attack(self.attack_types, game_state)
         self.hit_cards.clear()
-        if attacked:
-            wight_strike(self, wights, value, game_state)
-        return attacked
+        fired = wight_strike(self, wights, value, game_state)
+        return attacked or fired
 
 
 class Wight(GrayCard):
@@ -137,11 +153,12 @@ class Tank(GrayCard):
         self.reflecting = True
         try:
             reflect = card_settings["TANK"]["reflect_damage"]
+            delay = game_state._attack_anim_cursor + ANIM_LUNGE_STEP
             enemies = [card for card in game_state.get_side_cards(self.owner, True) if card.health > 0]
             for target in self.detection("nearest", enemies, game_state):
-                game_state.judge.deal(reflect, target, game_state)
+                game_state.judge.deal(reflect, target, game_state, anim_delay=delay)
             if self.health > 0:
-                game_state.judge.deal(reflect, self, game_state)
+                game_state.judge.deal(reflect, self, game_state, anim_delay=delay)
         finally:
             self.reflecting = False
         return True
@@ -166,9 +183,7 @@ class Hf(GrayCard):
         area = set(self.attack_areas(self.board_x, self.board_y, self.attack_types, game_state))
         for card in game_state.get_side_cards(self.owner, True):
             if card.health > 0 and (card.board_x, card.board_y) in area:
-                card.health = max(0, card.health - debuff["health"])
-                card.display_health = card.health
-                card.damage = max(0, card.damage - debuff["atk"])
+                card.adjust_stats(game_state, health=-debuff["health"], damage=-debuff["atk"])
         return granted
 
 
@@ -186,8 +201,7 @@ class Lf(GrayCard):
             stolen_health = victim.health
             stolen_damage = victim.damage
             game_state.judge.deal(victim.health + victim.armor, victim, game_state)
-            self.armor += stolen_health
-            self.extra_damage += stolen_damage
+            self.adjust_stats(game_state, armor=stolen_health, extra_damage=stolen_damage)
 
 
 class Ass(GrayCard):
@@ -198,7 +212,8 @@ class Ass(GrayCard):
         super().__init__(owner=owner, job_and_color="ASSGY", health=health, damage=damage, board_x=board_x, board_y=board_y)
 
     def on_kill(self, victim: Card, game_state: GameState) -> bool:
-        self.damage += card_settings["ASS"]["damage_gain_per_kill"]
+        self.adjust_stats(game_state, damage=card_settings["ASS"]["damage_gain_per_kill"],
+                          anim_delay=game_state._attack_anim_cursor + ANIM_LUNGE_STEP)
         return True
 
     def barrow_on_death(self, game_state: GameState) -> int:
@@ -220,8 +235,7 @@ class Apt(GrayCard):
         allies = [card for card in game_state.get_player_cards(self.owner)
                   if card is not self and card.health > 0]
         for ally in self.detection("nearest", allies, game_state):
-            ally.armor += buff["armor"]
-            ally.damage += buff["atk"]
+            ally.adjust_stats(game_state, armor=buff["armor"], damage=buff["atk"])
         return granted
 
 
