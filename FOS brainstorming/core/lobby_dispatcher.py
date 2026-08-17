@@ -180,9 +180,10 @@ class LobbyDispatcher:
             return LobbyResult(False, message="server only")
         roster = self._network.roster
         if player == "host":
+            if self._state.host_playing:
+                self._state.player_names.pop("host", None)
             self._state.host_playing = False
             roster.host_playing = False
-            roster.clear_token(self._state.host_seat)
             self._refresh_roster()
             return LobbyResult(True)
         if player not in ("player1", "player2"):
@@ -192,6 +193,7 @@ class LobbyDispatcher:
             return LobbyResult(False, message="no such connection")
         roster.reassign(conn, roster.watcher_role())
         roster.clear_token(player)
+        self._state.player_names.pop(self._state.seat_identity(player), None)
         self._network.send_to(conn, {"type": "token", "token": ""})
         self._refresh_roster()
         return LobbyResult(True)
@@ -203,6 +205,9 @@ class LobbyDispatcher:
         if player == "host":
             if self._state.host_seat_connected:
                 return LobbyResult(False, message="seat occupied")
+            if not self._state.host_playing:
+                self._state.player_names.pop("host", None)
+            roster.clear_token(self._state.host_seat)
             self._state.host_playing = True
             roster.host_playing = True
             self._refresh_roster()
@@ -216,6 +221,7 @@ class LobbyDispatcher:
             return LobbyResult(False, message="no such connection")
         new_token = roster.issue_token(seat)
         roster.reassign(conn, seat)
+        self._state.player_names.pop(self._state.seat_identity(seat), None)
         self._network.send_to(conn, {"type": "token", "token": new_token})
         self._refresh_roster()
         return LobbyResult(True)

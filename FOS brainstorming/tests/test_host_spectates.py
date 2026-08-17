@@ -255,3 +255,65 @@ class TestTheWatchingHostIsCounted:
         mirror.apply_dict(state.to_dict_for("spectator"))
 
         assert mirror.watcher_count() == state.watcher_count() == 1
+
+
+class TestASeatChangingHandsLeavesNothingBehind:
+    def test_a_stale_token_cannot_reclaim_the_seat_the_host_took_back(self, lobby) -> None:
+        state, dispatcher, server = lobby
+        dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+        seated, seat, token = _join(server)
+        wait_until(lambda: server.roster.count() == 1)
+        assert seat == state.host_seat
+        seated.close()
+        wait_until(lambda: server.roster.count() == 0)
+        dispatcher._refresh_roster()
+
+        assert dispatcher.dispatch(LobbyAction("host", "switch_to_player")).success is True
+
+        back, back_role, _token = _join(server, token=token)
+
+        assert back_role != state.host_seat
+        back.close()
+
+    def test_the_host_does_not_inherit_the_departed_players_name(self, lobby) -> None:
+        state, dispatcher, _server = lobby
+        dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+        dispatcher.dispatch(LobbyAction(state.host_seat, "set_name", str_value="Alice"))
+
+        dispatcher.dispatch(LobbyAction("host", "switch_to_player"))
+
+        assert state.display_name("host") == ""
+        assert state.seat_names() == {}
+
+    def test_stepping_out_gives_up_the_hosts_own_name(self, lobby) -> None:
+        state, dispatcher, _server = lobby
+        dispatcher.dispatch(LobbyAction("host", "set_name", str_value="Robin"))
+        assert state.display_name("host") == "Robin"
+
+        dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+
+        assert state.display_name("host") == ""
+
+    def test_a_seat_a_client_walks_away_from_forgets_that_client(self, lobby) -> None:
+        state, dispatcher, server = lobby
+        dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+        seated, seat, _token = _join(server)
+        wait_until(lambda: server.roster.count() == 1)
+        dispatcher._refresh_roster()
+        dispatcher.dispatch(LobbyAction(seat, "set_name", str_value="Alice"))
+        assert state.display_name(state.seat_identity(seat)) == "Alice"
+
+        dispatcher.dispatch(LobbyAction(seat, "switch_to_spectator"))
+
+        assert state.display_name(state.seat_identity(seat)) == ""
+        seated.close()
+
+    def test_the_peer_seat_keeps_its_name_when_the_host_steps_out(self, lobby) -> None:
+        state, dispatcher, _server = lobby
+        dispatcher.dispatch(LobbyAction("host", "set_name", str_value="Robin"))
+        state.peer_connected = True
+        dispatcher.dispatch(LobbyAction(state.peer_seat(), "set_name", str_value="Angus"))
+
+        dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+
+        assert state.display_name("peer") == "Angus"

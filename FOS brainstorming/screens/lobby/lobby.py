@@ -383,9 +383,6 @@ def main(game_screen: GameScreen, mode: str,
         if not server.is_running:
             server.start()
         state.local_role = "host"
-        my_name = load_setting("player_name")
-        if my_name:
-            dispatcher.dispatch(LobbyAction("host", "set_name", str_value=my_name))
 
     elif mode == "lan_client":
         assert client is not None
@@ -410,10 +407,15 @@ def main(game_screen: GameScreen, mode: str,
             confirming_quit = True
             return False
         return True
-    my_name = load_setting("player_name") if mode == "lan_client" else ""
+    my_name = load_setting("player_name") if mode in ("lan_client", "lan_server") else ""
     name_sent_as = ""
+    host_was_playing = state.host_playing
 
     while True:
+        if state.host_playing != host_was_playing:
+            host_was_playing = state.host_playing
+            name_sent_as = ""
+
         if mode == "lan_client" and client is not None:
             if client.timed_out:
                 connection_timeout_screen.main(game_screen)
@@ -431,6 +433,9 @@ def main(game_screen: GameScreen, mode: str,
                 name_sent_as = state.local_role
 
         if mode == "lan_server" and server is not None:
+            if my_name and state.host_playing and name_sent_as != "host":
+                dispatcher.dispatch(LobbyAction("host", "set_name", str_value=my_name))
+                name_sent_as = "host"
             server.pulse()
 
         if dispatcher.start_signal:
