@@ -55,7 +55,7 @@ def wight_strike(source: Card, wights: Iterable[Card], value: int, game_state: G
             continue
         for target in wight.detection("nearest", enemies, game_state):
             lunge_delay = game_state._attack_anim_cursor
-            game_state.pending_combat_events.append(
+            game_state.emit(
                 CombatEvent(kind="attack", board_x=wight.board_x, board_y=wight.board_y,
                             target_x=target.board_x, target_y=target.board_y, delay=lunge_delay)
             )

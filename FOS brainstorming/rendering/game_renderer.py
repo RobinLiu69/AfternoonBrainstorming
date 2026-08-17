@@ -134,8 +134,7 @@ class GameRenderer:
     def _ingest_combat_events(self, game_state: GameState) -> None:
         for event in game_state.pending_combat_events:
             self.combat_animator.push(event)
-        game_state.pending_combat_events.clear()
-        game_state._attack_anim_cursor = 0.0
+        game_state.drain_combat_events()
 
     def _apply_completed_health_updates(self, completed: list[_Anim], all_groups: list[list[Card]]) -> None:
         for anim in completed:

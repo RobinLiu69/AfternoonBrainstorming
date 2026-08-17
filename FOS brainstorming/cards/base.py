@@ -279,7 +279,7 @@ class Card(ABC):
         game_state.board_dict[board_x, board_y].occupy = True
         self.moving = False
 
-        game_state.pending_combat_events.append(
+        game_state.emit(
             CombatEvent(
                 kind="move",
                 board_x=board_x, board_y=board_y,
@@ -352,10 +352,10 @@ class Card(ABC):
         game_state.game_logger.log_attack(attacker.get_uid(), attacker.get_position(),
                                           self.get_uid(), self.get_position(), value)
 
-        game_state.pending_combat_events.append(
+        game_state.emit(
             CombatEvent(kind="hurt",  board_x=self.board_x, board_y=self.board_y, delay=anim_delay, post_health=self.health)
         )
-        game_state.pending_combat_events.append(
+        game_state.emit(
             CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y, damage=value, delay=anim_delay)
         )
 
@@ -383,7 +383,7 @@ class Card(ABC):
 
         if self.can_be_killed(game_state):
             self.pending_death = True
-            game_state.pending_combat_events.append(
+            game_state.emit(
                 CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
             )
 
@@ -397,11 +397,11 @@ class Card(ABC):
             lost = min(self.health, -health)
             if lost:
                 self.health -= lost
-                game_state.pending_combat_events.append(
+                game_state.emit(
                     CombatEvent(kind="hurt", board_x=self.board_x, board_y=self.board_y,
                                 post_health=self.health, delay=anim_delay)
                 )
-                game_state.pending_combat_events.append(
+                game_state.emit(
                     CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y,
                                 damage=lost, delay=anim_delay)
                 )
@@ -421,7 +421,7 @@ class Card(ABC):
             labels.append(f"{extra_damage:+d} ATK")
 
         if labels and announce:
-            game_state.pending_combat_events.append(
+            game_state.emit(
                 CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y,
                             text=" ".join(labels), delay=anim_delay,
                             good=not any(delta < 0 for delta in (health, damage, armor, extra_damage)))
@@ -703,7 +703,7 @@ class Card(ABC):
             for i, target in enumerate(target_tuple):
                 atk_delay  = base_delay + i * ANIM_LUNGE_STEP
                 hurt_delay = atk_delay + ANIM_LUNGE_STEP * 0.55
-                game_state.pending_combat_events.append(
+                game_state.emit(
                     CombatEvent(
                         kind="attack",
                         board_x=self.board_x,

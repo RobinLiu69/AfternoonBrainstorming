@@ -189,7 +189,7 @@ def _teleport(card: Any, board_x: int, board_y: int, game_state: Any) -> bool:
     card.board_x, card.board_y = board_x, board_y
     game_state.board_dict[board_x, board_y].occupy = True
     card.moving = False
-    game_state.pending_combat_events.append(
+    game_state.emit(
         CombatEvent(kind="move", board_x=board_x, board_y=board_y,
                     target_x=from_x, target_y=from_y))
     if not card.nullify:

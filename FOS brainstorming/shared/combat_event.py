@@ -31,6 +31,7 @@ class CombatEvent:
     post_health: int = -1
     text: str = ""
     good: bool = False
+    seq: int = -1
 
     def to_dict(self) -> dict:
         return {
@@ -43,7 +44,8 @@ class CombatEvent:
             "delay": self.delay,
             "post_health": self.post_health,
             "text": self.text,
-            "good": self.good
+            "good": self.good,
+            "seq": self.seq
         }
 
     @classmethod
@@ -58,5 +60,6 @@ class CombatEvent:
             delay=d.get("delay", 0.0),
             post_health=d.get("post_health", -1),
             text=d.get("text", ""),
-            good=d.get("good", False)
+            good=d.get("good", False),
+            seq=d.get("seq", -1)
         )

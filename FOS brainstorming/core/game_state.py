@@ -66,6 +66,9 @@ class GameState:
     pending_attacks: deque[AttackRequest] = field(default_factory=deque)
     _attack_draining: bool = False
     _attack_anim_cursor: float = 0.0
+    _combat_seq: int = 0
+    _applied_combat_seq: int = -1
+    _combat_primed: bool = False
 
     file_auto_delete: bool = False
     ban_draft: dict[str, str] = field(default_factory=dict)
@@ -99,6 +102,27 @@ class GameState:
 
     def __post_init__(self) -> None:
         self.rng = _py_random.Random(self.rng_seed)
+
+    def emit(self, event: CombatEvent) -> None:
+        event.seq = self._combat_seq
+        self._combat_seq += 1
+        self.pending_combat_events.append(event)
+
+    def drain_combat_events(self) -> None:
+        self.pending_combat_events.clear()
+        self._attack_anim_cursor = 0.0
+
+    def _play_incoming_events(self, raw_events: list, game_renderer: GameRenderer) -> None:
+        joining = not self._combat_primed
+        self._combat_primed = True
+        for ev_dict in raw_events:
+            event = CombatEvent.from_dict(ev_dict)
+            if 0 <= event.seq <= self._applied_combat_seq:
+                continue
+            self._applied_combat_seq = max(self._applied_combat_seq, event.seq)
+            if joining or game_renderer is None:
+                continue
+            game_renderer.combat_animator.push(event)
 
     def update(self) -> None:
         for card in self.player1.on_board:
@@ -182,12 +206,7 @@ class GameState:
         return data
 
     def apply_dict(self, data: dict, game_renderer: GameRenderer) -> None:
-        raw_events = data.get("pending_combat_events", [])
-
-        if raw_events and game_renderer is not None:
-            for ev_dict in raw_events:
-                game_renderer.combat_animator.push(CombatEvent.from_dict(ev_dict))
-
+        self._play_incoming_events(data.get("pending_combat_events", []), game_renderer)
 
         self.timer_mode = data["timer_mode"]
         self.countdown_time = data.get("countdown_time", self.countdown_time)
