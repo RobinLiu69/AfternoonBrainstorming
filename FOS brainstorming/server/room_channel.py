@@ -57,6 +57,8 @@ class RoomChannel(LANServer):
             conns = [c for c, _r in self._clients]
             self._clients.clear()
             self._last_seen.clear()
+            self._write_locks.clear()
+            self._evicted.clear()
         for conn in conns:
             self._force_close(conn)
 
@@ -111,7 +113,7 @@ class RoomChannel(LANServer):
                         if r == token_role:
                             evicted.append(c)
                             self._evicted.add(c)
-                            self._last_seen.pop(c, None)
+                            self._forget(c)
                         else:
                             kept.append((c, r))
                     self._clients = kept

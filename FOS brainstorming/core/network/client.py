@@ -148,6 +148,10 @@ class LANClient:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(timeout)
         sock.connect((self.host, self.port))
+        try:
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        except OSError:
+            pass
 
         hello = {"type": "hello", "intent": intent, "version": self.version,
                  "room": self.room}

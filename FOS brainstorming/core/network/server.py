@@ -25,6 +25,18 @@ from typing import Callable, Optional
 from core.network.messages import _recv_msg, _send_msg
 
 
+SOCKET_TIMEOUT_SECONDS: float = 5.0
+LISTEN_BACKLOG: int = 32
+
+
+def _tune(conn: socket.socket) -> None:
+    try:
+        conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    except OSError:
+        pass
+    conn.settimeout(SOCKET_TIMEOUT_SECONDS)
+
+
 class LANServer:
     def __init__(self, version: str, host: str = "0.0.0.0", port: int = 5555,
                  god_view: bool = False, host_seat: str = "player1",
@@ -54,8 +66,9 @@ class LANServer:
         self._peer_token: Optional[str] = None
         self._evicted: set[socket.socket] = set()
         self._lock = threading.Lock()
-        self._write_lock = threading.Lock()
+        self._write_locks: dict[socket.socket, threading.Lock] = {}
         self._server_sock: Optional[socket.socket] = None
+        self._accept_thread: Optional[threading.Thread] = None
         self._running = False
 
     @staticmethod
@@ -69,8 +82,20 @@ class LANServer:
         except OSError:
             pass
 
+    def _write_lock_for(self, conn: socket.socket) -> threading.Lock:
+        with self._lock:
+            lock = self._write_locks.get(conn)
+            if lock is None:
+                lock = threading.Lock()
+                self._write_locks[conn] = lock
+            return lock
+
+    def _forget(self, conn: socket.socket) -> None:
+        self._last_seen.pop(conn, None)
+        self._write_locks.pop(conn, None)
+
     def _send_locked(self, conn: socket.socket, payload: dict) -> None:
-        with self._write_lock:
+        with self._write_lock_for(conn):
             _send_msg(conn, payload)
 
     def send_to(self, conn: socket.socket, payload: dict) -> bool:
@@ -160,7 +185,7 @@ class LANServer:
                     if r == peer_role:
                         evicted.append(c)
                         self._evicted.add(c)
-                        self._last_seen.pop(c, None)
+                        self._forget(c)
                     else:
                         kept.append((c, r))
                 self._clients = kept
@@ -192,7 +217,7 @@ class LANServer:
         self._server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._server_sock.bind((self.host, self.port))
-        self._server_sock.listen(2)
+        self._server_sock.listen(LISTEN_BACKLOG)
         self._running = True
         self._accept_thread = threading.Thread(target=self._accept_loop, daemon=True)
         self._accept_thread.start()
@@ -207,21 +232,26 @@ class LANServer:
             except OSError:
                 break
             print(f"[LANServer] Client connected: {addr}")
+            threading.Thread(target=self._greet, args=(conn, addr), daemon=True).start()
 
-            try:
-                conn.settimeout(5.0)
-                hello = _recv_msg(conn)
-                conn.settimeout(None)
-            except (OSError, ValueError):
-                conn.close()
-                continue
+    def _greet(self, conn: socket.socket, addr) -> None:
+        try:
+            _tune(conn)
+            hello = _recv_msg(conn)
+        except (OSError, ValueError):
+            self._force_close(conn)
+            return
 
-            if hello is None or hello.get("type") != "hello":
-                print(f"[LANServer] Bad hello from {addr}: {hello!r}")
-                conn.close()
-                continue
+        if hello is None or hello.get("type") != "hello":
+            print(f"[LANServer] Bad hello from {addr}: {hello!r}")
+            self._force_close(conn)
+            return
 
+        try:
             self.handle_connection(conn, addr, hello)
+        except Exception as e:
+            print(f"[LANServer] handshake failed for {addr}: {e}")
+            self._force_close(conn)
 
     def handle_connection(self, conn: socket.socket, addr, hello: dict) -> None:
         if not self._running:
@@ -292,7 +322,7 @@ class LANServer:
     def _client_loop(self, conn: socket.socket, addr) -> None:
         while True:
             try:
-                msg = _recv_msg(conn)
+                msg = _recv_msg(conn, on_idle=lambda: self._running)
             except (OSError, ValueError):
                 msg = None
             if msg is None:
@@ -302,7 +332,7 @@ class LANServer:
                     self._evicted.discard(conn)
                     dropped_role = next((r for c, r in self._clients if c is conn), "")
                     self._clients = [c for c in self._clients if c[0] is not conn]
-                    self._last_seen.pop(conn, None)
+                    self._forget(conn)
                 try:
                     conn.close()
                 except OSError:
@@ -336,6 +366,8 @@ class LANServer:
                 try:
                     if self.on_action is not None:
                         self.on_action(msg, conn)
+                except Exception as e:
+                    print(f"[LANServer] on_action raised: {e}")
                 finally:
                     seq = msg.get("seq")
                     if seq is not None:
@@ -348,7 +380,8 @@ class LANServer:
             dropped_roles = [r for c, r in self._clients if c in dead_conns]
             self._clients = [c for c in self._clients if c[0] not in dead_conns]
             for c in dead_conns:
-                self._last_seen.pop(c, None)
+                self._evicted.discard(c)
+                self._forget(c)
         return dropped_roles
 
     def _fire_disconnect_callbacks(self, dropped_roles: list[str]) -> None:
@@ -487,6 +520,8 @@ class LANServer:
             conns = [c for c, _role in self._clients]
             self._clients.clear()
             self._last_seen.clear()
+            self._write_locks.clear()
+            self._evicted.clear()
         for conn in conns:
             self._force_close(conn)
 
