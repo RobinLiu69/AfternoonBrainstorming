@@ -161,12 +161,16 @@ class BattlingDispatcher:
             self._broadcast_state(self._game_state)
 
     def _on_pause_timeout(self) -> None:
-        if self._game_state is None or not self._game_state.paused:
+        if self._game_state is None:
             return
         with self.action_lock:
             with self._pause_lock:
+                if self._pause_timer is None:
+                    return
                 self._pause_timer = None
                 self._pause_deadline = None
+            if not self._game_state.paused:
+                return
             self._game_state.paused = False
             self._game_state.pause_reason = ""
             self._game_state.pause_seconds_remaining = 0.0

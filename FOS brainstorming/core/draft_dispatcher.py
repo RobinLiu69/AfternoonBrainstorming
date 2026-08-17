@@ -154,12 +154,14 @@ class DraftDispatcher:
             self._broadcast(self._draft_state)
 
     def _on_pause_timeout(self) -> None:
-        if not self._draft_state.paused:
-            return
         with self.action_lock:
             with self._pause_lock:
+                if self._pause_timer is None:
+                    return
                 self._pause_timer = None
                 self._pause_deadline = None
+            if not self._draft_state.paused:
+                return
             self._draft_state.paused = False
             self._draft_state.pause_reason = ""
             self._draft_state.pause_seconds_remaining = 0.0
