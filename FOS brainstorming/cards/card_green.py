@@ -19,7 +19,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from shared.setting import CARD_SETTING
+from shared.setting import ANIM_LUNGE_STEP, CARD_SETTING
 from shared.combat_event import CombatEvent
 from cards.factory import CardFactory, spawn_card
 from cards.base import Card
@@ -32,13 +32,12 @@ if TYPE_CHECKING:
 card_settings = CARD_SETTING["Green"]
 color_code = "G"
 
-_FORTUNE_DELAY: float = 0.15
-
 
 def float_fortune(game_state: GameState, target: Card, text: str, good: bool) -> None:
     game_state.pending_combat_events.append(
         CombatEvent(kind="float", board_x=target.board_x, board_y=target.board_y,
-                    text=text, good=good, delay=_FORTUNE_DELAY)
+                    text=text, good=good,
+                    delay=game_state._attack_anim_cursor + ANIM_LUNGE_STEP)
     )
 
 
@@ -120,7 +119,8 @@ class GreenCard(Card):
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} got numbness",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 3:
-                    target.adjust_stats(game_state, health=-(target.health - target.health // 2), announce=False)
+                    target.adjust_stats(game_state, health=-(target.health - target.health // 2), announce=False,
+                                        anim_delay=game_state._attack_anim_cursor + ANIM_LUNGE_STEP)
                     float_fortune(game_state, target, "HP HALVED", False)
                     game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health halved",
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
@@ -131,7 +131,8 @@ class GreenCard(Card):
                                                 LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())
                 case 5:
                     if target.health >= 2:
-                        target.adjust_stats(game_state, health=-2, announce=False)
+                        target.adjust_stats(game_state, health=-2, announce=False,
+                                            anim_delay=game_state._attack_anim_cursor + ANIM_LUNGE_STEP)
                         float_fortune(game_state, target, "-2 HP", False)
                         game_state.game_logger.info(f"{target.get_uid()}{target.get_position()} health reduced by 2",
                                                     LogCategory.SPECIAL_ACTION, target=target.get_uid(), target_position=target.get_position())

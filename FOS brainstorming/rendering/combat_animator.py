@@ -46,10 +46,10 @@ _LUCKY_TEXT_COLOR = (120, 235, 140)
 _JINX_TEXT_COLOR = (255, 130, 95)
 _TEXT_OUTLINE_COLOR = (0, 0, 0)
 
-_FLOAT_TEXT_DURATION = 1.45  # seconds a fortune label stays on screen
-_FLOAT_TEXT_RISE_PX = 34     # total pixels a fortune label rises
-_FLOAT_TEXT_FADE_IN = 0.12   # fraction of the run spent fading in
-_FLOAT_TEXT_HOLD = 0.66      # fraction of the run held at full opacity
+_FLOAT_TEXT_DURATION = 1.45
+_FLOAT_TEXT_RISE_PX = 34
+_FLOAT_TEXT_FADE_IN = 0.12
+_FLOAT_TEXT_HOLD = 0.66
 _TEXT_OUTLINE_PX = 2
 
 def _sin_ease(t: float) -> float:
@@ -107,10 +107,14 @@ class CombatAnimator:
         if not value:
             self._active.clear()
 
+    @staticmethod
+    def _is_label(event: CombatEvent) -> bool:
+        return event.kind == "float" and bool(event.text)
+
     def get_active_positions(self) -> set[tuple[int, int]]:
         positions = set()
         for active in self._active:
-            if active.event.kind == "move":
+            if active.event.kind == "move" or self._is_label(active.event):
                 continue
             positions.add((active.event.board_x, active.event.board_y))
             if active.event.kind == "attack":
@@ -138,16 +142,14 @@ class CombatAnimator:
                         and active.event.board_y == event.board_y):
                     event.delay = max(event.delay, -active.elapsed + 0.02)
 
-        if event.kind == "float" and event.text:
+        if self._is_label(event):
             for active in self._active:
-                if (active.event.kind == "float" and active.event.text
+                if (self._is_label(active.event)
                         and active.event.board_x == event.board_x
                         and active.event.board_y == event.board_y):
                     event.delay = max(event.delay, -active.elapsed + _FLOAT_TEXT_DURATION * 0.45)
 
-        duration = _DURATIONS.get(event.kind, 0.35)
-        if event.kind == "float" and event.text:
-            duration = _FLOAT_TEXT_DURATION
+        duration = _FLOAT_TEXT_DURATION if self._is_label(event) else _DURATIONS.get(event.kind, 0.35)
         self._active.append(_Anim(event=event, elapsed=-event.delay, duration=duration))
 
     def drain_skipped_display_updates(self) -> list[CombatEvent]:
@@ -163,7 +165,7 @@ class CombatAnimator:
         return completed
 
     def is_animating(self) -> bool:
-        return bool(self._active)
+        return any(not self._is_label(active.event) for active in self._active)
     
     def get_offset(self, board_x: int, board_y: int) -> tuple[float, float]:
         if not self._enabled:

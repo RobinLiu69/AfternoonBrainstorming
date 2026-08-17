@@ -126,6 +126,26 @@ class TestFortuneFloats:
         assert all(labels[good] for good in ("+4 ARMOR", "ATK x2", "FREE STRIKE", "FREE MOVE", "SPAWN BLOCKS"))
         assert not any(labels[bad] for bad in ("ARMOR GONE", "NUMBED", "HP HALVED", "ATK HALVED", "-2 HP"))
 
+    def test_a_fortune_label_never_pops_before_the_strike_that_rolled_it(self) -> None:
+        checked = 0
+        for seed in range(120):
+            gs = make_game_state(rng_seed=seed)
+            breaker = place_card(gs, WhiteAdc, "player1", 1, 1)
+            for y in (0, 2):
+                gs.neutral.on_board.append(LuckyBlock("neutral", 1, y))
+                gs.board_dict[(1, y)].occupy = True
+
+            do_attack(breaker, gs)
+
+            hurts = sorted(e.delay for e in gs.pending_combat_events if e.kind == "hurt")
+            labels = sorted(e.delay for e in gs.pending_combat_events if e.kind == "float" and e.text)
+            if len(hurts) < 2 or len(labels) < 2:
+                continue
+            checked += 1
+            assert all(label >= hurt for label, hurt in zip(labels, hurts))
+
+        assert checked
+
     def test_a_green_ap_attack_floats_its_roll_too(self) -> None:
         assert any(
             _fortune_labels(self._green_ap_attack(seed)) for seed in range(40)
