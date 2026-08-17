@@ -322,9 +322,10 @@ class Room:
             game_state.update()
 
             snapshot = self._snapshot(game_state)
-            if snapshot != self._last_snapshot:
+            if snapshot != self._last_snapshot or game_state.pending_combat_events:
                 self._last_snapshot = snapshot
                 dispatcher._broadcast_state(game_state)
+            game_state.drain_combat_events()
 
             winner = dispatcher.resolve_flag(game_state)
 

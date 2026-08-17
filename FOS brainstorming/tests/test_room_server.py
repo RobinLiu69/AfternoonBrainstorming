@@ -24,6 +24,7 @@ import pytest
 
 from shared.setting import VERSION
 from core.network.client import LANClient
+from shared.combat_event import CombatEvent
 from cards.factory import CardFactory
 from server.room_server import RoomServer
 
@@ -502,3 +503,19 @@ def test_ack_timeout_drops_connection_instead_of_unlocking(room_server):
 
     assert creator.try_reconnect() is True
     assert creator.initial_state["turn_number"] == 1
+
+
+def test_the_server_never_hoards_combat_events(room_server):
+    server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+    joiner = make_client(room=creator.room)
+    joiner.connect()
+    room = server._rooms[creator.room]
+    _reach_battle(creator, joiner)
+    wait_until(lambda: room.game_state is not None)
+
+    game_state = room.game_state
+    game_state.emit(CombatEvent(kind="hurt", board_x=1, board_y=1, post_health=3))
+
+    wait_until(lambda: not game_state.pending_combat_events)
