@@ -126,6 +126,7 @@ ROW_STEP = 0.45
 ADVANCED_HEADER_GAP = 0.60
 ADVANCED_HEADER_TO_ROW = 0.25
 SWITCH_ROLE_GAP = 0.75
+HOST_WATCH_OFFSET = 0.75
 
 
 def _layout(mode: str) -> tuple[dict[str, float], Optional[float]]:
@@ -166,6 +167,10 @@ def _make_buttons(gs: GameScreen, row_offsets: dict[str, float]) -> dict[str, Bu
                                     position="Left", padding=bs * 0.15,
                                     box_width=box_width, font=gs.mid_text_font)
 
+    buttons["host_watch"] = Button(bs * 2.9, btn_h, cx + bs * 0.3, cy + bs * HOST_WATCH_OFFSET,
+                                   position="Left", padding=bs * 0.15,
+                                   box_width=box_width, font=gs.mid_text_font)
+
     start_w = bs * 3.2
     buttons["start_match"] = Button(start_w, bs * 0.55, cx - start_w / 2, cy + bs * 2.30,
                                     position="Middle", padding=bs * 0.15,
@@ -186,15 +191,17 @@ def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: 
 
     free_seat = next((s for s in state.open_seats() if not state.seat_filled(s)), "")
 
+    if mode == "local" or not _is_host(role):
+        buttons["host_watch"].text = ""
+    elif state.host_playing:
+        buttons["host_watch"].text = "watch instead"
+    elif state.host_seat_connected:
+        buttons["host_watch"].text = f"({state.host_seat} taken)"
+    else:
+        buttons["host_watch"].text = f"take {state.host_seat}"
+
     if _is_host(role):
-        if mode == "local":
-            buttons["switch_role"].text = ""
-        elif state.host_playing:
-            buttons["switch_role"].text = "watch instead of playing"
-        elif state.host_seat_connected:
-            buttons["switch_role"].text = f"({state.host_seat} taken)"
-        else:
-            buttons["switch_role"].text = f"take {state.host_seat} seat"
+        buttons["switch_role"].text = ""
     elif role in ("player1", "player2"):
         buttons["switch_role"].text = "switch to spectator"
     elif _is_spectator(role):
@@ -204,6 +211,17 @@ def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: 
             buttons["switch_role"].text = "(player slot occupied)"
     else:
         buttons["switch_role"].text = ""
+
+
+def _render_role_button(gs: GameScreen, button: Button) -> None:
+    if not button.text:
+        return
+    if button.text.startswith("("):
+        draw_text(button.text, gs.mid_text_font, WHITE,
+                  button.x + gs.block_size * 0.15,
+                  button.y + gs.block_size * 0.10, gs.surface)
+    else:
+        button.update(gs)
 
 
 def _render_settings_labels(gs: GameScreen, state: LobbyState,
@@ -334,7 +352,7 @@ def _click_dispatch(buttons: dict[str, Button], mouse_x: float, mouse_y: float,
                 return
         if touched("start_match"):
             dispatcher.dispatch(LobbyAction("host", "start_match"))
-        elif touched("switch_role") and dispatcher.mode != "local":
+        elif touched("host_watch") and dispatcher.mode != "local":
             if state.host_playing:
                 dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
             elif not state.host_seat_connected:
@@ -462,18 +480,12 @@ def main(game_screen: GameScreen, mode: str,
 
             if _is_host(state.local_role):
                 for name, button in buttons.items():
-                    if name != "switch_role":
+                    if name not in ("switch_role", "host_watch"):
                         button.update(game_screen)
+                _render_role_button(game_screen, buttons["host_watch"])
             else:
                 _render_settings_labels(game_screen, state, row_offsets)
-                sw = buttons["switch_role"]
-                if sw.text and not sw.text.startswith("("):
-                    sw.update(game_screen)
-                elif sw.text:
-                    draw_text(sw.text, game_screen.mid_text_font, WHITE,
-                              sw.x + game_screen.block_size * 0.15,
-                              sw.y + game_screen.block_size * 0.10,
-                              game_screen.surface)
+                _render_role_button(game_screen, buttons["switch_role"])
 
         _render_help(game_screen, state.local_role, mode)
         back_button.update(game_screen)
