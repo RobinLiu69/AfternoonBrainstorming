@@ -16,8 +16,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+import re
+from pathlib import Path
+
 from cards.card_white import Tank as WhiteTank
 from core.game_state import GameState
+from core.game_statistics import StatType
 from tests.helpers import make_game_state, place_card, do_attack
 
 
@@ -77,6 +81,66 @@ class TestStatAdjustAnimates:
         assert card.pending_death is True
         assert "death" in kinds_at(gs, 1, 1)
 
+    def test_a_lethal_adjustment_runs_the_victims_death_hook(self) -> None:
+        from cards.card_cyan import Hf as CyanHf
+
+        gs = make_game_state()
+        card = place_card(gs, CyanHf, "player2", 1, 1)
+        card.upgrade = True
+        card.health = 1
+        gs.pending_combat_events.clear()
+
+        card.adjust_stats(gs, health=-1)
+
+        assert card.anger is True
+        assert card.pending_death is False
+        assert "death" not in kinds_at(gs, 1, 1)
+
+    def test_a_lethal_adjustment_credits_the_source_with_the_kill(self) -> None:
+        gs = make_game_state()
+        killer = place_card(gs, WhiteTank, "player1", 0, 0)
+        victim = place_card(gs, WhiteTank, "player2", 1, 1)
+        victim.health = 1
+        gs.pending_combat_events.clear()
+
+        victim.adjust_stats(gs, health=-1, source=killer)
+
+        assert gs.game_statistics.get(StatType.KILLED, killer.get_uid()) == 1
+        assert gs.game_statistics.get(StatType.DEATH, victim.get_uid()) == 1
+
+    def test_a_lethal_adjustment_without_a_source_still_records_the_death(self) -> None:
+        gs = make_game_state()
+        victim = place_card(gs, WhiteTank, "player2", 1, 1)
+        victim.health = 1
+        gs.pending_combat_events.clear()
+
+        victim.adjust_stats(gs, health=-1)
+
+        assert gs.game_statistics.get(StatType.DEATH, victim.get_uid()) == 1
+        assert victim.pending_death is True
+
+    def test_a_mixed_adjustment_never_reads_as_a_buff(self) -> None:
+        gs = make_game_state()
+        card = place_card(gs, WhiteTank, "player1", 1, 1)
+        card.armor = 2
+        gs.pending_combat_events.clear()
+
+        card.adjust_stats(gs, armor=-2, damage=3)
+
+        assert labels(gs) == ["-2 SHIELD +3 ATK"]
+        assert not any(event.good for event in gs.pending_combat_events if event.text)
+
+    def test_a_healing_adjustment_respects_the_health_cap(self) -> None:
+        gs = make_game_state()
+        card = place_card(gs, WhiteTank, "player1", 1, 1)
+        card.health = card.max_health - 1
+        gs.pending_combat_events.clear()
+
+        card.adjust_stats(gs, health=5)
+
+        assert card.health == card.max_health
+        assert labels(gs) == ["+5 HP"]
+
     def test_stats_never_go_below_zero(self) -> None:
         gs = make_game_state()
         card = place_card(gs, WhiteTank, "player1", 1, 1)
@@ -108,19 +172,38 @@ class TestStatAdjustAnimates:
 
 
 class TestEveryFactionRoutesThroughTheInterface:
+    STAT_WRITE = re.compile(
+        r"(?P<owner>\w+)\.(?P<stat>health|damage|armor|extra_damage)\s*(=(?!=)|\+=|-=|\*=|//=|%=)")
+    SHIELD_WRITE = re.compile(
+        r"\w+\.(armor|extra_damage)\s*(=(?!=)|\+=|-=|\*=|//=|%=)")
+    DERIVED_REFRESH = ("self", "extra_damage")
+
+    def _scan(self, pattern: re.Pattern, allow_derived: bool, *globs: str) -> list[str]:
+        root = Path(__file__).resolve().parent.parent
+        found: list[str] = []
+        for glob in globs:
+            for path in sorted(root.glob(glob)):
+                for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                    match = pattern.search(line)
+                    if not match:
+                        continue
+                    if allow_derived and (match.group("owner"), match.group("stat")) == self.DERIVED_REFRESH:
+                        continue
+                    found.append(f"{path.name}:{number}: {line.strip()}")
+        return found
+
     def test_no_faction_file_adjusts_a_stat_by_hand(self) -> None:
-        import re
-        from pathlib import Path
+        assert self._scan(self.STAT_WRITE, True, "cards/card_*.py") == []
 
-        pattern = re.compile(r"\.(health|damage|armor|extra_damage)\s*(\+=|-=|\*=|//=)")
-        cards_dir = Path(__file__).resolve().parent.parent / "cards"
-        offenders: list[str] = []
-        for path in sorted(cards_dir.glob("card_*.py")):
-            for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-                if pattern.search(line):
-                    offenders.append(f"{path.name}:{number}: {line.strip()}")
+    def test_the_guard_still_sees_a_plain_assignment(self) -> None:
+        assert self.STAT_WRITE.search("target.armor = 0")
+        assert self.STAT_WRITE.search("self.health = 0")
+        assert self.STAT_WRITE.search("card.armor += awards")
+        assert not self.STAT_WRITE.search("if target.health == 0:")
 
-        assert offenders == []
+    def test_nothing_outside_the_cards_hands_out_a_shield_by_itself(self) -> None:
+        assert self._scan(self.SHIELD_WRITE, False, "tower/*.py", "campaign/*.py",
+                          "campaign/ai_strategies/*.py", "endless/*.py") == []
 
 
 class TestFactionBuffsAnnounce:

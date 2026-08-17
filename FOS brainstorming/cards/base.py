@@ -363,27 +363,34 @@ class Card(ABC):
             self.on_attacked_by(attacker, value, game_state)
 
         if self.health == 0:
-            game_state.game_statistics.add_kill(attacker.get_uid())
-            game_state.game_statistics.add_death(self.get_uid())
-            if not attacker.nullify:
-                attacker.on_kill(self, game_state)
-            if not self.nullify:
-                self.on_killed_by(attacker, game_state)
-
-            if self.can_be_killed(game_state):
-                self.pending_death = True
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
-                )
+            self.register_death(attacker, game_state, anim_delay)
 
         if not attacker.nullify:
             attacker.after_damage_calculated(self, value, game_state)
         return True
-    
+
+    @final
+    def register_death(self, killer: "Card | None", game_state: GameState,
+                       anim_delay: float = 0.0) -> None:
+        attacker = game_state.judge if killer is None else killer
+        game_state.game_statistics.add_death(self.get_uid())
+        if killer is not None:
+            game_state.game_statistics.add_kill(killer.get_uid())
+        if not attacker.nullify:
+            attacker.on_kill(self, game_state)
+        if not self.nullify:
+            self.on_killed_by(attacker, game_state)
+
+        if self.can_be_killed(game_state):
+            self.pending_death = True
+            game_state.pending_combat_events.append(
+                CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
+            )
+
     @final
     def adjust_stats(self, game_state: GameState, health: int = 0, damage: int = 0,
                      armor: int = 0, extra_damage: int = 0, anim_delay: float = 0.0,
-                     announce: bool = True) -> None:
+                     announce: bool = True, source: "Card | None" = None) -> None:
         labels: list[str] = []
 
         if health < 0:
@@ -398,15 +405,9 @@ class Card(ABC):
                     CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y,
                                 damage=lost, delay=anim_delay)
                 )
-                if self.health == 0 and self.can_be_killed(game_state):
-                    self.pending_death = True
-                    game_state.pending_combat_events.append(
-                        CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y,
-                                    delay=anim_delay)
-                    )
-        elif health > 0:
-            self.health += health
-            self.display_health = self.health
+                if self.health == 0:
+                    self.register_death(source, game_state, anim_delay)
+        elif health > 0 and self.heal(health, game_state):
             labels.append(f"+{health} HP")
 
         if armor:
@@ -423,7 +424,7 @@ class Card(ABC):
             game_state.pending_combat_events.append(
                 CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y,
                             text=" ".join(labels), delay=anim_delay,
-                            good=(health + damage + armor + extra_damage) > 0)
+                            good=not any(delta < 0 for delta in (health, damage, armor, extra_damage)))
             )
 
     def set_nullify(self, nullify: bool, game_state: GameState) -> None:
