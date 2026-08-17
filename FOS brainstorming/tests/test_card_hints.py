@@ -25,16 +25,14 @@ from shared.setting import (CARD_SETTING, CARDS_HINTS_DICTIONARY, FOLDER_PATH,
 
 PLACEHOLDER = re.compile(r"\{([A-Za-z_][A-Za-z0-9_.]*)\}")
 
-# numbers that live in the hint text on purpose: they come from the rules or
-# from a literal in the card code, not from card_setting.json
 LITERAL_NUMBERS: dict[str, set[str]] = {
-    "APTG": {"1"},        # card_green Apt: card.armor += 1
-    "ASSG": {"5"},        # card_green Ass: players_luck += 5
-    "APTB": {"1"},        # card_blue Apt: after_token armor += 1
-    "SPG": {"10"},        # the //10 step, not min_luck_to_spawn
-    "APTO": {"1", "2"},   # the 2:1 armor to attack conversion ratio
-    "HFDKG": {"4", "1"},  # health <= 4 threshold, heal 1
-    "LFDKG": {"4", "1"},  # the 1/4 fraction, whose divisor is a code literal
+    "APTG": {"1"},
+    "ASSG": {"5"},
+    "APTB": {"1"},
+    "SPG": {"10"},
+    "APTO": {"1", "2"},
+    "HFDKG": {"4", "1"},
+    "LFDKG": {"4", "1"},
     "ADCC": {"1", "2"}, "APC": {"1", "2"}, "TANKC": {"2", "0"},
     "HFC": {"2", "1"}, "LFC": {"2"}, "ASSC": {"1"},
     "APTC": {"5", "1"}, "SPC": {"1", "3"},
@@ -77,8 +75,6 @@ def test_placeholders_name_a_real_setting() -> None:
 
 
 def test_a_tuned_number_never_stays_hardcoded() -> None:
-    """A hint that spells out a value from card_setting.json silently goes stale
-    the moment that value is retuned, so it has to be a placeholder instead."""
     stale: list[str] = []
     for code, text in raw_hints().items():
         job, color_name = hint_job_and_color(code)
