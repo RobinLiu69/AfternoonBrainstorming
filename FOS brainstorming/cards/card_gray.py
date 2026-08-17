@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 
 card_settings = CARD_SETTING["Gray"]
 color_code = "GY"
+SACRIFICE_DAMAGE = 9999
 
 
 def gain_barrow(game_state: GameState, owner: str, count: int = 1) -> None:
@@ -108,6 +109,8 @@ class Wight(GrayCard):
         return False
 
     def on_settle(self, clear_numbness: bool = True) -> int:
+        if self.numbness and clear_numbness:
+            self.numbness = False
         return 0
 
 
@@ -183,7 +186,7 @@ class Hf(GrayCard):
         area = set(self.attack_areas(self.board_x, self.board_y, self.attack_types, game_state))
         for card in game_state.get_side_cards(self.owner, True):
             if card.health > 0 and (card.board_x, card.board_y) in area:
-                card.adjust_stats(game_state, health=-debuff["health"], damage=-debuff["atk"])
+                card.adjust_stats(game_state, health=-debuff["health"], damage=-debuff["atk"], source=self)
         return granted
 
 
@@ -200,7 +203,7 @@ class Lf(GrayCard):
         for victim in self.detection("nearest", allies, game_state):
             stolen_health = victim.health
             stolen_damage = victim.damage
-            game_state.judge.deal(victim.health + victim.armor, victim, game_state)
+            game_state.judge.deal(SACRIFICE_DAMAGE, victim, game_state)
             self.adjust_stats(game_state, armor=stolen_health, extra_damage=stolen_damage)
 
 

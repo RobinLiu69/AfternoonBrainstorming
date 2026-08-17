@@ -125,6 +125,15 @@ class TestWight:
         wight.moving = True
         assert wight.move(1, 2, gs) is True
 
+    def test_a_numbed_wight_wakes_up_at_the_end_of_the_turn(self) -> None:
+        gs = make_game_state()
+        wight = place_card(gs, Wight, "player1", 1, 1)
+        wight.numbness = True
+
+        wight.settle(gs)
+
+        assert wight.numbness is False
+
 
 class TestGrayAdc:
     def test_its_wights_fire_for_its_own_damage(self) -> None:
@@ -325,6 +334,21 @@ class TestGrayLf:
 
         assert lf.armor == 0
         assert lf.extra_damage == 0
+
+    def test_a_damage_halving_field_cannot_save_the_meal(self) -> None:
+        from cards.card_fuchsia import Apt as FuchsiaApt
+
+        gs = make_game_state()
+        shelter = place_card(gs, FuchsiaApt, "player1", 3, 3)
+        food = place_card(gs, WhiteTank, "player1", 0, 1)
+        shelter.spawn_shadow("player1", food.board_x, food.board_y, False)
+        stolen_health = food.health
+
+        lf = Lf("player1", 0, 0)
+        lf.deploy(gs)
+
+        assert food.health == 0
+        assert lf.armor == stolen_health
 
 
 class TestGrayAss:

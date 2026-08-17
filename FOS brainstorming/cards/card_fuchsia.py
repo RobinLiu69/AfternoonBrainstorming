@@ -431,7 +431,8 @@ class Apt(FuchsiaCard):
         for shadow in self.shadows:
             if (self.health > 0 and victim.owner == self.owner and shadow.is_same_location(victim) and victim != self):
                 def absorb_half(current: int) -> int:
-                    self.adjust_stats(game_state, armor=math.floor(current * 0.5))
+                    absorbed = min(current, victim.health + victim.armor)
+                    self.adjust_stats(game_state, armor=math.floor(absorbed * 0.5))
                     return math.ceil(current * 0.5)
                 return (FIELD_EFFECT_NORMAL, absorb_half)
         return None
