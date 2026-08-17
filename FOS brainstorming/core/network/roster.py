@@ -35,6 +35,7 @@ class Roster:
         self._members: list[tuple[Any, str]] = []
         self._tokens: dict[str, str] = {}
         self._evicted: set[Any] = set()
+        self._reserved: set[str] = set()
 
     def peer_seat(self) -> str:
         return "player2" if self.host_seat == "player1" else "player1"
@@ -49,7 +50,12 @@ class Roster:
 
     def add(self, conn: Any, role: str) -> None:
         with self._lock:
+            self._reserved.discard(role)
             self._members.append((conn, role))
+
+    def release(self, role: str) -> None:
+        with self._lock:
+            self._reserved.discard(role)
 
     def drop(self, conn: Any) -> tuple[str, bool]:
         with self._lock:
@@ -72,6 +78,7 @@ class Roster:
             conns = [c for c, _r in self._members]
             self._members.clear()
             self._evicted.clear()
+            self._reserved.clear()
             return conns
 
     def members(self) -> list[tuple[Any, str]]:
@@ -139,9 +146,10 @@ class Roster:
             if held_by:
                 return held_by, token, self._evict(held_by)  # type: ignore[return-value]
 
-            taken = {r for _c, r in self._members}
+            taken = {r for _c, r in self._members} | self._reserved
             free = next((seat for seat in self.open_seats() if seat not in taken), "")
             if intent == "play" and free and in_lobby:
+                self._reserved.add(free)
                 return free, self.issue_token(free), []
             return self.watcher_role(), "", []
 

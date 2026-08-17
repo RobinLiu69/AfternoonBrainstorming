@@ -54,7 +54,8 @@ def _is_spectator(role: str) -> bool:
 
 
 def _room_has_others(state: LobbyState) -> bool:
-    return state.peer_connected or state.watcher_count() > 0
+    return (state.peer_connected or state.host_seat_connected
+            or state.spectator_count > 0)
 
 
 T = TypeVar("T")
@@ -99,7 +100,8 @@ ROWS: dict[str, _SettingRow] = {
         click=lambda s, d: d.dispatch(set_setting(
             "ruleset", _next_option(RULESET_OPTIONS, s.settings.ruleset)))),
     "swap_seats": _SettingRow(
-        label=lambda s: f"host plays: {s.host_seat}",
+        label=lambda s: (f"host plays: {s.host_seat}" if s.host_playing
+                         else f"host seat: {s.host_seat}"),
         click=lambda s, d: d.dispatch(LobbyAction("host", "swap_seats"))),
     "ban_draft": _SettingRow(
         label=lambda s: f"ban draft ({len(s.bans)} banned)",

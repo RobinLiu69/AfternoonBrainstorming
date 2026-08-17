@@ -17,6 +17,7 @@
 # -----------------------------------------------------------------
 
 import socket
+import threading
 import time
 
 import pytest
@@ -24,6 +25,7 @@ import pytest
 from core.lobby_dispatcher import LobbyDispatcher
 from core.lobby_state import LobbyState
 from core.network.messages import _recv_msg, _send_msg
+from core.network.roster import Roster
 from core.network.server import LANServer
 from screens.lobby.lobby_action import LobbyAction
 from shared.setting import VERSION
@@ -307,6 +309,54 @@ class TestASeatChangingHandsLeavesNothingBehind:
 
         assert state.display_name(state.seat_identity(seat)) == ""
         seated.close()
+
+    def test_two_claims_in_a_row_never_hand_out_the_same_seat(self) -> None:
+        roster = Roster(host_seat="player1")
+        roster.host_playing = False
+
+        first, _t1, _e1 = roster.claim("play", None, in_lobby=True)
+        second, _t2, _e2 = roster.claim("play", None, in_lobby=True)
+
+        assert {first, second} == {"player1", "player2"}
+
+    def test_a_reserved_seat_is_handed_back_when_the_handshake_fails(self) -> None:
+        roster = Roster(host_seat="player1")
+
+        seat, _token, _evicted = roster.claim("play", None, in_lobby=True)
+        roster.release(seat)
+
+        assert roster.claim("play", None, in_lobby=True)[0] == seat
+
+    def test_clients_racing_into_the_lobby_land_on_different_seats(self, lobby) -> None:
+        _state, dispatcher, server = lobby
+        dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+        gate = threading.Barrier(2, timeout=5.0)
+        welcomed: list[str] = []
+        socks: list[socket.socket] = []
+        guard = threading.Lock()
+
+        def race() -> None:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5.0)
+            sock.connect(("127.0.0.1", server.port))
+            gate.wait()
+            _send_msg(sock, {"type": "hello", "intent": "play",
+                             "version": VERSION, "room": ""})
+            welcome = _recv_msg(sock)
+            with guard:
+                welcomed.append(welcome["role"])
+                socks.append(sock)
+
+        threads = [threading.Thread(target=race) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=10.0)
+
+        assert sorted(welcomed) == ["player1", "player2"]
+        assert sorted(server.roster.roles()) == ["player1", "player2"]
+        for sock in socks:
+            sock.close()
 
     def test_the_peer_seat_keeps_its_name_when_the_host_steps_out(self, lobby) -> None:
         state, dispatcher, _server = lobby

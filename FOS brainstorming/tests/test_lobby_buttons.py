@@ -128,6 +128,31 @@ class TestTheHostHasAReachableWatchButton:
 
         assert dispatcher.sent == [("player2", "switch_to_spectator")]
 
+    def test_a_watching_host_alone_in_the_room_is_still_alone(self) -> None:
+        state = LobbyState(host_playing=False)
+        state.host_watching = True
+
+        assert lobby._room_has_others(state) is False
+
+    def test_a_real_client_on_the_host_seat_counts_as_company(self) -> None:
+        state = LobbyState(host_playing=False)
+        state.host_watching = True
+        state.host_seat_connected = True
+
+        assert lobby._room_has_others(state) is True
+
+    def test_a_spectator_counts_as_company(self) -> None:
+        state = LobbyState()
+        state.spectator_count = 1
+
+        assert lobby._room_has_others(state) is True
+
+    def test_the_seat_row_does_not_claim_a_watching_host_plays(self) -> None:
+        watching = LobbyState(host_playing=False)
+
+        assert "plays" not in lobby.ROWS["swap_seats"].label(watching)
+        assert "plays" in lobby.ROWS["swap_seats"].label(LobbyState())
+
     def test_a_spectator_can_claim_the_free_host_seat(self, game_screen) -> None:
         state = LobbyState(host_playing=False)
         state.peer_connected = True

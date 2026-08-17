@@ -237,6 +237,7 @@ class LANServer:
                 self._fire("on_peer_reconnect")
             state = self._fire("on_client_connect", role) or {}
         except Exception:
+            self.roster.release(role)
             self._force_close(conn)
             return
 
@@ -251,6 +252,7 @@ class LANServer:
                 "room": self.room_code,
             })
         except OSError:
+            self.roster.release(role)
             conn.close()
             return
 
