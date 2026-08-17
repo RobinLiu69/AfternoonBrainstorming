@@ -147,6 +147,15 @@ class GameScreen:
         self.big_big_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size*2))
         self.small_text_font: pygame.font.Font = pygame.font.Font(BASIC_FONT, int(self.text_font_size/15*8.66))
         self.text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, self.text_font_size)
+        # the Chinese face at the same ladder of sizes, so CJK content can be
+        # drawn anywhere the latin font is - the latin face has no CJK glyphs
+        # and silently mis-measures them, which wrecks measured layouts
+        self.mid_text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, int(self.text_font_size*1.25))
+        self.title_text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, int(self.text_font_size*3))
+        self.info_text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, int(self.text_font_size/1.1))
+        self.big_text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, int(self.text_font_size/16.5*25))
+        self.big_big_text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, int(self.text_font_size*2))
+        self.small_text_fontCHI: pygame.font.Font = pygame.font.Font(CHINESE_FONT, int(self.text_font_size/15*8.66))
 
 
     def render(self) -> None:

@@ -19,6 +19,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from shared import card_code
 from campaign.config_loader import CAMPAIGN_SETTINGS as _CS
 
 if TYPE_CHECKING:
@@ -155,7 +156,7 @@ def attack_coverage_cells(gs: "GameState", x: int, y: int, attack_types: str) ->
 
 
 def is_playable_unit_card(card_name: str) -> bool:
-    return card_name not in ("HEAL", "MOVE", "MOVEO", "CUBES")
+    return card_code.plain_code(card_name) not in ("HEAL", "MOVE", "MOVEO", "CUBES")
 
 
 def units_with_pending_move(gs: "GameState", owner: str) -> list["Card"]:

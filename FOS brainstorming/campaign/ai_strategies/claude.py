@@ -3,6 +3,7 @@ import copy
 import types
 from typing import TYPE_CHECKING, Optional
 
+from shared import card_code
 from campaign.ai_strategies.base import Strategy, PlacementChoice, AttackChoice
 from campaign import ai_query, ai_evaluator
 from campaign.config_loader import CAMPAIGN_SETTINGS
@@ -267,7 +268,7 @@ class ClaudeStrategy(Strategy):
             if card_name in seen or not ai_query.is_playable_unit_card(card_name):
                 continue
             seen.add(card_name)
-            real = card_name[:-4] if card_name.endswith(" (+)") else card_name
+            real = card_code.plain_code(card_name)
             ranked = sorted(empties, key=lambda xy: -ai_evaluator.evaluate_placement(real, xy, sim, owner))
             for (x, y) in ranked[: self.cells_per_card]:
                 placings.append((ai_evaluator.evaluate_placement(real, (x, y), sim, owner),

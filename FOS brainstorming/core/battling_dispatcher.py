@@ -21,6 +21,7 @@ import threading
 import time
 from typing import TYPE_CHECKING, Optional
 
+from shared import card_code
 from core.game_action import GameAction, ActionResult
 from core.game_state import GameState
 
@@ -332,7 +333,7 @@ class BattlingDispatcher:
                     name = player.hand[action.hand_index]
                     if name.endswith(" (+)"):
                         player.hand[action.hand_index] = name[:-4]
-                    elif name.endswith("C"):
+                    elif card_code.plain_code(name).endswith("C"):
                         player.hand[action.hand_index] = name + " (+)"
                 return ActionResult(success=True)
             
@@ -356,7 +357,9 @@ class BattlingDispatcher:
                 game_state.game_statistics.add_score_record(game_state.score)
                 if abs(game_state.score) >= game_state.win_threshold:
                     winner = "player1" if game_state.score < 0 else "player2"
-                    return ActionResult(True, message=winner, quit=True)
+                    survives = getattr(game_state, "tower_on_defeat", None)
+                    if survives is None or not survives(game_state, winner):
+                        return ActionResult(True, message=winner, quit=True)
                 game_state.get_player(opponent).turn_start(game_state)
                 return ActionResult(True, end_turn=True)
 
