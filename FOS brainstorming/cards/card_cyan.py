@@ -179,7 +179,7 @@ class Hf(CyanCard):
     def on_killed_by(self, attacker: Card, game_state: GameState) -> bool:
         if self.upgrade == True:
             self.anger = True
-            self.damage += card_settings["HF"]["damage_bonus"]
+            self.adjust_stats(game_state, damage=card_settings["HF"]["damage_bonus"])
         return True
     
     def on_can_be_killed(self, game_state: GameState) -> bool:

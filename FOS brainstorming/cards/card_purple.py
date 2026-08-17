@@ -32,7 +32,15 @@ color_code = "P"
 
 
 class PurpleCard(Card):
-    pass
+    @staticmethod
+    def strip(target: Card, game_state: GameState) -> None:
+        target.adjust_stats(
+            game_state,
+            armor=-target.armor,
+            damage=target.original_damage - target.damage,
+            extra_damage=-target.extra_damage,
+        )
+        target.set_nullify(True, game_state)
 
 
 class Adc(PurpleCard):
@@ -61,17 +69,11 @@ class Ap(PurpleCard):
                 )
             ), game_state
         ):
-            target.armor = 0
-            target.damage = target.original_damage
-            target.extra_damage = 0
-            target.set_nullify(True, game_state)
+            self.strip(target, game_state)
 
     def ability(self, target: Card, game_state: GameState) -> bool:
         target.numbness = True
-        target.armor = 0
-        target.damage = target.original_damage
-        target.extra_damage = 0
-        target.set_nullify(True, game_state)
+        self.strip(target, game_state)
         return True
 
 

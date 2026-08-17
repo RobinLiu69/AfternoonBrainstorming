@@ -406,6 +406,60 @@
             "damage": 5
         }
     },
+    "Gray": {
+        "WIGHT": {
+            "health": 2,
+            "damage": 0
+        },
+        "ADC": {
+            "health": 4,
+            "damage": 2,
+            "extra_barrow_on_death": 1
+        },
+        "AP": {
+            "health": 3,
+            "damage": 2,
+            "barrow_on_attack": 1
+        },
+        "TANK": {
+            "health": 9,
+            "damage": 1,
+            "reflect_damage": 2
+        },
+        "HF": {
+            "health": 8,
+            "damage": 2,
+            "wight_strike_damage": 2,
+            "on_death_enemy_debuff": {
+                "health": 1,
+                "atk": 1
+            }
+        },
+        "LF": {
+            "health": 1,
+            "damage": 1
+        },
+        "ASS": {
+            "health": 2,
+            "damage": 4,
+            "damage_gain_per_kill": 1,
+            "barrow_damage_threshold": 4
+        },
+        "APT": {
+            "health": 3,
+            "damage": 3,
+            "on_death_ally_buff": {
+                "armor": 3,
+                "atk": 1
+            }
+        },
+        "SP": {
+            "health": 1,
+            "damage": 2,
+            "wight_strike_damage": 1,
+            "barrow_on_kill": 1
+        }
+    },
     "Purple": {
         "ADC": {
             "health": 0,

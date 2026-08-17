@@ -40,6 +40,14 @@ ENCHANT_SEP: str = "*"
 ENCHANT_JOIN: str = "."
 UPGRADE_SUFFIX: str = " (+)"
 
+BARROW_CODE: str = "BARROWGY"
+WIGHT_CODE: str = "WIGHTGY"
+TOKEN_CODES: frozenset[str] = frozenset({BARROW_CODE, WIGHT_CODE})
+
+
+def is_token(name: str) -> bool:
+    return plain_code(name) in TOKEN_CODES
+
 
 def split_upgrade(name: str) -> tuple[str, bool]:
     if name.endswith(UPGRADE_SUFFIX):

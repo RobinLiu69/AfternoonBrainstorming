@@ -47,3 +47,62 @@ def test_hurt_events_at_other_positions_keep_their_delay():
 
     assert early.delay == 0.0
     assert _drain_hurt_order(animator) == [3, 6]
+
+
+def test_text_floats_at_the_same_tile_are_staggered():
+    animator = CombatAnimator(None, enabled=True)
+    animator.push(CombatEvent(kind="float", board_x=1, board_y=1, text="+4 ARMOR", good=True, delay=0.15))
+    animator.push(CombatEvent(kind="float", board_x=1, board_y=1, text="FREE MOVE", good=True, delay=0.15))
+    animator.push(CombatEvent(kind="float", board_x=1, board_y=1, text="HP HALVED", delay=0.15))
+
+    delays = [round(-anim.elapsed, 3) for anim in animator._active]
+    assert delays == sorted(delays)
+    assert len(set(delays)) == 3
+
+
+def test_a_damage_number_never_waits_on_a_text_float():
+    animator = CombatAnimator(None, enabled=True)
+    animator.push(CombatEvent(kind="float", board_x=1, board_y=1, text="NUMBED", delay=0.15))
+    animator.push(CombatEvent(kind="float", board_x=1, board_y=1, damage=7))
+
+    assert round(-animator._active[-1].elapsed, 3) == 0.0
+
+
+def test_text_floats_at_other_tiles_keep_their_delay():
+    animator = CombatAnimator(None, enabled=True)
+    animator.push(CombatEvent(kind="float", board_x=1, board_y=1, text="NUMBED", delay=0.4))
+    animator.push(CombatEvent(kind="float", board_x=2, board_y=2, text="ATK x2", good=True, delay=0.0))
+
+    assert round(-animator._active[-1].elapsed, 3) == 0.0
+
+
+def test_a_float_label_survives_the_wire():
+    event = CombatEvent(kind="float", board_x=1, board_y=2, text="SPAWN BLOCKS", good=True)
+    restored = CombatEvent.from_dict(event.to_dict())
+
+    assert (restored.text, restored.good) == ("SPAWN BLOCKS", True)
+
+
+def test_an_old_float_payload_still_loads():
+    restored = CombatEvent.from_dict({"kind": "float", "board_x": 0, "board_y": 0, "damage": 3})
+
+    assert restored.text == "" and restored.good is False
+
+
+def test_a_fortune_label_lingers_longer_than_a_damage_number():
+    animator = CombatAnimator(None, enabled=True)
+    animator.push(CombatEvent(kind="float", board_x=0, board_y=0, damage=4))
+    animator.push(CombatEvent(kind="float", board_x=3, board_y=3, text="ATK x2", good=True))
+
+    damage, label = animator._active
+    assert label.duration > damage.duration * 1.5
+
+
+def test_a_fortune_label_holds_full_opacity_before_it_fades():
+    from rendering.combat_animator import _hold_fade_alpha
+
+    assert _hold_fade_alpha(0.0) == 0
+    assert _hold_fade_alpha(0.3) == 255
+    assert _hold_fade_alpha(0.6) == 255
+    assert _hold_fade_alpha(1.0) == 0
+    assert 0 < _hold_fade_alpha(0.85) < 255

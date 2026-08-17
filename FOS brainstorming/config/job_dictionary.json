@@ -2,7 +2,7 @@
     "colors_dict": {
         "W": "White",
         "R": "Red", "BR": "Brown",
-        "G": "Green",
+        "G": "Green", "GY": "Gray",
         "B": "Blue",
         "O": "Orange",
         "DKG": "DarkGreen",
@@ -14,7 +14,7 @@
     "colors_array": [
         {"W": "White"},
         {"R": "Red", "BR": "Brown"},
-        {"G": "Green"},
+        {"G": "Green", "GY": "Gray"},
         {"B": "Blue"},
         {"O": "Orange"},
         {"DKG": "DarkGreen"},
@@ -33,6 +33,7 @@
       "Cyan": [0, 238, 238],
       "Fuchsia": [159, 0, 80],
       "Brown": [139, 69, 19],
+      "Gray": [153, 137, 158],
       "Purple": [128, 0, 255],
       "Black": [0, 0, 0]
     },
@@ -46,6 +47,7 @@
         "ASS": "small_x",
         "APT": "nearest",
         "SP": "farthest",
-        "CUBE": "None"
+        "CUBE": "None",
+        "WIGHT": "None"
     }
 }

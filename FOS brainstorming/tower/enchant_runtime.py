@@ -299,7 +299,7 @@ def enforce(game_state: Any, player_name: str) -> None:
         if "steady" in keys and card.numbness:
             card.numbness = False
         if "rust" in keys and card.armor:
-            card.armor = 0
+            card.adjust_stats(game_state, armor=-card.armor)
         if "gigantism" in keys and getattr(card, "tower_giant", False):
             card.attack_types = ""
 

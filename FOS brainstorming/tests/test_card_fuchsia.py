@@ -164,9 +164,27 @@ class TestFuchsiaApt:
         ally = place_card(gs, RedAdc, "player1", shadow.board_x, shadow.board_y)
         attacker = place_card(gs, RedAdc, "player2", 1, 0)
 
+        ally.health = 10
         before = apt.armor
         result = apt.on_field_effect_trigger(ally, 10, attacker, gs)
         assert result is not None
         priority, apply = result
         assert apply(10) == 5
         assert apt.armor == before + 5
+
+    def test_it_only_banks_the_damage_the_ally_could_have_taken(self) -> None:
+        gs = make_game_state()
+        apt = place_card(gs, Apt, "player1", 0, 0)
+        apt.deploy(gs)
+        shadow = apt.shadows[0]
+        ally = place_card(gs, RedAdc, "player1", shadow.board_x, shadow.board_y)
+        ally.health = 4
+        attacker = place_card(gs, RedAdc, "player2", 1, 0)
+
+        before = apt.armor
+        result = apt.on_field_effect_trigger(ally, 10, attacker, gs)
+        assert result is not None
+        _, apply = result
+
+        assert apply(10) == 5
+        assert apt.armor == before + 2

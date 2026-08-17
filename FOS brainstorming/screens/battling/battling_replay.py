@@ -207,6 +207,8 @@ def _rebuild_and_fast_forward(
     else:
         game_state.player1.time_display = "--:--"
         game_state.player2.time_display = "--:--"
+        game_state.player1.time_used_display = "--:--"
+        game_state.player2.time_used_display = "--:--"
         game_state.player1.start_time = -1
         game_state.player2.start_time = -1
 

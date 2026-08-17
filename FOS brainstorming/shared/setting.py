@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 import os
+import re
 import sys
 import json
 from typing import TYPE_CHECKING, Any
@@ -47,6 +48,46 @@ with open(f"{FOLDER_PATH}/config/card_hints.json", "r", encoding="utf-8") as fil
 with open(f"{FOLDER_PATH}/config/job_dictionary.json", "r", encoding="utf-8") as file:
     JOB_DICTIONARY: JobDictionary = json.loads(file.read())
 
+_HINT_FIELD = re.compile(r"\{([A-Za-z_][A-Za-z0-9_.]*)\}")
+_COLOR_TAGS: list[str] = sorted(JOB_DICTIONARY["colors_dict"], key=len, reverse=True)
+
+
+def hint_job_and_color(code: str) -> tuple[str, str]:
+    body = code[:-4] if code.endswith(" (+)") else code
+    for tag in _COLOR_TAGS:
+        if body.endswith(tag):
+            return body[: -len(tag)], JOB_DICTIONARY["colors_dict"][tag]
+    return body, ""
+
+
+def _dig(node: Any, path: str) -> Any:
+    for part in path.split("."):
+        if not isinstance(node, dict) or part not in node:
+            return None
+        node = node[part]
+    return None if isinstance(node, dict) else node
+
+
+def _resolve_hints(hints: dict[str, str]) -> dict[str, str]:
+    resolved: dict[str, str] = {}
+    for code, text in hints.items():
+        job, color_name = hint_job_and_color(code)
+        color_table: dict = CARD_SETTING.get(color_name, {}) if color_name else {}
+        settings = color_table.get(job, {})
+
+        def fill(match: re.Match) -> str:
+            path = match.group(1)
+            value = _dig(settings, path)
+            if value is None:
+                value = _dig(color_table, path)
+            return match.group(0) if value is None else str(value)
+
+        resolved[code] = _HINT_FIELD.sub(fill, text)
+    return resolved
+
+
+CARDS_HINTS_DICTIONARY = _resolve_hints(CARDS_HINTS_DICTIONARY)
+
 JOB_ORDER = ["ADC", "AP", "TANK", "HF", "LF", "ASS", "APT", "SP"]
 
 VERSION = "4.6.1.0"
@@ -69,3 +110,4 @@ DARKGREEN = _rgb("DarkGreen")
 CYAN = _rgb("Cyan")
 FUCHSIA = _rgb("Fuchsia")
 BROWN = _rgb("Brown")
+GRAY = _rgb("Gray")

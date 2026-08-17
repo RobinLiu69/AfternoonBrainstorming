@@ -162,7 +162,7 @@ class Apt(BrownCard):
         shield = card_settings["APT"]["on_play_enemy_shield"]
         for card in game_state.get_opponent_cards(self.owner):
             if card.health > 0:
-                card.armor += shield
+                card.adjust_stats(game_state, armor=shield)
                 
     def on_refresh(self, game_state: GameState) -> int:
         if self.effects_off():
@@ -170,7 +170,7 @@ class Apt(BrownCard):
         shield = card_settings["APT"]["on_refresh_enemy_shield"]
         for card in game_state.get_opponent_cards(self.owner):
             if card.health > 0:
-                card.armor += shield
+                card.adjust_stats(game_state, armor=shield)
         return 0
 
     def ability(self, target: Card, game_state: GameState) -> bool:
@@ -181,11 +181,9 @@ class Apt(BrownCard):
             filter(lambda card: card != self and card.health > 0, game_state.get_player_cards(self.owner)),
             game_state
         ):
-            ally.damage += buff["atk"]
-            ally.armor += buff["armor"]
-            if self.is_giant(ally):
-                ally.damage += bonus["atk"]
-                ally.armor += bonus["armor"]
+            atk = buff["atk"] + (bonus["atk"] if self.is_giant(ally) else 0)
+            armor = buff["armor"] + (bonus["armor"] if self.is_giant(ally) else 0)
+            ally.adjust_stats(game_state, damage=atk, armor=armor)
         return True
 
 

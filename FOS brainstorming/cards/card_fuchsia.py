@@ -51,10 +51,16 @@ class FuchsiaCard(Card):
 
     def get_render_data(self) -> list[CardRenderData]:
         render_objects: list[CardRenderData] = super().get_render_data()
+        if self.nullify:
+            return render_objects
         for shadow in self.shadows:
             render_objects += shadow.get_render_data()
         return render_objects
-    
+
+    def release_shadow_tiles(self, game_state: GameState) -> None:
+        for shadow in self.shadows:
+            shadow.on_death(game_state)
+
     def on_update(self, game_state: GameState) -> None:
         for shadow in self.shadows:
             shadow.update(game_state)
@@ -116,7 +122,7 @@ class Shadow(FuchsiaCard):
 
     def damage_block(self, value: int, attacker: "Card", game_state: GameState) -> bool:
         if self.linker.job_and_color == "APTF":
-            self.linker.armor += value//2
+            self.linker.adjust_stats(game_state, armor=value//2)
         return False
     
     def on_kill(self, victim: Card, game_state: GameState) -> bool:
@@ -281,10 +287,14 @@ class Tank(FuchsiaCard):
         for shadow in self.shadows:
             game_state.board_dict[shadow.board_x, shadow.board_y].occupy = True
             shadow.update(game_state)
-    
+
+    def set_nullify(self, nullify: bool, game_state: GameState) -> None:
+        self.nullify = nullify
+        if nullify:
+            self.release_shadow_tiles(game_state)
+
     def on_death(self, game_state: GameState) -> bool:
-        for shadow in self.shadows:
-            shadow.on_death(game_state)
+        self.release_shadow_tiles(game_state)
         return False
 
     
@@ -421,7 +431,8 @@ class Apt(FuchsiaCard):
         for shadow in self.shadows:
             if (self.health > 0 and victim.owner == self.owner and shadow.is_same_location(victim) and victim != self):
                 def absorb_half(current: int) -> int:
-                    self.armor += math.floor(current * 0.5)
+                    absorbed = min(current, victim.health + victim.armor)
+                    self.adjust_stats(game_state, armor=math.floor(absorbed * 0.5))
                     return math.ceil(current * 0.5)
                 return (FIELD_EFFECT_NORMAL, absorb_half)
         return None

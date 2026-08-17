@@ -30,7 +30,7 @@ from cards.factory import CardFactory
 
 from tests.helpers import make_game_state, place_card
 
-NON_DECK = ("CUBE", "CUBES", "HEAL", "MOVE", "SHADOW", "LUCKYBLOCK")
+NON_DECK = ("CUBE", "CUBES", "HEAL", "MOVE", "SHADOW", "LUCKYBLOCK", "WIGHTGY", "BARROWGY")
 
 
 def deck_cards() -> list[str]:

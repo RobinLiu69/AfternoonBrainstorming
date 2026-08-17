@@ -187,3 +187,22 @@ class TestBlueApt:
         before = gs.players_token["player1"]
         do_attack(apt, gs)
         assert gs.players_token["player1"] >= before + 2
+
+
+class TestBlueSp:
+    def test_it_counts_itself_when_it_lands(self) -> None:
+        from cards.factory import spawn_card
+        from cards.card_white import Tank as WhiteTank
+
+        gs = make_game_state()
+        player = gs.get_player("player1")
+        player.discard_pile = ["ADCB", "APB"]
+        place_card(gs, WhiteTank, "player1", 0, 0)
+        foe = place_card(gs, WhiteTank, "player2", 3, 3)
+        before = foe.health
+
+        assert spawn_card(1, 1, "SPB", "player1", player.on_board, gs) is True
+
+        hits = len(player.on_board) + len(player.discard_pile)
+        assert hits == 4
+        assert before - foe.health == hits * S["SP"]["spawn_damage"]

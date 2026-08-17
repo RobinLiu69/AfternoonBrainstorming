@@ -42,6 +42,7 @@ class CardFactory:
         from cards import (
             base, card_red, card_blue, card_cyan, card_dark_green, card_fuchsia,
             card_green, card_orange, card_purple, card_white, card_brown,
+            card_gray,
         )
 
     @overload
@@ -85,9 +86,9 @@ def spawn_card(board_x: int, board_y: int, card_name: str, owner: str, target_bo
     price_check = getattr(card, "price_check", None)
     if price_check is not None and not price_check(game_state):
         return False
-    card.deploy(game_state)
     game_state.board_dict[board_x, board_y].occupy = True
     target_board.append(card)
+    card.deploy(game_state)
     return True
 
 

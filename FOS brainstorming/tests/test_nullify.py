@@ -16,13 +16,16 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+import pytest
+
 from tests.helpers import make_game_state, place_card, do_attack
 from cards.factory import CardFactory
 from cards.card_white import Ap as WhiteAp
 from cards.card_blue import Tank as BlueTank, Apt as BlueApt
 from cards.card_cyan import Adc as CyanAdc, Apt as CyanApt
 from cards.card_red import Adc as RedAdc, Tank as RedTank, Hf as RedHf
-from cards.card_fuchsia import Apt as FuchsiaApt, Ass as FuchsiaAss
+from cards.card_fuchsia import (Apt as FuchsiaApt, Ass as FuchsiaAss,
+                                Tank as FuchsiaTank, Adc as FuchsiaAdc)
 from cards.card_purple import Ap as PurpleAp
 
 
@@ -193,3 +196,75 @@ class TestNullifySerialization:
 
         clone = CardFactory.from_dict(data)
         assert clone.nullify is True
+
+
+class TestNullifiedShadows:
+    def _deployed(self, gs, card_class, x=1, y=1, owner="player2"):
+        card = place_card(gs, card_class, owner, x, y)
+        card.deploy(gs)
+        gs.update()
+        return card
+
+    def test_a_nullified_fuchsia_tank_stops_holding_its_tile(self) -> None:
+        from cards.factory import spawn_check
+
+        gs = make_game_state()
+        tank = self._deployed(gs, FuchsiaTank)
+        tile = tank.shadows[0].get_position()
+        assert spawn_check(*tile, gs) is False
+
+        tank.set_nullify(True, gs)
+        gs.update()
+
+        assert spawn_check(*tile, gs) is True
+
+    def test_the_tile_stays_free_on_later_frames(self) -> None:
+        from cards.factory import spawn_check
+
+        gs = make_game_state()
+        tank = self._deployed(gs, FuchsiaTank)
+        tile = tank.shadows[0].get_position()
+
+        tank.set_nullify(True, gs)
+        for _ in range(5):
+            gs.update()
+
+        assert spawn_check(*tile, gs) is True
+
+    def test_a_real_unit_standing_there_keeps_the_tile_taken(self) -> None:
+        from cards.factory import spawn_check
+
+        gs = make_game_state()
+        tank = self._deployed(gs, FuchsiaTank)
+        tile = tank.shadows[0].get_position()
+        place_card(gs, RedAdc, "player1", *tile)
+
+        tank.set_nullify(True, gs)
+        gs.update()
+
+        assert spawn_check(*tile, gs) is False
+
+    def test_a_purple_mage_attack_frees_the_tile(self) -> None:
+        from cards.factory import spawn_check
+
+        gs = make_game_state()
+        tank = self._deployed(gs, FuchsiaTank, 1, 1)
+        tile = tank.shadows[0].get_position()
+        mage = place_card(gs, PurpleAp, "player1", 1, 0)
+
+        do_attack(mage, gs)
+        gs.update()
+
+        assert tank.nullify is True
+        assert spawn_check(*tile, gs) is True
+
+    @pytest.mark.parametrize("card_class", [FuchsiaTank, FuchsiaAdc, FuchsiaApt])
+    def test_a_nullified_card_stops_drawing_its_shadows(self, card_class) -> None:
+        gs = make_game_state()
+        card = self._deployed(gs, card_class)
+        assert card.shadows
+        assert len(card.get_render_data()) == 1 + len(card.shadows)
+
+        card.set_nullify(True, gs)
+
+        assert len(card.get_render_data()) == 1

@@ -29,6 +29,8 @@ class CombatEvent:
     damage: int = 0     # used by "float" to render the number
     delay: float = 0.0  # seconds before this event starts playing
     post_health: int = -1
+    text: str = ""
+    good: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -39,7 +41,9 @@ class CombatEvent:
             "target_y": self.target_y,
             "damage": self.damage,
             "delay": self.delay,
-            "post_health": self.post_health
+            "post_health": self.post_health,
+            "text": self.text,
+            "good": self.good
         }
 
     @classmethod
@@ -52,5 +56,7 @@ class CombatEvent:
             target_y=d.get("target_y", 0),
             damage=d.get("damage", 0),
             delay=d.get("delay", 0.0),
-            post_health=d.get("post_health", -1)
+            post_health=d.get("post_health", -1),
+            text=d.get("text", ""),
+            good=d.get("good", False)
         )

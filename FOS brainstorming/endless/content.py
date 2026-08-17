@@ -24,7 +24,8 @@ from campaign.ai_decks import (
 
 
 MAGIC_POOL: tuple[str, ...] = ("CUBES", "HEAL", "MOVE", "MOVEO")
-NON_DECK_CODES: tuple[str, ...] = ("CUBE", "CUBES", "HEAL", "MOVE", "SHADOW", "LUCKYBLOCK")
+NON_DECK_CODES: tuple[str, ...] = ("CUBE", "CUBES", "HEAL", "MOVE", "SHADOW", "LUCKYBLOCK",
+                                   "WIGHTGY", "BARROWGY")
 
 MAX_UNIT_COPIES: int = 3
 MAX_MAGIC_COPIES: int = 4

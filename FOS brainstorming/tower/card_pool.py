@@ -33,7 +33,8 @@ from tower.content import (
 COLOR_TAGS: tuple[str, ...] = tuple(sorted(FACTION_NAMES, key=len, reverse=True))
 
 # codes that exist as classes but are never held in a deck
-NON_DECK_CODES: frozenset[str] = frozenset({"CUBE", "SHADOW", "LUCKYBLOCK", "MOVE", "HEAL", "CUBES"})
+NON_DECK_CODES: frozenset[str] = frozenset({"CUBE", "SHADOW", "LUCKYBLOCK", "MOVE", "HEAL", "CUBES",
+                                            "WIGHTGY", "BARROWGY"})
 
 
 def color_tag_of(code: str) -> str:

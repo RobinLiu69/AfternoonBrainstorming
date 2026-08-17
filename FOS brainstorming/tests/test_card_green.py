@@ -18,8 +18,9 @@
 
 from shared.setting import CARD_SETTING
 from tests.helpers import make_game_state, place_card, do_attack
-from cards.card_green import Ap, Hf, Ass, Apt, Sp, LuckyBlock
+from cards.card_green import Ap, Hf, Ass, Apt, Sp, Tank, LuckyBlock
 from cards.card_red import Adc as RedAdc
+from cards.card_white import Adc as WhiteAdc
 
 S = CARD_SETTING["Green"]
 
@@ -96,3 +97,77 @@ class TestGreenSp:
         before = len(gs.neutral.on_board)
         sp.deploy(gs)
         assert len(gs.neutral.on_board) == before + 1
+
+
+def _fortune_labels(game_state) -> list[str]:
+    return [event.text for event in game_state.pending_combat_events
+            if event.kind == "float" and event.text]
+
+
+class TestFortuneFloats:
+    def test_breaking_a_lucky_block_floats_the_effect_it_rolled(self) -> None:
+        labels: dict[str, bool] = {}
+        for seed in range(120):
+            gs = make_game_state(rng_seed=seed)
+            breaker = place_card(gs, WhiteAdc, "player1", 1, 1)
+            gs.neutral.on_board.append(LuckyBlock("neutral", 1, 2))
+            gs.board_dict[(1, 2)].occupy = True
+
+            do_attack(breaker, gs)
+            for event in gs.pending_combat_events:
+                if event.kind == "float" and event.text:
+                    labels[event.text] = event.good
+                    assert (event.board_x, event.board_y) == breaker.get_position()
+
+        assert set(labels) == {
+            "+4 ARMOR", "ATK x2", "FREE STRIKE", "FREE MOVE", "SPAWN BLOCKS",
+            "ARMOR GONE", "NUMBED", "HP HALVED", "ATK HALVED", "-2 HP",
+        }
+        assert all(labels[good] for good in ("+4 ARMOR", "ATK x2", "FREE STRIKE", "FREE MOVE", "SPAWN BLOCKS"))
+        assert not any(labels[bad] for bad in ("ARMOR GONE", "NUMBED", "HP HALVED", "ATK HALVED", "-2 HP"))
+
+    def test_a_fortune_label_never_pops_before_the_strike_that_rolled_it(self) -> None:
+        checked = 0
+        for seed in range(120):
+            gs = make_game_state(rng_seed=seed)
+            breaker = place_card(gs, WhiteAdc, "player1", 1, 1)
+            for y in (0, 2):
+                gs.neutral.on_board.append(LuckyBlock("neutral", 1, y))
+                gs.board_dict[(1, y)].occupy = True
+
+            do_attack(breaker, gs)
+
+            hurts = sorted(e.delay for e in gs.pending_combat_events if e.kind == "hurt")
+            labels = sorted(e.delay for e in gs.pending_combat_events if e.kind == "float" and e.text)
+            if len(hurts) < 2 or len(labels) < 2:
+                continue
+            checked += 1
+            assert all(label >= hurt for label, hurt in zip(labels, hurts))
+
+        assert checked
+
+    def test_a_green_ap_attack_floats_its_roll_too(self) -> None:
+        assert any(
+            _fortune_labels(self._green_ap_attack(seed)) for seed in range(40)
+        )
+
+    def test_a_green_tank_being_hit_floats_its_roll_too(self) -> None:
+        assert any(
+            _fortune_labels(self._green_tank_hit(seed)) for seed in range(40)
+        )
+
+    @staticmethod
+    def _green_ap_attack(seed: int):
+        gs = make_game_state(rng_seed=seed)
+        ap = place_card(gs, Ap, "player1", 1, 1)
+        place_card(gs, RedAdc, "player2", 1, 2)
+        do_attack(ap, gs)
+        return gs
+
+    @staticmethod
+    def _green_tank_hit(seed: int):
+        gs = make_game_state(rng_seed=seed)
+        place_card(gs, Tank, "player1", 1, 1)
+        attacker = place_card(gs, RedAdc, "player2", 1, 2)
+        do_attack(attacker, gs)
+        return gs

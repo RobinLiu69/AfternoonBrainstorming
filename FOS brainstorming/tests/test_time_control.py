@@ -16,6 +16,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
+import time
+
 from core.lobby_state import LobbyState
 from core.match_settings import MatchSettings, TIME_CONTROL_OPTIONS, DEFAULT_TIME_CONTROL
 from core.lobby_dispatcher import LobbyDispatcher
@@ -198,3 +200,72 @@ def test_timeout_flag_is_self_correcting():
     game_state.player1.start_time = time.time()
     game_state.player1._update_timer_logic("countdown")
     assert game_state.player1.time_out is False
+
+
+def _tick_a_second(player) -> None:
+    import time as _time
+    player.start_time = _time.time() - 2
+    player._update_timer_logic("countdown")
+
+
+def test_countdown_tracks_how_long_each_side_has_spent():
+    gs = make_game_state()
+    gs.timer_mode = "countdown"
+    gs.countdown_time = 300
+    player = gs.player1
+    player.timer_start(gs)
+
+    assert player.time_used_display == "00:00"
+
+    for _ in range(7):
+        _tick_a_second(player)
+
+    assert player.elapsed_time == 293
+    assert player.time_used == 7
+    assert player.time_used_display == "00:07"
+
+
+def test_a_turn_increment_refunds_the_clock_without_refunding_the_spend():
+    gs = make_game_state()
+    gs.timer_mode = "countdown"
+    gs.countdown_time = 300
+    gs.turn_increment_seconds = 5
+    player = gs.player1
+    player.timer_start(gs)
+    for _ in range(7):
+        _tick_a_second(player)
+
+    player.elapsed_time += gs.turn_increment_seconds
+    player._refresh_time_display()
+
+    assert player.time_display == "04:58"
+    assert player.time_used_display == "00:07"
+
+
+def test_the_timer_mode_never_counts_a_spend():
+    gs = make_game_state()
+    gs.timer_mode = "timer"
+    player = gs.player1
+    player.timer_start(gs)
+    player.start_time = time.time() - 2
+    player._update_timer_logic("timer")
+
+    assert player.elapsed_time == 1
+    assert player.time_used == 0
+
+
+def test_the_spend_survives_the_wire_and_old_payloads_do_not_crash():
+    gs = make_game_state()
+    gs.timer_mode = "countdown"
+    gs.countdown_time = 300
+    gs.player1.timer_start(gs)
+    for _ in range(3):
+        _tick_a_second(gs.player1)
+
+    payload = gs.player1.to_dict()
+    gs.player2.apply_dict(payload, {}, {}, None)
+    assert gs.player2.time_used_display == "00:03"
+
+    legacy = {key: value for key, value in payload.items() if key != "time_used"}
+    gs.player2.apply_dict(legacy, {}, {}, None)
+    assert gs.player2.time_used_display == "00:00"

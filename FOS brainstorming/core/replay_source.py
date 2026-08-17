@@ -196,8 +196,10 @@ class ReplayClock:
         game_state = self._game_state
         for player in (game_state.player1, game_state.player2):
             player.start_time = -1
+            player.time_used = 0
             if not self.enabled:
                 player.time_display = "--:--"
+                player.time_used_display = "--:--"
         if self.enabled:
             self._refresh()
 
@@ -214,6 +216,7 @@ class ReplayClock:
                    else game_state.player2)
         if game_state.timer_mode == "countdown":
             current.elapsed_time = max(0.0, current.elapsed_time - consumed)
+            current.time_used += consumed
         else:
             current.elapsed_time += consumed
         self._refresh()

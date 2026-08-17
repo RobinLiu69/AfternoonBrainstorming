@@ -236,7 +236,7 @@ class SideRuntime:
             paid = self._damage_seen.get(card.instance_id, 0)
             awards = grown // step - paid // step
             if awards > 0:
-                card.armor += awards
+                card.adjust_stats(gs, armor=awards)
             self._damage_seen[card.instance_id] = grown
 
     def _watch_spells(self, gs: "GameState") -> None:

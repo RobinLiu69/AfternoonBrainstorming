@@ -246,7 +246,9 @@ class Card(ABC):
             case "CUBE":
                 return ((0.45, 0.45), (0.45, 0.55), (0.55, 0.55), (0.55, 0.45))
             case "LUCKYBLOCK":
-                return ((0.4, 0.4), (0.4, 0.6), (0.6, 0.6), (0.6, 0.4)) 
+                return ((0.4, 0.4), (0.4, 0.6), (0.6, 0.6), (0.6, 0.4))
+            case "WIGHT":
+                return ((0.5, 0.32), (0.32, 0.5), (0.5, 0.68), (0.68, 0.5))
             case "MOVE":
                 return ((-10, -10), (-10, -10))
             case "HEAL":
@@ -361,23 +363,70 @@ class Card(ABC):
             self.on_attacked_by(attacker, value, game_state)
 
         if self.health == 0:
-            game_state.game_statistics.add_kill(attacker.get_uid())
-            game_state.game_statistics.add_death(self.get_uid())
-            if not attacker.nullify:
-                attacker.on_kill(self, game_state)
-            if not self.nullify:
-                self.on_killed_by(attacker, game_state)
-
-            if self.can_be_killed(game_state):
-                self.pending_death = True
-                game_state.pending_combat_events.append(
-                    CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
-                )
+            self.register_death(attacker, game_state, anim_delay)
 
         if not attacker.nullify:
             attacker.after_damage_calculated(self, value, game_state)
         return True
-    
+
+    @final
+    def register_death(self, killer: "Card | None", game_state: GameState,
+                       anim_delay: float = 0.0) -> None:
+        attacker = game_state.judge if killer is None else killer
+        game_state.game_statistics.add_death(self.get_uid())
+        if killer is not None:
+            game_state.game_statistics.add_kill(killer.get_uid())
+        if not attacker.nullify:
+            attacker.on_kill(self, game_state)
+        if not self.nullify:
+            self.on_killed_by(attacker, game_state)
+
+        if self.can_be_killed(game_state):
+            self.pending_death = True
+            game_state.pending_combat_events.append(
+                CombatEvent(kind="death", board_x=self.board_x, board_y=self.board_y, delay=anim_delay)
+            )
+
+    @final
+    def adjust_stats(self, game_state: GameState, health: int = 0, damage: int = 0,
+                     armor: int = 0, extra_damage: int = 0, anim_delay: float = 0.0,
+                     announce: bool = True, source: "Card | None" = None) -> None:
+        labels: list[str] = []
+
+        if health < 0:
+            lost = min(self.health, -health)
+            if lost:
+                self.health -= lost
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="hurt", board_x=self.board_x, board_y=self.board_y,
+                                post_health=self.health, delay=anim_delay)
+                )
+                game_state.pending_combat_events.append(
+                    CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y,
+                                damage=lost, delay=anim_delay)
+                )
+                if self.health == 0:
+                    self.register_death(source, game_state, anim_delay)
+        elif health > 0 and self.heal(health, game_state):
+            labels.append(f"+{health} HP")
+
+        if armor:
+            self.armor = max(0, self.armor + armor)
+            labels.append(f"{armor:+d} SHIELD")
+        if damage:
+            self.damage = max(0, self.damage + damage)
+            labels.append(f"{damage:+d} ATK")
+        if extra_damage:
+            self.extra_damage = max(0, self.extra_damage + extra_damage)
+            labels.append(f"{extra_damage:+d} ATK")
+
+        if labels and announce:
+            game_state.pending_combat_events.append(
+                CombatEvent(kind="float", board_x=self.board_x, board_y=self.board_y,
+                            text=" ".join(labels), delay=anim_delay,
+                            good=not any(delta < 0 for delta in (health, damage, armor, extra_damage)))
+            )
+
     def set_nullify(self, nullify: bool, game_state: GameState) -> None:
         self.nullify = nullify
     
@@ -769,8 +818,8 @@ class Judge(Card):
         super().__init__(owner="None", job_and_color="JUDGE", health=1, damage=0, board_x=-1, board_y=-1)
         self.movable = False
 
-    def deal(self, value: int, target: Card, game_state: GameState) -> bool:
-        result = target.damage_calculate(value, self, game_state, False)
+    def deal(self, value: int, target: Card, game_state: GameState, anim_delay: float = 0.0) -> bool:
+        result = target.damage_calculate(value, self, game_state, False, anim_delay=anim_delay)
         self.hit_cards.clear()
         return result
  

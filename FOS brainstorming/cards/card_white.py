@@ -145,8 +145,8 @@ class Apt(WhiteCard):
                 game_state.get_player(self.owner).on_board
             ), game_state
         ):
-            card.armor += self.damage
-        self.armor += self.damage
+            card.adjust_stats(game_state, armor=self.damage)
+        self.adjust_stats(game_state, armor=self.damage)
         return True
 
 
