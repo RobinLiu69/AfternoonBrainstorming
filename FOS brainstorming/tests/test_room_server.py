@@ -24,6 +24,7 @@ import pytest
 
 from shared.setting import VERSION
 from core.network.client import LANClient
+from shared.combat_event import CombatEvent
 from cards.factory import CardFactory
 from server.room_server import RoomServer
 
@@ -502,3 +503,61 @@ def test_ack_timeout_drops_connection_instead_of_unlocking(room_server):
 
     assert creator.try_reconnect() is True
     assert creator.initial_state["turn_number"] == 1
+
+
+def test_the_server_never_hoards_combat_events(room_server):
+    server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+    joiner = make_client(room=creator.room)
+    joiner.connect()
+    room = server._rooms[creator.room]
+    _reach_battle(creator, joiner)
+    wait_until(lambda: room.game_state is not None)
+
+    game_state = room.game_state
+    game_state.emit(CombatEvent(kind="hurt", board_x=1, board_y=1, post_health=3))
+
+    wait_until(lambda: not game_state.pending_combat_events)
+
+
+def test_a_room_owner_can_watch_instead_of_playing(room_server):
+    server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+    room = server._rooms[creator.room]
+
+    _send_lobby(creator, "switch_to_spectator", player="host")
+    wait_until(lambda: room.lobby_state.host_playing is False)
+
+    first = make_client(room=creator.room)
+    first_role, _state = first.connect()
+    second = make_client(room=creator.room)
+    second_role, _state = second.connect()
+
+    assert {first_role, second_role} == {"player1", "player2"}
+    assert room.channel.roster.has_role("host") is True
+    assert room._room_abandoned() is False
+
+
+def test_a_watching_owner_becomes_a_spectator_when_the_match_starts(room_server):
+    server, make_client = room_server
+    creator = make_client()
+    creator.connect()
+    room = server._rooms[creator.room]
+
+    _send_lobby(creator, "switch_to_spectator", player="host")
+    wait_until(lambda: room.lobby_state.host_playing is False)
+
+    first = make_client(room=creator.room)
+    first.connect()
+    second = make_client(room=creator.room)
+    second.connect()
+    wait_until(lambda: room.lobby_state.both_seats_filled())
+
+    _send_lobby(creator, "start_match")
+    wait_until(lambda: creator.pending_scene == "draft")
+
+    assert creator.role in ("spectator", "god")
+    assert room.channel.roster.has_role("player1") is True
+    assert room.channel.roster.has_role("player2") is True

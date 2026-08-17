@@ -48,9 +48,14 @@ class RoomLobbyDispatcher(LobbyDispatcher):
     def __init__(self, lobby_state: LobbyState):
         super().__init__(lobby_state, mode="lan_server")
 
+    def _host_is_present(self, roles: list[str]) -> bool:
+        return "host" in roles
+
     def _on_client_connect(self, role: str) -> dict:
-        if role in ("player1", "player2"):
+        if role == self._state.peer_seat():
             self._state.peer_connected = True
+        elif role == self._state.host_seat:
+            self._state.host_seat_connected = True
         elif role in ("spectator", "god"):
             self._state.spectator_count += 1
         welcome_state = self._state.to_dict_for(role)
@@ -132,7 +137,7 @@ class Room:
 
     def _room_abandoned(self) -> bool:
         now = time.monotonic()
-        if self.channel.client_count() == 0:
+        if self.channel.roster.count() == 0:
             if self._empty_since is None:
                 self._empty_since = now
             if now - self._empty_since > EMPTY_ROOM_TIMEOUT:
@@ -141,7 +146,7 @@ class Room:
             self._empty_since = None
 
         if self.scene == "lobby":
-            if self.channel.has_role("host"):
+            if self.channel.roster.has_role("host"):
                 self._owner_absent_since = None
             else:
                 if self._owner_absent_since is None:
@@ -200,12 +205,15 @@ class Room:
 
     def _start_draft(self) -> None:
         host_seat = self.lobby_state.host_seat
-        with self.channel._lock:
-            owner_conn = next(
-                (c for c, r in self.channel._clients if r == "host"), None)
-        if owner_conn is not None:
-            self.channel.reassign_role(owner_conn, host_seat)
-        self.channel.move_token("host", host_seat)
+        owner_conn = self.channel.roster.conn_for("host")
+        if self.lobby_state.host_playing:
+            if owner_conn is not None:
+                self.channel.roster.reassign(owner_conn, host_seat)
+            self.channel.roster.move_token("host", host_seat)
+        else:
+            if owner_conn is not None:
+                self.channel.roster.reassign(owner_conn, self.channel.roster.watcher_role())
+            self.channel.roster.clear_token("host")
 
         draft_state = DraftState()
         draft_state.settings = self.lobby_state.settings.copy()
@@ -322,9 +330,10 @@ class Room:
             game_state.update()
 
             snapshot = self._snapshot(game_state)
-            if snapshot != self._last_snapshot:
+            if snapshot != self._last_snapshot or game_state.pending_combat_events:
                 self._last_snapshot = snapshot
                 dispatcher._broadcast_state(game_state)
+            game_state.drain_combat_events()
 
             winner = dispatcher.resolve_flag(game_state)
 

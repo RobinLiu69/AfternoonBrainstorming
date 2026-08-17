@@ -34,7 +34,7 @@ color_code = "G"
 
 
 def float_fortune(game_state: GameState, target: Card, text: str, good: bool) -> None:
-    game_state.pending_combat_events.append(
+    game_state.emit(
         CombatEvent(kind="float", board_x=target.board_x, board_y=target.board_y,
                     text=text, good=good,
                     delay=game_state._attack_anim_cursor + ANIM_LUNGE_STEP)

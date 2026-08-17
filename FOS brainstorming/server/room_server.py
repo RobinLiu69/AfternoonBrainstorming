@@ -22,6 +22,7 @@ import threading
 from typing import Optional
 
 from core.network.messages import _recv_msg, _send_msg
+from core.network.server import _tune
 from server.room import Room
 
 
@@ -85,9 +86,8 @@ class RoomServer:
 
     def _handle_new_connection(self, conn: socket.socket, addr) -> None:
         try:
-            conn.settimeout(5.0)
+            _tune(conn)
             hello = _recv_msg(conn)
-            conn.settimeout(None)
         except (OSError, ValueError):
             try:
                 conn.close()
@@ -143,7 +143,7 @@ class RoomServer:
         if room is None or room.closed:
             self._reject(conn, addr, "room_not_found")
             return
-        if room.channel.client_count() >= self.room_client_cap:
+        if room.channel.roster.count() >= self.room_client_cap:
             self._reject(conn, addr, "room_full")
             return
         print(f"[RoomServer] {addr} joining room {room_code}")

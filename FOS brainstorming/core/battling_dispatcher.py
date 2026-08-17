@@ -63,7 +63,7 @@ class BattlingDispatcher:
         self._network = server
         server.reset_callbacks()
         server.set_scene("battling")
-        server.host_seat = self.host_seat
+        server.roster.host_seat = self.host_seat
         server.on_action = self._on_remote_action
         server.on_client_connect = self._on_client_connect
         server.on_peer_disconnect = self._on_peer_disconnect
@@ -93,8 +93,7 @@ class BattlingDispatcher:
         from core.network_layer import LANServer
         if not isinstance(self._network, LANServer):
             return
-        with self._network._lock:
-            roles = [r for _c, r in self._network._clients]
+        roles = self._network.roster.roles()
         latencies = {seat: self.latencies[seat] for seat in ("player1", "player2")
                      if seat in roles and seat in self.latencies}
         spectators = sum(1 for r in roles if r in ("spectator", "god"))
@@ -161,12 +160,16 @@ class BattlingDispatcher:
             self._broadcast_state(self._game_state)
 
     def _on_pause_timeout(self) -> None:
-        if self._game_state is None or not self._game_state.paused:
+        if self._game_state is None:
             return
         with self.action_lock:
             with self._pause_lock:
+                if self._pause_timer is None:
+                    return
                 self._pause_timer = None
                 self._pause_deadline = None
+            if not self._game_state.paused:
+                return
             self._game_state.paused = False
             self._game_state.pause_reason = ""
             self._game_state.pause_seconds_remaining = 0.0

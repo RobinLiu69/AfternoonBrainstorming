@@ -101,7 +101,7 @@ def test_lan_seat_granted_only_in_lobby():
     assert role == "spectator"
     assert token == ""
 
-    server.god_view = True
+    server.roster.god_view = True
     role, token = server._decide_role("play", None)
     assert role == "god"
     assert token == ""
@@ -112,13 +112,13 @@ def test_lan_token_reclaims_seat_mid_battle():
     server.set_scene("lobby")
     seat, token = server._decide_role("play", None)
     stale = _FakeConn()
-    server._clients.append((stale, seat))
+    server.roster.add(stale, seat)
 
     server.set_scene("battling")
     role, reissued = server._decide_role("play", token)
     assert role == seat
     assert reissued == token
-    assert all(c is not stale for c, _r in server._clients)
+    assert all(c is not stale for c, _r in server.roster.members())
 
     role, token = server._decide_role("play", "wrong-token")
     assert role == "spectator"

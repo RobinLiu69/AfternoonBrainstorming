@@ -90,6 +90,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
          server: Optional[LANServer] = None, client: Optional[LANClient] = None,
          initial_state_dict: Optional[dict] = None,
          host_seat: str = "player1",
+         host_playing: bool = True,
          reconnect_timeout: float = 60.0,
          ai_controller: Optional[AIController] = None) -> str:
     from cards.base import reset_instance_counter
@@ -198,7 +199,7 @@ def main(game_state: GameState, game_screen: GameScreen, mode: str = "local",
         if is_client and client:
             local_controller = client.role
         elif is_server:
-            local_controller = host_seat
+            local_controller = host_seat if host_playing else "spectator"
         elif mode == "campaign":
             local_controller = "player1" if controller == "player1" else "spectator"
         else:

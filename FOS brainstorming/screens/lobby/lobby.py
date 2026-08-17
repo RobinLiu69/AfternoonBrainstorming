@@ -54,7 +54,8 @@ def _is_spectator(role: str) -> bool:
 
 
 def _room_has_others(state: LobbyState) -> bool:
-    return state.peer_connected or state.spectator_count > 0
+    return (state.peer_connected or state.host_seat_connected
+            or state.spectator_count > 0)
 
 
 T = TypeVar("T")
@@ -99,7 +100,8 @@ ROWS: dict[str, _SettingRow] = {
         click=lambda s, d: d.dispatch(set_setting(
             "ruleset", _next_option(RULESET_OPTIONS, s.settings.ruleset)))),
     "swap_seats": _SettingRow(
-        label=lambda s: f"host plays: {s.host_seat}",
+        label=lambda s: (f"host plays: {s.host_seat}" if s.host_playing
+                         else f"host seat: {s.host_seat}"),
         click=lambda s, d: d.dispatch(LobbyAction("host", "swap_seats"))),
     "ban_draft": _SettingRow(
         label=lambda s: f"ban draft ({len(s.bans)} banned)",
@@ -126,6 +128,7 @@ ROW_STEP = 0.45
 ADVANCED_HEADER_GAP = 0.60
 ADVANCED_HEADER_TO_ROW = 0.25
 SWITCH_ROLE_GAP = 0.75
+HOST_WATCH_OFFSET = 0.75
 
 
 def _layout(mode: str) -> tuple[dict[str, float], Optional[float]]:
@@ -166,6 +169,10 @@ def _make_buttons(gs: GameScreen, row_offsets: dict[str, float]) -> dict[str, Bu
                                     position="Left", padding=bs * 0.15,
                                     box_width=box_width, font=gs.mid_text_font)
 
+    buttons["host_watch"] = Button(bs * 2.9, btn_h, cx + bs * 0.3, cy + bs * HOST_WATCH_OFFSET,
+                                   position="Left", padding=bs * 0.15,
+                                   box_width=box_width, font=gs.mid_text_font)
+
     start_w = bs * 3.2
     buttons["start_match"] = Button(start_w, bs * 0.55, cx - start_w / 2, cy + bs * 2.30,
                                     position="Middle", padding=bs * 0.15,
@@ -181,19 +188,42 @@ def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: 
     if mode == "local":
         buttons["start_match"].text = "START"
     else:
-        buttons["start_match"].text = "START MATCH" if state.peer_connected else "(waiting for player)"
+        buttons["start_match"].text = ("START MATCH" if state.both_seats_filled()
+                                       else "(waiting for player)")
+
+    free_seat = next((s for s in state.open_seats() if not state.seat_filled(s)), "")
+
+    if mode == "local" or not _is_host(role):
+        buttons["host_watch"].text = ""
+    elif state.host_playing:
+        buttons["host_watch"].text = "watch instead"
+    elif state.host_seat_connected:
+        buttons["host_watch"].text = f"({state.host_seat} taken)"
+    else:
+        buttons["host_watch"].text = f"take {state.host_seat}"
 
     if _is_host(role):
         buttons["switch_role"].text = ""
-    elif role == state.peer_seat():
+    elif role in ("player1", "player2"):
         buttons["switch_role"].text = "switch to spectator"
     elif _is_spectator(role):
-        if state.peer_connected:
-            buttons["switch_role"].text = "(player slot occupied)"
+        if free_seat:
+            buttons["switch_role"].text = f"take {free_seat} seat"
         else:
-            buttons["switch_role"].text = f"take {state.peer_seat()} seat"
+            buttons["switch_role"].text = "(player slot occupied)"
     else:
         buttons["switch_role"].text = ""
+
+
+def _render_role_button(gs: GameScreen, button: Button) -> None:
+    if not button.text:
+        return
+    if button.text.startswith("("):
+        draw_text(button.text, gs.mid_text_font, WHITE,
+                  button.x + gs.block_size * 0.15,
+                  button.y + gs.block_size * 0.10, gs.surface)
+    else:
+        button.update(gs)
 
 
 def _render_settings_labels(gs: GameScreen, state: LobbyState,
@@ -242,7 +272,12 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
 
     host_seat = state.host_seat
     peer_seat = state.peer_seat()
-    host_label = state.display_name("host") or "host"
+    if state.host_playing:
+        host_label = state.display_name("host") or "host"
+    elif state.host_seat_connected:
+        host_label = state.display_name("host") or "connected"
+    else:
+        host_label = "waiting..."
     if state.peer_connected:
         peer_label = state.display_name("peer") or "connected"
     else:
@@ -256,11 +291,14 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
         return "  <-- you" if role == r else ""
 
     spectator_you = you_marker("spectator") or you_marker("god")
+    if not state.host_playing and _is_host(role):
+        spectator_you = "  <-- you"
 
+    host_you = you_marker("host") if state.host_playing else you_marker(host_seat)
     lines = [
-        f"{host_seat}: {host_label}{you_marker('host')}",
+        f"{host_seat}: {host_label}{lat_str(host_seat)}{host_you}",
         f"{peer_seat}: {peer_label}{lat_str(peer_seat)}{you_marker(peer_seat)}",
-        f"spectators: {state.spectator_count}{spectator_you}",
+        f"spectators: {state.watcher_count()}{spectator_you}",
     ]
     for i, line in enumerate(lines):
         draw_text(line, gs.text_font, WHITE,
@@ -316,11 +354,17 @@ def _click_dispatch(buttons: dict[str, Button], mouse_x: float, mouse_y: float,
                 return
         if touched("start_match"):
             dispatcher.dispatch(LobbyAction("host", "start_match"))
+        elif touched("host_watch") and dispatcher.mode != "local":
+            if state.host_playing:
+                dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+            elif not state.host_seat_connected:
+                dispatcher.dispatch(LobbyAction("host", "switch_to_player"))
     else:
         if touched("switch_role"):
-            if role == state.peer_seat():
+            if role in ("player1", "player2"):
                 dispatcher.dispatch(LobbyAction(role, "switch_to_spectator"))
-            elif _is_spectator(role) and not state.peer_connected:
+            elif _is_spectator(role) and any(not state.seat_filled(s)
+                                             for s in state.open_seats()):
                 dispatcher.dispatch(LobbyAction(role, "switch_to_player"))
 
 
@@ -341,9 +385,6 @@ def main(game_screen: GameScreen, mode: str,
         if not server.is_running:
             server.start()
         state.local_role = "host"
-        my_name = load_setting("player_name")
-        if my_name:
-            dispatcher.dispatch(LobbyAction("host", "set_name", str_value=my_name))
 
     elif mode == "lan_client":
         assert client is not None
@@ -368,10 +409,15 @@ def main(game_screen: GameScreen, mode: str,
             confirming_quit = True
             return False
         return True
-    my_name = load_setting("player_name") if mode == "lan_client" else ""
+    my_name = load_setting("player_name") if mode in ("lan_client", "lan_server") else ""
     name_sent_as = ""
+    host_was_playing = state.host_playing
 
     while True:
+        if state.host_playing != host_was_playing:
+            host_was_playing = state.host_playing
+            name_sent_as = ""
+
         if mode == "lan_client" and client is not None:
             if client.timed_out:
                 connection_timeout_screen.main(game_screen)
@@ -389,6 +435,9 @@ def main(game_screen: GameScreen, mode: str,
                 name_sent_as = state.local_role
 
         if mode == "lan_server" and server is not None:
+            if my_name and state.host_playing and name_sent_as != "host":
+                dispatcher.dispatch(LobbyAction("host", "set_name", str_value=my_name))
+                name_sent_as = "host"
             server.pulse()
 
         if dispatcher.start_signal:
@@ -438,18 +487,12 @@ def main(game_screen: GameScreen, mode: str,
 
             if _is_host(state.local_role):
                 for name, button in buttons.items():
-                    if name != "switch_role":
+                    if name not in ("switch_role", "host_watch"):
                         button.update(game_screen)
+                _render_role_button(game_screen, buttons["host_watch"])
             else:
                 _render_settings_labels(game_screen, state, row_offsets)
-                sw = buttons["switch_role"]
-                if sw.text and not sw.text.startswith("("):
-                    sw.update(game_screen)
-                elif sw.text:
-                    draw_text(sw.text, game_screen.mid_text_font, WHITE,
-                              sw.x + game_screen.block_size * 0.15,
-                              sw.y + game_screen.block_size * 0.10,
-                              game_screen.surface)
+                _render_role_button(game_screen, buttons["switch_role"])
 
         _render_help(game_screen, state.local_role, mode)
         back_button.update(game_screen)

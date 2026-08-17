@@ -78,6 +78,7 @@ def main(game_screen: GameScreen, mode: str = "local",
          server: Optional[LANServer] = None, client: Optional[LANClient] = None,
          draft_state: Optional[DraftState] = None,
          host_seat: str = "player1",
+         host_playing: bool = True,
          reconnect_timeout: float = 60.0,
          settings: Optional[MatchSettings] = None,
          extra_bans: Optional[list[str]] = None,
@@ -104,7 +105,7 @@ def main(game_screen: GameScreen, mode: str = "local",
             dispatcher.attach_server(server)
             if not server.is_running:
                 server.start()
-            draft_state.local_player = host_seat
+            draft_state.local_player = host_seat if host_playing else "spectator"
             server.broadcast_scene_for("draft", draft_state.to_dict_for)
 
         case "lan_client":
