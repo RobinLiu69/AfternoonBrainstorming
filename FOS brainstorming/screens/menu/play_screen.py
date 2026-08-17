@@ -202,6 +202,7 @@ def _run_host(game_screen: GameScreen) -> None:
             exit_reason = draft.main(
                 game_screen, mode="lan_server", server=server,
                 host_seat=lobby_state.host_seat,
+                host_playing=lobby_state.host_playing,
                 reconnect_timeout=lobby_state.reconnect_timeout,
                 settings=lobby_state.settings,
                 extra_bans=list(lobby_state.bans),
@@ -223,6 +224,7 @@ def _run_host(game_screen: GameScreen) -> None:
                 game_state, game_screen,
                 mode="lan_server", server=server,
                 host_seat=lobby_state.host_seat,
+                host_playing=lobby_state.host_playing,
                 reconnect_timeout=lobby_state.reconnect_timeout,
             )
             if winner in ("None", ""):

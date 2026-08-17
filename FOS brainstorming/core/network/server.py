@@ -62,8 +62,9 @@ class LANServer:
         self.on_pulse: Optional[Callable[[], None]] = None
         self._last_seen: dict = {}
 
+        self.host_playing: bool = True
         self._clients: list[tuple[socket.socket, str]] = []
-        self._peer_token: Optional[str] = None
+        self._role_tokens: dict[str, str] = {}
         self._evicted: set[socket.socket] = set()
         self._lock = threading.Lock()
         self._write_locks: dict[socket.socket, threading.Lock] = {}
@@ -135,14 +136,25 @@ class LANServer:
     def peer_seat(self) -> str:
         return "player2" if self.host_seat == "player1" else "player1"
 
+    def move_token(self, old_role: str, new_role: str) -> None:
+        with self._lock:
+            if old_role in self._role_tokens:
+                self._role_tokens[new_role] = self._role_tokens.pop(old_role)
+
+    def clear_token(self, role: str) -> None:
+        with self._lock:
+            self._role_tokens.pop(role, None)
+
     def update_host_seat(self, new_seat: str) -> None:
         if new_seat not in ("player1", "player2") or new_seat == self.host_seat:
             return
-        old_peer = self.peer_seat()
+        old_host, old_peer = self.host_seat, self.peer_seat()
         self.host_seat = new_seat
-        new_peer = self.peer_seat()
+        swap = ({old_peer: self.peer_seat()} if self.host_playing
+                else {old_host: old_peer, old_peer: old_host})
         with self._lock:
-            self._clients = [(c, new_peer if r == old_peer else r) for c, r in self._clients]
+            self._clients = [(c, swap.get(r, r)) for c, r in self._clients]
+            self._role_tokens = {swap.get(r, r): t for r, t in self._role_tokens.items()}
 
     def reset_heartbeat(self) -> None:
         now = time.monotonic()
@@ -169,34 +181,39 @@ class LANServer:
                     return True
         return False
 
-    def _decide_role(self, intent: str, token: Optional[str]) -> tuple[str, str]:
-        peer_role = self.peer_seat()
-        token_matches = (
-            token is not None
-            and self._peer_token is not None
-            and token == self._peer_token
-        )
+    def open_seats(self) -> tuple[str, ...]:
+        if self.host_playing:
+            return (self.peer_seat(),)
+        return (self.host_seat, self.peer_seat())
 
+    def _evict_seat(self, seat: str, evicted: list[socket.socket]) -> None:
+        kept: list[tuple[socket.socket, str]] = []
+        for c, r in self._clients:
+            if r == seat:
+                evicted.append(c)
+                self._evicted.add(c)
+                self._forget(c)
+            else:
+                kept.append((c, r))
+        self._clients = kept
+
+    def _decide_role(self, intent: str, token: Optional[str]) -> tuple[str, str]:
         evicted: list[socket.socket] = []
         with self._lock:
-            if token_matches:
-                kept: list[tuple[socket.socket, str]] = []
-                for c, r in self._clients:
-                    if r == peer_role:
-                        evicted.append(c)
-                        self._evicted.add(c)
-                        self._forget(c)
-                    else:
-                        kept.append((c, r))
-                self._clients = kept
-                chosen_role: str = peer_role
-                issued_token: str = self._peer_token  # type: ignore[assignment]
+            seat_for_token = next(
+                (seat for seat, held in self._role_tokens.items()
+                 if token is not None and held == token), "")
+            if seat_for_token:
+                self._evict_seat(seat_for_token, evicted)
+                chosen_role: str = seat_for_token
+                issued_token: str = token  # type: ignore[assignment]
             else:
-                has_peer = any(r == peer_role for _conn, r in self._clients)
-                if intent == "play" and not has_peer and self.scene == "lobby":
+                taken = {r for _conn, r in self._clients}
+                free = next((seat for seat in self.open_seats() if seat not in taken), "")
+                if intent == "play" and free and self.scene == "lobby":
                     new_token = secrets.token_urlsafe(16)
-                    self._peer_token = new_token
-                    chosen_role = peer_role
+                    self._role_tokens[free] = new_token
+                    chosen_role = free
                     issued_token = new_token
                 else:
                     chosen_role = "god" if self.god_view else "spectator"

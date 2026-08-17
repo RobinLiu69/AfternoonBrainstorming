@@ -181,17 +181,27 @@ def _refresh_button_labels(buttons: dict[str, Button], state: LobbyState, role: 
     if mode == "local":
         buttons["start_match"].text = "START"
     else:
-        buttons["start_match"].text = "START MATCH" if state.peer_connected else "(waiting for player)"
+        buttons["start_match"].text = ("START MATCH" if state.both_seats_filled()
+                                       else "(waiting for player)")
+
+    free_seat = next((s for s in state.open_seats() if not state.seat_filled(s)), "")
 
     if _is_host(role):
-        buttons["switch_role"].text = ""
-    elif role == state.peer_seat():
+        if mode == "local":
+            buttons["switch_role"].text = ""
+        elif state.host_playing:
+            buttons["switch_role"].text = "watch instead of playing"
+        elif state.host_seat_connected:
+            buttons["switch_role"].text = f"({state.host_seat} taken)"
+        else:
+            buttons["switch_role"].text = f"take {state.host_seat} seat"
+    elif role in ("player1", "player2"):
         buttons["switch_role"].text = "switch to spectator"
     elif _is_spectator(role):
-        if state.peer_connected:
-            buttons["switch_role"].text = "(player slot occupied)"
+        if free_seat:
+            buttons["switch_role"].text = f"take {free_seat} seat"
         else:
-            buttons["switch_role"].text = f"take {state.peer_seat()} seat"
+            buttons["switch_role"].text = "(player slot occupied)"
     else:
         buttons["switch_role"].text = ""
 
@@ -242,7 +252,12 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
 
     host_seat = state.host_seat
     peer_seat = state.peer_seat()
-    host_label = state.display_name("host") or "host"
+    if state.host_playing:
+        host_label = state.display_name("host") or "host"
+    elif state.host_seat_connected:
+        host_label = state.display_name("host") or "connected"
+    else:
+        host_label = "waiting..."
     if state.peer_connected:
         peer_label = state.display_name("peer") or "connected"
     else:
@@ -256,9 +271,12 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
         return "  <-- you" if role == r else ""
 
     spectator_you = you_marker("spectator") or you_marker("god")
+    if not state.host_playing and _is_host(role):
+        spectator_you = "  <-- you"
 
+    host_you = you_marker("host") if state.host_playing else you_marker(host_seat)
     lines = [
-        f"{host_seat}: {host_label}{you_marker('host')}",
+        f"{host_seat}: {host_label}{lat_str(host_seat)}{host_you}",
         f"{peer_seat}: {peer_label}{lat_str(peer_seat)}{you_marker(peer_seat)}",
         f"spectators: {state.spectator_count}{spectator_you}",
     ]
@@ -316,11 +334,17 @@ def _click_dispatch(buttons: dict[str, Button], mouse_x: float, mouse_y: float,
                 return
         if touched("start_match"):
             dispatcher.dispatch(LobbyAction("host", "start_match"))
+        elif touched("switch_role") and dispatcher.mode != "local":
+            if state.host_playing:
+                dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+            elif not state.host_seat_connected:
+                dispatcher.dispatch(LobbyAction("host", "switch_to_player"))
     else:
         if touched("switch_role"):
-            if role == state.peer_seat():
+            if role in ("player1", "player2"):
                 dispatcher.dispatch(LobbyAction(role, "switch_to_spectator"))
-            elif _is_spectator(role) and not state.peer_connected:
+            elif _is_spectator(role) and any(not state.seat_filled(s)
+                                             for s in state.open_seats()):
                 dispatcher.dispatch(LobbyAction(role, "switch_to_player"))
 
 

@@ -65,7 +65,9 @@ class LobbyState:
     reconnect_timeout: float = 60.0
     settings: MatchSettings = field(default_factory=MatchSettings)
 
+    host_playing: bool = True
     peer_connected: bool = False
+    host_seat_connected: bool = False
     spectator_count: int = 0
     latencies: dict = field(default_factory=dict)
 
@@ -78,6 +80,22 @@ class LobbyState:
 
     def peer_seat(self) -> str:
         return "player2" if self.host_seat == "player1" else "player1"
+
+    def open_seats(self) -> tuple[str, ...]:
+        if self.host_playing:
+            return (self.peer_seat(),)
+        return (self.host_seat, self.peer_seat())
+
+    def seat_identity(self, seat: str) -> str:
+        return "host" if seat == self.host_seat else "peer"
+
+    def seat_filled(self, seat: str) -> bool:
+        if seat == self.host_seat:
+            return self.host_playing or self.host_seat_connected
+        return self.peer_connected
+
+    def both_seats_filled(self) -> bool:
+        return self.seat_filled(self.host_seat) and self.seat_filled(self.peer_seat())
 
     def ban_count(self, seat: str) -> int:
         return sum(1 for banner in self.bans.values() if banner == seat)
@@ -107,7 +125,9 @@ class LobbyState:
             "god_view": self.god_view,
             "reconnect_timeout": self.reconnect_timeout,
             **self.settings.to_dict(),
+            "host_playing": self.host_playing,
             "peer_connected": self.peer_connected,
+            "host_seat_connected": self.host_seat_connected,
             "spectator_count": self.spectator_count,
             "latencies": dict(self.latencies),
             "room_code": self.room_code,
@@ -126,7 +146,9 @@ class LobbyState:
         self.god_view = data["god_view"]
         self.reconnect_timeout = data["reconnect_timeout"]
         self.settings.apply_dict(data)
+        self.host_playing = data.get("host_playing", True)
         self.peer_connected = data["peer_connected"]
+        self.host_seat_connected = data.get("host_seat_connected", False)
         self.spectator_count = data["spectator_count"]
         self.latencies = data.get("latencies", {})
         self.room_code = data.get("room_code", self.room_code)

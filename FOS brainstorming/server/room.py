@@ -49,8 +49,10 @@ class RoomLobbyDispatcher(LobbyDispatcher):
         super().__init__(lobby_state, mode="lan_server")
 
     def _on_client_connect(self, role: str) -> dict:
-        if role in ("player1", "player2"):
+        if role == self._state.peer_seat():
             self._state.peer_connected = True
+        elif role == self._state.host_seat:
+            self._state.host_seat_connected = True
         elif role in ("spectator", "god"):
             self._state.spectator_count += 1
         welcome_state = self._state.to_dict_for(role)
@@ -203,9 +205,15 @@ class Room:
         with self.channel._lock:
             owner_conn = next(
                 (c for c, r in self.channel._clients if r == "host"), None)
-        if owner_conn is not None:
-            self.channel.reassign_role(owner_conn, host_seat)
-        self.channel.move_token("host", host_seat)
+        if self.lobby_state.host_playing:
+            if owner_conn is not None:
+                self.channel.reassign_role(owner_conn, host_seat)
+            self.channel.move_token("host", host_seat)
+        else:
+            if owner_conn is not None:
+                self.channel.reassign_role(
+                    owner_conn, "god" if self.channel.god_view else "spectator")
+            self.channel.clear_token("host")
 
         draft_state = DraftState()
         draft_state.settings = self.lobby_state.settings.copy()
