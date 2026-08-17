@@ -134,7 +134,7 @@ class Room:
 
     def _room_abandoned(self) -> bool:
         now = time.monotonic()
-        if self.channel.client_count() == 0:
+        if self.channel.roster.count() == 0:
             if self._empty_since is None:
                 self._empty_since = now
             if now - self._empty_since > EMPTY_ROOM_TIMEOUT:
@@ -143,7 +143,7 @@ class Room:
             self._empty_since = None
 
         if self.scene == "lobby":
-            if self.channel.has_role("host"):
+            if self.channel.roster.has_role("host"):
                 self._owner_absent_since = None
             else:
                 if self._owner_absent_since is None:
@@ -202,18 +202,15 @@ class Room:
 
     def _start_draft(self) -> None:
         host_seat = self.lobby_state.host_seat
-        with self.channel._lock:
-            owner_conn = next(
-                (c for c, r in self.channel._clients if r == "host"), None)
+        owner_conn = self.channel.roster.conn_for("host")
         if self.lobby_state.host_playing:
             if owner_conn is not None:
-                self.channel.reassign_role(owner_conn, host_seat)
-            self.channel.move_token("host", host_seat)
+                self.channel.roster.reassign(owner_conn, host_seat)
+            self.channel.roster.move_token("host", host_seat)
         else:
             if owner_conn is not None:
-                self.channel.reassign_role(
-                    owner_conn, "god" if self.channel.god_view else "spectator")
-            self.channel.clear_token("host")
+                self.channel.roster.reassign(owner_conn, self.channel.roster.watcher_role())
+            self.channel.roster.clear_token("host")
 
         draft_state = DraftState()
         draft_state.settings = self.lobby_state.settings.copy()

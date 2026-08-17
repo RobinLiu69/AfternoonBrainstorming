@@ -143,7 +143,7 @@ class RoomServer:
         if room is None or room.closed:
             self._reject(conn, addr, "room_not_found")
             return
-        if room.channel.client_count() >= self.room_client_cap:
+        if room.channel.roster.count() >= self.room_client_cap:
             self._reject(conn, addr, "room_full")
             return
         print(f"[RoomServer] {addr} joining room {room_code}")

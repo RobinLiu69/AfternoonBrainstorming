@@ -61,9 +61,9 @@ class TestOneClientCannotStallTheOthers:
         second, welcome_two = _hello(server, intent="watch")
         assert welcome_one["type"] == "welcome"
         assert welcome_two["type"] == "welcome"
-        wait_until(lambda: len(server._clients) == 2)
+        wait_until(lambda: server.roster.count() == 2)
 
-        conns = [conn for conn, _role in server._clients]
+        conns = [conn for conn, _role in server.roster.members()]
         locks = {id(server._write_lock_for(conn)) for conn in conns}
 
         assert len(locks) == 2
@@ -72,14 +72,14 @@ class TestOneClientCannotStallTheOthers:
 
     def test_a_dropped_connection_takes_its_lock_with_it(self, server) -> None:
         sock, _welcome = _hello(server)
-        wait_until(lambda: len(server._clients) == 1)
-        conn = server._clients[0][0]
+        wait_until(lambda: server.roster.count() == 1)
+        conn = server.roster.members()[0][0]
         server._write_lock_for(conn)
         assert conn in server._write_locks
 
         sock.close()
 
-        wait_until(lambda: not server._clients)
+        wait_until(lambda: server.roster.count() == 0)
         assert conn not in server._write_locks
         assert conn not in server._last_seen
 
@@ -107,7 +107,7 @@ class TestABadActionDoesNotKillTheReceiveLoop:
 
         server.on_action = explode
         sock, _welcome = _hello(server)
-        wait_until(lambda: len(server._clients) == 1)
+        wait_until(lambda: server.roster.count() == 1)
 
         _send_msg(sock, {"type": "action", "seq": 1, "action_type": "toggle_hint"})
         assert _recv_msg(sock) == {"type": "ack", "seq": 1}
@@ -116,15 +116,15 @@ class TestABadActionDoesNotKillTheReceiveLoop:
         assert _recv_msg(sock) == {"type": "ack", "seq": 2}
 
         assert len(seen) == 2
-        assert len(server._clients) == 1
+        assert server.roster.count() == 1
         sock.close()
 
 
 class TestTheSocketsAreTuned:
     def test_accepted_connections_disable_nagle(self, server) -> None:
         sock, _welcome = _hello(server)
-        wait_until(lambda: len(server._clients) == 1)
-        conn = server._clients[0][0]
+        wait_until(lambda: server.roster.count() == 1)
+        conn = server.roster.members()[0][0]
 
         assert conn.getsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY) == 1
         assert conn.gettimeout() is not None

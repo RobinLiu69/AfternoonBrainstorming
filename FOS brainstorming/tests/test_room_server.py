@@ -536,7 +536,7 @@ def test_a_room_owner_can_watch_instead_of_playing(room_server):
     second_role, _state = second.connect()
 
     assert {first_role, second_role} == {"player1", "player2"}
-    assert room.channel.has_role("host") is True
+    assert room.channel.roster.has_role("host") is True
     assert room._room_abandoned() is False
 
 
@@ -559,5 +559,5 @@ def test_a_watching_owner_becomes_a_spectator_when_the_match_starts(room_server)
     wait_until(lambda: creator.pending_scene == "draft")
 
     assert creator.role in ("spectator", "god")
-    assert room.channel.has_role("player1") is True
-    assert room.channel.has_role("player2") is True
+    assert room.channel.roster.has_role("player1") is True
+    assert room.channel.roster.has_role("player2") is True

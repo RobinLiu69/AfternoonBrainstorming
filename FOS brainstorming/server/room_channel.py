@@ -41,12 +41,10 @@ class RoomChannel(LANServer):
         if not self._running:
             return
         self._running = False
+        conns = self.roster.clear()
         with self._lock:
-            conns = [c for c, _r in self._clients]
-            self._clients.clear()
             self._last_seen.clear()
             self._write_locks.clear()
-            self._evicted.clear()
         for conn in conns:
             self._force_close(conn)
 
@@ -57,21 +55,10 @@ class RoomChannel(LANServer):
         finally:
             self._forced_role = None
 
-    def client_count(self) -> int:
-        with self._lock:
-            return len(self._clients)
-
-    def has_role(self, role: str) -> bool:
-        with self._lock:
-            return any(r == role for _c, r in self._clients)
-
     def _decide_role(self, intent: str, token: Optional[str]) -> tuple[str, str]:
-        with self._lock:
-            forced = self._forced_role
-            if forced is not None:
-                chosen_role, issued_token = forced
-                self._forced_role = None
-                self._role_tokens[chosen_role] = issued_token
-        if forced is not None:
-            return chosen_role, issued_token
-        return super()._decide_role(intent, token)
+        forced, self._forced_role = self._forced_role, None
+        if forced is None:
+            return super()._decide_role(intent, token)
+        role, issued_token = forced
+        self.roster.adopt_token(role, issued_token)
+        return role, issued_token

@@ -96,8 +96,8 @@ class TestTheHostCanStepOutOfTheSeat:
         assert dispatcher.dispatch(LobbyAction("host", "switch_to_spectator")).success
 
         assert state.host_playing is False
-        assert server.host_playing is False
-        assert set(server.open_seats()) == {"player1", "player2"}
+        assert server.roster.host_playing is False
+        assert set(server.roster.open_seats()) == {"player1", "player2"}
 
     def test_the_host_can_take_the_seat_back(self, lobby) -> None:
         state, dispatcher, server = lobby
@@ -106,13 +106,13 @@ class TestTheHostCanStepOutOfTheSeat:
         assert dispatcher.dispatch(LobbyAction("host", "switch_to_player")).success
 
         assert state.host_playing is True
-        assert server.open_seats() == (state.peer_seat(),)
+        assert server.roster.open_seats() == (state.peer_seat(),)
 
     def test_the_host_cannot_take_a_seat_someone_else_holds(self, lobby) -> None:
         state, dispatcher, server = lobby
         dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
         first, role, _token = _join(server)
-        wait_until(lambda: len(server._clients) == 1)
+        wait_until(lambda: server.roster.count() == 1)
         dispatcher._refresh_roster()
 
         result = dispatcher.dispatch(LobbyAction("host", "switch_to_player"))
@@ -129,7 +129,7 @@ class TestTheHostCanStepOutOfTheSeat:
 
         first, first_role, _t1 = _join(server)
         second, second_role, _t2 = _join(server)
-        wait_until(lambda: len(server._clients) == 2)
+        wait_until(lambda: server.roster.count() == 2)
         dispatcher._refresh_roster()
 
         assert {first_role, second_role} == {"player1", "player2"}
@@ -142,7 +142,7 @@ class TestTheHostCanStepOutOfTheSeat:
         dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
         first, _r1, _t1 = _join(server)
         second, _r2, _t2 = _join(server)
-        wait_until(lambda: len(server._clients) == 2)
+        wait_until(lambda: server.roster.count() == 2)
 
         third, third_role, _t3 = _join(server)
 
@@ -155,11 +155,11 @@ class TestTheHostCanStepOutOfTheSeat:
         dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
         first, first_role, first_token = _join(server)
         second, second_role, second_token = _join(server)
-        wait_until(lambda: len(server._clients) == 2)
+        wait_until(lambda: server.roster.count() == 2)
 
         assert first_token and second_token and first_token != second_token
         first.close()
-        wait_until(lambda: len(server._clients) == 1)
+        wait_until(lambda: server.roster.count() == 1)
 
         back, back_role, _token = _join(server, token=first_token)
 
@@ -174,7 +174,7 @@ class TestTheMatchWaitsForBothSeats:
         _state, dispatcher, server = lobby
         dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
         first, _role, _token = _join(server)
-        wait_until(lambda: len(server._clients) == 1)
+        wait_until(lambda: server.roster.count() == 1)
         dispatcher._refresh_roster()
 
         result = dispatcher.dispatch(LobbyAction("host", "start_match"))
@@ -188,7 +188,7 @@ class TestTheMatchWaitsForBothSeats:
         dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
         first, _r1, _t1 = _join(server)
         second, _r2, _t2 = _join(server)
-        wait_until(lambda: len(server._clients) == 2)
+        wait_until(lambda: server.roster.count() == 2)
         dispatcher._refresh_roster()
 
         assert dispatcher.dispatch(LobbyAction("host", "start_match")).success is True

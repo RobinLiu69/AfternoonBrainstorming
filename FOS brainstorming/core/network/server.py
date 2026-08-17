@@ -16,13 +16,13 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-import secrets
 import socket
 import threading
 import time
 from typing import Callable, Optional
 
 from core.network.messages import _recv_msg, _send_msg
+from core.network.roster import Roster, SEATS
 
 
 SOCKET_TIMEOUT_SECONDS: float = 5.0
@@ -44,8 +44,7 @@ class LANServer:
         self.version = version
         self.host = host
         self.port = port
-        self.god_view = god_view
-        self.host_seat = host_seat
+        self.roster = Roster(host_seat=host_seat, god_view=god_view)
         self.scene: str = ""
         self.room_code: str = ""
 
@@ -62,10 +61,6 @@ class LANServer:
         self.on_pulse: Optional[Callable[[], None]] = None
         self._last_seen: dict = {}
 
-        self.host_playing: bool = True
-        self._clients: list[tuple[socket.socket, str]] = []
-        self._role_tokens: dict[str, str] = {}
-        self._evicted: set[socket.socket] = set()
         self._lock = threading.Lock()
         self._write_locks: dict[socket.socket, threading.Lock] = {}
         self._server_sock: Optional[socket.socket] = None
@@ -133,96 +128,24 @@ class LANServer:
             except Exception as e:
                 print(f"[LANServer] on_pulse raised: {e}")
 
-    def peer_seat(self) -> str:
-        return "player2" if self.host_seat == "player1" else "player1"
-
-    def move_token(self, old_role: str, new_role: str) -> None:
-        with self._lock:
-            if old_role in self._role_tokens:
-                self._role_tokens[new_role] = self._role_tokens.pop(old_role)
-
-    def clear_token(self, role: str) -> None:
-        with self._lock:
-            self._role_tokens.pop(role, None)
-
-    def update_host_seat(self, new_seat: str) -> None:
-        if new_seat not in ("player1", "player2") or new_seat == self.host_seat:
-            return
-        old_host, old_peer = self.host_seat, self.peer_seat()
-        self.host_seat = new_seat
-        swap = ({old_peer: self.peer_seat()} if self.host_playing
-                else {old_host: old_peer, old_peer: old_host})
-        with self._lock:
-            self._clients = [(c, swap.get(r, r)) for c, r in self._clients]
-            self._role_tokens = {swap.get(r, r): t for r, t in self._role_tokens.items()}
-
     def reset_heartbeat(self) -> None:
         now = time.monotonic()
         with self._lock:
-            for conn, _role in self._clients:
+            for conn, _role in self.roster.members():
                 self._last_seen[conn] = now
 
-    def update_god_view(self, god_view: bool) -> None:
-        self.god_view = god_view
-        old_role = "spectator" if god_view else "god"
-        new_role = "god" if god_view else "spectator"
-        with self._lock:
-            self._clients = [(c, new_role if r == old_role else r) for c, r in self._clients]
-
     def find_role(self, conn: socket.socket) -> str:
-        with self._lock:
-            return next((r for c, r in self._clients if c is conn), "")
-
-    def reassign_role(self, conn: socket.socket, new_role: str) -> bool:
-        with self._lock:
-            for i, (c, _r) in enumerate(self._clients):
-                if c is conn:
-                    self._clients[i] = (c, new_role)
-                    return True
-        return False
-
-    def open_seats(self) -> tuple[str, ...]:
-        if self.host_playing:
-            return (self.peer_seat(),)
-        return (self.host_seat, self.peer_seat())
-
-    def _evict_seat(self, seat: str, evicted: list[socket.socket]) -> None:
-        kept: list[tuple[socket.socket, str]] = []
-        for c, r in self._clients:
-            if r == seat:
-                evicted.append(c)
-                self._evicted.add(c)
-                self._forget(c)
-            else:
-                kept.append((c, r))
-        self._clients = kept
+        return self.roster.role_of(conn)
 
     def _decide_role(self, intent: str, token: Optional[str]) -> tuple[str, str]:
-        evicted: list[socket.socket] = []
+        role, issued_token, evicted = self.roster.claim(
+            intent, token, in_lobby=self.scene == "lobby")
         with self._lock:
-            seat_for_token = next(
-                (seat for seat, held in self._role_tokens.items()
-                 if token is not None and held == token), "")
-            if seat_for_token:
-                self._evict_seat(seat_for_token, evicted)
-                chosen_role: str = seat_for_token
-                issued_token: str = token  # type: ignore[assignment]
-            else:
-                taken = {r for _conn, r in self._clients}
-                free = next((seat for seat in self.open_seats() if seat not in taken), "")
-                if intent == "play" and free and self.scene == "lobby":
-                    new_token = secrets.token_urlsafe(16)
-                    self._role_tokens[free] = new_token
-                    chosen_role = free
-                    issued_token = new_token
-                else:
-                    chosen_role = "god" if self.god_view else "spectator"
-                    issued_token = ""
-
-        for c in evicted:
-            self._force_close(c)
-
-        return chosen_role, issued_token
+            for conn in evicted:
+                self._forget(conn)
+        for conn in evicted:
+            self._force_close(conn)
+        return role, issued_token
 
     @property
     def is_running(self) -> bool:
@@ -270,6 +193,30 @@ class LANServer:
             print(f"[LANServer] handshake failed for {addr}: {e}")
             self._force_close(conn)
 
+    def _fire(self, name: str, *args):
+        callback = getattr(self, name)
+        if callback is None:
+            return None
+        try:
+            return callback(*args)
+        except Exception as e:
+            print(f"[LANServer] {name} raised: {e}")
+            raise
+
+    def _reject_version(self, conn: socket.socket, addr, client_version: str) -> None:
+        try:
+            self._send_locked(conn, {
+                "type": "rejected",
+                "reason": "version_mismatch",
+                "server_version": self.version,
+                "client_version": client_version,
+            })
+        except OSError:
+            pass
+        conn.close()
+        print(f"[LANServer] Rejected {addr}: version mismatch "
+              f"(client={client_version!r}, server={self.version!r})")
+
     def handle_connection(self, conn: socket.socket, addr, hello: dict) -> None:
         if not self._running:
             self._force_close(conn)
@@ -278,40 +225,20 @@ class LANServer:
 
         client_version = hello.get("version", "")
         if client_version != self.version:
-            try:
-                self._send_locked(conn, {
-                    "type": "rejected",
-                    "reason": "version_mismatch",
-                    "server_version": self.version,
-                    "client_version": client_version,
-                })
-            except OSError:
-                pass
-            conn.close()
-            print(f"[LANServer] Rejected {addr}: version mismatch (client={client_version!r}, server={self.version!r})")
+            self._reject_version(conn, addr, client_version)
             return
 
-        intent = hello.get("intent", "play")
         token = hello.get("token")
-        role, issued_token = self._decide_role(intent, token)
-        is_reconnect = (role in ("player1", "player2")
-                        and token is not None and token == issued_token)
-        peer_joined = role in ("player1", "player2")
+        role, issued_token = self._decide_role(hello.get("intent", "play"), token)
+        is_reconnect = (role in SEATS and token is not None and token == issued_token)
 
-        if peer_joined and self.on_peer_reconnect is not None:
-            try:
-                self.on_peer_reconnect()
-            except Exception as e:
-                print(f"[LANServer] on_peer_reconnect raised: {e}")
-
-        state: dict = {}
-        if self.on_client_connect is not None:
-            try:
-                state = self.on_client_connect(role)
-            except Exception as e:
-                print(f"[LANServer] on_client_connect raised: {e}")
-                self._force_close(conn)
-                return
+        try:
+            if role in SEATS:
+                self._fire("on_peer_reconnect")
+            state = self._fire("on_client_connect", role) or {}
+        except Exception:
+            self._force_close(conn)
+            return
 
         try:
             self._send_locked(conn, {
@@ -327,14 +254,57 @@ class LANServer:
             conn.close()
             return
 
-        with self._lock:
-            self._clients.append((conn, role))
-            self._last_seen[conn] = time.monotonic()
+        self.roster.add(conn, role)
+        self._touch(conn)
         print(f"[LANServer] Assigned role={role} to {addr} (reconnect={is_reconnect})")
 
         threading.Thread(
             target=self._client_loop, args=(conn, addr), daemon=True
         ).start()
+
+    def _touch(self, conn: socket.socket) -> None:
+        with self._lock:
+            self._last_seen[conn] = time.monotonic()
+
+    def _client_gone(self, conn: socket.socket, addr) -> None:
+        print(f"[LANServer] Client disconnected: {addr}")
+        dropped_role, was_evicted = self.roster.drop(conn)
+        with self._lock:
+            self._forget(conn)
+        try:
+            conn.close()
+        except OSError:
+            pass
+        if was_evicted:
+            return
+        try:
+            self._fire("on_client_dropped", dropped_role)
+        except Exception:
+            pass
+        if dropped_role in SEATS:
+            try:
+                self._fire("on_peer_disconnect")
+            except Exception:
+                pass
+
+    def _handle_message(self, conn: socket.socket, msg: dict) -> None:
+        match msg.get("type"):
+            case "pong":
+                rtt_ms = (time.monotonic() - msg.get("ts", 0.0)) * 1000.0
+                self.send_to(conn, {"type": "ping_result", "ms": round(rtt_ms, 1)})
+                try:
+                    self._fire("on_pong", self.find_role(conn), rtt_ms)
+                except Exception:
+                    pass
+            case "action":
+                try:
+                    self._fire("on_action", msg, conn)
+                except Exception:
+                    pass
+                finally:
+                    seq = msg.get("seq")
+                    if seq is not None:
+                        self.send_to(conn, {"type": "ack", "seq": seq})
 
     def _client_loop(self, conn: socket.socket, addr) -> None:
         while True:
@@ -343,61 +313,17 @@ class LANServer:
             except (OSError, ValueError):
                 msg = None
             if msg is None:
-                print(f"[LANServer] Client disconnected: {addr}")
-                with self._lock:
-                    was_evicted = conn in self._evicted
-                    self._evicted.discard(conn)
-                    dropped_role = next((r for c, r in self._clients if c is conn), "")
-                    self._clients = [c for c in self._clients if c[0] is not conn]
-                    self._forget(conn)
-                try:
-                    conn.close()
-                except OSError:
-                    pass
-                if was_evicted:
-                    break
-                if self.on_client_dropped is not None:
-                    try:
-                        self.on_client_dropped(dropped_role)
-                    except Exception as e:
-                        print(f"[LANServer] on_client_dropped raised: {e}")
-                if dropped_role in ("player1", "player2") and self.on_peer_disconnect is not None:
-                    try:
-                        self.on_peer_disconnect()
-                    except Exception as e:
-                        print(f"[LANServer] on_peer_disconnect raised: {e}")
-                break
-            with self._lock:
-                self._last_seen[conn] = time.monotonic()
-            if msg.get("type") == "pong":
-                sent_ts = msg.get("ts", 0.0)
-                rtt_ms = (time.monotonic() - sent_ts) * 1000.0
-                self.send_to(conn, {"type": "ping_result", "ms": round(rtt_ms, 1)})
-                if self.on_pong is not None:
-                    role = self.find_role(conn)
-                    try:
-                        self.on_pong(role, rtt_ms)
-                    except Exception as e:
-                        print(f"[LANServer] on_pong raised: {e}")
-            elif msg.get("type") == "action":
-                try:
-                    if self.on_action is not None:
-                        self.on_action(msg, conn)
-                except Exception as e:
-                    print(f"[LANServer] on_action raised: {e}")
-                finally:
-                    seq = msg.get("seq")
-                    if seq is not None:
-                        self.send_to(conn, {"type": "ack", "seq": seq})
+                self._client_gone(conn, addr)
+                return
+            self._touch(conn)
+            self._handle_message(conn, msg)
 
     def _prune_dead(self, dead_conns: list[socket.socket]) -> list[str]:
         if not dead_conns:
             return []
+        dropped_roles = self.roster.drop_many(dead_conns)
         with self._lock:
-            dropped_roles = [r for c, r in self._clients if c in dead_conns]
-            self._clients = [c for c in self._clients if c[0] not in dead_conns]
             for c in dead_conns:
-                self._evicted.discard(c)
                 self._forget(c)
         return dropped_roles
 
@@ -409,7 +335,7 @@ class LANServer:
                 except Exception as e:
                     print(f"[LANServer] on_client_dropped raised: {e}")
         for r in dropped_roles:
-            if r in ("player1", "player2") and self.on_peer_disconnect is not None:
+            if r in SEATS and self.on_peer_disconnect is not None:
                 try:
                     self.on_peer_disconnect()
                 except Exception as e:
@@ -417,8 +343,7 @@ class LANServer:
                 return
 
     def _broadcast_envelope(self, envelope: dict) -> None:
-        with self._lock:
-            snapshot = list(self._clients)
+        snapshot = self.roster.members()
         dead: list[socket.socket] = []
         for conn, _role in snapshot:
             try:
@@ -429,8 +354,7 @@ class LANServer:
         self._fire_disconnect_callbacks(self._prune_dead(dead))
 
     def _broadcast_per_client(self, build_envelope: Callable[[str], dict]) -> None:
-        with self._lock:
-            snapshot = list(self._clients)
+        snapshot = self.roster.members()
         dead: list[socket.socket] = []
         for conn, role in snapshot:
             try:
@@ -479,8 +403,7 @@ class LANServer:
         })
 
     def count_spectators(self) -> int:
-        with self._lock:
-            return sum(1 for _c, r in self._clients if r in ("spectator", "god"))
+        return self.roster.count_watchers()
 
     def broadcast_net_info(self, spectator_count: int, latencies: dict) -> None:
         self._broadcast_envelope({
@@ -491,8 +414,7 @@ class LANServer:
 
     def broadcast_ping(self) -> None:
         ts = time.monotonic()
-        with self._lock:
-            snapshot = list(self._clients)
+        snapshot = self.roster.members()
         dead: list[socket.socket] = []
         for conn, _role in snapshot:
             try:
@@ -504,8 +426,8 @@ class LANServer:
 
     def check_heartbeat(self, timeout: float = 10.0) -> None:
         now = time.monotonic()
+        snapshot = self.roster.members()
         with self._lock:
-            snapshot = list(self._clients)
             last_seen_snap = dict(self._last_seen)
         for conn, _role in snapshot:
             last = last_seen_snap.get(conn)
@@ -533,12 +455,10 @@ class LANServer:
             self._accept_thread.join(timeout=2.0)
             self._accept_thread = None
 
+        conns = self.roster.clear()
         with self._lock:
-            conns = [c for c, _role in self._clients]
-            self._clients.clear()
             self._last_seen.clear()
             self._write_locks.clear()
-            self._evicted.clear()
         for conn in conns:
             self._force_close(conn)
 

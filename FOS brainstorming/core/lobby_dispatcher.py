@@ -52,9 +52,9 @@ class LobbyDispatcher:
         self._network = server
         server.reset_callbacks()
         server.set_scene("lobby")
-        server.host_seat = self._state.host_seat
-        server.god_view = self._state.god_view
-        server.host_playing = self._state.host_playing
+        server.roster.host_seat = self._state.host_seat
+        server.roster.god_view = self._state.god_view
+        server.roster.host_playing = self._state.host_playing
         server.on_action = self._on_remote_action
         server.on_client_connect = self._on_client_connect
         server.on_peer_disconnect = self._on_peer_disconnect
@@ -106,8 +106,7 @@ class LobbyDispatcher:
     def _refresh_roster(self) -> None:
         if not isinstance(self._network, LANServer):
             return
-        with self._network._lock:
-            roles = [r for _c, r in self._network._clients]
+        roles = self._network.roster.roles()
         self._state.peer_connected = self._state.peer_seat() in roles
         self._state.host_seat_connected = self._state.host_seat in roles
         self._state.spectator_count = sum(1 for r in roles if r in ("spectator", "god"))
@@ -164,6 +163,51 @@ class LobbyDispatcher:
             "float_value": action.float_value,
         }, await_ack=action.action_type in ACK_GATED_ACTIONS)
 
+    def _leave_seat(self, player: str, sender_conn=None) -> LobbyResult:
+        if not isinstance(self._network, LANServer):
+            return LobbyResult(False, message="server only")
+        roster = self._network.roster
+        if player == "host":
+            self._state.host_playing = False
+            roster.host_playing = False
+            roster.clear_token(self._state.host_seat)
+            self._refresh_roster()
+            return LobbyResult(True)
+        if player not in ("player1", "player2"):
+            return LobbyResult(False, message="not a player slot")
+        conn = sender_conn if sender_conn is not None else roster.conn_for(player)
+        if conn is None:
+            return LobbyResult(False, message="no such connection")
+        roster.reassign(conn, roster.watcher_role())
+        roster.clear_token(player)
+        self._network.send_to(conn, {"type": "token", "token": ""})
+        self._refresh_roster()
+        return LobbyResult(True)
+
+    def _take_seat(self, player: str, sender_conn=None) -> LobbyResult:
+        if not isinstance(self._network, LANServer):
+            return LobbyResult(False, message="server only")
+        roster = self._network.roster
+        if player == "host":
+            if self._state.host_seat_connected:
+                return LobbyResult(False, message="seat occupied")
+            self._state.host_playing = True
+            roster.host_playing = True
+            self._refresh_roster()
+            return LobbyResult(True)
+        seat = next((s for s in self._state.open_seats()
+                     if not self._state.seat_filled(s)), "")
+        if not seat:
+            return LobbyResult(False, message="seat occupied")
+        conn = sender_conn if sender_conn is not None else roster.conn_for(player)
+        if conn is None:
+            return LobbyResult(False, message="no such connection")
+        new_token = roster.issue_token(seat)
+        roster.reassign(conn, seat)
+        self._network.send_to(conn, {"type": "token", "token": new_token})
+        self._refresh_roster()
+        return LobbyResult(True)
+
     def _execute(self, action: LobbyAction, sender_conn=None) -> LobbyResult:
         host_only = ("set_setting", "swap_seats", "start_match", "set_ban_draft")
         if action.action_type in host_only and action.player != "host":
@@ -179,61 +223,21 @@ class LobbyDispatcher:
                 value = options[options.index(value)]
                 self._state.set_value(name, value)
                 if name == "god_view" and isinstance(self._network, LANServer):
-                    self._network.update_god_view(value)
+                    self._network.roster.update_god_view(value)
                 return LobbyResult(True)
 
             case "swap_seats":
                 new_seat = "player2" if self._state.host_seat == "player1" else "player1"
                 self._state.host_seat = new_seat
                 if isinstance(self._network, LANServer):
-                    self._network.update_host_seat(new_seat)
+                    self._network.roster.update_host_seat(new_seat)
                 return LobbyResult(True)
 
             case "switch_to_spectator":
-                if not isinstance(self._network, LANServer):
-                    return LobbyResult(False, message="server only")
-                if action.player == "host":
-                    self._state.host_playing = False
-                    self._network.host_playing = False
-                    self._network.clear_token(self._state.host_seat)
-                    self._refresh_roster()
-                    return LobbyResult(True)
-                if action.player not in ("player1", "player2"):
-                    return LobbyResult(False, message="not a player slot")
-                conn = sender_conn if sender_conn is not None else self._find_conn_by_role(action.player)
-                if conn is None:
-                    return LobbyResult(False, message="no such connection")
-                new_role = "god" if self._network.god_view else "spectator"
-                self._network.reassign_role(conn, new_role)
-                self._network.clear_token(action.player)
-                self._network.send_to(conn, {"type": "token", "token": ""})
-                self._refresh_roster()
-                return LobbyResult(True)
+                return self._leave_seat(action.player, sender_conn)
 
             case "switch_to_player":
-                if not isinstance(self._network, LANServer):
-                    return LobbyResult(False, message="server only")
-                if action.player == "host":
-                    if self._state.host_seat_connected:
-                        return LobbyResult(False, message="seat occupied")
-                    self._state.host_playing = True
-                    self._network.host_playing = True
-                    self._refresh_roster()
-                    return LobbyResult(True)
-                seat = next((s for s in self._state.open_seats()
-                             if not self._state.seat_filled(s)), "")
-                if not seat:
-                    return LobbyResult(False, message="seat occupied")
-                conn = sender_conn if sender_conn is not None else self._find_conn_by_role(action.player)
-                if conn is None:
-                    return LobbyResult(False, message="no such connection")
-                import secrets
-                new_token = secrets.token_urlsafe(16)
-                self._network._role_tokens[seat] = new_token
-                self._network.reassign_role(conn, seat)
-                self._network.send_to(conn, {"type": "token", "token": new_token})
-                self._refresh_roster()
-                return LobbyResult(True)
+                return self._take_seat(action.player, sender_conn)
 
             case "set_name":
                 if action.player == "host":
@@ -291,15 +295,6 @@ class LobbyDispatcher:
                 return LobbyResult(True)
 
         return LobbyResult(False, message=f"unknown action: {action.action_type}")
-
-    def _find_conn_by_role(self, role: str):
-        if not isinstance(self._network, LANServer):
-            return None
-        with self._network._lock:
-            for c, r in self._network._clients:
-                if r == role:
-                    return c
-        return None
 
     def _on_pong(self, role: str, rtt_ms: float) -> None:
         with self.action_lock:

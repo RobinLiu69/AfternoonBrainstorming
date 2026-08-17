@@ -54,16 +54,16 @@ def test_god_view_toggle_retags_connected_spectators():
     dispatcher.attach_server(server)
     watcher = object()
     peer = object()
-    server._clients.append((watcher, "spectator"))
-    server._clients.append((peer, "player2"))
+    server.roster.add(watcher, "spectator")
+    server.roster.add(peer, "player2")
 
     assert dispatcher._execute(set_setting("god_view", True)).success is True
-    assert server.god_view is True
+    assert server.roster.god_view is True
     assert server.find_role(watcher) == "god"
     assert server.find_role(peer) == "player2"
 
     assert dispatcher._execute(set_setting("god_view", False)).success is True
-    assert server.god_view is False
+    assert server.roster.god_view is False
     assert server.find_role(watcher) == "spectator"
     assert server.find_role(peer) == "player2"
 
