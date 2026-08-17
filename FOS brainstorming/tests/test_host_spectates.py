@@ -205,3 +205,53 @@ class TestTheMatchWaitsForBothSeats:
 
         assert state.player_names == {"host": "Alice", "peer": "Bob"}
         assert state.seat_names() == {state.host_seat: "Alice", state.peer_seat(): "Bob"}
+
+
+class TestTheWatchingHostIsCounted:
+    def test_a_seated_host_is_not_a_watcher(self, lobby) -> None:
+        state, _dispatcher, _server = lobby
+
+        assert state.host_watching is False
+        assert state.watcher_count() == 0
+
+    def test_stepping_out_makes_the_host_a_watcher(self, lobby) -> None:
+        state, dispatcher, _server = lobby
+
+        dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+
+        assert state.host_watching is True
+        assert state.watcher_count() == 1
+
+    def test_the_host_is_counted_on_top_of_the_real_spectators(self, lobby) -> None:
+        state, dispatcher, server = lobby
+        dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+        first, _r1, _t1 = _join(server)
+        second, _r2, _t2 = _join(server)
+        watcher, watcher_role, _t3 = _join(server)
+        wait_until(lambda: server.roster.count() == 3)
+        dispatcher._refresh_roster()
+
+        assert watcher_role == "spectator"
+        assert state.spectator_count == 1
+        assert state.watcher_count() == 2
+
+        for sock in (first, second, watcher):
+            sock.close()
+
+    def test_taking_the_seat_back_stops_counting_the_host(self, lobby) -> None:
+        state, dispatcher, _server = lobby
+        dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+
+        dispatcher.dispatch(LobbyAction("host", "switch_to_player"))
+
+        assert state.host_watching is False
+        assert state.watcher_count() == 0
+
+    def test_the_count_survives_the_trip_to_a_client(self, lobby) -> None:
+        state, dispatcher, _server = lobby
+        dispatcher.dispatch(LobbyAction("host", "switch_to_spectator"))
+
+        mirror = LobbyState()
+        mirror.apply_dict(state.to_dict_for("spectator"))
+
+        assert mirror.watcher_count() == state.watcher_count() == 1

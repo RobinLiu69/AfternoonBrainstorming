@@ -54,7 +54,7 @@ def _is_spectator(role: str) -> bool:
 
 
 def _room_has_others(state: LobbyState) -> bool:
-    return state.peer_connected or state.spectator_count > 0
+    return state.peer_connected or state.watcher_count() > 0
 
 
 T = TypeVar("T")
@@ -296,7 +296,7 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
     lines = [
         f"{host_seat}: {host_label}{lat_str(host_seat)}{host_you}",
         f"{peer_seat}: {peer_label}{lat_str(peer_seat)}{you_marker(peer_seat)}",
-        f"spectators: {state.spectator_count}{spectator_you}",
+        f"spectators: {state.watcher_count()}{spectator_you}",
     ]
     for i, line in enumerate(lines):
         draw_text(line, gs.text_font, WHITE,

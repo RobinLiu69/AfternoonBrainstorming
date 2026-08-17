@@ -103,6 +103,9 @@ class LobbyDispatcher:
                 self._state.spectator_count -= 1
                 self._broadcast()
 
+    def _host_is_present(self, roles: list[str]) -> bool:
+        return True
+
     def _refresh_roster(self) -> None:
         if not isinstance(self._network, LANServer):
             return
@@ -110,6 +113,8 @@ class LobbyDispatcher:
         self._state.peer_connected = self._state.peer_seat() in roles
         self._state.host_seat_connected = self._state.host_seat in roles
         self._state.spectator_count = sum(1 for r in roles if r in ("spectator", "god"))
+        self._state.host_watching = (not self._state.host_playing
+                                     and self._host_is_present(roles))
 
     def dispatch(self, action: LobbyAction) -> LobbyResult:
         match self.mode:
@@ -162,6 +167,13 @@ class LobbyDispatcher:
             "str_value": action.str_value,
             "float_value": action.float_value,
         }, await_ack=action.action_type in ACK_GATED_ACTIONS)
+
+    def _identity_of(self, player: str):
+        if player == "host":
+            return "host" if self._state.host_playing else None
+        if player in self._state.open_seats():
+            return self._state.seat_identity(player)
+        return None
 
     def _leave_seat(self, player: str, sender_conn=None) -> LobbyResult:
         if not isinstance(self._network, LANServer):
@@ -240,11 +252,8 @@ class LobbyDispatcher:
                 return self._take_seat(action.player, sender_conn)
 
             case "set_name":
-                if action.player == "host":
-                    identity = "host"
-                elif action.player in self._state.open_seats():
-                    identity = self._state.seat_identity(action.player)
-                else:
+                identity = self._identity_of(action.player)
+                if identity is None:
                     return LobbyResult(True)
                 name = (action.str_value or "").strip()
                 if name and not PLAYER_NAME_PATTERN.match(name):
@@ -260,11 +269,8 @@ class LobbyDispatcher:
                 return LobbyResult(True)
 
             case "ban_card" | "unban_card":
-                if action.player == "host":
-                    banner = "host"
-                elif action.player in self._state.open_seats():
-                    banner = self._state.seat_identity(action.player)
-                else:
+                banner = self._identity_of(action.player)
+                if banner is None:
                     return LobbyResult(False, message="players only")
                 if not self._state.in_ban_draft:
                     return LobbyResult(False, message="not in ban draft")

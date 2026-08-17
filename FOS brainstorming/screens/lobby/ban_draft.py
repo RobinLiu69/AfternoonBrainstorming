@@ -55,6 +55,26 @@ def _to_board_y(mouse_y: int, game_screen: GameScreen) -> Optional[int]:
     return None
 
 
+def ban_controls(state: LobbyState, mode: str, local_role: str) -> tuple[Optional[str], str]:
+    if mode == "local":
+        return "both", ""
+    if local_role == "host" and state.host_playing:
+        return "host", state.host_seat
+    if local_role in ("player1", "player2"):
+        return state.seat_identity(local_role), local_role
+    return None, ""
+
+
+def ban_actor(state: LobbyState, banner: str) -> str:
+    if banner != "host":
+        return state.peer_seat()
+    return "host" if state.host_playing else state.host_seat
+
+
+def owns_ban_draft(local_role: str, controls: Optional[str]) -> bool:
+    return local_role == "host" or controls == "both"
+
+
 def _identity_label(state: LobbyState, identity: str) -> str:
     name = state.display_name(identity)
     if name:
@@ -148,6 +168,9 @@ def _render_header(game_screen: GameScreen, state: LobbyState, controls: Optiona
         my_name = state.display_name("peer")
         identity = f"You: {my_name or seat_labels.get(my_seat, my_seat)}"
         help_text = "click / S / B: ban   C / U: unban   |   ESC: leave game"
+    elif local_role == "host":
+        identity = "You: host (watching)"
+        help_text = "watching ban draft   |   ESC: back to lobby"
     else:
         identity = "God View" if local_role == "god" else "Spectator"
         help_text = "watching ban draft   |   ESC: leave game"
@@ -191,9 +214,6 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
     back_button = make_back_button(game_screen, text="back", corner="top_right")
     confirming_leave = False
 
-    def actor_for(banner: str) -> str:
-        return "host" if banner == "host" else state.peer_seat()
-
     while True:
         if not state.in_ban_draft:
             return "done"
@@ -208,20 +228,9 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
                 return "done"
 
         local_role = state.local_role
-        if mode == "local":
-            controls: Optional[str] = "both"
-            my_seat = ""
-        elif local_role == "host":
-            controls = "host"
-            my_seat = state.host_seat
-        elif local_role in ("player1", "player2"):
-            controls = "peer"
-            my_seat = local_role
-        else:
-            controls = None
-            my_seat = ""
+        controls, my_seat = ban_controls(state, mode, local_role)
         my_identity = controls if controls in ("host", "peer") else None
-        is_controller = controls in ("host", "both")
+        is_controller = owns_ban_draft(local_role, controls)
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
         board_x = _to_board_x(mouse_x, game_screen)
@@ -239,14 +248,14 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
                 banner = "host" if len(_bans_of(state, "host")) < MAX_BANS_PER_PLAYER else "peer"
             else:
                 banner = controls
-            dispatcher.dispatch(LobbyAction(actor_for(banner), "ban_card", str_value=card))
+            dispatcher.dispatch(LobbyAction(ban_actor(state, banner), "ban_card", str_value=card))
 
         def try_unban(card: str) -> None:
             owner = state.bans.get(card)
             if owner is None:
                 return
             if controls == "both" or owner == controls:
-                dispatcher.dispatch(LobbyAction(actor_for(owner), "unban_card", str_value=card))
+                dispatcher.dispatch(LobbyAction(ban_actor(state, owner), "unban_card", str_value=card))
 
         def unban_last() -> None:
             if controls == "both":

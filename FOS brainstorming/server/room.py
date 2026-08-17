@@ -48,6 +48,9 @@ class RoomLobbyDispatcher(LobbyDispatcher):
     def __init__(self, lobby_state: LobbyState):
         super().__init__(lobby_state, mode="lan_server")
 
+    def _host_is_present(self, roles: list[str]) -> bool:
+        return "host" in roles
+
     def _on_client_connect(self, role: str) -> dict:
         if role == self._state.peer_seat():
             self._state.peer_connected = True

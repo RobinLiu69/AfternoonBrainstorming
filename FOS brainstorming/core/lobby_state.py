@@ -66,6 +66,7 @@ class LobbyState:
     settings: MatchSettings = field(default_factory=MatchSettings)
 
     host_playing: bool = True
+    host_watching: bool = False
     peer_connected: bool = False
     host_seat_connected: bool = False
     spectator_count: int = 0
@@ -93,6 +94,9 @@ class LobbyState:
         if seat == self.host_seat:
             return self.host_playing or self.host_seat_connected
         return self.peer_connected
+
+    def watcher_count(self) -> int:
+        return self.spectator_count + (1 if self.host_watching else 0)
 
     def both_seats_filled(self) -> bool:
         return self.seat_filled(self.host_seat) and self.seat_filled(self.peer_seat())
@@ -126,6 +130,7 @@ class LobbyState:
             "reconnect_timeout": self.reconnect_timeout,
             **self.settings.to_dict(),
             "host_playing": self.host_playing,
+            "host_watching": self.host_watching,
             "peer_connected": self.peer_connected,
             "host_seat_connected": self.host_seat_connected,
             "spectator_count": self.spectator_count,
@@ -147,6 +152,7 @@ class LobbyState:
         self.reconnect_timeout = data["reconnect_timeout"]
         self.settings.apply_dict(data)
         self.host_playing = data.get("host_playing", True)
+        self.host_watching = data.get("host_watching", False)
         self.peer_connected = data["peer_connected"]
         self.host_seat_connected = data.get("host_seat_connected", False)
         self.spectator_count = data["spectator_count"]
