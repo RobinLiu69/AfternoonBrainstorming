@@ -162,12 +162,29 @@ class HintBox:
         if card:
             self.display(card, game_screen)
 
+    def _prepare(self, box_width: float, box_height: float) -> pygame.Surface:
+        needed_width = int(box_width) + 1
+        needed_height = int(box_height) + 1
+        if (self.surface is None or self.surface.get_width() < needed_width
+                or self.surface.get_height() < needed_height):
+            self.surface = pygame.Surface((max(needed_width, self.width),
+                                           max(needed_height, self.height)), pygame.SRCALPHA)
+        return self.surface
+
+    def anchor(self, box_width: float, box_height: float, game_screen: GameScreen) -> tuple[float, float]:
+        return (max(0, min(self.x, game_screen.display_width - box_width)),
+                max(0, min(self.y, game_screen.display_height - box_height)))
+
+    def _place(self, box_width: float, box_height: float, game_screen: GameScreen) -> None:
+        if self.surface is None:
+            return
+        game_screen.surface.blit(self.surface, self.anchor(box_width, box_height, game_screen),
+                                 pygame.Rect(0, 0, int(box_width) + 1, int(box_height) + 1))
+        self.surface.fill((0, 0, 0, 0))
+
     def display(self, card: Card | str, game_screen: GameScreen) -> None:
-        if not self.surface:
-            self.surface = pygame.Surface((self.width, game_screen.block_size*1.5), pygame.SRCALPHA)
         if self.turn_on:
             if isinstance(card, str):
-                # hand cards may carry an enchantment suffix; hints key off the base
                 decorated = card
                 card_type = card_code.base_code(card)
             elif isinstance(card, Card):
@@ -197,10 +214,12 @@ class HintBox:
                     first_width = game_screen.text_fontCHI.size(first_line)[0]
                 box_width = game_screen.block_size*0.75 + max(
                     [first_width, *(game_screen.text_fontCHI.size(line)[0] for line in display_lines[1:])])
+                box_pixel_height = (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)
+                self._prepare(box_width, box_pixel_height)
 
-                pygame.draw.rect(self.surface, WHITE, (0, 0, box_width, (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)), 2)
+                pygame.draw.rect(self.surface, WHITE, (0, 0, box_width, box_pixel_height), 2)
                 pygame.draw.rect(self.surface, BLACK, ((game_screen.thickness//2), (game_screen.thickness//2), box_width-game_screen.thickness,
-                                                       (game_screen.block_size*0.05) + (game_screen.block_size*0.15*box_height) - game_screen.thickness), 1000)
+                                                       box_pixel_height - game_screen.thickness), 1000)
 
                 pygame.draw.rect(self.surface, WHITE, (game_screen.block_size*0.05, game_screen.block_size*0.05,
                                                        game_screen.block_size*0.5, game_screen.block_size*0.5), 2)
@@ -246,13 +265,14 @@ class HintBox:
                 box_height = len(spell_lines) if len(spell_lines) > 4 else 4
                 box_width = game_screen.block_size*0.15 + max(
                     game_screen.text_fontCHI.size(line)[0] for line in spell_lines)
+                box_pixel_height = (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)
+                self._prepare(box_width, box_pixel_height)
 
-                pygame.draw.rect(self.surface, WHITE, (0, 0, box_width, (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)), 2)
+                pygame.draw.rect(self.surface, WHITE, (0, 0, box_width, box_pixel_height), 2)
                 pygame.draw.rect(self.surface, BLACK, ((game_screen.thickness//2), (game_screen.thickness//2), box_width-game_screen.thickness,
-                                                       (game_screen.block_size*0.05) + (game_screen.block_size*0.15*box_height) - game_screen.thickness), 1000)
+                                                       box_pixel_height - game_screen.thickness), 1000)
 
                 for i, line in enumerate(spell_lines):
                     draw_text(f"{line}", game_screen.text_fontCHI, WHITE, (game_screen.block_size*0.05),
                               (game_screen.block_size*0.05)+(game_screen.block_size*0.15*i), self.surface)
-            game_screen.surface.blit(self.surface, (self.x, self.y))
-        self.surface.fill((0, 0, 0, 0))
+            self._place(box_width, box_pixel_height, game_screen)
