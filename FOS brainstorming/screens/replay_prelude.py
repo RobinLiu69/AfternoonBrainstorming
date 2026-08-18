@@ -137,20 +137,25 @@ def render(game_screen: GameScreen, metadata: dict, card_renderer, board_rendere
               game_screen.surface)
 
     locked = ruleset_bans(metadata)
-    if locked:
-        style.muted_text(game_screen, f"ruleset locked {len(locked)} cards",
-                         left, cy - bs * 1.78, game_screen.text_font)
-        for i in range(0, len(locked), 8):
-            style.muted_text(game_screen, "  ".join(locked[i:i + 8]),
-                             left, cy - bs * (1.5 - i / 8 * 0.28),
-                             game_screen.text_font)
 
     if rows:
         for cell in board.values():
             board_renderer.render(cell)
         _render_bans(game_screen, card_renderer, cards, rows)
-    elif not locked:
-        style.muted_text(game_screen, "no bans this match", left, cy - bs * 1.78,
+        locked_x, locked_y, per_line = cx + bs * 2.25, cy - bs * 1.55, 4
+    else:
+        locked_x, locked_y, per_line = left, cy - bs * 1.78, 8
+
+    if locked:
+        style.muted_text(game_screen, f"ruleset locked {len(locked)}",
+                         locked_x, locked_y, game_screen.text_font)
+        for i in range(0, len(locked), per_line):
+            style.muted_text(game_screen, "  ".join(locked[i:i + per_line]),
+                             locked_x,
+                             locked_y + bs * 0.26 * (1 + i // per_line),
+                             game_screen.text_font)
+    elif not rows:
+        style.muted_text(game_screen, "no bans this match", left, locked_y,
                          game_screen.mid_text_font)
 
     deck_y = cy + bs * 1.35
