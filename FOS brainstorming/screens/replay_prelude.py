@@ -18,7 +18,7 @@
 
 import pygame
 
-from shared.setting import WHITE, RED, VERSION
+from shared.setting import WHITE, RED, VERSION, JOB_DICTIONARY, JOB_ORDER
 from cards.factory import CardFactory
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
@@ -46,6 +46,30 @@ def _player_bans(metadata: dict) -> list[tuple[str, list[str]]]:
 
 def ruleset_bans(metadata: dict) -> list[str]:
     return list(metadata.get("bans", {}).get("judge", []))
+
+
+def ruleset_ban_summary(metadata: dict) -> tuple[list[str], list[str]]:
+    cards = ruleset_bans(metadata)
+    tags = sorted(JOB_DICTIONARY["colors_dict"], key=len, reverse=True)
+    jobs_by_tag: dict[str, set[str]] = {}
+    loose: list[str] = []
+
+    for card in cards:
+        for tag in tags:
+            job = card[:-len(tag)]
+            if card.endswith(tag) and job in JOB_ORDER:
+                jobs_by_tag.setdefault(tag, set()).add(job)
+                break
+        else:
+            loose.append(card)
+
+    factions: list[str] = []
+    for tag, jobs in jobs_by_tag.items():
+        if len(jobs) >= len(JOB_ORDER):
+            factions.append(JOB_DICTIONARY["colors_dict"][tag])
+        else:
+            loose.extend(f"{job}{tag}" for job in sorted(jobs))
+    return factions, loose
 
 
 def _settings_line(metadata: dict) -> str:
@@ -136,24 +160,28 @@ def render(game_screen: GameScreen, metadata: dict, card_renderer, board_rendere
     draw_text("bans", game_screen.text_font, WHITE, left, cy - bs * 2.1,
               game_screen.surface)
 
-    locked = ruleset_bans(metadata)
+    factions, loose = ruleset_ban_summary(metadata)
 
     if rows:
         for cell in board.values():
             board_renderer.render(cell)
         _render_bans(game_screen, card_renderer, cards, rows)
-        locked_x, locked_y, per_line = cx + bs * 2.25, cy - bs * 1.55, 4
+        locked_x, locked_y, per_line = cx + bs * 2.25, cy - bs * 1.55, 3
     else:
         locked_x, locked_y, per_line = left, cy - bs * 1.78, 8
 
-    if locked:
-        style.muted_text(game_screen, f"ruleset locked {len(locked)}",
-                         locked_x, locked_y, game_screen.text_font)
-        for i in range(0, len(locked), per_line):
-            style.muted_text(game_screen, "  ".join(locked[i:i + per_line]),
-                             locked_x,
-                             locked_y + bs * 0.26 * (1 + i // per_line),
-                             game_screen.text_font)
+    if factions or loose:
+        style.muted_text(game_screen, "ruleset locked", locked_x, locked_y,
+                         game_screen.text_font)
+        line_y = locked_y + bs * 0.26
+        if factions:
+            style.muted_text(game_screen, ", ".join(sorted(factions)),
+                             locked_x, line_y, game_screen.text_font)
+            line_y += bs * 0.26
+        for i in range(0, len(loose), per_line):
+            style.muted_text(game_screen, "  ".join(loose[i:i + per_line]),
+                             locked_x, line_y, game_screen.text_font)
+            line_y += bs * 0.26
     elif not rows:
         style.muted_text(game_screen, "no bans this match", left, locked_y,
                          game_screen.mid_text_font)

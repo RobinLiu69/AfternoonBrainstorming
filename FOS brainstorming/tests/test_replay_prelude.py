@@ -206,3 +206,48 @@ def test_deck_cards_start_clear_of_the_longest_name(game_screen):
 
     last_right = deck_x + 11 * step + game_screen.text_font.size("TANKV")[0]
     assert last_right < game_screen.display_width
+
+
+class TestRulesetBansScaleWithFactions:
+    def _meta(self, cards):
+        return {"bans": {"judge": list(cards)}}
+
+    def test_a_whole_faction_reads_as_one_name(self):
+        from shared.setting import JOB_ORDER
+
+        factions, loose = replay_prelude.ruleset_ban_summary(
+            self._meta(f"{job}R" for job in JOB_ORDER))
+
+        assert factions == ["Red"]
+        assert loose == []
+
+    def test_every_locked_faction_is_named(self):
+        from core.draft_state import TOURNAMENT_BANS
+
+        factions, loose = replay_prelude.ruleset_ban_summary(
+            self._meta(sorted(TOURNAMENT_BANS)))
+
+        assert sorted(factions) == ["Green", "Red"]
+        assert loose == []
+
+    def test_the_summary_stays_short_as_factions_are_added(self):
+        from shared.setting import JOB_DICTIONARY, JOB_ORDER
+
+        every = [f"{job}{tag}" for tag in JOB_DICTIONARY["colors_dict"]
+                 for job in JOB_ORDER]
+        factions, loose = replay_prelude.ruleset_ban_summary(self._meta(every))
+
+        assert len(factions) == len(JOB_DICTIONARY["colors_dict"])
+        assert loose == []
+
+    def test_a_partial_faction_still_lists_its_cards(self):
+        factions, loose = replay_prelude.ruleset_ban_summary(
+            self._meta(["ADCR", "APR", "TANKG"]))
+
+        assert factions == []
+        assert sorted(loose) == ["ADCR", "APR", "TANKG"]
+
+    def test_no_ruleset_bans_summarises_to_nothing(self):
+        factions, loose = replay_prelude.ruleset_ban_summary({"bans": {}})
+
+        assert factions == [] and loose == []
