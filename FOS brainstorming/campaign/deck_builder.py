@@ -232,12 +232,27 @@ def main(game_screen: GameScreen, stage: str, cleared: set[str]) -> Optional[lis
 
 def _draw_help(game_screen: GameScreen, p1_deck: list[str]) -> None:
     from core.game_screen import draw_text
+    from rendering import style
+
     bs = game_screen.block_size
     cx = game_screen.display_width / 2
     cy = game_screen.display_height / 2
-    msg_left = "left-click: add   right-click: remove   wheel/arrows: page"
-    msg_right = f"deck: {len(p1_deck)}/{DECK_SIZE}   press ENTER when full"
-    draw_text(msg_left, game_screen.mid_text_font, WHITE,
-              cx - bs * 4.2, cy - bs * 2, game_screen.surface)
-    draw_text(msg_right, game_screen.mid_text_font, WHITE,
-              cx + bs * 0.9, cy + bs * 1.55, game_screen.surface)
+    pad = bs * style.PANEL_PAD
+
+    remaining = DECK_SIZE - len(p1_deck)
+    ready = remaining <= 0
+    hint = "press ENTER to start" if ready else f"pick {remaining} more"
+
+    panel_x = cx + bs * 2.4
+    panel_y = cy - bs * 1.95
+    style.section(game_screen, "YOUR DECK", panel_x, panel_y,
+                  bs * 2.2, bs * style.HEADER_HEIGHT + bs * 0.45 + pad,
+                  right=f"{len(p1_deck)}/{DECK_SIZE}")
+    draw_text(hint, game_screen.mid_text_font,
+              style.INK if ready else style.INK_MUTED,
+              panel_x + pad, panel_y + bs * style.HEADER_HEIGHT + pad * 0.5,
+              game_screen.surface)
+
+    style.muted_text(game_screen,
+                     "left-click add    right-click remove    wheel / arrows page    F card info",
+                     cx - bs * 4.2, cy - bs * 2.05, game_screen.text_font)

@@ -23,12 +23,46 @@ import pygame
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
+from rendering import style
 from utils.controls import key_pressed
 
 from campaign.ai_decks import (
     STAGE_AI_DECKS, STAGE_PLAYER_DECKS, STAGE_LABELS, STAGE_DIFFICULTY,
 )
 from campaign.boss_config import STAGE_BUFF_TEXT
+
+
+def _render(game_screen: GameScreen, label: str, difficulty: str,
+            ai_deck: list[str], player_deck: list[str], buff_text: str) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    pad = bs * style.PANEL_PAD
+
+    single = not buff_text
+    left_x = cx - bs * (PANEL_W / 2) if single else cx - bs * 3.75
+    title_w = game_screen.title_text_font.size(label)[0]
+    draw_text(label, game_screen.title_text_font, style.INK,
+              cx - title_w / 2, cy - bs * 3.0, game_screen.surface)
+    note = f"difficulty: {difficulty}"
+    note_w = game_screen.mid_text_font.size(note)[0]
+    style.muted_text(game_screen, note, cx - note_w / 2, cy - bs * 2.3,
+                     game_screen.mid_text_font)
+
+    top = cy - bs * 1.75
+    used = _draw_deck("AI DECK", ai_deck, left_x, top, game_screen)
+    _draw_deck("YOUR DECK", player_deck, left_x, top + used + bs * 0.3, game_screen)
+
+    if buff_text:
+        lines = buff_text.splitlines()
+        right_x = cx + bs * 0.15
+        height = bs * style.HEADER_HEIGHT + pad + bs * 0.45 * len(lines) + pad * 0.6
+        style.section(game_screen, "SPECIAL RULES", right_x, top, bs * PANEL_W, height)
+        line_y = top + bs * style.HEADER_HEIGHT + pad
+        for line in lines:
+            draw_text(line, game_screen.mid_text_font, style.INK,
+                      right_x + pad, line_y, game_screen.surface)
+            line_y += bs * 0.45
 
 
 def main(game_screen: GameScreen, stage: str) -> Optional[str]:
@@ -75,20 +109,7 @@ def main(game_screen: GameScreen, stage: str) -> Optional[str]:
                     running = False
             if event.type == pygame.QUIT:
                 raise QuitGame
-        draw_text(label, game_screen.title_text_font, WHITE,
-                  cx - bs * 2.5, cy - bs * 3.0, game_screen.surface)
-        draw_text(f"difficulty: {difficulty}", game_screen.big_text_font, WHITE,
-                  cx - bs * 2.5, cy - bs * 1.9, game_screen.surface)
-
-        _draw_deck("AI deck:", ai_deck, cx - bs * 2.5, cy - bs * 1.2, game_screen)
-        _draw_deck("Your deck:", player_deck, cx - bs * 2.5, cy + bs * 0.6, game_screen)
-
-        if buff_text:
-            draw_text("special rules:", game_screen.big_text_font, (255, 100, 100),
-                      cx + bs * 1.0, cy - bs * 1.9, game_screen.surface)
-            for i, line in enumerate(buff_text.split("\n")):
-                draw_text(line, game_screen.mid_text_font, (255, 200, 200),
-                          cx + bs * 1.0, cy - bs * 1.3 + i * bs * 0.45, game_screen.surface)
+        _render(game_screen, label, difficulty, ai_deck, player_deck, buff_text)
 
         start_button.update(game_screen)
         back_button.update(game_screen)
@@ -99,11 +120,26 @@ def main(game_screen: GameScreen, stage: str) -> Optional[str]:
     return result
 
 
-def _draw_deck(title: str, deck: list[str], x: float, y: float, game_screen: GameScreen) -> None:
-    draw_text(title, game_screen.big_text_font, WHITE, x, y, game_screen.surface)
+PANEL_W = 3.6
+DECK_ROWS = 6
+
+
+def _deck_lines(deck: list[str]) -> list[str]:
+    return [" ".join(deck[i:i + DECK_ROWS]) for i in range(0, len(deck), DECK_ROWS)]
+
+
+def _draw_deck(title: str, deck: list[str], x: float, y: float,
+               game_screen: GameScreen) -> float:
     bs = game_screen.block_size
-    line_y = y + bs * 0.5
-    chunk = " ".join(deck[:6])
-    chunk2 = " ".join(deck[6:])
-    draw_text(chunk, game_screen.mid_text_font, WHITE, x, line_y, game_screen.surface)
-    draw_text(chunk2, game_screen.mid_text_font, WHITE, x, line_y + bs * 0.4, game_screen.surface)
+    pad = bs * style.PANEL_PAD
+    lines = _deck_lines(deck)
+    height = bs * style.HEADER_HEIGHT + pad + bs * 0.36 * len(lines) + pad * 0.6
+
+    style.section(game_screen, title, x, y, bs * PANEL_W, height,
+                  right=f"{len(deck)} cards")
+    line_y = y + bs * style.HEADER_HEIGHT + pad
+    for line in lines:
+        draw_text(line, game_screen.mid_text_font, style.INK,
+                  x + pad, line_y, game_screen.surface)
+        line_y += bs * 0.36
+    return height
