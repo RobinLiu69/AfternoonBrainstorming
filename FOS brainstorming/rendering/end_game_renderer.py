@@ -155,39 +155,45 @@ class EndGameRenderer:
                       x, y, gs.surface)
             x += width + gap
 
-    def _render_raw_data(self) -> None:
+    ROW_STEP = 0.22
+    NAME_X = -4.55
+    COL_X = -3.3
+    COL_STEP = 0.75
+
+    def _render_block(self, title: str, rows: list[list[int]], names: list[str],
+                      top: float) -> float:
         gs = self.game_screen
-        p1_data, p2_data = self._display_p1_data, self._display_p2_data
-        p1_name, p2_name = self._display_p1_name, self._display_p2_name
+        bs = gs.block_size
+        cx = gs.display_width / 2
+        left = cx + bs * self.NAME_X
 
-        for i in range(len(KEYS_TO_CHECK)):
-            draw_text(KEYS_TO_DISPLAY[i], gs.mid_text_font, WHITE,
-                      gs.display_width/2 + gs.block_size*(-3.3 + 0.75*i),
-                      gs.display_height/2 + gs.block_size*(-2.25), gs.surface)
+        draw_text(title, gs.mid_text_font, style.INK, left, top, gs.surface)
+        rule_y = top + bs * 0.22
+        pygame.draw.line(gs.surface, style.DIVIDER[:3],
+                         (left, rule_y), (cx + bs * 4.15, rule_y), 1)
 
-        draw_text("Player1:", gs.mid_text_font, WHITE,
-                  gs.display_width/2 + gs.block_size*(-4.7),
-                  gs.display_height/2 + gs.block_size*(-2.1 + 0.2*len(p1_data)/2), gs.surface)
-        for i in range(len(p1_data)):
-            for j in range(len(p1_data[i])):
-                draw_text(str(p1_data[i][j]), gs.mid_text_font, WHITE,
-                          gs.display_width/2 + gs.block_size*(-3.2 + 0.75*j),
-                          gs.display_height/2 + gs.block_size*(-2 + 0.2*i), gs.surface)
-            draw_text(p1_name[i], gs.mid_text_font, WHITE,
-                      gs.display_width/2 - gs.block_size*4,
-                      gs.display_height/2 + gs.block_size*(-2 + 0.2*i), gs.surface)
+        header_y = rule_y + bs * 0.08
+        for i, label in enumerate(KEYS_TO_DISPLAY):
+            draw_text(label, gs.text_font, style.INK_MUTED,
+                      cx + bs * (self.COL_X + self.COL_STEP * i), header_y, gs.surface)
 
-        draw_text("Player2:", gs.mid_text_font, WHITE,
-                  gs.display_width/2 + gs.block_size*(-4.7),
-                  gs.display_height/2 + gs.block_size*(0.15 + 0.2*len(p2_data)/2), gs.surface)
-        for i in range(len(p2_data)):
-            for j in range(len(p2_data[i])):
-                draw_text(str(p2_data[i][j]), gs.mid_text_font, WHITE,
-                          gs.display_width/2 + gs.block_size*(-3.3 + 0.75*j),
-                          gs.display_height/2 + gs.block_size*(0.25 + 0.2*i), gs.surface)
-            draw_text(p2_name[i], gs.mid_text_font, WHITE,
-                      gs.display_width/2 - gs.block_size*4,
-                      gs.display_height/2 + gs.block_size*(0.25 + 0.2*i), gs.surface)
+        row_y = header_y + bs * self.ROW_STEP
+        for i, row in enumerate(rows):
+            y = row_y + bs * self.ROW_STEP * i
+            draw_text(names[i], gs.mid_text_font, style.INK, left, y, gs.surface)
+            for j, value in enumerate(row):
+                draw_text(str(value), gs.mid_text_font,
+                          style.INK if value else style.INK_DISABLED,
+                          cx + bs * (self.COL_X + self.COL_STEP * j), y, gs.surface)
+        return row_y + bs * self.ROW_STEP * len(rows)
+
+    def _render_raw_data(self) -> None:
+        bs = self.game_screen.block_size
+        cy = self.game_screen.display_height / 2
+        bottom = self._render_block("PLAYER 1", self._display_p1_data,
+                                    self._display_p1_name, cy - bs * 2.45)
+        self._render_block("PLAYER 2", self._display_p2_data,
+                           self._display_p2_name, bottom + bs * 0.30)
 
     def _render_player_title(self, title: str) -> None:
         self._centred(title, self.game_screen.title_text_font, style.INK,
