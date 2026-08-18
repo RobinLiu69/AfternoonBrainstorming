@@ -247,6 +247,9 @@ class HintBox:
                 self._prepare(box_width, box_pixel_height)
 
                 _hint_frame(self.surface, game_screen, box_width, box_pixel_height)
+                text_top = game_screen.block_size * HINT_PAD + max(
+                    0.0, (game_screen.block_size * HINT_PREVIEW
+                          - game_screen.block_size * HINT_LINE * len(display_lines)) / 2)
 
                 pygame.draw.rect(self.surface, WHITE,
                                  (game_screen.block_size*HINT_PAD, game_screen.block_size*HINT_PAD,
@@ -267,28 +270,26 @@ class HintBox:
                     if i == 0:
                         if isinstance(card, str):
                             draw_text(f"{card_type} {get_stat_prefix(card_type)}-{line}", game_screen.text_fontCHI, WHITE,
-                                      game_screen.block_size*HINT_TEXT_X, game_screen.block_size*HINT_PAD, self.surface)
+                                      game_screen.block_size*HINT_TEXT_X, text_top, self.surface)
                         elif isinstance(card, Card):
-                            draw_text(f"{card_type}", game_screen.text_fontCHI, WHITE, game_screen.block_size*0.6,
-                                      game_screen.block_size*HINT_PAD, self.surface)
+                            draw_text(f"{card_type}", game_screen.text_fontCHI, WHITE,
+                                      game_screen.block_size*HINT_TEXT_X, text_top, self.surface)
                             draw_text(f"{card.health+card.armor}", game_screen.text_fontCHI, RED if card.health+card.armor < card.max_health else WHITE,
-                                      game_screen.block_size*HINT_TEXT_X+game_screen.block_size*0.07*(len(card_type)), game_screen.block_size*HINT_PAD, self.surface)
+                                      game_screen.block_size*HINT_TEXT_X+game_screen.block_size*0.07*(len(card_type)), text_top, self.surface)
                             draw_text(f"/", game_screen.text_fontCHI, WHITE,
                                       game_screen.block_size*HINT_TEXT_X+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))),
-                                      game_screen.block_size*HINT_PAD, self.surface)
+                                      text_top, self.surface)
                             draw_text(f"{card.damage}", game_screen.text_fontCHI,
                                       RED if card.damage < card.original_damage else GREEN if card.damage > card.original_damage else WHITE,
                                       game_screen.block_size*HINT_TEXT_X+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))+1),
-                                      game_screen.block_size*HINT_PAD, self.surface)
+                                      text_top, self.surface)
                             draw_text(f"-{line}", game_screen.text_fontCHI, WHITE,
                                       game_screen.block_size*HINT_TEXT_X+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))+len(str(card.damage))+1),
-                                      game_screen.block_size*HINT_PAD, self.surface)
-                    elif i < 4:
-                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE, game_screen.block_size*HINT_TEXT_X,
-                                  game_screen.block_size*(HINT_PAD + HINT_LINE*i), self.surface)
+                                      text_top, self.surface)
                     else:
-                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE, game_screen.block_size*HINT_TEXT_X,
-                                  game_screen.block_size*(HINT_PAD + HINT_LINE*i), self.surface)
+                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE,
+                                  game_screen.block_size*HINT_TEXT_X,
+                                  text_top + game_screen.block_size*HINT_LINE*i, self.surface)
             else:
                 spell_lines = CARDS_HINTS_DICTIONARY[card_type].split("\n") + enchant_lines
                 box_width = game_screen.block_size*HINT_PAD*2 + max(
