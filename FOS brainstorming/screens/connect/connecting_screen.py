@@ -24,6 +24,7 @@ import pygame
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text, QuitGame
 from core.network_layer import LANClient, VersionMismatchError
+from rendering import style
 from screens.widgets import make_back_button
 
 
@@ -70,25 +71,37 @@ def main(game_screen: GameScreen, client: LANClient, host_ip: str,
             return (status, result["error"])
 
         game_screen.render()
-
-        cx = game_screen.display_width / 2
-        cy = game_screen.display_height / 2
-        bs = game_screen.block_size
-
-        dots = "." * (1 + (pygame.time.get_ticks() // 400) % 3)
-        base = "Connecting"
-        anchor_x = cx - game_screen.big_text_font.size(base + "...")[0] / 2
-        draw_text(base + dots, game_screen.big_text_font, WHITE,
-                  anchor_x, cy - bs * 0.8, game_screen.surface)
-
-        host_w = game_screen.mid_text_font.size(host_ip)[0]
-        draw_text(host_ip, game_screen.mid_text_font, WHITE,
-                  cx - host_w / 2, cy + bs * 0.1, game_screen.surface)
-
-        draw_text("[Esc] cancel", game_screen.text_font, WHITE,
-                  cx - bs * 0.7, cy + bs * 1.1, game_screen.surface)
-
-        cancel_button.update(game_screen)
+        render(game_screen, host_ip,
+               1 + (pygame.time.get_ticks() // 400) % 3, cancel_button)
 
         pygame.display.update()
         clock.tick(60)
+
+
+def render(game_screen: GameScreen, host_ip: str, dot_count: int,
+           cancel_button) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    pad = bs * style.PANEL_PAD
+
+    base = "Connecting"
+    title_w = game_screen.big_text_font.size(base + "...")[0]
+    host_w = game_screen.mid_text_font.size(host_ip)[0]
+    hint = "[Esc] cancel"
+    hint_w = game_screen.text_font.size(hint)[0]
+
+    width = max(title_w, host_w, hint_w) + pad * 4
+    height = bs * 1.7
+    x, y = cx - width / 2, cy - height / 2
+    style.panel(game_screen, x, y, width, height)
+
+    draw_text(base + "." * dot_count, game_screen.big_text_font, style.INK,
+              cx - title_w / 2, y + pad, game_screen.surface)
+    draw_text(host_ip, game_screen.mid_text_font, style.INK_MUTED,
+              cx - host_w / 2, y + pad + bs * 0.5, game_screen.surface)
+    style.muted_text(game_screen, hint, cx - hint_w / 2,
+                     y + height - pad - game_screen.text_font.get_linesize(),
+                     game_screen.text_font)
+
+    cancel_button.update(game_screen)
