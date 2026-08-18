@@ -24,6 +24,7 @@ import pygame
 from shared.setting import COMBAT_ANIMATIONS_ENABLED, WHITE
 from core.game_screen import GameScreen, draw_text
 from core.game_state import GameState
+from rendering import style
 from rendering.card_renderer import CardRenderer
 from rendering.board_renderer import BoardRenderer
 from rendering.ui_renderer import UIRenderer
@@ -98,32 +99,9 @@ class GameRenderer:
                 self.ui_renderer.render_spectator_decks(game_state, local_controller)
 
     def _render_pause_overlay(self, game_state: GameState) -> None:
-        gs = self.game_screen
-        overlay = pygame.Surface((gs.display_width, gs.display_height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 160))
-        gs.surface.blit(overlay, (0, 0))
-
-        bs = gs.block_size
-        cx = gs.display_width / 2
-        cy = gs.display_height / 2
-        remaining = game_state.pause_seconds_remaining
-        reason = game_state.pause_reason or "opponent disconnected"
-
-        if remaining == float("inf"):
-            window_line = "reconnect window: unlimited"
-            note_line = "(waiting for opponent)"
-        else:
-            window_line = f"reconnect window: {max(0, int(remaining))}s"
-            note_line = "(declares win on timeout)"
-
-        draft_text_lines = [
-            reason,
-            window_line,
-            note_line,
-        ]
-        offsets = (-bs * 0.6, 0.0, bs * 0.6)
-        for line, dy in zip(draft_text_lines, offsets):
-            draw_text(line, gs.big_text_font, WHITE, cx - bs * 2.0, cy + dy, gs.surface)
+        style.pause_overlay(self.game_screen, game_state.pause_reason,
+                            game_state.pause_seconds_remaining,
+                            "(declares win on timeout)")
 
     def _apply_skipped_display_updates(self, all_groups: list[list[Card]]) -> None:
         for event in self.combat_animator.drain_skipped_display_updates():

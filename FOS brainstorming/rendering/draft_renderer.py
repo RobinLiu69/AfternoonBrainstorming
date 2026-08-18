@@ -24,6 +24,7 @@ from core.game_screen import GameScreen, cell_origin, draw_text
 from core.draft_state import DraftState
 from shared.setting import WHITE, BLUE, RED
 from core.card_hint import HintBox
+from rendering import style
 from rendering.board_renderer import BoardRenderer
 from rendering.card_renderer import CardRenderer, draw_lock
 from screens.draft.exhibit_registry import ExhibitRegistry
@@ -59,65 +60,20 @@ class DraftRenderer:
             self._render_pause_overlay(draft_state)
 
     def _render_identity_label(self, local_player: str) -> None:
-        label_map = {
-            "player1": "You: P1",
-            "player2": "You: P2",
-            "spectator": "Spectator",
-            "god": "God View",
-        }
-        label = label_map.get(local_player, local_player)
-        gs = self.game_screen
-        draw_text(label, gs.text_font, WHITE,
-                  gs.block_size * 0.2, gs.block_size * 0.2, gs.surface)
+        style.identity_label(self.game_screen, local_player)
 
     def _render_spectator_count(self, draft_state: DraftState) -> None:
-        count = getattr(draft_state, "net_spectator_count", 0)
-        if not count or count <= 0:
-            return
-        gs = self.game_screen
-        text = f"spectators: {count}"
-        width = gs.text_font.size(text)[0]
-        draw_text(text, gs.text_font, WHITE,
-                  gs.display_width - width - gs.block_size * 0.3,
-                  gs.block_size * 0.2, gs.surface)
+        style.spectator_count(self.game_screen,
+                              getattr(draft_state, "net_spectator_count", 0))
 
     def _render_awaiting_server(self, draft_state: DraftState) -> None:
-        if not getattr(draft_state, "net_awaiting_ack", False):
-            return
-        gs = self.game_screen
-        text = "waiting for host..."
-        width = gs.text_font.size(text)[0]
-        draw_text(text, gs.text_font, WHITE,
-                  gs.display_width / 2 - width / 2,
-                  gs.block_size * 0.2, gs.surface)
+        style.awaiting_server(self.game_screen,
+                              getattr(draft_state, "net_awaiting_ack", False))
 
     def _render_pause_overlay(self, draft_state: DraftState) -> None:
-        gs = self.game_screen
-        overlay = pygame.Surface((gs.display_width, gs.display_height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 160))
-        gs.surface.blit(overlay, (0, 0))
-
-        bs = gs.block_size
-        cx = gs.display_width / 2
-        cy = gs.display_height / 2
-        remaining = draft_state.pause_seconds_remaining
-        reason = draft_state.pause_reason or "opponent disconnected"
-
-        if remaining == float("inf"):
-            window_line = "reconnect window: unlimited"
-            note_line = "(waiting for opponent)"
-        else:
-            window_line = f"reconnect window: {max(0, int(remaining))}s"
-            note_line = "(match cancels on timeout)"
-
-        lines = [
-            reason,
-            window_line,
-            note_line,
-        ]
-        offsets = (-bs * 0.6, 0.0, bs * 0.6)
-        for line, dy in zip(lines, offsets):
-            draw_text(line, gs.big_text_font, WHITE, cx - bs * 2.0, cy + dy, gs.surface)
+        style.pause_overlay(self.game_screen, draft_state.pause_reason,
+                            draft_state.pause_seconds_remaining,
+                            "(match cancels on timeout)")
 
     def _render_colors(self, page: int) -> None:
         for i, color in enumerate(self.exhibit_registry.get_page_colors(page)):

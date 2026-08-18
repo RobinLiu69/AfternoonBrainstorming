@@ -16,40 +16,11 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------
 
-import pygame
-
-from shared.setting import WHITE
-from core.game_screen import GameScreen, draw_text, QuitGame
+from core.game_screen import GameScreen
+from screens.notices import notice_screen
 
 
 def main(game_screen: GameScreen) -> None:
-    clock = pygame.time.Clock()
-    pygame.event.clear()
-
-    while True:
-        game_screen.render()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                raise QuitGame
-            if event.type == pygame.KEYDOWN:
-                return
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                return
-
-        cx = game_screen.display_width / 2
-        cy = game_screen.display_height / 2
-        bs = game_screen.block_size
-
-        lines = [
-            ("Server Closed", game_screen.big_text_font, -bs * 1.2),
-            ("the host left or closed the server", game_screen.mid_text_font, -bs * 0.1),
-            ("(not a connection problem on your side)", game_screen.text_font, bs * 0.5),
-            ("Press any key to go back", game_screen.text_font, bs * 1.3),
-        ]
-        for text, font, dy in lines:
-            w = font.size(text)[0]
-            draw_text(text, font, WHITE, cx - w / 2, cy + dy, game_screen.surface)
-
-        pygame.display.update()
-        clock.tick(60)
+    notice_screen.main(game_screen, "Server Closed",
+                       "the host left or closed the server",
+                       "(not a connection problem on your side)")

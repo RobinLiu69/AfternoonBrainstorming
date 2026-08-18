@@ -24,6 +24,7 @@ import pygame
 from core.game_state import GameState
 from shared.setting import WHITE, GREEN, DARKGREEN, CYAN, BLUE, RED
 from core.game_screen import GameScreen, draw_text
+from rendering import style
 from core.UI import ScoreDisplay, AttackCountDisplay, TokenDisplay, HighLightBox
 from core.card_hint import HintBox
 from cards.base import Card
@@ -108,20 +109,7 @@ class UIRenderer:
         )
 
     def render_identity_label(self, local_controller: str) -> None:
-        label_map = {
-            "player1": "You: P1",
-            "player2": "You: P2",
-            "spectator": "Spectator",
-            "god": "God View",
-        }
-        label = label_map.get(local_controller, local_controller)
-        draw_text(
-            label,
-            self.game_screen.text_font, WHITE,
-            self.game_screen.block_size * 0.2,
-            self.game_screen.block_size * 0.2,
-            self.game_screen.surface,
-        )
+        style.identity_label(self.game_screen, local_controller)
 
     def render_hands(self, game_state: GameState) -> None:
         self._render_one_hand(game_state.player1, game_state)
@@ -237,25 +225,12 @@ class UIRenderer:
         self._hint_box.update(mouse_x, mouse_y, card_or_name, self.game_screen)
 
     def render_spectator_count(self, game_state: GameState) -> None:
-        count = getattr(game_state, "net_spectator_count", 0)
-        if not count or count <= 0:
-            return
-        gs = self.game_screen
-        text = f"spectators: {count}"
-        width = gs.text_font.size(text)[0]
-        draw_text(text, gs.text_font, WHITE,
-                  gs.display_width - width - gs.block_size * 0.3,
-                  gs.block_size * 0.2, gs.surface)
+        style.spectator_count(self.game_screen,
+                              getattr(game_state, "net_spectator_count", 0))
 
     def render_awaiting_server(self, game_state: GameState) -> None:
-        if not getattr(game_state, "net_awaiting_ack", False):
-            return
-        gs = self.game_screen
-        text = "waiting for host..."
-        width = gs.text_font.size(text)[0]
-        draw_text(text, gs.text_font, WHITE,
-                  gs.display_width / 2 - width / 2,
-                  gs.block_size * 0.2, gs.surface)
+        style.awaiting_server(self.game_screen,
+                              getattr(game_state, "net_awaiting_ack", False))
 
     def render_netinfo_overlay(self, local_controller: str, game_state: GameState) -> None:
         gs = self.game_screen

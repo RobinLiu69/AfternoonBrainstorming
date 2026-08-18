@@ -30,7 +30,7 @@ PANEL_FILL = (255, 255, 255, 12)
 PANEL_EDGE = (255, 255, 255, 70)
 HEADER_FILL = (255, 255, 255, 32)
 CONTROL_FILL = (255, 255, 255, 20)
-SCRIM_FILL = (0, 0, 0, 170)
+SCRIM_FILL = (0, 0, 0, 205)
 TOOLTIP_FILL = (8, 8, 8, 255)
 TOOLTIP_EDGE = (255, 255, 255, 210)
 DIVIDER = (255, 255, 255, 55)
@@ -80,6 +80,75 @@ def scrim(gs: GameScreen) -> None:
     gs.surface.blit(overlay, (0, 0))
 
 
+def modal(gs: GameScreen, x: float, y: float, width: float, height: float) -> None:
+    surface = pygame.Surface((max(1, int(width)), max(1, int(height))), pygame.SRCALPHA)
+    rect = surface.get_rect()
+    pygame.draw.rect(surface, TOOLTIP_FILL, rect, 0, border_radius=CORNER_RADIUS)
+    pygame.draw.rect(surface, TOOLTIP_EDGE, rect, edge_width(gs), border_radius=CORNER_RADIUS)
+    gs.surface.blit(surface, (int(x), int(y)))
+
+
 def muted_text(gs: GameScreen, text: str, x: float, y: float,
                font: pygame.font.Font | None = None) -> None:
     draw_text(text, font or gs.mid_text_font, INK_DISABLED, x, y, gs.surface)
+
+
+IDENTITY_LABELS: dict[str, str] = {
+    "player1": "You: P1",
+    "player2": "You: P2",
+    "spectator": "Spectator",
+    "god": "God View",
+    "host": "You: host",
+}
+
+
+def identity_label(gs: GameScreen, role: str) -> None:
+    draw_text(IDENTITY_LABELS.get(role, role), gs.text_font, INK,
+              gs.block_size * 0.2, gs.block_size * 0.2, gs.surface)
+
+
+def spectator_count(gs: GameScreen, count: int) -> None:
+    if not count or count <= 0:
+        return
+    text = f"spectators: {count}"
+    width = gs.text_font.size(text)[0]
+    draw_text(text, gs.text_font, INK,
+              gs.display_width - width - gs.block_size * 0.3,
+              gs.block_size * 0.2, gs.surface)
+
+
+def awaiting_server(gs: GameScreen, waiting: bool) -> None:
+    if not waiting:
+        return
+    text = "waiting for host..."
+    width = gs.text_font.size(text)[0]
+    draw_text(text, gs.text_font, INK,
+              gs.display_width / 2 - width / 2, gs.block_size * 0.2, gs.surface)
+
+
+def pause_overlay(gs: GameScreen, reason: str, seconds_remaining: float,
+                  note: str) -> None:
+    scrim(gs)
+    bs = gs.block_size
+    cx = gs.display_width / 2
+    cy = gs.display_height / 2
+
+    if seconds_remaining == float("inf"):
+        window_line = "reconnect window: unlimited"
+        note_line = "(waiting for opponent)"
+    else:
+        window_line = f"reconnect window: {max(0, int(seconds_remaining))}s"
+        note_line = note
+
+    lines = [reason or "opponent disconnected", window_line, note_line]
+    widths = [gs.big_text_font.size(line)[0] for line in lines]
+    pad = bs * PANEL_PAD
+    width = max(widths) + pad * 2
+    height = bs * 0.5 * len(lines) + pad * 2
+    x, y = cx - width / 2, cy - height / 2
+    modal(gs, x, y, width, height)
+
+    for i, line in enumerate(lines):
+        colour = INK if i == 0 else INK_MUTED
+        draw_text(line, gs.big_text_font, colour,
+                  cx - widths[i] / 2, y + pad + bs * 0.5 * i, gs.surface)

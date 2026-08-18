@@ -18,11 +18,47 @@
 
 import pygame
 
-from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text, QuitGame
+from rendering import style
+from shared.setting import WHITE
+
+FOOTER = "Press any key to go back"
+LINE_STEP = 0.34
+MIN_WIDTH = 5.0
 
 
-def main(game_screen: GameScreen, title: str, message: str = "") -> None:
+def render(game_screen: GameScreen, title: str, lines: tuple[str, ...]) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    pad = bs * style.PANEL_PAD
+
+    body = [line for line in lines if line]
+    widths = [game_screen.mid_text_font.size(line)[0] for line in body]
+    widths.append(game_screen.mid_text_font.size(title)[0] + bs * 0.4)
+    widths.append(game_screen.text_font.size(FOOTER)[0])
+    width = max(max(widths) + pad * 2, bs * MIN_WIDTH)
+
+    header = bs * style.HEADER_HEIGHT
+    height = header + pad + bs * LINE_STEP * len(body) + bs * 0.45 + pad
+    x = cx - width / 2
+    y = cy - height / 2
+
+    style.section(game_screen, title, x, y, width, height)
+
+    text_y = y + header + pad
+    for line in body:
+        draw_text(line, game_screen.mid_text_font, WHITE,
+                  x + pad, text_y, game_screen.surface)
+        text_y += bs * LINE_STEP
+
+    footer_w = game_screen.text_font.size(FOOTER)[0]
+    style.muted_text(game_screen, FOOTER, x + width / 2 - footer_w / 2,
+                     y + height - pad - game_screen.text_font.get_linesize(),
+                     game_screen.text_font)
+
+
+def main(game_screen: GameScreen, title: str, *lines: str) -> None:
     clock = pygame.time.Clock()
     pygame.event.clear()
 
@@ -37,18 +73,7 @@ def main(game_screen: GameScreen, title: str, message: str = "") -> None:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 return
 
-        cx = game_screen.display_width / 2
-        cy = game_screen.display_height / 2
-        bs = game_screen.block_size
-
-        rows = [(title, game_screen.big_text_font, -bs * 1.0)]
-        if message:
-            rows.append((message, game_screen.mid_text_font, 0.0))
-        rows.append(("Press any key to go back", game_screen.text_font, bs * 1.2))
-
-        for text, font, dy in rows:
-            w = font.size(text)[0]
-            draw_text(text, font, WHITE, cx - w / 2, cy + dy, game_screen.surface)
+        render(game_screen, title, lines)
 
         pygame.display.update()
         clock.tick(60)
