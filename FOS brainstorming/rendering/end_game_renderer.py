@@ -117,35 +117,43 @@ class EndGameRenderer:
                 self._render_player_title("Player2")
 
         self._score_chart.display(self.game_screen)
+        self._render_nav(display_state)
+
+    def _centred(self, text: str, font, colour, y: float) -> None:
+        gs = self.game_screen
+        draw_text(text, font, colour,
+                  gs.display_width / 2 - font.size(text)[0] / 2, y, gs.surface)
 
     def _render_end_game_data(self, winner: str) -> None:
         gs = self.game_screen
         bs = gs.block_size
-        cx = gs.display_width / 2
-        cy = gs.display_height / 2
-        pad = bs * style.PANEL_PAD
 
-        title = f"Winner: {winner.capitalize()}!!"
-        turns = f"Total Turns: {len(self.game_state.game_statistics.score_history)}"
-        clocks = (f"P1 {self.game_state.player1.time_display}"
-                  f"    P2 {self.game_state.player2.time_display}")
+        turns = len(self.game_state.game_statistics.score_history)
+        summary = (f"{turns} turns"
+                   f"    P1 {self.game_state.player1.time_display}"
+                   f"    P2 {self.game_state.player2.time_display}")
 
-        title_w = gs.title_text_font.size(title)[0]
-        turns_w = gs.big_text_font.size(turns)[0]
-        clocks_w = gs.text_font.size(clocks)[0]
+        self._centred(f"Winner: {winner.capitalize()}!!", gs.title_text_font,
+                      style.INK, bs * 0.35)
+        self._centred(summary, gs.mid_text_font, style.INK_MUTED, bs * 1.15)
 
-        width = max(title_w, turns_w, clocks_w) + pad * 4
-        height = bs * 1.75
-        x = cx - width / 2
-        y = cy - bs * 2.45
-        style.panel(gs, x, y, width, height)
-
-        draw_text(title, gs.title_text_font, style.INK,
-                  cx - title_w / 2, y + pad, gs.surface)
-        draw_text(turns, gs.big_text_font, style.INK,
-                  cx - turns_w / 2, y + pad + bs * 0.82, gs.surface)
-        style.muted_text(gs, clocks, cx - clocks_w / 2,
-                         y + pad + bs * 1.22, gs.text_font)
+    def _render_nav(self, display_state: str) -> None:
+        gs = self.game_screen
+        keys = [("TAB", "raw data", display_state == "raw"),
+                ("1", "player1", display_state == "player1"),
+                ("2", "player2", display_state == "player2"),
+                ("ESC", "continue", False)]
+        parts = [f"[{key}] {label}" for key, label, _on in keys]
+        gap = gs.block_size * 0.35
+        widths = [gs.text_font.size(part)[0] for part in parts]
+        total = sum(widths) + gap * (len(parts) - 1)
+        x = gs.display_width / 2 - total / 2
+        y = gs.display_height - gs.block_size * 0.45
+        for part, width, (_k, _l, active) in zip(parts, widths, keys):
+            draw_text(part, gs.text_font,
+                      style.INK if active else style.INK_DISABLED,
+                      x, y, gs.surface)
+            x += width + gap
 
     def _render_raw_data(self) -> None:
         gs = self.game_screen
@@ -182,7 +190,5 @@ class EndGameRenderer:
                       gs.display_height/2 + gs.block_size*(0.25 + 0.2*i), gs.surface)
 
     def _render_player_title(self, title: str) -> None:
-        gs = self.game_screen
-        draw_text(title, gs.title_text_font, WHITE,
-                  gs.display_width/2 - gs.block_size*3.5,
-                  gs.display_height/2 - gs.block_size*2.5, gs.surface)
+        self._centred(title, self.game_screen.title_text_font, style.INK,
+                      self.game_screen.block_size * 0.35)

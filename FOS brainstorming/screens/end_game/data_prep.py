@@ -173,7 +173,7 @@ def display_chart(pie_paths: dict[str, list[str]], bar_paths: dict[str, list[str
     
     score_chart = Chart(file_path=plot_path,
                         x=int(game_screen.display_width/2-(game_screen.block_size*3.75/1.1)),
-                        y=int(game_screen.display_height/2+(game_screen.block_size*0.1)),
+                        y=int(game_screen.display_height/2-(game_screen.block_size*0.9)),
                         width=int(game_screen.block_size*7.5/1.1), height=int(game_screen.block_size*3/1.1))
     
     return score_chart, charts
