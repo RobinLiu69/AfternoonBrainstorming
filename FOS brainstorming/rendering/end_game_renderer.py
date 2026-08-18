@@ -22,6 +22,7 @@ import pygame
 
 from shared.setting import BLACK, WHITE
 from core.game_state import GameState
+from rendering import style
 from core.game_screen import GameScreen, draw_text, KEYS_TO_CHECK, KEYS_TO_DISPLAY
 from screens.end_game.data_prep import set_all_invisible, init_datas, making_image, display_chart
 
@@ -119,19 +120,32 @@ class EndGameRenderer:
 
     def _render_end_game_data(self, winner: str) -> None:
         gs = self.game_screen
-        draw_text(f"Winner: {winner.capitalize()}!!",
-                  gs.title_text_font, WHITE,
-                  gs.display_width/2 - gs.block_size*1.5,
-                  gs.display_height/2 - gs.block_size*2, gs.surface)
-        draw_text(f"Total Turns: {len(self.game_state.game_statistics.score_history)}",
-                  gs.big_text_font, WHITE,
-                  gs.display_width/2 - gs.block_size*3.75/1.1,
-                  gs.display_height/2 - gs.block_size*0.4, gs.surface)
-        draw_text("Player1 Timer: " + self.game_state.player1.time_display +
-                  ",   Player2 Timer: " + self.game_state.player2.time_display,
-                  gs.text_font, WHITE,
-                  gs.display_width/2 - gs.block_size*3.75/1.1,
-                  gs.display_height/2 - gs.block_size*0.2, gs.surface)
+        bs = gs.block_size
+        cx = gs.display_width / 2
+        cy = gs.display_height / 2
+        pad = bs * style.PANEL_PAD
+
+        title = f"Winner: {winner.capitalize()}!!"
+        turns = f"Total Turns: {len(self.game_state.game_statistics.score_history)}"
+        clocks = (f"P1 {self.game_state.player1.time_display}"
+                  f"    P2 {self.game_state.player2.time_display}")
+
+        title_w = gs.title_text_font.size(title)[0]
+        turns_w = gs.big_text_font.size(turns)[0]
+        clocks_w = gs.text_font.size(clocks)[0]
+
+        width = max(title_w, turns_w, clocks_w) + pad * 4
+        height = bs * 1.75
+        x = cx - width / 2
+        y = cy - bs * 2.45
+        style.panel(gs, x, y, width, height)
+
+        draw_text(title, gs.title_text_font, style.INK,
+                  cx - title_w / 2, y + pad, gs.surface)
+        draw_text(turns, gs.big_text_font, style.INK,
+                  cx - turns_w / 2, y + pad + bs * 0.82, gs.surface)
+        style.muted_text(gs, clocks, cx - clocks_w / 2,
+                         y + pad + bs * 1.22, gs.text_font)
 
     def _render_raw_data(self) -> None:
         gs = self.game_screen
