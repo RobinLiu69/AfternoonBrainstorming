@@ -58,6 +58,12 @@ output_folder = f"{FOLDER_PATH}/imgs"
 
 custom_font_prop = font_manager.FontProperties(fname=font_file_path)
 
+BAR_DISPLAY_TITLES: dict[str, str] = {
+    "Average Attack Damage": "Avg Damage",
+    "Attack Efficiency Index": "Attack Eff.",
+    "Per Round Influence": "Round Impact",
+}
+
 
 def make_pie_chart(player_name: str, title_text: str, file_name: str, data: dict[str, int],
                    fontsize: int=6, figsize: tuple[float, float]=(15, 15)) -> str:
@@ -157,7 +163,9 @@ def make_bar_chart(player_name: str, title_text: str, datas: dict[str, dict[str,
         
         fig, ax = cast(tuple[Figure, Axes], plt.subplots(figsize=figsize, dpi=120))
         ax.barh(labels, width, color=colors, linewidth=5, edgecolor="gray")
-        ax.set_title(title_text, fontweight='bold', fontproperties=custom_font_prop, fontsize=fontsize * 12, color='white', loc='left', pad=30)
+        ax.set_title(BAR_DISPLAY_TITLES.get(title_text, title_text), fontweight='bold',
+                     fontproperties=custom_font_prop, fontsize=fontsize * 12,
+                     color='white', loc='left', pad=30)
         
         
         categories = np.arange(math.ceil(max(width)+1))

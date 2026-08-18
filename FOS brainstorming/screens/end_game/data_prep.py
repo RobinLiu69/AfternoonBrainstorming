@@ -150,25 +150,25 @@ def display_chart(pie_paths: dict[str, list[str]], bar_paths: dict[str, list[str
     for i, path in enumerate(pie_paths["player1"]):
         charts["player1"]["pie"].append(Chart(file_path=path,
                                               x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(pie_paths["player1"])/2+i*2.2))),
-                                              y=int(game_screen.display_height/2-(game_screen.block_size*1.7)), width=int(game_screen.block_size*2),
+                                              y=int(game_screen.display_height/2-(game_screen.block_size*1.9)), width=int(game_screen.block_size*2),
                                               height=int(game_screen.block_size*2)))
 
     for i, path in enumerate(pie_paths["player2"]):
         charts["player2"]["pie"].append(Chart(file_path=path,
                                               x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(pie_paths["player2"])/2+i*2.2))),
-                                              y=int(game_screen.display_height/2-(game_screen.block_size*1.7)), width=int(game_screen.block_size*2),
+                                              y=int(game_screen.display_height/2-(game_screen.block_size*1.9)), width=int(game_screen.block_size*2),
                                               height=int(game_screen.block_size*2)))
     
     for i, path in enumerate(bar_paths["player1"]):
         charts["player1"]["bar"].append(Chart(file_path=path,
                                               x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(bar_paths["player1"])/2+i*2.2))),
-                                              y=int(game_screen.display_height/2+(game_screen.block_size*0.7)), width=int(game_screen.block_size*2),
+                                              y=int(game_screen.display_height/2+(game_screen.block_size*0.32)), width=int(game_screen.block_size*2),
                                               height=int(game_screen.block_size*2)))
     
     for i, path in enumerate(bar_paths["player2"]):
         charts["player2"]["bar"].append(Chart(file_path=path,
                                               x=int(game_screen.display_width/2+(game_screen.block_size*(-2.2*len(bar_paths["player2"])/2+i*2.2))),
-                                              y=int(game_screen.display_height/2+(game_screen.block_size*0.7)), width=int(game_screen.block_size*2),
+                                              y=int(game_screen.display_height/2+(game_screen.block_size*0.32)), width=int(game_screen.block_size*2),
                                               height=int(game_screen.block_size*2)))
     
     score_chart = Chart(file_path=plot_path,
