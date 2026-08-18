@@ -25,8 +25,12 @@ import pytest
 
 pytestmark = pytest.mark.filterwarnings("ignore:no fast renderer available")
 
+import pygame
+
 from core.game_screen import GameScreen
 from core.lobby_state import LobbyState
+from core.UI import Button
+from rendering import style
 from screens.lobby import lobby
 
 
@@ -127,6 +131,33 @@ class TestTheHostHasAReachableWatchButton:
         _click(buttons, "switch_role", state, "player2", dispatcher)
 
         assert dispatcher.sent == [("player2", "switch_to_spectator")]
+
+    def test_a_button_does_not_paint_over_what_is_behind_it(self, game_screen) -> None:
+        game_screen.surface.fill((90, 90, 90))
+        button = Button(120, 40, 20, 20, box_width=2, font=game_screen.mid_text_font)
+
+        button.update(game_screen)
+
+        assert game_screen.surface.get_at((70, 38))[:3] == (90, 90, 90)
+
+    def test_a_filled_button_lifts_off_what_is_behind_it(self, game_screen) -> None:
+        game_screen.surface.fill((0, 0, 0))
+        button = Button(120, 40, 20, 20, box_width=2, font=game_screen.mid_text_font,
+                        fill_color=(255, 255, 255, 26))
+
+        button.update(game_screen)
+
+        assert game_screen.surface.get_at((70, 38))[0] > 0
+
+    def test_controls_are_square_like_the_rest_of_the_art(self, game_screen) -> None:
+        game_screen.surface.fill((0, 0, 0))
+        button = Button(120, 40, 20, 20, box_width=2, font=game_screen.mid_text_font)
+
+        button.update(game_screen)
+
+        assert button.radius == 0
+        assert style.CORNER_RADIUS == 0
+        assert game_screen.surface.get_at((21, 21))[:3] != (0, 0, 0)
 
     def test_a_watching_host_alone_in_the_room_is_still_alone(self) -> None:
         state = LobbyState(host_playing=False)

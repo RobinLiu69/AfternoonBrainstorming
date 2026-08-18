@@ -28,6 +28,7 @@ from core.network_layer import LANServer, LANClient
 from core.game_screen import GameScreen, draw_text, QuitGame
 from core.setting_config import load_setting
 from core.UI import Button
+from rendering import style
 from screens.widgets import make_back_button
 from screens.lobby import ban_draft
 from screens.lobby.lobby_action import LobbyAction, set_setting
@@ -128,7 +129,16 @@ ROW_STEP = 0.45
 ADVANCED_HEADER_GAP = 0.60
 ADVANCED_HEADER_TO_ROW = 0.25
 SWITCH_ROLE_GAP = 0.75
-HOST_WATCH_OFFSET = 0.75
+HOST_WATCH_OFFSET = -0.02
+
+SETTINGS_X = -3.3
+SETTINGS_W = 2.8
+ROSTER_X = 0.3
+ROSTER_W = 2.9
+ROSTER_FIRST = -1.55
+ROSTER_STEP = 0.48
+ROSTER_NOTE = -0.30
+ROW_HEIGHT = 0.43
 
 
 def _layout(mode: str) -> tuple[dict[str, float], Optional[float]]:
@@ -160,23 +170,27 @@ def _make_buttons(gs: GameScreen, row_offsets: dict[str, float]) -> dict[str, Bu
 
     buttons = {name: Button(left_btn_w, btn_h, left_x, cy + bs * y_offset,
                             position="Left", padding=bs * 0.15,
-                            box_width=box_width, font=gs.mid_text_font)
+                            box_width=box_width, font=gs.mid_text_font,
+                            fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
                for name, y_offset in row_offsets.items()}
 
     switch_w = bs * 2.5
     switch_y = max(row_offsets.values()) + SWITCH_ROLE_GAP
     buttons["switch_role"] = Button(switch_w, btn_h, cx - switch_w / 2, cy + bs * switch_y,
                                     position="Left", padding=bs * 0.15,
-                                    box_width=box_width, font=gs.mid_text_font)
+                                    box_width=box_width, font=gs.mid_text_font,
+                                    fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
 
     buttons["host_watch"] = Button(bs * 2.9, btn_h, cx + bs * 0.3, cy + bs * HOST_WATCH_OFFSET,
                                    position="Left", padding=bs * 0.15,
-                                   box_width=box_width, font=gs.mid_text_font)
+                                   box_width=box_width, font=gs.mid_text_font,
+                                   fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
 
     start_w = bs * 3.2
     buttons["start_match"] = Button(start_w, bs * 0.55, cx - start_w / 2, cy + bs * 2.30,
                                     position="Middle", padding=bs * 0.15,
-                                    box_width=box_width, font=gs.text_font, text="START MATCH")
+                                    box_width=box_width, font=gs.text_font, text="START MATCH",
+                                    fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
     return buttons
 
 
@@ -219,11 +233,42 @@ def _render_role_button(gs: GameScreen, button: Button) -> None:
     if not button.text:
         return
     if button.text.startswith("("):
-        draw_text(button.text, gs.mid_text_font, WHITE,
-                  button.x + gs.block_size * 0.15,
-                  button.y + gs.block_size * 0.10, gs.surface)
+        style.muted_text(gs, button.text,
+                         button.x + gs.block_size * 0.15,
+                         button.y + gs.block_size * 0.10)
     else:
         button.update(gs)
+
+
+def _panel_top(gs: GameScreen) -> float:
+    bs = gs.block_size
+    return (gs.display_height / 2 + bs * FIRST_ROW_OFFSET
+            - bs * style.PANEL_PAD - bs * style.HEADER_HEIGHT)
+
+
+def _render_panels(gs: GameScreen, state: LobbyState, mode: str, role: str,
+                   row_offsets: dict[str, float]) -> None:
+    bs = gs.block_size
+    cx = gs.display_width / 2
+    cy = gs.display_height / 2
+    pad = bs * style.PANEL_PAD
+    top = _panel_top(gs)
+
+    settings_bottom = cy + bs * max(row_offsets.values()) + bs * ROW_HEIGHT + pad
+    style.section(gs, "SETTINGS", cx + bs * SETTINGS_X - pad, top,
+                  bs * SETTINGS_W + pad * 2, settings_bottom - top)
+
+    if mode == "local":
+        return
+
+    bottom = cy + bs * (ROSTER_FIRST + ROSTER_STEP * 2) + gs.text_font.get_linesize()
+    if state.god_view:
+        bottom = max(bottom, cy + bs * ROSTER_NOTE + gs.mid_text_font.get_linesize())
+    if _is_host(role):
+        bottom = max(bottom, cy + bs * (HOST_WATCH_OFFSET + ROW_HEIGHT))
+    room = f"room {state.room_code}" if state.room_code else ""
+    style.section(gs, "PLAYERS", cx + bs * ROSTER_X - pad, top,
+                  bs * ROSTER_W + pad * 2, bottom + pad - top, right=room)
 
 
 def _render_settings_labels(gs: GameScreen, state: LobbyState,
@@ -253,22 +298,12 @@ def _render_title(gs: GameScreen) -> None:
     draw_text("LOBBY", gs.title_text_font, WHITE,
               cx - bs * 0.7, cy - bs * 2.8, gs.surface)
 
-    draw_text("Settings", gs.text_font, WHITE,
-              cx - bs * 3.3, cy - bs * 1.85, gs.surface)
-
 
 def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
     bs = gs.block_size
     cx = gs.display_width / 2
     cy = gs.display_height / 2
     right_x = cx + bs * 0.3
-
-    if state.room_code:
-        draw_text(f"room: {state.room_code}", gs.text_font, WHITE,
-                  right_x, cy - bs * 2.35, gs.surface)
-
-    draw_text("Players", gs.text_font, WHITE,
-              right_x, cy - bs * 1.85, gs.surface)
 
     host_seat = state.host_seat
     peer_seat = state.peer_seat()
@@ -302,11 +337,11 @@ def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:
     ]
     for i, line in enumerate(lines):
         draw_text(line, gs.text_font, WHITE,
-                  right_x, cy - bs * (1.35 - i * 0.48), gs.surface)
+                  right_x, cy + bs * (ROSTER_FIRST + i * ROSTER_STEP), gs.surface)
 
     if state.god_view:
-        draw_text("(spectators see all decks)", gs.mid_text_font, WHITE,
-                  right_x, cy + bs * 0.20, gs.surface)
+        style.muted_text(gs, "(spectators see all decks)",
+                         right_x, cy + bs * ROSTER_NOTE)
 
 
 def _render_quit_confirm(gs: GameScreen) -> None:
@@ -479,6 +514,7 @@ def main(game_screen: GameScreen, mode: str,
         game_screen.render()
         _render_title(game_screen)
         with dispatcher.action_lock:
+            _render_panels(game_screen, state, mode, state.local_role, row_offsets)
             if mode != "local":
                 _render_roster(game_screen, state, state.local_role)
             if advanced_header_offset is not None:

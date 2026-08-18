@@ -68,20 +68,23 @@ class Button:
         position: TextPosition = "Middle", padding: float = 10,
         has_box: bool=True, box_color: Sequence[int]=WHITE,
         box_width: int=0, text_color: Sequence[int]=WHITE,
-        text: str="", font: pygame.font.Font|None=None):
+        text: str="", font: pygame.font.Font|None=None,
+        fill_color: Sequence[int]|None=None, radius: int|None=None):
         self.height = height
         self.width = width
         self.has_box = has_box
         self.box_color = box_color
         self.box_width = box_width
         self.text_color = text_color
+        self.fill_color = fill_color
+        self.radius = 0 if radius is None else radius
         self.x = x
         self.y = y
         self.position = position
         self.padding = padding
         self.text = text
         self.font = font
-        self.surface = pygame.Surface((width, height))
+        self.surface = pygame.Surface((width, height), pygame.SRCALPHA)
         self.been_pressed: bool = False
 
     def update(self, game_screen: GameScreen):
@@ -92,8 +95,12 @@ class Button:
 
     def display(self, game_screen: GameScreen):
         self.surface.fill((0, 0, 0, 0))
+        radius = self.radius
+        if self.fill_color is not None:
+            pygame.draw.rect(self.surface, self.fill_color,
+                             (0, 0, self.width, self.height), 0, border_radius=radius)
         if self.has_box:
-            pygame.draw.rect(self.surface, self.box_color, (0, 0, self.width, self.height), self.box_width, border_radius=self.box_width*4)
+            pygame.draw.rect(self.surface, self.box_color, (0, 0, self.width, self.height), self.box_width, border_radius=radius)
 
         if self.font and self.text:
             rendered = self.font.render(self.text, True, self.text_color)
