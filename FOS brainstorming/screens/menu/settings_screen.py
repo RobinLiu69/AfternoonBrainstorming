@@ -19,6 +19,7 @@
 import pygame
 
 from shared.setting import WHITE, CYAN
+from rendering import style
 from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from core.setting_config import save_setting, load_setting
@@ -52,9 +53,13 @@ def _build_tab_buttons(game_screen: GameScreen, active_tab: str) -> list[tuple[s
 
     tab_buttons: list[tuple[str, Button]] = []
     for index, (tab_id, label) in enumerate(TABS):
-        color = CYAN if tab_id == active_tab else WHITE
+        chosen = tab_id == active_tab
         button = Button(btn_w, btn_h, start_x + index * (btn_w + bs * 0.3), tab_y,
-                        box_color=color, box_width=box_width, text_color=color,
+                        box_color=style.INK if chosen else style.INK_DISABLED,
+                        box_width=box_width,
+                        text_color=style.INK if chosen else style.INK_MUTED,
+                        fill_color=style.CONTROL_FILL if chosen else None,
+                        radius=style.CORNER_RADIUS,
                         font=game_screen.big_text_font, text=label)
         tab_buttons.append((tab_id, button))
     return tab_buttons
@@ -71,15 +76,20 @@ def _build_display_buttons(game_screen: GameScreen) -> tuple[list[tuple[str, But
 
     option_buttons: list[tuple[str, Button]] = []
     for index, (mode, label) in enumerate(OPTIONS):
-        color = CYAN if mode == game_screen.display_mode else WHITE
+        chosen = mode == game_screen.display_mode
         button = Button(btn_w, btn_h, btn_x, top_y + index * bs * 0.9,
                         position="Left", padding=bs * 0.25,
-                        box_color=color, box_width=box_width, text_color=color,
+                        box_color=style.INK if chosen else style.INK_DISABLED,
+                        box_width=box_width,
+                        text_color=style.INK if chosen else style.INK_MUTED,
+                        fill_color=style.CONTROL_FILL if chosen else None,
+                        radius=style.CORNER_RADIUS,
                         font=game_screen.big_big_text_font, text=label)
         option_buttons.append((mode, button))
 
     back_button = Button(btn_w, btn_h, btn_x, top_y + len(OPTIONS) * bs * 0.9 + bs * 0.35,
-                         box_width=box_width, font=game_screen.big_big_text_font, text="back")
+                         box_width=box_width, font=game_screen.big_big_text_font, text="back",
+                         fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
     return option_buttons, back_button
 
 
