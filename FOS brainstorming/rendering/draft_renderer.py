@@ -25,7 +25,7 @@ from core.draft_state import DraftState
 from shared.setting import WHITE, BLUE, RED
 from core.card_hint import HintBox
 from rendering.board_renderer import BoardRenderer
-from rendering.card_renderer import CardRenderer
+from rendering.card_renderer import CardRenderer, draw_lock
 from screens.draft.exhibit_registry import ExhibitRegistry
 from rendering.sprite_registry import SpriteRegistry
 
@@ -132,16 +132,12 @@ class DraftRenderer:
                 self.card_renderer.render(render_object)
     
     def _render_ban(self, page: int, index: int, draft_state: DraftState) -> None:
-        locked = SpriteRegistry.get_instance().get("locked")
-        if locked is None:
-            return
-        gs = self.game_screen
         for card in self.exhibit_registry.get_page(page, index) + self.exhibit_registry.get_magic_row():
             if not draft_state.is_banned(card.job_and_color):
                 continue
             for data in card.get_render_data():
-                x, y = cell_origin(gs, data.board_x, data.board_y)
-                gs.surface.blit(locked, (int(x), int(y)))
+                draw_lock(self.game_screen, data.job_and_color,
+                          data.board_x, data.board_y)
 
     def _render_boards(self, draft_state: DraftState) -> None:
         for board in draft_state.board_dict.values():

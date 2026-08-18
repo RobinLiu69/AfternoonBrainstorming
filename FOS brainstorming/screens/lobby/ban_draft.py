@@ -31,7 +31,7 @@ from core.network_layer import LANServer, LANClient
 from cards.factory import CardFactory
 from rendering import style
 from rendering.board_renderer import BoardRenderer
-from rendering.card_renderer import CardRenderer
+from rendering.card_renderer import CardRenderer, draw_lock
 from rendering.sprite_registry import SpriteRegistry
 from screens.draft.exhibit_registry import ExhibitRegistry
 from screens.lobby.lobby_action import LobbyAction
@@ -107,12 +107,9 @@ class _SpectatorBoardCache:
         return self._cards
 
 
-def _render_lock(game_screen: GameScreen, board_x: int, board_y: int) -> None:
-    locked = SpriteRegistry.get_instance().get("locked")
-    if locked is None:
-        return
-    x, y = cell_origin(game_screen, board_x, board_y)
-    game_screen.surface.blit(locked, (int(x), int(y)))
+def _render_lock(game_screen: GameScreen, board_x: int, board_y: int,
+                 name: str = "") -> None:
+    draw_lock(game_screen, name, board_x, board_y)
 
 
 GRID_TOP = -1.95
@@ -373,7 +370,8 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
                         card_renderer.render(render_object)
                 for card in exhibit_cards:
                     if card.job_and_color in state.bans or card.job_and_color in ruleset_locked:
-                        _render_lock(game_screen, card.board_x, card.board_y)
+                        _render_lock(game_screen, card.board_x, card.board_y,
+                                     card.job_and_color)
                 for board in board_player.values():
                     board_renderer.render(board)
                 _render_player_ban_rows(game_screen, state, controls, my_identity)
@@ -381,7 +379,8 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
                 for card in spectator_board.get(state):
                     for render_object in card.get_render_data():
                         card_renderer.render(render_object)
-                    _render_lock(game_screen, card.board_x, card.board_y)
+                    _render_lock(game_screen, card.board_x, card.board_y,
+                                 card.job_and_color)
                 for board in board_spectator.values():
                     board_renderer.render(board)
                 _render_spectator_labels(game_screen, state)

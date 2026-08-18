@@ -23,6 +23,21 @@ from rendering.sprite_registry import SpriteRegistry
 from core.game_screen import GameScreen, cell_origin, draw_text
 
 
+CENTRE_LABELLED_CARDS: frozenset[str] = frozenset({"CUBES", "MOVE", "HEAL"})
+
+
+def draw_lock(game_screen: GameScreen, name: str, board_x: int, board_y: int) -> None:
+    locked = SpriteRegistry.get_instance().get("locked")
+    if locked is None:
+        return
+    bs = game_screen.block_size
+    x, y = cell_origin(game_screen, board_x, board_y)
+    game_screen.surface.blit(locked, (int(x), int(y)))
+    if name in CENTRE_LABELLED_CARDS:
+        draw_text(name, game_screen.text_font, (255, 255, 255),
+                  x + bs * 0.1, y + bs * 0.8, game_screen.surface)
+
+
 class CardRenderer:
     def __init__(self, game_screen: GameScreen):
         self.game_screen = game_screen
@@ -70,15 +85,10 @@ class CardRenderer:
         text_color = (255, 255, 255) if data.use_sprite else data.color
         
         match data.job_and_color:
-            case "CUBES":
-                draw_text("CUBES", self.game_screen.big_text_font,
-                         text_color, bs * 0.23, bs * 0.37, surface)
-            case "MOVE":
-                draw_text("MOVE", self.game_screen.big_text_font,
-                         text_color, bs * 0.27, bs * 0.37, surface)
-            case "HEAL":
-                draw_text("HEAL", self.game_screen.big_text_font,
-                         text_color, bs * 0.27, bs * 0.37, surface)
+            case "CUBES" | "MOVE" | "HEAL":
+                draw_text(data.job_and_color, self.game_screen.big_text_font, text_color,
+                          bs * (0.23 if data.job_and_color == "CUBES" else 0.27),
+                          bs * 0.37, surface)
             case _:
                 draw_text(f"HP:{data.health}", self.game_screen.info_text_font, text_color, bs * 0.1, bs * 0.03, surface)
                 atk_text = (f"ATK:{data.damage}+{data.extra_damage}" if data.extra_damage else f"ATK:{data.damage}")
