@@ -77,7 +77,7 @@ class Button:
         self.box_width = box_width
         self.text_color = text_color
         self.fill_color = fill_color
-        self.radius = 0 if radius is None else radius
+        self.radius = box_width * 2 if radius is None else radius
         self.x = x
         self.y = y
         self.position = position

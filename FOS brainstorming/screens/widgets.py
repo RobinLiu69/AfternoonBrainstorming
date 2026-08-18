@@ -43,4 +43,4 @@ def make_back_button(game_screen: GameScreen, text: str = "back",
 
     return Button(w, h, x, y, box_width=box_width,
                   font=game_screen.mid_text_font, text=text,
-                  radius=style.CORNER_RADIUS)
+                  radius=style.corner_radius(game_screen))

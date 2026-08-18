@@ -59,7 +59,7 @@ def _build_tab_buttons(game_screen: GameScreen, active_tab: str) -> list[tuple[s
                         box_width=box_width,
                         text_color=style.INK if chosen else style.INK_MUTED,
                         fill_color=style.CONTROL_FILL if chosen else None,
-                        radius=style.CORNER_RADIUS,
+                        radius=style.corner_radius(game_screen),
                         font=game_screen.big_text_font, text=label)
         tab_buttons.append((tab_id, button))
     return tab_buttons
@@ -83,13 +83,13 @@ def _build_display_buttons(game_screen: GameScreen) -> tuple[list[tuple[str, But
                         box_width=box_width,
                         text_color=style.INK if chosen else style.INK_MUTED,
                         fill_color=style.CONTROL_FILL if chosen else None,
-                        radius=style.CORNER_RADIUS,
+                        radius=style.corner_radius(game_screen),
                         font=game_screen.big_big_text_font, text=label)
         option_buttons.append((mode, button))
 
     back_button = Button(btn_w, btn_h, btn_x, top_y + len(OPTIONS) * bs * 0.9 + bs * 0.35,
                          box_width=box_width, font=game_screen.big_big_text_font, text="back",
-                         fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
+                         fill_color=style.CONTROL_FILL, radius=style.corner_radius(game_screen))
     return option_buttons, back_button
 
 

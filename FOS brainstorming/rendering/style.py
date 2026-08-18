@@ -37,18 +37,22 @@ DIVIDER = (255, 255, 255, 55)
 
 PANEL_PAD = 0.18
 HEADER_HEIGHT = 0.30
-CORNER_RADIUS = 0
+CORNER_RATIO = 30
 
 
 def edge_width(gs: GameScreen) -> int:
     return max(1, int(gs.block_size / 45))
 
 
+def corner_radius(gs: GameScreen) -> int:
+    return max(1, int(gs.block_size / CORNER_RATIO)) * 2
+
+
 def panel(gs: GameScreen, x: float, y: float, width: float, height: float) -> None:
     surface = pygame.Surface((max(1, int(width)), max(1, int(height))), pygame.SRCALPHA)
     rect = surface.get_rect()
-    pygame.draw.rect(surface, PANEL_FILL, rect, 0, border_radius=CORNER_RADIUS)
-    pygame.draw.rect(surface, PANEL_EDGE, rect, edge_width(gs), border_radius=CORNER_RADIUS)
+    pygame.draw.rect(surface, PANEL_FILL, rect, 0, border_radius=corner_radius(gs))
+    pygame.draw.rect(surface, PANEL_EDGE, rect, edge_width(gs), border_radius=corner_radius(gs))
     gs.surface.blit(surface, (int(x), int(y)))
 
 
@@ -83,8 +87,8 @@ def scrim(gs: GameScreen) -> None:
 def modal(gs: GameScreen, x: float, y: float, width: float, height: float) -> None:
     surface = pygame.Surface((max(1, int(width)), max(1, int(height))), pygame.SRCALPHA)
     rect = surface.get_rect()
-    pygame.draw.rect(surface, TOOLTIP_FILL, rect, 0, border_radius=CORNER_RADIUS)
-    pygame.draw.rect(surface, TOOLTIP_EDGE, rect, edge_width(gs), border_radius=CORNER_RADIUS)
+    pygame.draw.rect(surface, TOOLTIP_FILL, rect, 0, border_radius=corner_radius(gs))
+    pygame.draw.rect(surface, TOOLTIP_EDGE, rect, edge_width(gs), border_radius=corner_radius(gs))
     gs.surface.blit(surface, (int(x), int(y)))
 
 

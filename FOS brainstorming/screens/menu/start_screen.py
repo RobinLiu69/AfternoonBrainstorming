@@ -38,7 +38,7 @@ def main(game_screen: GameScreen) -> str:
 
     def menu_button(width, height, x, y, font, text):
         return Button(width, height, x, y, box_width=box_width, font=font, text=text,
-                      fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
+                      fill_color=style.CONTROL_FILL, radius=style.corner_radius(game_screen))
 
     big = game_screen.big_big_text_font
     play_button = menu_button(main_w, main_h, main_x, cy - bs * 1.7, big, "play")

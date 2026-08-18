@@ -149,15 +149,17 @@ class TestTheHostHasAReachableWatchButton:
 
         assert game_screen.surface.get_at((70, 38))[0] > 0
 
-    def test_controls_are_square_like_the_rest_of_the_art(self, game_screen) -> None:
+    def test_controls_round_by_the_same_amount_as_panels(self, game_screen) -> None:
+        box_width = max(1, int(game_screen.block_size / 30))
         game_screen.surface.fill((0, 0, 0))
-        button = Button(120, 40, 20, 20, box_width=2, font=game_screen.mid_text_font)
+        button = Button(120, 40, 20, 20, box_width=box_width,
+                        font=game_screen.mid_text_font)
 
         button.update(game_screen)
 
-        assert button.radius == 0
-        assert style.CORNER_RADIUS == 0
-        assert game_screen.surface.get_at((21, 21))[:3] != (0, 0, 0)
+        assert button.radius == style.corner_radius(game_screen)
+        assert button.radius > 0
+        assert game_screen.surface.get_at((20, 20))[:3] == (0, 0, 0)
 
     def test_a_watching_host_alone_in_the_room_is_still_alone(self) -> None:
         state = LobbyState(host_playing=False)

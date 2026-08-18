@@ -171,7 +171,7 @@ def _make_buttons(gs: GameScreen, row_offsets: dict[str, float]) -> dict[str, Bu
     buttons = {name: Button(left_btn_w, btn_h, left_x, cy + bs * y_offset,
                             position="Left", padding=bs * 0.15,
                             box_width=box_width, font=gs.mid_text_font,
-                            fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
+                            fill_color=style.CONTROL_FILL, radius=style.corner_radius(gs))
                for name, y_offset in row_offsets.items()}
 
     switch_w = bs * 2.5
@@ -179,18 +179,18 @@ def _make_buttons(gs: GameScreen, row_offsets: dict[str, float]) -> dict[str, Bu
     buttons["switch_role"] = Button(switch_w, btn_h, cx - switch_w / 2, cy + bs * switch_y,
                                     position="Left", padding=bs * 0.15,
                                     box_width=box_width, font=gs.mid_text_font,
-                                    fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
+                                    fill_color=style.CONTROL_FILL, radius=style.corner_radius(gs))
 
     buttons["host_watch"] = Button(bs * 2.9, btn_h, cx + bs * 0.3, cy + bs * HOST_WATCH_OFFSET,
                                    position="Left", padding=bs * 0.15,
                                    box_width=box_width, font=gs.mid_text_font,
-                                   fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
+                                   fill_color=style.CONTROL_FILL, radius=style.corner_radius(gs))
 
     start_w = bs * 3.2
     buttons["start_match"] = Button(start_w, bs * 0.55, cx - start_w / 2, cy + bs * 2.30,
                                     position="Middle", padding=bs * 0.15,
                                     box_width=box_width, font=gs.text_font, text="START MATCH",
-                                    fill_color=style.CONTROL_FILL, radius=style.CORNER_RADIUS)
+                                    fill_color=style.CONTROL_FILL, radius=style.corner_radius(gs))
     return buttons
 
 
