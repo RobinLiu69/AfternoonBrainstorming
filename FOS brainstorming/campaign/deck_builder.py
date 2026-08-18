@@ -222,8 +222,9 @@ def main(game_screen: GameScreen, stage: str, cleared: set[str]) -> Optional[lis
                     confirmed = list(draft_state.player1_deck)
                     running = False
 
-        renderer.render_frame(page, 0, bx, by, draft_state, hint_on)
+        renderer.render_frame(page, 0, bx, by, draft_state, hint_on=False)
         _draw_help(game_screen, draft_state.player1_deck)
+        renderer._render_hint(page, 0, bx, by, hint_on)
         pygame.display.update()
         clock.tick(60)
 

@@ -85,18 +85,18 @@ class GameRenderer:
         self.ui_renderer.render_spectator_count(game_state)
         self.ui_renderer.render_awaiting_server(game_state)
 
-        self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state, hint_on)
-
         if multiplayer:
             self.ui_renderer.render_identity_label(local_controller)
-
-        if game_state.paused:
-            self._render_pause_overlay(game_state)
 
         if show_netinfo:
             self.ui_renderer.render_netinfo_overlay(local_controller, game_state)
             if local_controller in ("spectator", "god"):
                 self.ui_renderer.render_spectator_decks(game_state, local_controller)
+
+        self._render_hint(mouse_x, mouse_y, mouse_board_x, mouse_board_y, game_state, hint_on)
+
+        if game_state.paused:
+            self._render_pause_overlay(game_state)
 
     def _render_pause_overlay(self, game_state: GameState) -> None:
         style.pause_overlay(self.game_screen, game_state.pause_reason,
