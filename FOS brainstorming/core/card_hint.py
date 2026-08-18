@@ -24,6 +24,7 @@ import pygame
 
 from core.game_screen import GameScreen, draw_text
 from shared import card_code
+from rendering import style
 from shared.setting import BLACK, WHITE, RED, GREEN, CARD_SETTING, CARDS_HINTS_DICTIONARY, JOB_DICTIONARY
 from cards.base import Card, COLOR_TAG_LIST
 
@@ -145,6 +146,29 @@ def get_job_shape(job: str, block_size: float) -> tuple:
             ((block_size*0.55), (block_size*0.45)))
 
 
+HINT_LINE = 0.15
+HINT_PAD = 0.07
+HINT_PREVIEW = 0.5
+HINT_GAP = 0.12
+HINT_TEXT_X = 0.64
+
+
+def _hint_height(game_screen: GameScreen, lines: int, with_preview: bool) -> float:
+    bs = game_screen.block_size
+    body = bs * HINT_LINE * lines
+    if with_preview:
+        body = max(body, bs * HINT_PREVIEW)
+    return bs * HINT_PAD * 2 + body
+
+
+def _hint_frame(surface: pygame.Surface, game_screen: GameScreen,
+                width: float, height: float) -> None:
+    rect = pygame.Rect(0, 0, int(width), int(height))
+    edge = max(1, int(game_screen.block_size / 45))
+    pygame.draw.rect(surface, style.TOOLTIP_FILL, rect, 0)
+    pygame.draw.rect(surface, style.TOOLTIP_EDGE, rect, edge)
+
+
 @dataclass(kw_only=True)
 class HintBox:
     width: int
@@ -172,8 +196,14 @@ class HintBox:
         return self.surface
 
     def anchor(self, box_width: float, box_height: float, game_screen: GameScreen) -> tuple[float, float]:
-        return (max(0, min(self.x, game_screen.display_width - box_width)),
-                max(0, min(self.y, game_screen.display_height - box_height)))
+        gap = game_screen.block_size * HINT_GAP
+        x, y = self.x + gap, self.y + gap
+        if x + box_width > game_screen.display_width:
+            x = self.x - gap - box_width
+        if y + box_height > game_screen.display_height:
+            y = self.y - gap - box_height
+        return (max(0, min(x, game_screen.display_width - box_width)),
+                max(0, min(y, game_screen.display_height - box_height)))
 
     def _place(self, box_width: float, box_height: float, game_screen: GameScreen) -> None:
         if self.surface is None:
@@ -205,7 +235,6 @@ class HintBox:
                 else:
                     first_line = f"{card_type} {get_stat_prefix(card_type)}-{hint_lines[0]}"
                 display_lines = [first_line, *hint_lines[1:]]
-                box_height = len(display_lines) if len(display_lines) > 4 else 4
                 if isinstance(card, Card):
                     stats_span = game_screen.block_size*0.07*(
                         len(card_type) + len(str(card.health+card.armor)) + len(str(card.damage)) + 1)
@@ -214,15 +243,15 @@ class HintBox:
                     first_width = game_screen.text_fontCHI.size(first_line)[0]
                 box_width = game_screen.block_size*0.75 + max(
                     [first_width, *(game_screen.text_fontCHI.size(line)[0] for line in display_lines[1:])])
-                box_pixel_height = (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)
+                box_pixel_height = _hint_height(game_screen, len(display_lines), True)
                 self._prepare(box_width, box_pixel_height)
 
-                pygame.draw.rect(self.surface, WHITE, (0, 0, box_width, box_pixel_height), 2)
-                pygame.draw.rect(self.surface, BLACK, ((game_screen.thickness//2), (game_screen.thickness//2), box_width-game_screen.thickness,
-                                                       box_pixel_height - game_screen.thickness), 1000)
+                _hint_frame(self.surface, game_screen, box_width, box_pixel_height)
 
-                pygame.draw.rect(self.surface, WHITE, (game_screen.block_size*0.05, game_screen.block_size*0.05,
-                                                       game_screen.block_size*0.5, game_screen.block_size*0.5), 2)
+                pygame.draw.rect(self.surface, WHITE,
+                                 (game_screen.block_size*HINT_PAD, game_screen.block_size*HINT_PAD,
+                                  game_screen.block_size*HINT_PREVIEW, game_screen.block_size*HINT_PREVIEW),
+                                 max(1, int(game_screen.block_size / 60)))
                 if upgraded:
                     draw_text("(+)", game_screen.text_font, color, (game_screen.block_size*0.213), (game_screen.block_size*0.235), self.surface)
                 shape = get_job_shape(job, game_screen.block_size*0.7)
@@ -238,41 +267,39 @@ class HintBox:
                     if i == 0:
                         if isinstance(card, str):
                             draw_text(f"{card_type} {get_stat_prefix(card_type)}-{line}", game_screen.text_fontCHI, WHITE,
-                                      (game_screen.block_size*0.6), (game_screen.block_size*0.05), self.surface)
+                                      game_screen.block_size*HINT_TEXT_X, game_screen.block_size*HINT_PAD, self.surface)
                         elif isinstance(card, Card):
                             draw_text(f"{card_type}", game_screen.text_fontCHI, WHITE, game_screen.block_size*0.6,
-                                      (game_screen.block_size*0.05), self.surface)
+                                      game_screen.block_size*HINT_PAD, self.surface)
                             draw_text(f"{card.health+card.armor}", game_screen.text_fontCHI, RED if card.health+card.armor < card.max_health else WHITE,
-                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)), (game_screen.block_size*0.05), self.surface)
+                                      game_screen.block_size*HINT_TEXT_X+game_screen.block_size*0.07*(len(card_type)), game_screen.block_size*HINT_PAD, self.surface)
                             draw_text(f"/", game_screen.text_fontCHI, WHITE,
-                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))),
-                                      (game_screen.block_size*0.05), self.surface)
+                                      game_screen.block_size*HINT_TEXT_X+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))),
+                                      game_screen.block_size*HINT_PAD, self.surface)
                             draw_text(f"{card.damage}", game_screen.text_fontCHI,
                                       RED if card.damage < card.original_damage else GREEN if card.damage > card.original_damage else WHITE,
-                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))+1),
-                                      (game_screen.block_size*0.05), self.surface)
+                                      game_screen.block_size*HINT_TEXT_X+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))+1),
+                                      game_screen.block_size*HINT_PAD, self.surface)
                             draw_text(f"-{line}", game_screen.text_fontCHI, WHITE,
-                                      game_screen.block_size*0.6+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))+len(str(card.damage))+1),
-                                      (game_screen.block_size*0.05), self.surface)
+                                      game_screen.block_size*HINT_TEXT_X+game_screen.block_size*0.07*(len(card_type)+len(str(card.health+card.armor))+len(str(card.damage))+1),
+                                      game_screen.block_size*HINT_PAD, self.surface)
                     elif i < 4:
-                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE, (game_screen.block_size*0.6),
-                                  (game_screen.block_size*0.05)+(game_screen.block_size*0.15*i), self.surface)
+                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE, game_screen.block_size*HINT_TEXT_X,
+                                  game_screen.block_size*(HINT_PAD + HINT_LINE*i), self.surface)
                     else:
-                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE, (game_screen.block_size*0.6),
-                                  (game_screen.block_size*0.05)+(game_screen.block_size*0.15*i), self.surface)
+                        draw_text(f"{line}", game_screen.text_fontCHI, WHITE, game_screen.block_size*HINT_TEXT_X,
+                                  game_screen.block_size*(HINT_PAD + HINT_LINE*i), self.surface)
             else:
                 spell_lines = CARDS_HINTS_DICTIONARY[card_type].split("\n") + enchant_lines
-                box_height = len(spell_lines) if len(spell_lines) > 4 else 4
-                box_width = game_screen.block_size*0.15 + max(
+                box_width = game_screen.block_size*HINT_PAD*2 + max(
                     game_screen.text_fontCHI.size(line)[0] for line in spell_lines)
-                box_pixel_height = (game_screen.block_size*0.05)+game_screen.block_size*(0.15*box_height)
+                box_pixel_height = _hint_height(game_screen, len(spell_lines), False)
                 self._prepare(box_width, box_pixel_height)
 
-                pygame.draw.rect(self.surface, WHITE, (0, 0, box_width, box_pixel_height), 2)
-                pygame.draw.rect(self.surface, BLACK, ((game_screen.thickness//2), (game_screen.thickness//2), box_width-game_screen.thickness,
-                                                       box_pixel_height - game_screen.thickness), 1000)
+                _hint_frame(self.surface, game_screen, box_width, box_pixel_height)
 
                 for i, line in enumerate(spell_lines):
-                    draw_text(f"{line}", game_screen.text_fontCHI, WHITE, (game_screen.block_size*0.05),
-                              (game_screen.block_size*0.05)+(game_screen.block_size*0.15*i), self.surface)
+                    draw_text(f"{line}", game_screen.text_fontCHI, WHITE,
+                              game_screen.block_size*HINT_PAD,
+                              game_screen.block_size*(HINT_PAD + HINT_LINE*i), self.surface)
             self._place(box_width, box_pixel_height, game_screen)

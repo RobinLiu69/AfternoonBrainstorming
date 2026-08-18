@@ -127,14 +127,38 @@ def test_a_hint_at_the_far_corner_slides_back_into_the_window(game_screen):
     assert y + box_height <= game_screen.display_height
 
 
-def test_a_hint_that_fits_still_opens_at_the_cursor(game_screen):
+def test_a_hint_opens_beside_the_cursor_rather_than_under_it(game_screen):
     box = HintBox(width=int(game_screen.block_size * 3), height=int(game_screen.block_size))
     box.turn_on = True
     box.x, box.y = 5, 7
 
     box_width, box_height = measure(box, "LUCKYBLOCK", game_screen)
+    x, y = box.anchor(box_width, box_height, game_screen)
 
-    assert box.anchor(box_width, box_height, game_screen) == (5, 7)
+    assert x > 5 and y > 7
+    assert x - 5 <= game_screen.block_size * 0.5
+    assert y - 7 <= game_screen.block_size * 0.5
+
+
+def test_a_hint_near_the_right_edge_opens_to_the_left_of_the_cursor(game_screen):
+    box = HintBox(width=int(game_screen.block_size * 3), height=int(game_screen.block_size))
+    box.turn_on = True
+    box.x, box.y = game_screen.display_width - 20, 40
+
+    box_width, box_height = measure(box, "LUCKYBLOCK", game_screen)
+    x, _y = box.anchor(box_width, box_height, game_screen)
+
+    assert x + box_width <= box.x
+
+
+def test_a_hint_box_hugs_the_lines_it_actually_has(game_screen):
+    box = HintBox(width=int(game_screen.block_size * 3), height=int(game_screen.block_size))
+    box.turn_on = True
+
+    short = measure(box, "CUBES", game_screen)[1]
+    tall = measure(box, "TANKG", game_screen)[1]
+
+    assert short < tall
 
 
 def test_the_lucky_block_icon_fills_its_frame_like_a_real_unit():
