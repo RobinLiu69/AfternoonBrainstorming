@@ -130,8 +130,8 @@ class EndGameRenderer:
 
         turns = len(self.game_state.game_statistics.score_history)
         summary = (f"{turns} turns"
-                   f"    P1 {self.game_state.player1.time_display}"
-                   f"    P2 {self.game_state.player2.time_display}")
+                   f"    P1 played {self.game_state.player1.time_used_display}"
+                   f"    P2 played {self.game_state.player2.time_used_display}")
 
         self._centred(f"Winner: {winner.capitalize()}!!", gs.title_text_font,
                       style.INK, bs * 0.35)

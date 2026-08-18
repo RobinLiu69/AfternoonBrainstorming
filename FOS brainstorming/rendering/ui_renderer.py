@@ -99,14 +99,19 @@ class UIRenderer:
     def render_score(self, local_controller: str, controller: str, game_state: GameState) -> None:
         self._score_display.display(local_controller, controller, game_state, self.game_screen)
 
+    TURN_GAP = 0.28
+
+    def _turn_bounds(self, controller: str) -> tuple[float, float]:
+        gs = self.game_screen
+        width = gs.big_text_font.size(f"Turn: {controller}")[0]
+        left = gs.display_width / 2 - width / 2
+        return left, left + width
+
     def render_controller_label(self, controller: str) -> None:
-        draw_text(
-            f"Turn: {controller}",
-            self.game_screen.big_text_font, WHITE,
-            self.game_screen.display_width/2 - self.game_screen.block_size*0.6,
-            self.game_screen.display_height/2 - self.game_screen.block_size*2.1,
-            self.game_screen.surface
-        )
+        gs = self.game_screen
+        left, _right = self._turn_bounds(controller)
+        draw_text(f"Turn: {controller}", gs.big_text_font, WHITE, left,
+                  gs.display_height / 2 - gs.block_size * 2.1, gs.surface)
 
     def render_identity_label(self, local_controller: str) -> None:
         style.identity_label(self.game_screen, local_controller)
@@ -209,17 +214,21 @@ class UIRenderer:
             )
 
     def render_timers(self, game_state: GameState) -> None:
+        gs = self.game_screen
+        gap = gs.block_size * self.TURN_GAP
+        turn_left, turn_right = self._turn_bounds(game_state.seat_on_turn())
+        y = gs.display_height / 6.4
+
         for player in (game_state.player1, game_state.player2):
             label = f"{player.short_name}Clock: {player.time_display}"
-            if game_state.timer_mode == "countdown":
-                label += f" (used {player.time_used_display})"
-            draw_text(
-                label,
-                self.game_screen.text_font, WHITE,
-                self.game_screen.display_width/2 - (self.game_screen.display_width/6)*_PLAYER_OFFSETS[player.name]["clock"],
-                self.game_screen.display_height / 6.4,
-                self.game_screen.surface
-            )
+            width = gs.text_font.size(label)[0]
+            if player.name == "player1":
+                x = min(gs.display_width / 2 - (gs.display_width / 6) * 1.25,
+                        turn_left - gap - width)
+            else:
+                x = max(gs.display_width / 2 + (gs.display_width / 6) * 0.7,
+                        turn_right + gap)
+            draw_text(label, gs.text_font, WHITE, x, y, gs.surface)
 
     def render_hint(self, mouse_x: int, mouse_y: int, card_or_name: "Card | str") -> None:
         self._hint_box.update(mouse_x, mouse_y, card_or_name, self.game_screen)
