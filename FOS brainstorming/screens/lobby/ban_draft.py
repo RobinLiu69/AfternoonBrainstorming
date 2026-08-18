@@ -27,7 +27,9 @@ from core.draft_state import TOURNAMENT_BANS
 from core.game_screen import GameScreen, cell_origin, draw_text, QuitGame
 from core.lobby_state import LobbyState, MAX_BANS_PER_PLAYER, is_bannable_card
 from core.lobby_dispatcher import LobbyDispatcher
+from core.card_hint import HintBox
 from core.network_layer import LANServer, LANClient
+from core.setting_config import load_setting
 from cards.factory import CardFactory
 from rendering import style
 from rendering.board_renderer import BoardRenderer
@@ -192,25 +194,47 @@ def _render_header(game_screen: GameScreen, state: LobbyState, controls: Optiona
     seat_labels = {"player1": "P1", "player2": "P2"}
     if controls == "both":
         identity = "You: local (both sides)"
-        help_text = "click / S / B: ban   C / U: unban   |   ESC: back to lobby"
+        help_text = "click / S / B: ban   C / U: unban   F: card info   |   ESC: back to lobby"
     elif controls == "host":
         my_name = state.display_name("host")
         identity = f"You: {my_name or seat_labels.get(my_seat, my_seat)} (host)"
-        help_text = "click / S / B: ban   C / U: unban   |   ESC: back to lobby"
+        help_text = "click / S / B: ban   C / U: unban   F: card info   |   ESC: back to lobby"
     elif controls == "peer":
         my_name = state.display_name("peer")
         identity = f"You: {my_name or seat_labels.get(my_seat, my_seat)}"
-        help_text = "click / S / B: ban   C / U: unban   |   ESC: leave game"
+        help_text = "click / S / B: ban   C / U: unban   F: card info   |   ESC: leave game"
     elif local_role == "host":
         identity = "You: host (watching)"
-        help_text = "watching ban draft   |   ESC: back to lobby"
+        help_text = "watching ban draft   F: card info   |   ESC: back to lobby"
     else:
         identity = "God View" if local_role == "god" else "Spectator"
-        help_text = "watching ban draft   |   ESC: leave game"
+        help_text = "watching ban draft   F: card info   |   ESC: leave game"
     draw_text(identity, game_screen.text_font, WHITE,
               bs * 0.2, bs * 0.2, game_screen.surface)
     style.muted_text(game_screen, help_text, bs * 0.2,
                      game_screen.display_height - bs * 0.45)
+
+
+def hovered_name(registry: ExhibitRegistry, spectator_cards: list, controls: Optional[str],
+                 page: int, index: int,
+                 board_x: Optional[int], board_y: Optional[int]) -> str:
+    if board_x is None or board_y is None:
+        return ""
+    if controls is not None:
+        name = registry.card_name_at(page, index, board_x, board_y)
+        return "" if name == "None" else name
+    for card in spectator_cards:
+        if card.board_x == board_x and card.board_y == board_y:
+            return card.job_and_color
+    return ""
+
+
+def _render_hint(game_screen: GameScreen, hint_box: HintBox, hint_on: bool,
+                 card_name: str, mouse_x: int, mouse_y: int) -> None:
+    hint_box.turn_on = hint_on
+    if not hint_on or not card_name:
+        return
+    hint_box.update(mouse_x, mouse_y, card_name, game_screen)
 
 
 def _render_leave_confirm(game_screen: GameScreen) -> None:
@@ -246,6 +270,9 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
     ruleset_locked = TOURNAMENT_BANS if state.settings.ruleset == "tournament" else frozenset()
     back_button = make_back_button(game_screen, text="back", corner="top_right")
     confirming_leave = False
+    hint_box = HintBox(width=int(game_screen.block_size * 3),
+                       height=int(game_screen.block_size))
+    hint_on = load_setting("hint_on")
 
     while True:
         if not state.in_ban_draft:
@@ -331,6 +358,8 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
                     else:
                         page = (page - 1) % registry.page_count()
                         index = registry.index_count(page) - 1
+                elif event.key == pygame.K_f:
+                    hint_on = not hint_on
                 elif event.key in (pygame.K_s, pygame.K_b):
                     try_ban(hovered_card())
                 elif event.key in (pygame.K_c, pygame.K_u):
@@ -386,8 +415,11 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
                 _render_spectator_labels(game_screen, state)
 
             _render_header(game_screen, state, controls, local_role, my_seat, my_identity)
+            hint_name = hovered_name(registry, spectator_board.get(state), controls,
+                                     page, index, board_x, board_y)
         if is_controller:
             back_button.update(game_screen)
+        _render_hint(game_screen, hint_box, hint_on, hint_name, mouse_x, mouse_y)
         if confirming_leave:
             _render_leave_confirm(game_screen)
 
