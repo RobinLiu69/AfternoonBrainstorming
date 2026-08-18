@@ -32,6 +32,7 @@ from core.board_block import initialize_board
 from core.battling_dispatcher import BattlingDispatcher
 from core.match_settings import TIME_CONTROL_OPTIONS
 from core.replay_source import ReplaySource, ReplayClock
+from rendering import style
 from rendering.game_renderer import GameRenderer
 from screens.battling.battling_action import collect_actions
 from screens.notices import notice_screen
@@ -263,27 +264,73 @@ def _rebuild_and_fast_forward(
     _skip_toggle_hints(source)
 
 
-def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool, speed: float, save_log: bool) -> None:
-    x = game_screen.block_size * 0.3
-    y_top = game_screen.block_size * 0.2
-    y_bottom = game_screen.display_height - game_screen.block_size * 0.2
+CONTROL_HEIGHT = 0.52
+CONTROL_MARGIN = 0.25
+
+
+def _draw_progress(game_screen: GameScreen, source: ReplaySource,
+                   x: float, y: float, width: float) -> None:
+    bs = game_screen.block_size
+    height = max(2, int(bs / 22))
+    total = max(1, source.total_actions)
+    filled = width * min(1.0, source.current_action_index / total)
+
+    track = pygame.Surface((int(width), height), pygame.SRCALPHA)
+    track.fill(style.PANEL_EDGE)
+    game_screen.surface.blit(track, (int(x), int(y)))
+    if filled >= 1:
+        pygame.draw.rect(game_screen.surface, style.INK,
+                         (int(x), int(y), int(filled), height))
+
+
+def _draw_hud(game_screen: GameScreen, source: ReplaySource, paused: bool,
+              speed: float, save_log: bool) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    font = game_screen.mid_text_font
 
     status = "PAUSED" if paused else "PLAYING"
-    header = (
-        f"REPLAY [{status}]  speed={speed:g}x  "
-        f"{source.current_action_index}/{source.total_actions}  "
-        f"log={'ON' if save_log else 'OFF'}"
-    )
-    draw_text(header, game_screen.mid_text_font, WHITE, x, y_top, game_screen.surface)
+    speed_text = f"{speed:g}x"
+    count = f"{source.current_action_index}/{source.total_actions}"
+
+    status_w = font.size("PLAYING")[0]
+    speed_w = font.size(speed_text)[0]
+    count_w = font.size(count)[0]
+    gap = bs * 0.22
+    bar_w = bs * 1.5
+    inner = status_w + speed_w + bar_w + count_w + gap * 3
+    pad = bs * 0.2
+    width = inner + pad * 2
+    height = bs * 0.5
+    left = cx - width / 2
+    top = bs * 0.1
+
+    style.modal(game_screen, left, top, width, height)
+
+    text_y = top + (height - font.get_linesize()) / 2
+    x = left + pad
+    draw_text(status, font, style.INK, x, text_y, game_screen.surface)
+    x += status_w + gap
+    style.muted_text(game_screen, speed_text, x, text_y, font)
+    x += speed_w + gap
+    _draw_progress(game_screen, source, x,
+                   top + height / 2 - max(2, int(bs / 22)) / 2, bar_w)
+    x += bar_w + gap
+    draw_text(count, font, style.INK, x, text_y, game_screen.surface)
 
     replay_version = source.metadata.get("version")
     if replay_version is not None and replay_version != VERSION:
-        warning = f"WARNING: Replay version {replay_version} != current {VERSION}, results may differ"
-        draw_text(warning, game_screen.mid_text_font, RED, x + game_screen.block_size * 1.8, y_top - game_screen.block_size * 0.15, game_screen.surface)
+        style.muted_text(game_screen,
+                         f"recorded on {replay_version} - running {VERSION}",
+                         bs * 0.25, bs * 0.22, game_screen.text_font)
 
-
-    hint = "SPACE pause/play   LEFT prev   RIGHT next   UP/DOWN speed   R restart   T take over   V anim   L save-log   ESC exit"
-    draw_text(hint, game_screen.mid_text_font, WHITE, x, y_bottom, game_screen.surface)
+    hint = (f"SPACE play / pause    LEFT / RIGHT step    UP / DOWN speed    "
+            f"R restart    T take over    V anim    "
+            f"L save-log ({'ON' if save_log else 'OFF'})    ESC exit")
+    hint_w = game_screen.text_font.size(hint)[0]
+    style.muted_text(game_screen, hint, cx - hint_w / 2,
+                     game_screen.display_height - bs * 0.18,
+                     game_screen.text_font)
 
 
 def _draw_takeover_hud(game_screen: GameScreen, controller: str) -> None:
