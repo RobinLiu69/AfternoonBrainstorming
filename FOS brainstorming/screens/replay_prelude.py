@@ -24,6 +24,7 @@ from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from core.game_screen import GameScreen, cell_origin, draw_text, QuitGame
 from core.lobby_state import MAX_BANS_PER_PLAYER
+from rendering import style
 from rendering.board_renderer import BoardRenderer
 from rendering.card_renderer import CardRenderer
 from rendering.sprite_registry import SpriteRegistry
@@ -41,6 +42,10 @@ def _player_bans(metadata: dict) -> list[tuple[str, list[str]]]:
     bans: dict[str, list[str]] = metadata.get("bans", {})
     return [(banner, cards[:MAX_BANS_PER_PLAYER])
             for banner, cards in bans.items() if banner != "judge"]
+
+
+def ruleset_bans(metadata: dict) -> list[str]:
+    return list(metadata.get("bans", {}).get("judge", []))
 
 
 def _settings_line(metadata: dict) -> str:
@@ -86,17 +91,17 @@ def _render_bans(gs: GameScreen, card_renderer: CardRenderer, cards: list,
 def version_notice(metadata: dict) -> tuple[str, tuple, bool]:
     recorded = metadata.get("version")
     if recorded is None:
-        return "version: unknown (older replay)", WHITE, False
+        return "version unknown - older replay", style.INK_MUTED, False
     if recorded == VERSION:
-        return f"version: {recorded}", WHITE, False
-    return (f"WARNING: replay version {recorded} != current {VERSION}, "
-            f"playback may differ"), RED, True
+        return f"recorded on {recorded}", style.INK_MUTED, False
+    return f"recorded on {recorded} - running {VERSION}", style.INK, True
 
 
 def _render_version(gs: GameScreen, metadata: dict, cx: float, y: float) -> None:
-    line, color, _mismatch = version_notice(metadata)
-    w = gs.mid_text_font.size(line)[0]
-    draw_text(line, gs.mid_text_font, color, cx - w / 2, y, gs.surface)
+    line, color, mismatch = version_notice(metadata)
+    font = gs.mid_text_font if mismatch else gs.text_font
+    w = font.size(line)[0]
+    draw_text(line, font, color, cx - w / 2, y, gs.surface)
 
 
 def deck_layout(gs: GameScreen, metadata: dict) -> tuple[float, float, float]:
@@ -114,6 +119,50 @@ def _render_row(gs: GameScreen, label: str, cards: list[str],
     draw_text(label, gs.text_font, WHITE, label_x, y, gs.surface)
     for i, card in enumerate(cards):
         draw_text(card, gs.text_font, WHITE, deck_x + i * step, y, gs.surface)
+
+
+def render(game_screen: GameScreen, metadata: dict, card_renderer, board_renderer,
+           board, cards, rows, settings_line, labels,
+           label_x, deck_x, deck_step) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+
+    draw_text("REPLAY", game_screen.title_text_font, WHITE,
+              cx - bs, bs * 0.25, game_screen.surface)
+    _render_version(game_screen, metadata, cx, bs * 1.05)
+
+    left = cx - bs * 3.7
+    draw_text("bans", game_screen.text_font, WHITE, left, cy - bs * 2.1,
+              game_screen.surface)
+
+    locked = ruleset_bans(metadata)
+    if locked:
+        style.muted_text(game_screen, f"ruleset locked {len(locked)} cards",
+                         left, cy - bs * 1.78, game_screen.text_font)
+        for i in range(0, len(locked), 8):
+            style.muted_text(game_screen, "  ".join(locked[i:i + 8]),
+                             left, cy - bs * (1.5 - i / 8 * 0.28),
+                             game_screen.text_font)
+
+    if rows:
+        for cell in board.values():
+            board_renderer.render(cell)
+        _render_bans(game_screen, card_renderer, cards, rows)
+    elif not locked:
+        style.muted_text(game_screen, "no bans this match", left, cy - bs * 1.78,
+                         game_screen.mid_text_font)
+
+    deck_y = cy + bs * 1.35
+    draw_text(settings_line, game_screen.text_font, WHITE,
+              game_screen.display_width / 16 * 2, deck_y - bs * 0.45,
+              game_screen.surface)
+    for i, seat in enumerate(SEATS):
+        _render_row(game_screen, labels[i], metadata.get(f"{seat}_deck", []),
+                    deck_y + i * bs * 0.4, label_x, deck_x, deck_step)
+
+    draw_text("E/ENTER: watch replay    ESC: back", game_screen.mid_text_font, WHITE,
+              bs * 0.2, game_screen.display_height - bs * 0.45, game_screen.surface)
 
 
 def main(game_screen: GameScreen, metadata: dict) -> bool:
@@ -136,32 +185,8 @@ def main(game_screen: GameScreen, metadata: dict) -> bool:
 
     while True:
         game_screen.render()
-
-        draw_text("REPLAY", game_screen.title_text_font, WHITE,
-                  cx - bs, bs * 0.25, game_screen.surface)
-        _render_version(game_screen, metadata, cx, cy + bs * 0.5)
-        draw_text("bans", game_screen.text_font, WHITE,
-                  cx - bs * 3.7, cy - bs * 2.1, game_screen.surface)
-
-        if rows:
-            for cell in board.values():
-                board_renderer.render(cell)
-            _render_bans(game_screen, card_renderer, cards, rows)
-        else:
-            draw_text("no bans this match", game_screen.mid_text_font, WHITE,
-                      cx - bs * 3.7, cy - bs * 1.4, game_screen.surface)
-
-        deck_y = cy + bs * 1.35
-        draw_text(settings_line, game_screen.text_font, WHITE,
-                  game_screen.display_width / 16 * 2, deck_y - bs * 0.45,
-                  game_screen.surface)
-        for i, seat in enumerate(SEATS):
-            _render_row(game_screen, labels[i],
-                        metadata.get(f"{seat}_deck", []),
-                        deck_y + i * bs * 0.4, label_x, deck_x, deck_step)
-
-        draw_text("E/ENTER: watch replay    ESC: back", game_screen.mid_text_font, WHITE,
-                  bs * 0.2, game_screen.display_height - bs * 0.45, game_screen.surface)
+        render(game_screen, metadata, card_renderer, board_renderer, board, cards,
+               rows, settings_line, labels, label_x, deck_x, deck_step)
         back_button.update(game_screen)
         pygame.display.update()
 

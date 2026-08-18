@@ -164,13 +164,18 @@ def test_matching_version_is_recorded_and_not_flagged(tmp_path):
 
 def test_mismatched_version_is_flagged(tmp_path):
     from shared.setting import VERSION, RED
+    from rendering import style
 
     metadata = _write_replay(tmp_path, version="0.0.0.1")
     line, color, mismatch = replay_prelude.version_notice(metadata)
+    _matched, matched_color, _flag = replay_prelude.version_notice(
+        _write_replay(tmp_path, version=VERSION))
 
     assert mismatch is True
-    assert color == RED
     assert "0.0.0.1" in line and VERSION in line
+    assert color == style.INK
+    assert color != RED
+    assert matched_color == style.INK_MUTED
 
 
 def test_missing_version_is_not_a_hard_warning():
