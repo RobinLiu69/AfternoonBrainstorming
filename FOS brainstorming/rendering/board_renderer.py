@@ -38,10 +38,16 @@ class BoardRenderer:
         y = (self.game_screen.display_height/2 - self.game_screen.block_size*1.675) + board_y*self.game_screen.block_size
         return x, y
 
+    def _cell_rect(self, board_x: int, board_y: int) -> pygame.Rect:
+        left, top = self._board_to_pixel(board_x, board_y)
+        right, bottom = self._board_to_pixel(board_x + 1, board_y + 1)
+        x, y = round(left), round(top)
+        return pygame.Rect(x, y, round(right) - x - 1, round(bottom) - y - 1)
+
     def render(self, board: Board, color: tuple[int, int, int] | None = None) -> None:
-        x, y = self._board_to_pixel(board.board_x, board.board_y)
         pygame.draw.rect(self.game_screen.surface, color if color is not None else board.color,
-                         (x, y, board.width, board.height), self.game_screen.thickness)
+                         self._cell_rect(board.board_x, board.board_y),
+                         self.game_screen.thickness)
 
     def render_all(self, game_state: GameState, local_controller: str = "") -> None:
         effective_local = local_controller if local_controller in ("player1", "player2") else "player1"

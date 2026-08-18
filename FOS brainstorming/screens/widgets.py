@@ -20,6 +20,7 @@ from typing import Literal
 
 from core.game_screen import GameScreen
 from core.UI import Button
+from rendering import style
 
 Corner = Literal["top_left", "top_right", "bottom_left", "bottom_right"]
 
@@ -41,4 +42,5 @@ def make_back_button(game_screen: GameScreen, text: str = "back",
         x, y = game_screen.display_width - w - margin, game_screen.display_height - h - bs * 0.25
 
     return Button(w, h, x, y, box_width=box_width,
-                  font=game_screen.mid_text_font, text=text)
+                  font=game_screen.mid_text_font, text=text,
+                  radius=style.CORNER_RADIUS)
