@@ -25,6 +25,7 @@ import pygame
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text, QuitGame
 from core.setting_config import load_setting, save_setting
+from rendering import style
 from screens.widgets import make_back_button
 
 IP_PATTERN = re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")
@@ -76,20 +77,59 @@ def _draw_field(game_screen: GameScreen, rect: pygame.Rect, label: str,
                 value: str, placeholder: str, is_active: bool, caret: str) -> None:
     bs = game_screen.block_size
     draw_text(label, game_screen.text_font,
-              WHITE if is_active else GRAY,
+              style.INK if is_active else style.INK_MUTED,
               rect.x, rect.y - bs * 0.35, game_screen.surface)
+
+    field = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    field.fill(style.CONTROL_FILL if is_active else style.PANEL_FILL)
+    pygame.draw.rect(field, style.TOOLTIP_EDGE if is_active else style.PANEL_EDGE,
+                     field.get_rect(), style.edge_width(game_screen))
+    game_screen.surface.blit(field, rect.topleft)
+
+    inset = rect.x + bs * 0.15
     if value:
         draw_text(value + (caret if is_active else ""),
-                  game_screen.big_text_font, WHITE,
-                  rect.x, rect.y + bs * 0.12, game_screen.surface)
+                  game_screen.big_text_font, style.INK,
+                  inset, rect.y + bs * 0.12, game_screen.surface)
     elif is_active:
-        draw_text(caret, game_screen.big_text_font, WHITE,
-                  rect.x, rect.y + bs * 0.12, game_screen.surface)
-        draw_text(placeholder, game_screen.mid_text_font, DIM_GRAY,
-                  rect.x + bs * 0.25, rect.y + bs * 0.18, game_screen.surface)
+        draw_text(caret, game_screen.big_text_font, style.INK,
+                  inset, rect.y + bs * 0.12, game_screen.surface)
+        draw_text(placeholder, game_screen.mid_text_font, style.INK_DISABLED,
+                  inset + bs * 0.25, rect.y + bs * 0.18, game_screen.surface)
     else:
-        draw_text(placeholder, game_screen.mid_text_font, DIM_GRAY,
-                  rect.x, rect.y + bs * 0.18, game_screen.surface)
+        draw_text(placeholder, game_screen.mid_text_font, style.INK_DISABLED,
+                  inset, rect.y + bs * 0.18, game_screen.surface)
+
+
+def render(game_screen: GameScreen, fields: dict[str, str], active: str,
+           error: str, caret: str, back_button) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    rects = _field_rects(game_screen)
+    pad = bs * style.PANEL_PAD
+
+    style.panel(game_screen, rects["ip"].x - pad, cy - bs * 1.55,
+                rects["ip"].width + pad * 2,
+                rects["room"].bottom + pad - (cy - bs * 1.55))
+
+    draw_text("JOIN GAME", game_screen.title_text_font, style.INK,
+              cx - bs * 1.05, cy - bs * 2.4, game_screen.surface)
+
+    _draw_field(game_screen, rects["ip"], "Host IP", fields["ip"],
+                "empty = this computer (127.0.0.1)", active == "ip", caret)
+    _draw_field(game_screen, rects["room"], "Room number", fields["room"],
+                "empty = create a new room", active == "room", caret)
+
+    if error:
+        draw_text(error, game_screen.text_font, ERROR_RED,
+                  rects["room"].x, cy + bs * 1.42, game_screen.surface)
+
+    style.muted_text(game_screen,
+                     "[Enter] connect    [Tab] switch field    [Esc] cancel    [Ctrl+V] paste",
+                     rects["room"].x, cy + bs * 1.75, game_screen.text_font)
+
+    back_button.update(game_screen)
 
 
 def _input_loop(game_screen: GameScreen, default: str = "",
@@ -161,30 +201,7 @@ def _input_loop(game_screen: GameScreen, default: str = "",
         caret = "_" if (blink // 30) % 2 == 0 else " "
         blink += 1
 
-        cx = game_screen.display_width / 2
-        cy = game_screen.display_height / 2
-        bs = game_screen.block_size
-
-        draw_text("JOIN GAME", game_screen.title_text_font, WHITE,
-                  cx - bs * 1.05, cy - bs * 2.4, game_screen.surface)
-
-        _draw_field(game_screen, rects["ip"], "Host IP",
-                    fields["ip"], "empty = this computer (127.0.0.1)",
-                    active == "ip", caret)
-
-        _draw_field(game_screen, rects["room"], "Room number",
-                    fields["room"], "empty = create a new room",
-                    active == "room", caret)
-
-        if error:
-            draw_text(error, game_screen.text_font, ERROR_RED,
-                      rects["room"].x, cy + bs * 1.35, game_screen.surface)
-
-        draw_text("[Enter] connect    [Tab] switch field    [Esc] cancel    [Ctrl+V] paste",
-                  game_screen.text_font, WHITE,
-                  rects["room"].x, cy + bs * 1.75, game_screen.surface)
-
-        back_button.update(game_screen)
+        render(game_screen, fields, active, error, caret, back_button)
 
         pygame.display.update()
         clock.tick(60)
