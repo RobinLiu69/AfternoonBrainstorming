@@ -29,6 +29,7 @@ from core.lobby_state import LobbyState, MAX_BANS_PER_PLAYER, is_bannable_card
 from core.lobby_dispatcher import LobbyDispatcher
 from core.network_layer import LANServer, LANClient
 from cards.factory import CardFactory
+from rendering import style
 from rendering.board_renderer import BoardRenderer
 from rendering.card_renderer import CardRenderer
 from rendering.sprite_registry import SpriteRegistry
@@ -114,39 +115,74 @@ def _render_lock(game_screen: GameScreen, board_x: int, board_y: int) -> None:
     game_screen.surface.blit(locked, (int(x), int(y)))
 
 
+GRID_TOP = -1.95
+GRID_BOTTOM = 1.35
+GRID_X = -2.0
+GRID_W = 4.0
+SIDE_X = -4.6
+SIDE_W = 2.45
+ENTRY_STEP = 0.55
+ENTRY_CARDS = 0.22
+
+
+def _grid_panel(game_screen: GameScreen, rows: int = 3) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    pad = bs * style.PANEL_PAD
+    bottom = GRID_BOTTOM - (3 - rows)
+    style.panel(game_screen, cx + bs * GRID_X - pad, cy + bs * GRID_TOP - pad,
+                bs * GRID_W + pad * 2, bs * (bottom - GRID_TOP) + pad * 2)
+
+
+def _side_panel(game_screen: GameScreen, title: str, entries: int) -> float:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    pad = bs * style.PANEL_PAD
+    top = cy + bs * GRID_TOP - pad
+    height = bs * style.HEADER_HEIGHT + bs * ENTRY_STEP * entries + pad
+    style.section(game_screen, title, cx + bs * SIDE_X, top, bs * SIDE_W, height)
+    return top + bs * style.HEADER_HEIGHT + pad
+
+
 def _render_spectator_labels(game_screen: GameScreen, state: LobbyState) -> None:
     bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    x = cx + bs * SIDE_X + bs * style.PANEL_PAD
+
     for row, identity in enumerate(_BAN_IDENTITIES):
-        _x, y = cell_origin(game_screen, 0, row)
-        label = _identity_label(state, identity)
-        draw_text(label, game_screen.mid_text_font, WHITE,
-                  game_screen.display_width / 2 - bs * 3.7, y + bs * 0.3,
-                  game_screen.surface)
+        _cx, y = cell_origin(game_screen, 0, row)
+        cards = _bans_of(state, identity)
+        draw_text(_identity_label(state, identity), game_screen.mid_text_font, WHITE,
+                  x, y + bs * 0.28, game_screen.surface)
+        style.muted_text(game_screen, f"{len(cards)}/{MAX_BANS_PER_PLAYER} banned",
+                         x, y + bs * 0.52, game_screen.text_font)
 
 
 def _render_player_ban_rows(game_screen: GameScreen, state: LobbyState,
                             controls: str, my_identity: Optional[str]) -> None:
     bs = game_screen.block_size
-    x = game_screen.display_width // 16 * 2
-    base_y = game_screen.display_height / 2 + bs * 1.5
+    cx = game_screen.display_width / 2
 
     if my_identity is not None:
         rows = [my_identity, "peer" if my_identity == "host" else "host"]
     else:
         rows = list(_BAN_IDENTITIES)
 
-    step = bs * 0.3
-    for i, identity in enumerate(rows):
-        cards = _bans_of(state, identity)
-        label = _identity_label(state, identity)
-        line = f"{label} ({len(cards)}/{MAX_BANS_PER_PLAYER}): {' '.join(cards) if cards else '-'}"
-        draw_text(line, game_screen.text_font, WHITE, x, base_y + i * step,
-                  game_screen.surface)
+    y = _side_panel(game_screen, "BANS", len(rows))
+    x = cx + bs * SIDE_X + bs * style.PANEL_PAD
 
-    all_line = f"all bans ({len(state.bans)}/{MAX_BANS_PER_PLAYER * 2}): " \
-               f"{' '.join(state.bans) if state.bans else '-'}"
-    draw_text(all_line, game_screen.text_font, WHITE, x, base_y + 2 * step,
-              game_screen.surface)
+    for identity in rows:
+        cards = _bans_of(state, identity)
+        mine = identity == my_identity
+        label = f"{_identity_label(state, identity)}  {len(cards)}/{MAX_BANS_PER_PLAYER}"
+        draw_text(label + ("  <-- you" if mine else ""),
+                  game_screen.mid_text_font, WHITE, x, y, game_screen.surface)
+        style.muted_text(game_screen, " ".join(cards) if cards else "-",
+                         x + bs * 0.12, y + bs * ENTRY_CARDS,
+                         game_screen.text_font)
+        y += bs * ENTRY_STEP
 
 
 def _render_header(game_screen: GameScreen, state: LobbyState, controls: Optional[str],
@@ -176,8 +212,8 @@ def _render_header(game_screen: GameScreen, state: LobbyState, controls: Optiona
         help_text = "watching ban draft   |   ESC: leave game"
     draw_text(identity, game_screen.text_font, WHITE,
               bs * 0.2, bs * 0.2, game_screen.surface)
-    draw_text(help_text, game_screen.mid_text_font, WHITE,
-              bs * 0.2, game_screen.display_height - bs * 0.45, game_screen.surface)
+    style.muted_text(game_screen, help_text, bs * 0.2,
+                     game_screen.display_height - bs * 0.45)
 
 
 def _render_leave_confirm(game_screen: GameScreen) -> None:
@@ -327,6 +363,7 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
         game_screen.render()
 
         with dispatcher.action_lock:
+            _grid_panel(game_screen, 3 if controls is not None else 2)
             if controls is not None:
                 for i, color in enumerate(registry.get_page_colors(page)):
                     pygame.draw.rect(game_screen.surface, color, registry.switch_rects[i])
