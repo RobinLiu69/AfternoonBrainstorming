@@ -28,12 +28,57 @@ from utils.controls import key_pressed
 
 from campaign.ai_decks import STAGE_ORDER, STAGE_LABELS
 from campaign import campaign_save
+from screens.widgets import make_back_button
 
 from collections import deque
 
 
-LOCKED_COLOR: tuple[int, int, int] = (90, 90, 90)
-CLEARED_COLOR: tuple[int, int, int] = (255, 215, 0)
+LOCKED_COLOR: tuple[int, int, int] = style.INK_DISABLED
+CLEARED_COLOR: tuple[int, int, int] = style.INK_MUTED
+
+
+def stage_label(stage: str, unlocked: set[str], cleared: set[str]) -> tuple[str, tuple[int, int, int]]:
+    label = STAGE_LABELS.get(stage, stage)
+    if stage not in unlocked:
+        return f"[LOCKED]  {label}", LOCKED_COLOR
+    if stage in cleared:
+        return f"{label}  *", CLEARED_COLOR
+    return f"{label}  <", WHITE
+
+
+def make_buttons(game_screen: GameScreen, unlocked: set[str],
+                 cleared: set[str]) -> list[tuple[Button, str, bool]]:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    main_w, main_h = bs * 3.5, bs * 0.6
+    start_y = cy - bs * 1.8
+    box_width = int(bs / 30)
+
+    buttons: list[tuple[Button, str, bool]] = []
+    for i, stage in enumerate(STAGE_ORDER):
+        label, colour = stage_label(stage, unlocked, cleared)
+        buttons.append((
+            Button(main_w, main_h, cx - main_w / 2,
+                   start_y + i * (main_h + bs * 0.15),
+                   position="Left", padding=bs * 0.25, box_width=box_width,
+                   font=game_screen.big_text_font, text=label,
+                   text_color=colour, box_color=colour),
+            stage, stage in unlocked))
+    return buttons
+
+
+def render(game_screen: GameScreen, buttons: list[tuple[Button, str, bool]],
+           back_button: Button) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    style.title(game_screen, "Campaign", cy - bs * 2.7)
+    style.muted_text(game_screen, "*  cleared          <  next up",
+                     cx - bs * 1.05, cy - bs * 2.15, game_screen.text_font)
+    for button, _stage, _unlocked in buttons:
+        button.update(game_screen)
+    back_button.update(game_screen)
 
 
 def main(game_screen: GameScreen) -> Optional[str]:
@@ -54,33 +99,8 @@ def main(game_screen: GameScreen) -> Optional[str]:
     unlocked = set(state.get("unlocked", []))
     cleared = set(state.get("cleared", []))
 
-    main_w, main_h = bs * 3.5, bs * 0.6
-    main_x = cx - main_w / 2
-    buttons: list[tuple[Button, str, bool]] = []
-    start_y = cy - bs * 1.8
-    for i, stage in enumerate(STAGE_ORDER):
-        label = STAGE_LABELS.get(stage, stage)
-        if stage in cleared:
-            label = f"{label}  *"
-        if stage not in unlocked:
-            label = f"[LOCKED]  {STAGE_LABELS.get(stage, stage)}"
-        color = WHITE
-        if stage not in unlocked:
-            color = LOCKED_COLOR
-        elif stage in cleared:
-            color = CLEARED_COLOR
-        btn = Button(
-            main_w, main_h, main_x, start_y + i * (main_h + bs * 0.15),
-            position="Left", padding=bs * 0.25,
-            box_width=box_width, font=game_screen.big_text_font,
-            text=label, text_color=color, box_color=color,
-        )
-        buttons.append((btn, stage, stage in unlocked))
-
-    back_button = Button(
-        bs * 1.5, bs * 0.6, bs * 0.5, bs * 0.5,
-        box_width=box_width, font=game_screen.big_text_font, text="back",
-    )
+    buttons = make_buttons(game_screen, unlocked, cleared)
+    back_button = make_back_button(game_screen, text="back", corner="top_left")
 
     selected: Optional[str] = None
     clock = pygame.time.Clock()
@@ -108,13 +128,7 @@ def main(game_screen: GameScreen) -> Optional[str]:
                         running = False
             if event.type == pygame.QUIT:
                 raise QuitGame
-        style.title(game_screen, "Campaign", cy - bs * 2.7)
-        draw_text("* = cleared", game_screen.text_font, CLEARED_COLOR,
-                  cx - bs * 0.3, cy - bs * 2.1, game_screen.surface)
-
-        for btn, _stage, _u in buttons:
-            btn.update(game_screen)
-        back_button.update(game_screen)
+        render(game_screen, buttons, back_button)
 
         pygame.display.update()
         clock.tick(60)
