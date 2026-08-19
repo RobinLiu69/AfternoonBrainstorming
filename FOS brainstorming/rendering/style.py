@@ -92,6 +92,12 @@ def modal(gs: GameScreen, x: float, y: float, width: float, height: float) -> No
     gs.surface.blit(surface, (int(x), int(y)))
 
 
+def modal_section(gs: GameScreen, title: str, x: float, y: float,
+                  width: float, height: float, right: str = "") -> float:
+    modal(gs, x, y, width, height)
+    return header(gs, title, x, y, width, right)
+
+
 def muted_text(gs: GameScreen, text: str, x: float, y: float,
                font: pygame.font.Font | None = None) -> None:
     draw_text(text, font or gs.mid_text_font, INK_DISABLED, x, y, gs.surface)
@@ -156,15 +162,17 @@ def pause_overlay(gs: GameScreen, reason: str, seconds_remaining: float,
         window_line = f"reconnect window: {max(0, int(seconds_remaining))}s"
         note_line = note
 
-    lines = [reason or "opponent disconnected", window_line, note_line]
-    widths = [gs.big_text_font.size(line)[0] for line in lines]
+    body = [(reason or "opponent disconnected", gs.big_text_font, INK),
+            (window_line, gs.big_text_font, INK),
+            (note_line, gs.mid_text_font, INK_MUTED)]
     pad = bs * PANEL_PAD
-    width = max(widths) + pad * 2
-    height = bs * 0.5 * len(lines) + pad * 2
+    widths = [font.size(text)[0] for text, font, _c in body]
+    width = max(max(widths), gs.mid_text_font.size("PAUSED")[0] * 2) + pad * 2
+    height = bs * (HEADER_HEIGHT + 0.44 * len(body)) + pad
     x, y = cx - width / 2, cy - height / 2
-    modal(gs, x, y, width, height)
 
-    for i, line in enumerate(lines):
-        colour = INK if i == 0 else INK_MUTED
-        draw_text(line, gs.big_text_font, colour,
-                  cx - widths[i] / 2, y + pad + bs * 0.5 * i, gs.surface)
+    modal_section(gs, "PAUSED", x, y, width, height)
+    line_y = y + bs * HEADER_HEIGHT + pad * 0.7
+    for i, (text, font, colour) in enumerate(body):
+        draw_text(text, font, colour, cx - widths[i] / 2,
+                  line_y + bs * 0.44 * i, gs.surface)
