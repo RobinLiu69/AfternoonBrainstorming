@@ -85,21 +85,19 @@ def render(game_screen: GameScreen, host_ip: str, dot_count: int,
     cy = game_screen.display_height / 2
     pad = bs * style.PANEL_PAD
 
-    base = "Connecting"
-    title_w = game_screen.big_text_font.size(base + "...")[0]
-    host_w = game_screen.mid_text_font.size(host_ip)[0]
+    host_w = game_screen.big_text_font.size(host_ip)[0]
     hint = "[Esc] cancel"
     hint_w = game_screen.text_font.size(hint)[0]
 
-    width = max(title_w, host_w, hint_w) + pad * 4
-    height = bs * 1.7
+    width = max(max(host_w, hint_w) + pad * 6, bs * style.MODAL_MIN_W)
+    height = bs * (style.HEADER_HEIGHT + 0.88) + pad
     x, y = cx - width / 2, cy - height / 2
-    style.panel(game_screen, x, y, width, height)
 
-    draw_text(base + "." * dot_count, game_screen.big_text_font, style.INK,
-              cx - title_w / 2, y + pad, game_screen.surface)
-    draw_text(host_ip, game_screen.mid_text_font, style.INK_MUTED,
-              cx - host_w / 2, y + pad + bs * 0.5, game_screen.surface)
+    style.section(game_screen, "CONNECTING" + "." * dot_count, x, y, width, height)
+
+    draw_text(host_ip, game_screen.big_text_font, style.INK,
+              cx - host_w / 2, y + bs * style.HEADER_HEIGHT + pad * 0.9,
+              game_screen.surface)
     style.muted_text(game_screen, hint, cx - hint_w / 2,
                      y + height - pad - game_screen.text_font.get_linesize(),
                      game_screen.text_font)
