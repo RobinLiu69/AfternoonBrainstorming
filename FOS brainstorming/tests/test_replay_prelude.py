@@ -276,3 +276,14 @@ def test_deck_cards_stay_inside_the_panel(game_screen):
     panel_right = label_x + bs * replay_prelude.PANEL_W
 
     assert last_right <= panel_right
+
+
+def test_the_bans_panel_starts_above_the_board(game_screen):
+    from core.game_screen import cell_origin
+    from rendering import style
+
+    bs = game_screen.block_size
+    _bx, board_top = cell_origin(game_screen, 0, 0)
+    panel_top = board_top - bs * style.HEADER_HEIGHT - bs * replay_prelude.BAND_GAP
+
+    assert panel_top + bs * style.HEADER_HEIGHT <= board_top

@@ -129,6 +129,7 @@ def _render_version(gs: GameScreen, metadata: dict, cx: float, y: float) -> None
 
 
 PANEL_W = 7.4
+BAND_GAP = 0.20
 
 
 def deck_layout(gs: GameScreen, metadata: dict) -> tuple[float, float, float]:
@@ -159,15 +160,15 @@ def render(game_screen: GameScreen, metadata: dict, card_renderer, board_rendere
     cy = game_screen.display_height / 2
 
     style.title(game_screen, "REPLAY")
-    _render_version(game_screen, metadata, cx, bs * 0.92)
 
     left = cx - bs * 3.7
     pad = bs * style.PANEL_PAD
     factions, loose = ruleset_ban_summary(metadata)
 
     board_rows = max(1, len(rows))
-    panel_top = cy - bs * 1.75
-    panel_height = bs * (board_rows + 0.55)
+    _bx, board_top = cell_origin(game_screen, 0, 0)
+    panel_top = board_top - bs * style.HEADER_HEIGHT - bs * BAND_GAP
+    panel_height = (board_top + bs * board_rows + pad) - panel_top
     style.section(game_screen, "BANS", left - pad, panel_top,
                   bs * PANEL_W + pad * 2, panel_height)
 
@@ -203,9 +204,15 @@ def render(game_screen: GameScreen, metadata: dict, card_renderer, board_rendere
         _render_row(game_screen, labels[i], metadata.get(f"{seat}_deck", []),
                     deck_y + i * bs * 0.4, label_x, deck_x, deck_step)
 
+    footer_y = game_screen.display_height - bs * 0.45
     style.muted_text(game_screen, "E/ENTER: watch replay    ESC: back",
-                     bs * 0.2, game_screen.display_height - bs * 0.45,
-                     game_screen.text_font)
+                     bs * 0.2, footer_y, game_screen.text_font)
+
+    line, colour, _mismatch = version_notice(metadata)
+    line_w = game_screen.text_font.size(line)[0]
+    draw_text(line, game_screen.text_font, colour,
+              game_screen.display_width - line_w - bs * 0.2, footer_y,
+              game_screen.surface)
 
 
 def main(game_screen: GameScreen, metadata: dict) -> bool:
