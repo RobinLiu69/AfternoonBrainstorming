@@ -68,8 +68,8 @@ def _field_rects(game_screen: GameScreen) -> dict[str, pygame.Rect]:
     width = bs * 4.2
     height = bs * 0.6
     return {
-        "ip": pygame.Rect(cx - width / 2, cy - bs * 1.05, width, height),
-        "room": pygame.Rect(cx - width / 2, cy + bs * 0.45, width, height),
+        "ip": pygame.Rect(cx - width / 2, cy - bs * 0.60, width, height),
+        "room": pygame.Rect(cx - width / 2, cy + bs * 0.80, width, height),
     }
 
 
@@ -109,11 +109,12 @@ def render(game_screen: GameScreen, fields: dict[str, str], active: str,
     rects = _field_rects(game_screen)
     pad = bs * style.PANEL_PAD
 
-    style.panel(game_screen, rects["ip"].x - pad, cy - bs * 1.55,
-                rects["ip"].width + pad * 2,
-                rects["room"].bottom + pad - (cy - bs * 1.55))
+    panel_top = cy - bs * 1.55
+    panel_bottom = rects["room"].bottom + pad
+    style.section(game_screen, "SERVER", rects["ip"].x - pad, panel_top,
+                  rects["ip"].width + pad * 2, panel_bottom - panel_top)
 
-    style.title(game_screen, "JOIN GAME", cy - bs * 2.4)
+    style.title(game_screen, "JOIN GAME", cy - bs * 2.6)
 
     _draw_field(game_screen, rects["ip"], "Host IP", fields["ip"],
                 "empty = this computer (127.0.0.1)", active == "ip", caret)
@@ -122,11 +123,11 @@ def render(game_screen: GameScreen, fields: dict[str, str], active: str,
 
     if error:
         draw_text(error, game_screen.text_font, ERROR_RED,
-                  rects["room"].x, cy + bs * 1.42, game_screen.surface)
+                  rects["room"].x, panel_bottom + bs * 0.18, game_screen.surface)
 
     style.muted_text(game_screen,
                      "[Enter] connect    [Tab] switch field    [Esc] cancel    [Ctrl+V] paste",
-                     rects["room"].x, cy + bs * 1.75, game_screen.text_font)
+                     rects["room"].x, panel_bottom + bs * 0.50, game_screen.text_font)
 
     back_button.update(game_screen)
 
