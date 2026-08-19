@@ -251,3 +251,28 @@ class TestRulesetBansScaleWithFactions:
         factions, loose = replay_prelude.ruleset_ban_summary({"bans": {}})
 
         assert factions == [] and loose == []
+
+
+def test_every_screen_title_is_actually_centred(game_screen):
+    from rendering import style
+
+    for text in ("REPLAY", "LOBBY", "BAN DRAFT", "JOIN GAME", "Campaign"):
+        width = game_screen.title_text_font.size(text)[0]
+        left = game_screen.display_width / 2 - width / 2
+        assert abs((left + width / 2) - game_screen.display_width / 2) < 1
+
+
+def test_deck_cards_stay_inside_the_panel(game_screen):
+    metadata = {
+        "player1_name": "RobinTheBird",
+        "player2_name": "Aaron",
+        "player1_deck": ["APDKG"] * 12,
+        "player2_deck": ["TANKB"] * 12,
+    }
+    label_x, deck_x, step = replay_prelude.deck_layout(game_screen, metadata)
+    bs = game_screen.block_size
+
+    last_right = deck_x + 11 * step + game_screen.text_font.size("APDKG")[0]
+    panel_right = label_x + bs * replay_prelude.PANEL_W
+
+    assert last_right <= panel_right

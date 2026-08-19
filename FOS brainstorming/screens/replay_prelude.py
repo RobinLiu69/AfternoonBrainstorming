@@ -128,14 +128,20 @@ def _render_version(gs: GameScreen, metadata: dict, cx: float, y: float) -> None
     draw_text(line, font, color, cx - w / 2, y, gs.surface)
 
 
+PANEL_W = 7.4
+
+
 def deck_layout(gs: GameScreen, metadata: dict) -> tuple[float, float, float]:
+    bs = gs.block_size
     label_x = gs.display_width / 16 * 2
     name_w = max(gs.text_font.size(f"{_seat_label(metadata, s)}:")[0] for s in SEATS)
-    deck_x = label_x + name_w + gs.block_size * 0.4
+    deck_x = label_x + name_w + bs * 0.4
     max_cards = max((len(metadata.get(f"{s}_deck", [])) for s in SEATS), default=0)
-    step = min(gs.block_size * 0.62,
-               (gs.display_width - deck_x - gs.block_size * 0.3) / max(1, max_cards))
-    return label_x, deck_x, step
+    widest = max((gs.text_font.size(card)[0]
+                  for s in SEATS for card in metadata.get(f"{s}_deck", [])), default=0)
+    right_limit = label_x + bs * PANEL_W - bs * style.PANEL_PAD - widest
+    step = min(bs * 0.62, (right_limit - deck_x) / max(1, max_cards - 1))
+    return label_x, deck_x, max(0.0, step)
 
 
 def _render_row(gs: GameScreen, label: str, cards: list[str],
@@ -152,23 +158,26 @@ def render(game_screen: GameScreen, metadata: dict, card_renderer, board_rendere
     cx = game_screen.display_width / 2
     cy = game_screen.display_height / 2
 
-    draw_text("REPLAY", game_screen.title_text_font, WHITE,
-              cx - bs, bs * 0.25, game_screen.surface)
-    _render_version(game_screen, metadata, cx, bs * 1.05)
+    style.title(game_screen, "REPLAY")
+    _render_version(game_screen, metadata, cx, bs * 0.92)
 
     left = cx - bs * 3.7
-    draw_text("bans", game_screen.text_font, WHITE, left, cy - bs * 2.1,
-              game_screen.surface)
-
+    pad = bs * style.PANEL_PAD
     factions, loose = ruleset_ban_summary(metadata)
+
+    board_rows = max(1, len(rows))
+    panel_top = cy - bs * 1.75
+    panel_height = bs * (board_rows + 0.55)
+    style.section(game_screen, "BANS", left - pad, panel_top,
+                  bs * PANEL_W + pad * 2, panel_height)
 
     if rows:
         for cell in board.values():
             board_renderer.render(cell)
         _render_bans(game_screen, card_renderer, cards, rows)
-        locked_x, locked_y, per_line = cx + bs * 2.25, cy - bs * 1.55, 3
+        locked_x, locked_y, per_line = cx + bs * 2.25, cy - bs * 1.45, 3
     else:
-        locked_x, locked_y, per_line = left, cy - bs * 1.78, 8
+        locked_x, locked_y, per_line = left, cy - bs * 1.45, 8
 
     if factions or loose:
         style.muted_text(game_screen, "ruleset locked", locked_x, locked_y,
@@ -186,16 +195,17 @@ def render(game_screen: GameScreen, metadata: dict, card_renderer, board_rendere
         style.muted_text(game_screen, "no bans this match", left, locked_y,
                          game_screen.mid_text_font)
 
-    deck_y = cy + bs * 1.35
-    draw_text(settings_line, game_screen.text_font, WHITE,
-              game_screen.display_width / 16 * 2, deck_y - bs * 0.45,
-              game_screen.surface)
+    deck_top = panel_top + panel_height + bs * 0.3
+    style.section(game_screen, "DECKS", label_x - pad, deck_top,
+                  bs * PANEL_W + pad * 2, bs * 1.35, right=settings_line)
+    deck_y = deck_top + bs * style.HEADER_HEIGHT + pad
     for i, seat in enumerate(SEATS):
         _render_row(game_screen, labels[i], metadata.get(f"{seat}_deck", []),
                     deck_y + i * bs * 0.4, label_x, deck_x, deck_step)
 
-    draw_text("E/ENTER: watch replay    ESC: back", game_screen.mid_text_font, WHITE,
-              bs * 0.2, game_screen.display_height - bs * 0.45, game_screen.surface)
+    style.muted_text(game_screen, "E/ENTER: watch replay    ESC: back",
+                     bs * 0.2, game_screen.display_height - bs * 0.45,
+                     game_screen.text_font)
 
 
 def main(game_screen: GameScreen, metadata: dict) -> bool:

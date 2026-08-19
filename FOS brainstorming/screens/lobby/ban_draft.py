@@ -188,8 +188,7 @@ def _render_header(game_screen: GameScreen, state: LobbyState, controls: Optiona
                    local_role: str, my_seat: str, my_identity: Optional[str]) -> None:
     bs = game_screen.block_size
     cx = game_screen.display_width / 2
-    draw_text("BAN DRAFT", game_screen.title_text_font, WHITE,
-              cx - bs * 1.1, bs * 0.25, game_screen.surface)
+    style.title(game_screen, "BAN DRAFT")
 
     seat_labels = {"player1": "P1", "player2": "P2"}
     if controls == "both":

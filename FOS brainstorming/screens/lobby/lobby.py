@@ -295,8 +295,7 @@ def _render_title(gs: GameScreen) -> None:
     cx = gs.display_width / 2
     cy = gs.display_height / 2
 
-    draw_text("LOBBY", gs.title_text_font, WHITE,
-              cx - bs * 0.7, cy - bs * 2.8, gs.surface)
+    style.title(gs, "LOBBY", cy - bs * 2.8)
 
 
 def _render_roster(gs: GameScreen, state: LobbyState, role: str) -> None:

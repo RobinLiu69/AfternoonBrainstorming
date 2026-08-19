@@ -97,6 +97,18 @@ def muted_text(gs: GameScreen, text: str, x: float, y: float,
     draw_text(text, font or gs.mid_text_font, INK_DISABLED, x, y, gs.surface)
 
 
+def centred(gs: GameScreen, text: str, y: float,
+            font: pygame.font.Font | None = None,
+            colour: tuple[int, int, int] = INK) -> None:
+    font = font or gs.title_text_font
+    draw_text(text, font, colour, gs.display_width / 2 - font.size(text)[0] / 2,
+              y, gs.surface)
+
+
+def title(gs: GameScreen, text: str, y: float | None = None) -> None:
+    centred(gs, text, gs.block_size * 0.25 if y is None else y, gs.title_text_font)
+
+
 IDENTITY_LABELS: dict[str, str] = {
     "player1": "You: P1",
     "player2": "You: P2",

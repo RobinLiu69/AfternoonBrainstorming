@@ -22,6 +22,7 @@ import pygame
 
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text, QuitGame
+from rendering import style
 from core.UI import Button
 from utils.controls import key_pressed
 
@@ -107,8 +108,7 @@ def main(game_screen: GameScreen) -> Optional[str]:
                         running = False
             if event.type == pygame.QUIT:
                 raise QuitGame
-        draw_text("Campaign", game_screen.title_text_font, WHITE,
-                  cx - bs * 0.875, cy - bs * 2.7, game_screen.surface)
+        style.title(game_screen, "Campaign", cy - bs * 2.7)
         draw_text("* = cleared", game_screen.text_font, CLEARED_COLOR,
                   cx - bs * 0.3, cy - bs * 2.1, game_screen.surface)
 

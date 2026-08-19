@@ -113,8 +113,7 @@ def render(game_screen: GameScreen, fields: dict[str, str], active: str,
                 rects["ip"].width + pad * 2,
                 rects["room"].bottom + pad - (cy - bs * 1.55))
 
-    draw_text("JOIN GAME", game_screen.title_text_font, style.INK,
-              cx - bs * 1.05, cy - bs * 2.4, game_screen.surface)
+    style.title(game_screen, "JOIN GAME", cy - bs * 2.4)
 
     _draw_field(game_screen, rects["ip"], "Host IP", fields["ip"],
                 "empty = this computer (127.0.0.1)", active == "ip", caret)

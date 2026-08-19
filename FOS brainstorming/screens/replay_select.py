@@ -25,6 +25,7 @@ import pygame
 
 from shared.setting import WHITE, RED, FOLDER_PATH
 from core.game_screen import GameScreen, draw_text, QuitGame
+from rendering import style
 from core.replay_source import ReplaySource
 
 
@@ -204,8 +205,8 @@ def _draw(game_screen: GameScreen, replays: list[Path],
     cx = game_screen.display_width / 2
     top = game_screen.display_height / 2 - game_screen.block_size * 2.3
 
-    draw_text("Select Replay", game_screen.big_big_text_font, WHITE,
-              cx - game_screen.block_size * 1.5, top, game_screen.surface)
+    style.centred(game_screen, "Select Replay", top,
+                  game_screen.big_big_text_font)
 
     list_top = game_screen.display_height / 2 - game_screen.block_size * 1.5
     row_h = game_screen.block_size * 0.35
