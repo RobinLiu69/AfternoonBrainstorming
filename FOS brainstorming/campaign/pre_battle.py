@@ -23,6 +23,8 @@ import pygame
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
+from core.card_hint import draw_card_glyph
+from shared import card_code
 from rendering import style
 from utils.controls import key_pressed
 
@@ -124,22 +126,35 @@ PANEL_W = 3.6
 DECK_ROWS = 6
 
 
-def _deck_lines(deck: list[str]) -> list[str]:
-    return [" ".join(deck[i:i + DECK_ROWS]) for i in range(0, len(deck), DECK_ROWS)]
+DECK_GLYPH = 0.22
+DECK_ROW = 0.50
+
+
+def _deck_lines(deck: list[str]) -> list[list[str]]:
+    return [deck[i:i + DECK_ROWS] for i in range(0, len(deck), DECK_ROWS)]
 
 
 def _draw_deck(title: str, deck: list[str], x: float, y: float,
                game_screen: GameScreen) -> float:
     bs = game_screen.block_size
     pad = bs * style.PANEL_PAD
-    lines = _deck_lines(deck)
-    height = bs * style.HEADER_HEIGHT + pad + bs * 0.36 * len(lines) + pad * 0.6
+    rows = _deck_lines(deck)
+    glyph = bs * DECK_GLYPH
+    height = bs * style.HEADER_HEIGHT + pad + bs * DECK_ROW * len(rows) + pad * 0.4
 
     style.section(game_screen, title, x, y, bs * PANEL_W, height,
                   right=f"{len(deck)} cards")
-    line_y = y + bs * style.HEADER_HEIGHT + pad
-    for line in lines:
-        draw_text(line, game_screen.mid_text_font, style.INK,
-                  x + pad, line_y, game_screen.surface)
-        line_y += bs * 0.36
+    step = (bs * PANEL_W - pad * 2) / DECK_ROWS
+    row_y = y + bs * style.HEADER_HEIGHT + pad
+    for row in rows:
+        for i, card in enumerate(row):
+            cell_x = x + pad + i * step
+            width = game_screen.text_font.size(card)[0]
+            draw_card_glyph(game_screen, game_screen.surface,
+                            card_code.plain_code(card),
+                            cell_x + (step - glyph) / 2 - pad * 0.1, row_y, glyph)
+            draw_text(card, game_screen.text_font, style.INK,
+                      cell_x + (step - width) / 2 - pad * 0.1, row_y + glyph,
+                      game_screen.surface)
+        row_y += bs * DECK_ROW
     return height
