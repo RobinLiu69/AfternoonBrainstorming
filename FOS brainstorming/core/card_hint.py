@@ -146,6 +146,31 @@ def get_job_shape(job: str, block_size: float) -> tuple:
             ((block_size*0.55), (block_size*0.45)))
 
 
+def draw_card_glyph(game_screen: GameScreen, surface: pygame.Surface, card_type: str,
+                    x: float, y: float, size: float,
+                    color: tuple[int, int, int] | None = None) -> str:
+    job, shape_color = get_job_and_color(card_type)
+    if job == "None":
+        return ""
+    shape = get_job_shape(job, size * 1.4)
+    width = int(game_screen.thickness / 1.1)
+    radius = size * 0.3
+    if job == "AP":
+        bounds = (shape[0] - radius, shape[0] + radius, shape[1] - radius, shape[1] + radius)
+    else:
+        xs = [px for px, _py in shape]
+        ys = [py for _px, py in shape]
+        bounds = (min(xs), max(xs), min(ys), max(ys))
+    dx = x + size / 2 - (bounds[0] + bounds[1]) / 2
+    dy = y + size / 2 - (bounds[2] + bounds[3]) / 2
+    if job == "AP":
+        pygame.draw.circle(surface, color or shape_color,
+                           (shape[0] + dx, shape[1] + dy), radius, width)
+    else:
+        pygame.draw.lines(surface, color or shape_color, True,
+                          [(px + dx, py + dy) for px, py in shape], width)
+    return job
+
 HINT_LINE = 0.15
 HINT_PAD = 0.07
 HINT_PREVIEW = 0.5
@@ -257,12 +282,10 @@ class HintBox:
                                  max(1, int(game_screen.block_size / 60)))
                 if upgraded:
                     draw_text("(+)", game_screen.text_font, color, (game_screen.block_size*0.213), (game_screen.block_size*0.235), self.surface)
-                shape = get_job_shape(job, game_screen.block_size*0.7)
-                match job:
-                    case "AP":
-                        pygame.draw.circle(self.surface, color, shape, game_screen.block_size*0.15, int(game_screen.thickness/1.1))
-                    case _:
-                        pygame.draw.lines(self.surface, color, True, shape, int(game_screen.thickness*1.1))
+                draw_card_glyph(game_screen, self.surface, card_type.split()[0],
+                                game_screen.block_size * HINT_PAD,
+                                game_screen.block_size * HINT_PAD,
+                                game_screen.block_size * HINT_PREVIEW, color)
                 if job == "LUCKYBLOCK":
                     draw_text("?", game_screen.text_font, color, game_screen.block_size*0.275,
                               game_screen.block_size*0.245, self.surface)

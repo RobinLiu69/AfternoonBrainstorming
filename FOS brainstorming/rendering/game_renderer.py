@@ -74,14 +74,7 @@ class GameRenderer:
 
         self.ui_renderer.render_score(local_controller, controller, game_state)
         self.ui_renderer.render_controller_label(controller)
-        self.ui_renderer.render_hands(game_state)
-        self.ui_renderer.render_attack_counts(game_state)
-        self.ui_renderer.render_tokens(game_state)
-        self.ui_renderer.render_luck(game_state)
-        self.ui_renderer.render_totems(game_state)
-        self.ui_renderer.render_coins(game_state)
-        self.ui_renderer.render_deck_info(game_state)
-        self.ui_renderer.render_timers(game_state)
+        self.ui_renderer.render_player_panels(game_state, controller)
         self.ui_renderer.render_spectator_count(game_state)
         self.ui_renderer.render_awaiting_server(game_state)
 

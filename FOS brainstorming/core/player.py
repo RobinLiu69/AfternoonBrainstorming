@@ -22,6 +22,7 @@ from typing import Optional, TYPE_CHECKING
 import time
 
 from core.game_screen import GameScreen
+from rendering import hud_layout
 from shared import card_code
 from shared.stat_type import StatType
 from shared.renderer import DyingCardSink
@@ -251,12 +252,10 @@ class Player:
             self._update_timer_logic(game_state.timer_mode)
 
     def get_hand_name_by_mouse_pos(self, mouse_x: int, mouse_y: int, game_screen: GameScreen) -> tuple[str, int]:
-        if ((mouse_x < game_screen.display_width/2-game_screen.block_size*2.1 and mouse_x > game_screen.display_width/2-game_screen.block_size*3.3) or
-           (mouse_x > game_screen.display_width/2+game_screen.block_size*2.1 and mouse_x < game_screen.display_width/2+game_screen.block_size*3.3)):
-            i = int(mouse_y*14/game_screen.display_height+0.5)-1
-            if -1 < i < len(self.hand):
-                return self.hand[i], i
-        return "None", 0
+        index = hud_layout.index_at(game_screen, self.name, mouse_x, mouse_y, len(self.hand))
+        if index < 0:
+            return "None", 0
+        return self.hand[index], index
 
     def _refresh_time_display(self) -> None:
         time_minutes = str(int(self.elapsed_time//60)) if len(str(int(self.elapsed_time//60))) > 1 else "0"+str(int(self.elapsed_time//60))

@@ -29,6 +29,7 @@ INK_DISABLED = (105, 105, 105)
 PANEL_FILL = (255, 255, 255, 12)
 PANEL_EDGE = (255, 255, 255, 70)
 HEADER_FILL = (255, 255, 255, 32)
+HEADER_ACTIVE = (255, 255, 255, 78)
 CONTROL_FILL = (255, 255, 255, 20)
 SCRIM_FILL = (0, 0, 0, 205)
 TOOLTIP_FILL = (8, 8, 8, 255)
@@ -58,10 +59,10 @@ def panel(gs: GameScreen, x: float, y: float, width: float, height: float) -> No
 
 
 def header(gs: GameScreen, title: str, x: float, y: float, width: float,
-           right: str = "") -> float:
+           right: str = "", fill: tuple[int, int, int, int] | None = None) -> float:
     height = gs.block_size * HEADER_HEIGHT
     band = pygame.Surface((max(1, int(width)), max(1, int(height))), pygame.SRCALPHA)
-    band.fill(HEADER_FILL)
+    band.fill(fill or HEADER_FILL)
     gs.surface.blit(band, (int(x), int(y)))
     inset = gs.block_size * PANEL_PAD * 0.6
     text_y = y + (height - gs.mid_text_font.get_linesize()) / 2
@@ -74,9 +75,10 @@ def header(gs: GameScreen, title: str, x: float, y: float, width: float,
 
 
 def section(gs: GameScreen, title: str, x: float, y: float,
-            width: float, height: float, right: str = "") -> float:
+            width: float, height: float, right: str = "",
+            fill: tuple[int, int, int, int] | None = None) -> float:
     panel(gs, x, y, width, height)
-    return header(gs, title, x, y, width, right)
+    return header(gs, title, x, y, width, right, fill)
 
 
 def scrim(gs: GameScreen) -> None:

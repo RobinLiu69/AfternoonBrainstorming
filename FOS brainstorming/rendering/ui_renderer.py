@@ -22,11 +22,12 @@ from typing import TYPE_CHECKING
 import pygame
 
 from core.game_state import GameState
-from shared.setting import WHITE, GREEN, DARKGREEN, CYAN, BLUE, RED
+from shared.setting import WHITE, BLUE, RED
+from shared import card_code
 from core.game_screen import GameScreen, draw_text
-from rendering import style
-from core.UI import ScoreDisplay, AttackCountDisplay, TokenDisplay, HighLightBox
-from core.card_hint import HintBox
+from rendering import style, hud_layout
+from core.UI import ScoreDisplay, AttackCountDisplay
+from core.card_hint import HintBox, draw_card_glyph, get_stat_prefix
 from cards.base import Card
 
 
@@ -70,32 +71,10 @@ class UIRenderer:
             width=int(game_screen.block_size*0.1),
             height=int(game_screen.block_size*0.1)
         )
-        self._p1_token_display = TokenDisplay(
-            player_name="player1",
-            radius=int(game_screen.block_size*0.1)
-        )
-        self._p2_token_display = TokenDisplay(
-            player_name="player2",
-            radius=int(game_screen.block_size*0.1)
-        )
         self._hint_box = HintBox(
             width=int(game_screen.block_size*3),
             height=int(game_screen.block_size)
         )
-        self._highlights: dict[str, HighLightBox] = {
-            name: HighLightBox(
-                x=(game_screen.display_width/2 - game_screen.block_size*3.3
-                   if name == "player1"
-                   else game_screen.display_width/2 + game_screen.block_size*2.025),
-                y=0,
-                box_color=BLUE if name == "player1" else RED,
-                box_height=int(game_screen.block_size/3),
-                box_width=int(game_screen.block_size),
-                line_width=int(game_screen.block_size//50),
-            )
-            for name in ("player1", "player2")
-        }
-
     def render_score(self, local_controller: str, controller: str, game_state: GameState) -> None:
         self._score_display.display(local_controller, controller, game_state, self.game_screen)
 
@@ -116,119 +95,97 @@ class UIRenderer:
     def render_identity_label(self, local_controller: str) -> None:
         style.identity_label(self.game_screen, local_controller)
 
-    def render_hands(self, game_state: GameState) -> None:
-        self._render_one_hand(game_state.player1, game_state)
-        self._render_one_hand(game_state.player2, game_state)
-
-    def _render_one_hand(self, player: Player, game_state: GameState) -> None:
-        match player.name:
-            case "player1":
-                x = self.game_screen.display_width/2 - self.game_screen.block_size*3.2
-            case "player2":
-                x = self.game_screen.display_width/2 + self.game_screen.block_size*2.1
-            case _:
-                x = 0
-
-        for i, card_name in enumerate(player.hand):
-            draw_text(
-                f"{player.short_name}hand {i + 1}: {card_name}",
-                self.game_screen.text_font, WHITE, x,
-                self.game_screen.display_height / 14 * (i+1),
-                self.game_screen.surface
-            )
-
-        highlight = self._highlights.get(player.name)
-        if highlight is not None:
-            if not (player.selected_card_index == -1 or len(player.hand) <= player.selected_card_index):
-                highlight.visable = True
-                highlight.update(
-                    player.selected_card_index,
-                    len(player.hand[player.selected_card_index])
-                        if 0 <= player.selected_card_index < len(player.hand) else 0,
-                    self.game_screen
-                )
-
-    def render_attack_counts(self, game_state: GameState) -> None:
-        self._p1_attack_display.display(
-            game_state.number_of_attacks["player1"], self.game_screen
-        )
-        self._p2_attack_display.display(
-            game_state.number_of_attacks["player2"], self.game_screen
-        )
-
-    def render_tokens(self, game_state: GameState) -> None:
-        self._p1_token_display.display(
-            game_state.players_token["player1"], self.game_screen
-        )
-        self._p2_token_display.display(
-            game_state.players_token["player2"], self.game_screen
-        )
-
-    def render_luck(self, game_state: GameState) -> None:
+    def render_player_panels(self, game_state: GameState, controller: str) -> None:
         for player in (game_state.player1, game_state.player2):
-            draw_text(
-                f"{player.short_name}Luck: {game_state.players_luck[player.name]}%",
-                self.game_screen.text_font, GREEN,
-                self.game_screen.display_width/2 - self.game_screen.block_size*_PLAYER_OFFSETS[player.name]["luck"],
-                self.game_screen.block_size * 1.1,
-                self.game_screen.surface
-            )
+            self._render_panel(player, game_state, controller)
 
-    def render_totems(self, game_state: GameState) -> None:
-        for player in (game_state.player1, game_state.player2):
-            if game_state.players_totem[player.name]:
-                draw_text(
-                    f"totems: {game_state.players_totem[player.name]}",
-                    self.game_screen.text_font, DARKGREEN,
-                    self.game_screen.display_width/2 - self.game_screen.block_size*_PLAYER_OFFSETS[player.name]["totem"],
-                    self.game_screen.display_height - self.game_screen.block_size*0.4,
-                    self.game_screen.surface
-                )
-
-    def render_coins(self, game_state: GameState) -> None:
-        for player in (game_state.player1, game_state.player2):
-            if game_state.players_coin[player.name]:
-                draw_text(
-                    f"coins: {game_state.players_coin[player.name]}",
-                    self.game_screen.text_font, CYAN,
-                    self.game_screen.display_width/2 - self.game_screen.block_size*_PLAYER_OFFSETS[player.name]["coin"],
-                    self.game_screen.display_height/2 + self.game_screen.block_size*1.3,
-                    self.game_screen.surface
-                )
-
-    def render_deck_info(self, game_state: GameState) -> None:
-        for player in (game_state.player1, game_state.player2):
-            draw_text(
-                f"{player.short_name}DrawDeck: {len(player.draw_pile)} cards",
-                self.game_screen.text_font, WHITE,
-                self.game_screen.display_width/2 - self.game_screen.block_size*_PLAYER_OFFSETS[player.name]["deck_info"],
-                self.game_screen.display_height - self.game_screen.block_size*0.5,
-                self.game_screen.surface
-            )
-            draw_text(
-                f"{player.short_name}DiscardPile: {len(player.discard_pile)} cards",
-                self.game_screen.text_font, WHITE,
-                self.game_screen.display_width/2 - self.game_screen.block_size*_PLAYER_OFFSETS[player.name]["deck_info"],
-                self.game_screen.display_height - self.game_screen.block_size*0.4,
-                self.game_screen.surface
-            )
-
-    def render_timers(self, game_state: GameState) -> None:
+    def _render_panel(self, player: "Player", game_state: GameState,
+                      controller: str) -> None:
         gs = self.game_screen
-        gap = gs.block_size * self.TURN_GAP
-        turn_left, turn_right = self._turn_bounds(game_state.seat_on_turn())
-        y = gs.display_height / 6.4
+        bs = gs.block_size
+        seat = player.name
+        panel = hud_layout.panel_rect(gs, seat)
+        style.section(gs, f"PLAYER {seat[-1]}", panel.x, panel.y, panel.width,
+                      panel.height, player.time_display,
+                      style.HEADER_ACTIVE if seat == controller else None)
 
-        for player in (game_state.player1, game_state.player2):
-            label = f"{player.short_name}Clock: {player.time_display}"
-            width = gs.text_font.size(label)[0]
-            if player.name == "player1":
-                x = min(gs.display_width / 2 - (gs.display_width / 6) * 1.25,
-                        turn_left - gap - width)
-            else:
-                x = max(gs.display_width / 2 + (gs.display_width / 6) * 0.7,
-                        turn_right + gap)
-            draw_text(label, gs.text_font, WHITE, x, y, gs.surface)
+        left = hud_layout.content_left(gs, seat)
+        width = hud_layout.content_width(gs, seat)
+        line = gs.text_font.get_linesize()
+        top = hud_layout.stats_top(gs, seat)
+
+        meter = self._p1_attack_display if seat == "player1" else self._p2_attack_display
+        style.muted_text(gs, "attacks", left, top, gs.text_font)
+        meter.display(game_state.number_of_attacks[seat], gs,
+                      left + bs * 0.66, top + (line - meter.height) / 2)
+
+        self._stat_row(left, top + line, width, "luck",
+                       f"{game_state.players_luck[seat]}%",
+                       "coins", str(game_state.players_coin[seat]))
+        tokens = game_state.players_token[seat]
+        totems = game_state.players_totem[seat]
+        if tokens or totems:
+            self._stat_row(left, top + line * 2, width, "tokens", str(tokens),
+                           "totems" if totems else "", str(totems))
+
+        label_y = hud_layout.hand_label_top(gs, seat)
+        draw_text("HAND", gs.mid_text_font, style.INK, left, label_y, gs.surface)
+        total = str(len(player.hand))
+        draw_text(total, gs.mid_text_font, style.INK_MUTED,
+                  left + width - gs.mid_text_font.size(total)[0], label_y, gs.surface)
+        self._render_hand_rows(player)
+
+        foot = hud_layout.footer_top(gs, seat)
+        self._stat_row(left, foot, width, "draw", str(len(player.draw_pile)),
+                       "discard", str(len(player.discard_pile)))
+        self._stat_row(left, foot + line, width, "on board",
+                       str(len(player.on_board)), "", "")
+
+    def _stat_row(self, x: float, y: float, width: float, label: str, value: str,
+                  label_b: str, value_b: str) -> None:
+        gs = self.game_screen
+        font = gs.text_font
+        style.muted_text(gs, label, x, y, font)
+        draw_text(value, font, style.INK, x + gs.block_size * 0.66, y, gs.surface)
+        if not label_b:
+            return
+        half = x + width * 0.50
+        style.muted_text(gs, label_b, half, y, font)
+        draw_text(value_b, font, style.INK, half + gs.block_size * 0.72, y, gs.surface)
+
+    def _render_hand_rows(self, player: "Player") -> None:
+        gs = self.game_screen
+        bs = gs.block_size
+        seat = player.name
+        line = gs.text_font.get_linesize()
+        shown = hud_layout.shown_rows(gs, seat, len(player.hand))
+
+        for i in range(shown):
+            code = player.hand[i]
+            rect = hud_layout.row_rect(gs, seat, i)
+            if i == player.selected_card_index:
+                fill = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+                fill.fill(style.CONTROL_FILL)
+                gs.surface.blit(fill, rect.topleft)
+                pygame.draw.rect(gs.surface, style.INK, rect, style.edge_width(gs))
+
+            glyph = bs * hud_layout.GLYPH
+            draw_card_glyph(gs, gs.surface, card_code.plain_code(code),
+                            rect.x + bs * 0.06, rect.y + (rect.height - glyph) / 2, glyph)
+            text_y = rect.y + (rect.height - line) / 2
+            draw_text(card_code.base_code(code), gs.text_font, style.INK,
+                      rect.x + bs * 0.44, text_y, gs.surface)
+            stats = get_stat_prefix(code)
+            if stats:
+                draw_text(stats, gs.text_font, style.INK_MUTED,
+                          rect.right - gs.text_font.size(stats)[0] - bs * 0.08,
+                          text_y, gs.surface)
+
+        hidden = len(player.hand) - shown
+        if hidden > 0:
+            rect = hud_layout.row_rect(gs, seat, shown)
+            style.muted_text(gs, f"+{hidden} more", rect.x,
+                             rect.y + (rect.height - line) / 2, gs.text_font)
 
     def render_hint(self, mouse_x: int, mouse_y: int, card_or_name: "Card | str") -> None:
         self._hint_box.update(mouse_x, mouse_y, card_or_name, self.game_screen)
@@ -268,59 +225,59 @@ class UIRenderer:
         lines.append(f"turn: {game_state.turn_number}")
 
         font = gs.text_font
-        pad = bs * 0.2
+        pad = bs * style.PANEL_PAD
         line_h = font.get_linesize()
         width = max(font.size(line)[0] for line in lines) + pad * 2
-        height = line_h * len(lines) + pad * 2
-        x = gs.display_width - width - bs * 0.3
-        y = bs * 0.6
+        height = bs * style.HEADER_HEIGHT + line_h * len(lines) + pad * 1.6
+        x = gs.display_width / 2 - width / 2
+        y = gs.display_height / 2 - height / 2
 
-        panel = pygame.Surface((int(width), int(height)), pygame.SRCALPHA)
-        panel.fill((0, 0, 0, 190))
-        pygame.draw.rect(panel, WHITE, panel.get_rect(), max(1, int(bs / 60)))
-        gs.surface.blit(panel, (int(x), int(y)))
+        style.modal_section(gs, "NET", x, y, width, height)
+        top = y + bs * style.HEADER_HEIGHT + pad * 0.7
         for i, line in enumerate(lines):
-            draw_text(line, font, WHITE, x + pad, y + pad + i * line_h, gs.surface)
+            draw_text(line, font, style.INK, x + pad, top + i * line_h, gs.surface)
 
     def render_spectator_decks(self, game_state: GameState, local_controller: str) -> None:
-        gs = self.game_screen
-        bs = gs.block_size
-        font = gs.text_font
-        title_font = gs.mid_text_font
-        line_h = font.get_linesize()
-        pad = bs * 0.15
         is_god = local_controller == "god"
-
-        def deck_lines(player: Player) -> tuple[str, list[str]]:
+        for player in (game_state.player1, game_state.player2):
             total = len(player.deck)
             if is_god:
-                cards = sorted(c for c in player.draw_pile if c != "?")
-                return f"deck ({len(player.draw_pile)} left)", (cards or ["(empty)"])
-            known = sorted(player.revealed_deck)
-            unknown = max(0, total - len(known))
-            body = list(known)
-            if unknown:
-                body.append(f"+ {unknown} unknown")
-            return f"deck (known {len(known)}/{total})", (body or ["(empty)"])
+                body = sorted(c for c in player.draw_pile if c != "?")
+                title = f"DRAW PILE {len(player.draw_pile)}"
+            else:
+                known = sorted(player.revealed_deck)
+                body = list(known)
+                unknown = max(0, total - len(known))
+                if unknown:
+                    body.append(f"+ {unknown} unknown")
+                title = f"DECK {len(known)}/{total}"
+            self._render_deck_block(player, title, body or ["(empty)"])
 
-        def panel_width(title: str, body: list[str]) -> float:
-            return max([title_font.size(title)[0]] + [font.size(line)[0] for line in body]) + pad * 2
+    def _render_deck_block(self, player: "Player", title: str, body: list[str]) -> None:
+        gs = self.game_screen
+        seat = player.name
+        area = hud_layout.hand_area(gs, seat)
+        line_h = gs.text_font.get_linesize()
+        label_h = gs.mid_text_font.get_linesize()
+        pad = gs.block_size * hud_layout.PAD
 
-        def draw_panel(title: str, body: list[str], x: float) -> None:
-            width = panel_width(title, body)
-            height = title_font.get_linesize() + line_h * len(body) + pad * 2
-            y = gs.display_height / 2 - height / 2
-            panel = pygame.Surface((int(width), int(height)), pygame.SRCALPHA)
-            panel.fill((0, 0, 0, 200))
-            pygame.draw.rect(panel, WHITE, panel.get_rect(), max(1, int(bs / 70)))
-            gs.surface.blit(panel, (int(x), int(y)))
-            draw_text(title, title_font, WHITE, x + pad, y + pad, gs.surface)
-            ty = y + pad + title_font.get_linesize()
-            for i, line in enumerate(body):
-                draw_text(line, font, WHITE, x + pad, ty + i * line_h, gs.surface)
+        rows = hud_layout.shown_rows(gs, seat, len(player.hand))
+        if len(player.hand) > rows:
+            rows += 1
+        top = area.y + hud_layout.row_height(gs) * rows + pad
+        room = area.bottom - top - label_h
+        fits = max(0, int(room // line_h))
+        if fits <= 0:
+            return
 
-        p1_title, p1_body = deck_lines(game_state.player1)
-        p2_title, p2_body = deck_lines(game_state.player2)
-        draw_panel(f"P1 {p1_title}", p1_body, bs * 0.3)
-        title2 = f"P2 {p2_title}"
-        draw_panel(title2, p2_body, gs.display_width - panel_width(title2, p2_body) - bs * 0.3)
+        pygame.draw.line(gs.surface, style.DIVIDER, (area.x, top - pad * 0.5),
+                         (area.right, top - pad * 0.5), style.edge_width(gs))
+        draw_text(title, gs.mid_text_font, style.INK, area.x, top, gs.surface)
+        shown = body if len(body) <= fits else body[:max(0, fits - 1)]
+        for i, line in enumerate(shown):
+            draw_text(line, gs.text_font, style.INK_MUTED, area.x,
+                      top + label_h + i * line_h, gs.surface)
+        hidden = len(body) - len(shown)
+        if hidden > 0:
+            draw_text(f"+{hidden} more", gs.text_font, style.INK_DISABLED, area.x,
+                      top + label_h + len(shown) * line_h, gs.surface)
