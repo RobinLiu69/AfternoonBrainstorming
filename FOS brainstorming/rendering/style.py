@@ -38,6 +38,7 @@ DIVIDER = (255, 255, 255, 55)
 PANEL_PAD = 0.18
 HEADER_HEIGHT = 0.30
 CORNER_RATIO = 30
+MODAL_MIN_W = 3.6
 
 
 def edge_width(gs: GameScreen) -> int:
@@ -167,7 +168,7 @@ def pause_overlay(gs: GameScreen, reason: str, seconds_remaining: float,
             (note_line, gs.mid_text_font, INK_MUTED)]
     pad = bs * PANEL_PAD
     widths = [font.size(text)[0] for text, font, _c in body]
-    width = max(max(widths), gs.mid_text_font.size("PAUSED")[0] * 2) + pad * 2
+    width = max(max(widths) + pad * 6, bs * MODAL_MIN_W)
     height = bs * (HEADER_HEIGHT + 0.44 * len(body)) + pad
     x, y = cx - width / 2, cy - height / 2
 
