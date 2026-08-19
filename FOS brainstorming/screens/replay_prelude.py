@@ -129,12 +129,13 @@ def _render_version(gs: GameScreen, metadata: dict, cx: float, y: float) -> None
 
 
 PANEL_W = 7.4
+PANEL_LEFT = 3.7
 BAND_GAP = 0.20
 
 
 def deck_layout(gs: GameScreen, metadata: dict) -> tuple[float, float, float]:
     bs = gs.block_size
-    label_x = gs.display_width / 16 * 2
+    label_x = gs.display_width / 2 - bs * PANEL_LEFT
     name_w = max(gs.text_font.size(f"{_seat_label(metadata, s)}:")[0] for s in SEATS)
     deck_x = label_x + name_w + bs * 0.4
     max_cards = max((len(metadata.get(f"{s}_deck", [])) for s in SEATS), default=0)
@@ -161,7 +162,7 @@ def render(game_screen: GameScreen, metadata: dict, card_renderer, board_rendere
 
     style.title(game_screen, "REPLAY")
 
-    left = cx - bs * 3.7
+    left = cx - bs * PANEL_LEFT
     pad = bs * style.PANEL_PAD
     factions, loose = ruleset_ban_summary(metadata)
 

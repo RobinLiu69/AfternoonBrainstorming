@@ -287,3 +287,24 @@ def test_the_bans_panel_starts_above_the_board(game_screen):
     panel_top = board_top - bs * style.HEADER_HEIGHT - bs * replay_prelude.BAND_GAP
 
     assert panel_top + bs * style.HEADER_HEIGHT <= board_top
+
+
+def test_both_prelude_panels_share_one_centred_edge(game_screen):
+    from rendering import style
+
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    pad = bs * style.PANEL_PAD
+    width = bs * replay_prelude.PANEL_W + pad * 2
+
+    metadata = {
+        "player1_name": "RobinTheBird", "player2_name": "Aaron",
+        "player1_deck": ["APDKG"] * 12, "player2_deck": ["APC"] * 12,
+    }
+    label_x, _deck_x, _step = replay_prelude.deck_layout(game_screen, metadata)
+
+    bans_left = cx - bs * replay_prelude.PANEL_LEFT - pad
+    decks_left = label_x - pad
+
+    assert abs(bans_left - decks_left) < 1
+    assert abs((bans_left + width / 2) - cx) < 1
