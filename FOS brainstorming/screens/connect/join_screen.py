@@ -87,18 +87,24 @@ def _draw_field(game_screen: GameScreen, rect: pygame.Rect, label: str,
     game_screen.surface.blit(field, rect.topleft)
 
     inset = rect.x + bs * 0.15
+
+    def middle(font: pygame.font.Font) -> float:
+        return rect.y + (rect.height - font.get_linesize()) / 2
+
+    value_font = game_screen.big_text_font
+    hint_font = game_screen.mid_text_font
+
     if value:
-        draw_text(value + (caret if is_active else ""),
-                  game_screen.big_text_font, style.INK,
-                  inset, rect.y + bs * 0.12, game_screen.surface)
+        draw_text(value + (caret if is_active else ""), value_font, style.INK,
+                  inset, middle(value_font), game_screen.surface)
     elif is_active:
-        draw_text(caret, game_screen.big_text_font, style.INK,
-                  inset, rect.y + bs * 0.12, game_screen.surface)
-        draw_text(placeholder, game_screen.mid_text_font, style.INK_DISABLED,
-                  inset + bs * 0.25, rect.y + bs * 0.18, game_screen.surface)
+        draw_text(caret, value_font, style.INK,
+                  inset, middle(value_font), game_screen.surface)
+        draw_text(placeholder, hint_font, style.INK_DISABLED,
+                  inset + bs * 0.25, middle(hint_font), game_screen.surface)
     else:
-        draw_text(placeholder, game_screen.mid_text_font, style.INK_DISABLED,
-                  inset, rect.y + bs * 0.18, game_screen.surface)
+        draw_text(placeholder, hint_font, style.INK_DISABLED,
+                  inset, middle(hint_font), game_screen.surface)
 
 
 def render(game_screen: GameScreen, fields: dict[str, str], active: str,
