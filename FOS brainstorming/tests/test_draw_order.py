@@ -47,7 +47,7 @@ class TestTooltipsSitAboveChromeAndBelowModals:
         assert at["netinfo"] < at["hint"] < at["pause"]
 
     def test_the_ban_draft_draws_the_hint_after_its_panels(self) -> None:
-        source = inspect.getsource(ban_draft.main)
+        source = inspect.getsource(ban_draft.render)
         at = _order(source, {
             "panel": "_grid_panel(game_screen",
             "header": "_render_header(game_screen",

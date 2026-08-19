@@ -93,6 +93,10 @@ class CardRenderer:
                 draw_text(f"HP:{data.health}", self.game_screen.info_text_font, text_color, bs * 0.1, bs * 0.03, surface)
                 atk_text = (f"ATK:{data.damage}+{data.extra_damage}" if data.extra_damage else f"ATK:{data.damage}")
                 draw_text(atk_text, self.game_screen.info_text_font, text_color, bs * 0.5 if data.extra_damage else bs * 0.6, bs * 0.03, surface)
+                if data.owner == "display":
+                    draw_text(data.job_and_color, self.game_screen.text_font, text_color,
+                              bs * 0.1, bs * 0.8, surface)
+                    return
                 if data.armor > 0:
                     draw_text(f"arm:{data.armor}", self.game_screen.small_text_font, text_color, bs * 0.1, bs * 0.12, surface)
                 if data.anger:
@@ -108,10 +112,8 @@ class CardRenderer:
                     draw_text("Target", self.game_screen.small_text_font, (200, 0, 0),
                             bs * 0.1, bs * 0.75, surface)
 
-                if data.owner == "display":
-                    draw_text(data.job_and_color, self.game_screen.text_font, text_color, bs * 0.1, bs * 0.8, surface)
-                else:
-                    draw_text(data.owner, self.game_screen.text_font, text_color, bs * 0.1, bs * 0.8, surface)
+                draw_text(data.owner, self.game_screen.text_font, text_color,
+                          bs * 0.1, bs * 0.8, surface)
     
     def _blit(self, surface: pygame.Surface, data: CardRenderData, offset: tuple[float, float]) -> None:
         x, y = cell_origin(self.game_screen, data.board_x, data.board_y)

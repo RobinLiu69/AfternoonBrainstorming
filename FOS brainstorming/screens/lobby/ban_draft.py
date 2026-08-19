@@ -20,6 +20,8 @@ from typing import Optional
 
 import pygame
 
+from dataclasses import dataclass
+
 from shared.setting import WHITE
 from core.board_config import BoardConfig
 from core.board_block import initialize_board
@@ -253,15 +255,74 @@ def _render_leave_confirm(game_screen: GameScreen) -> None:
         draw_text(line, game_screen.mid_text_font, WHITE, cx - w / 2, cy + dy, game_screen.surface)
 
 
+@dataclass
+class BanDraftScene:
+    registry: ExhibitRegistry
+    card_renderer: CardRenderer
+    board_renderer: BoardRenderer
+    board_player: dict
+    board_spectator: dict
+    spectator_board: "_SpectatorBoardCache"
+    hint_box: HintBox
+
+    @classmethod
+    def create(cls, game_screen: GameScreen) -> "BanDraftScene":
+        return cls(
+            registry=ExhibitRegistry(game_screen),
+            card_renderer=CardRenderer(game_screen),
+            board_renderer=BoardRenderer(game_screen),
+            board_player=initialize_board(game_screen, BoardConfig(4, 3)),
+            board_spectator=initialize_board(game_screen, BoardConfig(4, 2)),
+            spectator_board=_SpectatorBoardCache(),
+            hint_box=HintBox(width=int(game_screen.block_size * 3),
+                             height=int(game_screen.block_size)),
+        )
+
+
+def render(game_screen: GameScreen, scene: BanDraftScene, state: LobbyState,
+           controls: Optional[str], local_role: str, my_seat: str,
+           my_identity: Optional[str], ruleset_locked, page: int, index: int,
+           back_button, is_controller: bool, hint_on: bool,
+           mouse_x: int, mouse_y: int, board_x: Optional[int],
+           board_y: Optional[int], confirming_leave: bool = False) -> None:
+    _grid_panel(game_screen, 3 if controls is not None else 2)
+    if controls is not None:
+        for i, color in enumerate(scene.registry.get_page_colors(page)):
+            pygame.draw.rect(game_screen.surface, color, scene.registry.switch_rects[i])
+        exhibit_cards = scene.registry.get_page(page, index) + scene.registry.get_magic_row()
+        for card in exhibit_cards:
+            for render_object in card.get_render_data():
+                scene.card_renderer.render(render_object)
+        for card in exhibit_cards:
+            if card.job_and_color in state.bans or card.job_and_color in ruleset_locked:
+                _render_lock(game_screen, card.board_x, card.board_y, card.job_and_color)
+        for board in scene.board_player.values():
+            scene.board_renderer.render(board)
+        _render_player_ban_rows(game_screen, state, controls, my_identity)
+    else:
+        for card in scene.spectator_board.get(state):
+            for render_object in card.get_render_data():
+                scene.card_renderer.render(render_object)
+            _render_lock(game_screen, card.board_x, card.board_y, card.job_and_color)
+        for board in scene.board_spectator.values():
+            scene.board_renderer.render(board)
+        _render_spectator_labels(game_screen, state)
+
+    _render_header(game_screen, state, controls, local_role, my_seat, my_identity)
+    hint_name = hovered_name(scene.registry, scene.spectator_board.get(state),
+                             controls, page, index, board_x, board_y)
+    if is_controller:
+        back_button.update(game_screen)
+    _render_hint(game_screen, scene.hint_box, hint_on, hint_name, mouse_x, mouse_y)
+    if confirming_leave:
+        _render_leave_confirm(game_screen)
+
+
 def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher,
          mode: str, server: Optional[LANServer] = None,
          client: Optional[LANClient] = None) -> str:
-    registry = ExhibitRegistry(game_screen)
-    card_renderer = CardRenderer(game_screen)
-    board_renderer = BoardRenderer(game_screen)
-    board_player = initialize_board(game_screen, BoardConfig(4, 3))
-    board_spectator = initialize_board(game_screen, BoardConfig(4, 2))
-    spectator_board = _SpectatorBoardCache()
+    scene = BanDraftScene.create(game_screen)
+    registry = scene.registry
     clock = pygame.time.Clock()
     page = 0
     index = 0
@@ -269,8 +330,6 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
     ruleset_locked = TOURNAMENT_BANS if state.settings.ruleset == "tournament" else frozenset()
     back_button = make_back_button(game_screen, text="back", corner="top_right")
     confirming_leave = False
-    hint_box = HintBox(width=int(game_screen.block_size * 3),
-                       height=int(game_screen.block_size))
     hint_on = load_setting("hint_on")
 
     while True:
@@ -388,39 +447,10 @@ def main(game_screen: GameScreen, state: LobbyState, dispatcher: LobbyDispatcher
         game_screen.render()
 
         with dispatcher.action_lock:
-            _grid_panel(game_screen, 3 if controls is not None else 2)
-            if controls is not None:
-                for i, color in enumerate(registry.get_page_colors(page)):
-                    pygame.draw.rect(game_screen.surface, color, registry.switch_rects[i])
-                exhibit_cards = registry.get_page(page, index) + registry.get_magic_row()
-                for card in exhibit_cards:
-                    for render_object in card.get_render_data():
-                        card_renderer.render(render_object)
-                for card in exhibit_cards:
-                    if card.job_and_color in state.bans or card.job_and_color in ruleset_locked:
-                        _render_lock(game_screen, card.board_x, card.board_y,
-                                     card.job_and_color)
-                for board in board_player.values():
-                    board_renderer.render(board)
-                _render_player_ban_rows(game_screen, state, controls, my_identity)
-            else:
-                for card in spectator_board.get(state):
-                    for render_object in card.get_render_data():
-                        card_renderer.render(render_object)
-                    _render_lock(game_screen, card.board_x, card.board_y,
-                                 card.job_and_color)
-                for board in board_spectator.values():
-                    board_renderer.render(board)
-                _render_spectator_labels(game_screen, state)
-
-            _render_header(game_screen, state, controls, local_role, my_seat, my_identity)
-            hint_name = hovered_name(registry, spectator_board.get(state), controls,
-                                     page, index, board_x, board_y)
-        if is_controller:
-            back_button.update(game_screen)
-        _render_hint(game_screen, hint_box, hint_on, hint_name, mouse_x, mouse_y)
-        if confirming_leave:
-            _render_leave_confirm(game_screen)
+            render(game_screen, scene, state, controls, local_role, my_seat,
+                   my_identity, ruleset_locked, page, index, back_button,
+                   is_controller, hint_on, mouse_x, mouse_y, board_x, board_y,
+                   confirming_leave)
 
         pygame.display.update()
         clock.tick(60)
