@@ -36,6 +36,14 @@ def log_player_names(logger: GameLogger, lobby_state: Optional[LobbyState]) -> N
     )
 
 
+def resolve_seat_names(lobby_state: Optional[LobbyState]) -> dict[str, str]:
+    if lobby_state is None:
+        return {}
+    seat_names = lobby_state.seat_names()
+    return {seat: name for seat in ("player1", "player2")
+            if (name := seat_names.get(seat))}
+
+
 def resolve_ban_draft(lobby_state: Optional[LobbyState]) -> dict[str, str]:
     if lobby_state is None:
         return {}

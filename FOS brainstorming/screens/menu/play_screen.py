@@ -28,6 +28,7 @@ from core.game_state import GameState
 from core.draft_state import DraftState
 from core.lobby_state import LobbyState
 from core.match_prelude import (log_player_names, resolve_ban_draft, judge_bans_of,
+                                resolve_seat_names,
                                 log_ban_draft, log_judge_bans)
 from core.network_layer import LANClient, LANServer, VersionMismatchError
 from core.board_config import BoardConfig
@@ -147,6 +148,7 @@ def _build_game_state_from_draft(draft_state: DraftState,
     draft_state.settings.apply_to(game_state)
     game_state.game_logger.info(f"version {VERSION}", version=VERSION)
     log_player_names(logger, lobby_state)
+    game_state.seat_names = resolve_seat_names(lobby_state)
     game_state.ban_draft = resolve_ban_draft(lobby_state)
     game_state.judge_bans = judge_bans_of(draft_state.ban_deck, game_state.ban_draft)
     log_ban_draft(logger, game_state.ban_draft)

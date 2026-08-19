@@ -112,9 +112,9 @@ class EndGameRenderer:
             case "mid":
                 self._render_end_game_data(winner)
             case "player1":
-                self._render_player_title("Player1")
+                self._render_player_title(self._name("player1"))
             case "player2":
-                self._render_player_title("Player2")
+                self._render_player_title(self._name("player2"))
 
         self._score_chart.display(self.game_screen)
         self._render_nav(display_state)
@@ -124,24 +124,28 @@ class EndGameRenderer:
         draw_text(text, font, colour,
                   gs.display_width / 2 - font.size(text)[0] / 2, y, gs.surface)
 
+    def _name(self, seat: str) -> str:
+        return self.game_state.display_name(seat)
+
     def _render_end_game_data(self, winner: str) -> None:
         gs = self.game_screen
         bs = gs.block_size
 
         turns = len(self.game_state.game_statistics.score_history)
         summary = (f"{turns} turns"
-                   f"    P1 played {self.game_state.player1.time_used_display}"
-                   f"    P2 played {self.game_state.player2.time_used_display}")
+                   f"    {self._name('player1')} played {self.game_state.player1.time_used_display}"
+                   f"    {self._name('player2')} played {self.game_state.player2.time_used_display}")
 
-        self._centred(f"Winner: {winner.capitalize()}!!", gs.title_text_font,
+        title = self._name(winner) if winner in ("player1", "player2") else winner
+        self._centred(f"Winner: {title}!!", gs.title_text_font,
                       style.INK, bs * 0.35)
         self._centred(summary, gs.mid_text_font, style.INK_MUTED, bs * 1.15)
 
     def _render_nav(self, display_state: str) -> None:
         gs = self.game_screen
         keys = [("TAB", "raw data", display_state == "raw"),
-                ("1", "player1", display_state == "player1"),
-                ("2", "player2", display_state == "player2"),
+                ("1", self._name("player1"), display_state == "player1"),
+                ("2", self._name("player2"), display_state == "player2"),
                 ("ESC", "continue", False)]
         parts = [f"[{key}] {label}" for key, label, _on in keys]
         gap = gs.block_size * 0.35
@@ -190,9 +194,10 @@ class EndGameRenderer:
     def _render_raw_data(self) -> None:
         bs = self.game_screen.block_size
         cy = self.game_screen.display_height / 2
-        bottom = self._render_block("PLAYER 1", self._display_p1_data,
+        bottom = self._render_block(self._name("player1").upper(),
+                                    self._display_p1_data,
                                     self._display_p1_name, cy - bs * 2.45)
-        self._render_block("PLAYER 2", self._display_p2_data,
+        self._render_block(self._name("player2").upper(), self._display_p2_data,
                            self._display_p2_name, bottom + bs * 0.30)
 
     def _render_player_title(self, title: str) -> None:

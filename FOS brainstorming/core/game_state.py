@@ -72,6 +72,7 @@ class GameState:
 
     file_auto_delete: bool = False
     ban_draft: dict[str, str] = field(default_factory=dict)
+    seat_names: dict[str, str] = field(default_factory=dict)
     judge_bans: list[str] = field(default_factory=list)
 
     score: int = 0
@@ -146,6 +147,9 @@ class GameState:
     def get_player(self, owner: str) -> Player:
         return self.player1 if owner == "player1" else self.player2
     
+    def display_name(self, seat: str) -> str:
+        return self.seat_names.get(seat) or seat
+
     def get_player_cards(self, owner: str) -> list[Card]:
         return self.player1.on_board if owner == "player1" else self.player2.on_board
     
