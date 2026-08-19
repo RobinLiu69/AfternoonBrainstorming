@@ -24,6 +24,8 @@ from core.board_config import BoardConfig
 from core.board_block import initialize_board
 from core.game_screen import GameScreen, cell_origin, draw_text, QuitGame
 from core.lobby_state import MAX_BANS_PER_PLAYER
+from core.card_hint import draw_card_glyph
+from shared import card_code
 from rendering import style
 from rendering.board_renderer import BoardRenderer
 from rendering.card_renderer import CardRenderer
@@ -146,11 +148,23 @@ def deck_layout(gs: GameScreen, metadata: dict) -> tuple[float, float, float]:
     return label_x, deck_x, max(0.0, step)
 
 
+DECK_GLYPH = 0.22
+DECK_ROW = 0.52
+
+
 def _render_row(gs: GameScreen, label: str, cards: list[str],
                 y: float, label_x: float, deck_x: float, step: float) -> None:
-    draw_text(label, gs.text_font, WHITE, label_x, y, gs.surface)
+    bs = gs.block_size
+    glyph = bs * DECK_GLYPH
+    draw_text(label, gs.text_font, WHITE, label_x,
+              y + (glyph + gs.text_font.get_linesize()) / 2
+              - gs.text_font.get_linesize(), gs.surface)
     for i, card in enumerate(cards):
-        draw_text(card, gs.text_font, WHITE, deck_x + i * step, y, gs.surface)
+        x = deck_x + i * step
+        width = gs.text_font.size(card)[0]
+        draw_card_glyph(gs, gs.surface, card_code.plain_code(card),
+                        x + (width - glyph) / 2, y, glyph)
+        draw_text(card, gs.text_font, WHITE, x, y + glyph, gs.surface)
 
 
 def render(game_screen: GameScreen, metadata: dict, card_renderer, board_renderer,
@@ -199,11 +213,13 @@ def render(game_screen: GameScreen, metadata: dict, card_renderer, board_rendere
 
     deck_top = panel_top + panel_height + bs * 0.3
     style.section(game_screen, "DECKS", label_x - pad, deck_top,
-                  bs * PANEL_W + pad * 2, bs * 1.35, right=settings_line)
+                  bs * PANEL_W + pad * 2,
+                  bs * (style.HEADER_HEIGHT + DECK_ROW * len(SEATS)) + pad,
+                  right=settings_line)
     deck_y = deck_top + bs * style.HEADER_HEIGHT + pad
     for i, seat in enumerate(SEATS):
         _render_row(game_screen, labels[i], metadata.get(f"{seat}_deck", []),
-                    deck_y + i * bs * 0.4, label_x, deck_x, deck_step)
+                    deck_y + i * bs * DECK_ROW, label_x, deck_x, deck_step)
 
     footer_y = game_screen.display_height - bs * 0.45
     style.muted_text(game_screen, "E/ENTER: watch replay    ESC: back",
