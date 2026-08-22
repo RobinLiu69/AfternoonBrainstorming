@@ -42,6 +42,7 @@ def main(game_screen: GameScreen, title: str, lines: Sequence[str],
                     box_width=ui_common.box_width(game_screen),
                     font=game_screen.big_text_font, text=button_text)
     clock = pygame.time.Clock()
+    hint_on = False
 
     while running:
         game_screen.render()
@@ -50,7 +51,9 @@ def main(game_screen: GameScreen, title: str, lines: Sequence[str],
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 key = key_pressed(pygame.key.get_pressed())
-                if key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_SPACE):
+                if key == pygame.K_f:
+                    hint_on = not hint_on
+                elif key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_SPACE):
                     running = False
             if event.type == pygame.MOUSEBUTTONDOWN and button.touch(mouse_x, mouse_y):
                 running = False
@@ -59,7 +62,6 @@ def main(game_screen: GameScreen, title: str, lines: Sequence[str],
 
         if run is not None:
             ui_common.draw_run_bar(game_screen, run)
-            ui_common.draw_relic_strip(game_screen, run)
 
         ui_common.draw_auto(game_screen, title, "title_text_font", color,
                             cx - bs * 2.6, cy - bs * 1.6)
@@ -70,5 +72,7 @@ def main(game_screen: GameScreen, title: str, lines: Sequence[str],
             y += bs * 0.45
 
         button.update(game_screen)
+        if run is not None:
+            ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
         pygame.display.update()
         clock.tick(60)

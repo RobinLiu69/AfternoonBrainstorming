@@ -203,7 +203,6 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
                 raise QuitGame
 
         ui_common.draw_run_bar(game_screen, run)
-        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
 
         draw_text("Merchant", game_screen.title_text_font, ui_common.GOLD,
                   cx - bs * 3.8, cy - bs * 2.5, game_screen.surface)
@@ -240,5 +239,6 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
         if hint_on and hovered is not None and hovered["kind"] == "card":
             hint_box.update(mouse_x, mouse_y, hovered["card"], game_screen)
 
+        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
         pygame.display.update()
         clock.tick(60)

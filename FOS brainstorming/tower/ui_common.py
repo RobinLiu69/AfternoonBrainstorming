@@ -22,8 +22,11 @@ from __future__ import annotations
 
 import textwrap
 
+import pygame
+
 from shared.setting import WHITE
 from core.game_screen import GameScreen, draw_text
+from rendering import style
 from core.UI import Button
 
 from tower import language
@@ -234,6 +237,26 @@ def back_button(game_screen: GameScreen, text: str = "back") -> Button:
                   font=game_screen.big_text_font, text=text)
 
 
+TITLE_Y: float = 0.62
+SUBTITLE_GAP: float = 0.52
+CONTENT_TOP: float = 1.55
+
+
+def title_y(game_screen: GameScreen) -> float:
+    """Baseline of a screen title.  The run bar owns everything above it."""
+    return game_screen.block_size * TITLE_Y
+
+
+def subtitle_y(game_screen: GameScreen, title_lines: int = 1) -> float:
+    return game_screen.block_size * (TITLE_Y + SUBTITLE_GAP * title_lines)
+
+
+def content_top(game_screen: GameScreen) -> float:
+    """First row below the title block.  Everything a screen lays out itself
+    starts here, so a title can never land on top of the content."""
+    return game_screen.block_size * CONTENT_TOP
+
+
 def draw_run_bar(game_screen: GameScreen, run: dict) -> None:
     """Act / layer / gold / orbs / relic count, along the top of the screen."""
     bs = game_screen.block_size
@@ -246,30 +269,82 @@ def draw_run_bar(game_screen: GameScreen, run: dict) -> None:
               bs * 4.9, y, game_screen.surface)
     draw_text(f"deck {len(run['deck'])}/{len(run['deck']) + len(run['bench'])}",
               game_screen.mid_text_font, WHITE, bs * 6.4, y, game_screen.surface)
+    relics = len(run.get("relics", []))
+    if relics:
+        draw_text(f"relics {relics}  [F]", game_screen.mid_text_font, RELIC,
+                  bs * 8.2, y, game_screen.surface)
     if run.get("debt"):
         draw_text(f"debt {run['debt']}", game_screen.mid_text_font, CURSE,
-                  bs * 8.2, y, game_screen.surface)
+                  bs * 9.9, y, game_screen.surface)
+
+
+def column_bottom(game_screen: GameScreen) -> float:
+    """Last row a column may use before it runs into the button row."""
+    return game_screen.display_height - game_screen.block_size * 1.4
+
+
+def draw_capped_lines(game_screen: GameScreen, lines, size: str, color,
+                      x: float, y: float, step: float,
+                      bottom: float | None = None) -> float:
+    """Draw a list downwards, stopping with a count rather than running off."""
+    bs = game_screen.block_size
+    limit = column_bottom(game_screen) if bottom is None else bottom
+    lines = list(lines)
+    for i, line in enumerate(lines):
+        if y + bs * step > limit:
+            draw_auto(game_screen, f"+{len(lines) - i} more", "small_text_font",
+                      DIM, x, y)
+            return y + bs * step
+        draw_auto(game_screen, line, size, color, x, y)
+        y += bs * step
+    return y
+
+
+RELIC_PANEL_W: float = 4.1
 
 
 def draw_relic_strip(game_screen: GameScreen, run: dict, detailed: bool = False) -> None:
-    """Relic names down the right edge; [F] adds what each one does."""
-    bs = game_screen.block_size
-    relics = run.get("relics", [])
+    """Owned relics as a panel over the screen.  Toggled, never docked.
+
+    It used to be a permanent strip down the right edge with no background,
+    which meant five different screens drew their own content straight
+    through it.  As an overlay it is drawn last and paints its own ground, so
+    it cannot collide with anything, and the run bar carries the count for
+    when it is closed.
+    """
+    if not detailed:
+        return
+    relics = run.get("relics", []) if run else []
     if not relics:
         return
 
-    name_font = language.font(game_screen, "text_font")
-    body_font = language.font(game_screen, "small_text_font")
-    x = game_screen.display_width - bs * (3.9 if detailed else 2.6)
-    y = bs * 1.1
-    step = bs * 0.26
-    for relic_id in relics:
-        draw_text(relic_label(relic_id), name_font,
-                  relic_color(relic_id), x, y, game_screen.surface)
-        y += step
-        if detailed:
-            for line in wrap_to_width(relic_text(relic_id), body_font, bs * 3.6):
-                draw_text(line, body_font, DIM,
-                          x + bs * 0.12, y, game_screen.surface)
-                y += bs * 0.2
-            y += bs * 0.04
+    bs = game_screen.block_size
+    pad = bs * style.PANEL_PAD
+    name_font = language.chinese_font(game_screen, "text_font")
+    body_font = language.chinese_font(game_screen, "small_text_font")
+    width = bs * RELIC_PANEL_W
+    text_width = width - pad * 2
+
+    blocks: list[tuple[str, tuple[int, int, int], list[str]]] = [
+        (relic_label(relic_id), relic_color(relic_id),
+         wrap_to_width(relic_text(relic_id), body_font, text_width))
+        for relic_id in relics
+    ]
+    body = sum(name_font.get_linesize() + bs * 0.2 * len(lines) + bs * 0.06
+               for _label, _colour, lines in blocks)
+    height = bs * style.HEADER_HEIGHT + pad + body + pad * 0.4
+
+    x = game_screen.display_width - width - bs * 0.3
+    y = min(content_top(game_screen),
+            game_screen.display_height - height - bs * 0.3)
+    style.modal_section(game_screen, "RELICS", x, y, width, height,
+                        right=str(len(relics)))
+
+    line_y = y + bs * style.HEADER_HEIGHT + pad * 0.8
+    for label, colour, lines in blocks:
+        draw_text(label, name_font, colour, x + pad, line_y, game_screen.surface)
+        line_y += name_font.get_linesize()
+        for line in lines:
+            draw_text(line, body_font, DIM, x + pad * 1.4, line_y, game_screen.surface)
+            line_y += bs * 0.2
+        line_y += bs * 0.06

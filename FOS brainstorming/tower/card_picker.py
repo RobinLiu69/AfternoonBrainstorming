@@ -30,6 +30,8 @@ from core.card_hint import HintBox
 from core.setting_config import load_setting
 from utils.controls import key_pressed
 
+from rendering import style
+
 from tower import card_pool, language, ui_common
 
 BENCH_COLOR: tuple[int, int, int] = (255, 170, 60)
@@ -65,7 +67,7 @@ def main(game_screen: GameScreen, run: dict, title: str,
     btn_h = bs * 0.45
     grid_w = columns * (btn_w + bs * 0.15) - bs * 0.15
     start_x = cx - grid_w / 2
-    start_y = cy - bs * 1.7
+    start_y = ui_common.content_top(game_screen)
 
     buttons: list[tuple[Button, str, int, str, bool]] = []
     for slot, (zone, index, code) in enumerate(entries):
@@ -117,13 +119,15 @@ def main(game_screen: GameScreen, run: dict, title: str,
                 raise QuitGame
 
         ui_common.draw_run_bar(game_screen, run)
-        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
-        for i, line in enumerate(ui_common.wrap(title, ui_common.PANEL_WRAP)):
+        title_lines = ui_common.wrap(title, ui_common.PANEL_WRAP)
+        for i, line in enumerate(title_lines):
             ui_common.draw_auto(game_screen, line, "big_big_text_font", WHITE,
-                                cx - bs * 3.4, cy - bs * (2.6 - 0.4 * i))
+                                cx - bs * 3.4,
+                                ui_common.title_y(game_screen) + bs * 0.42 * i)
         if subtitle:
-            ui_common.draw_auto(game_screen, subtitle, "mid_text_font", ui_common.GOLD,
-                                cx - bs * 3.4, cy - bs * 2.1)
+            ui_common.draw_auto(game_screen, subtitle, "mid_text_font",
+                                style.INK_MUTED, cx - bs * 3.4,
+                                ui_common.subtitle_y(game_screen, len(title_lines)))
 
         for btn, _zone, _index, _code, _usable in buttons:
             btn.update(game_screen)
@@ -132,17 +136,17 @@ def main(game_screen: GameScreen, run: dict, title: str,
 
         if hovered_code:
             y = cy + bs * 1.25
-            body_font = language.font(game_screen, "mid_text_font")
             for line in ui_common.wrap_all(card_pool.enchant_lines(hovered_code),
                                            ui_common.PANEL_WRAP)[:4]:
-                draw_text(line, body_font, ENCHANT_COLOR,
-                          cx - bs * 3.4, y, game_screen.surface)
+                ui_common.draw_auto(game_screen, line, "mid_text_font",
+                                    ENCHANT_COLOR, cx - bs * 3.4, y)
                 y += bs * 0.32
 
         hint_box.turn_on = hint_on
         if hint_on and hovered_code:
             hint_box.update(mouse_x, mouse_y, hovered_code, game_screen)
 
+        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
         pygame.display.update()
         clock.tick(60)
 

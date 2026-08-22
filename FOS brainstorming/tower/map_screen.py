@@ -180,7 +180,6 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
                 raise QuitGame
 
         ui_common.draw_run_bar(game_screen, run)
-        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
 
         boss = tower_map.boss_of(act_map)
         draw_text(f"act {run['act']}  -  {boss['label']} waits at the top",
@@ -210,6 +209,7 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
         roster.update(game_screen)
         relics.update(game_screen)
 
+        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
         pygame.display.update()
         clock.tick(60)
 

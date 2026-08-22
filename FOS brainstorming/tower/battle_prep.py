@@ -142,10 +142,9 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
                         y += bs * 0.21
 
         y += bs * 0.1
-        for line in _effect_lines(enemy_effects, "enemy"):
-            draw_text(line, game_screen.text_font, ui_common.CURSE,
-                      cx - bs * 3.6, y, game_screen.surface)
-            y += bs * 0.25
+        ui_common.draw_capped_lines(game_screen, _effect_lines(enemy_effects, "enemy"),
+                                    "text_font", ui_common.CURSE,
+                                    cx - bs * 3.6, y, 0.25)
 
         y = cy - bs * 1.55
         draw_text(f"your deck  ({len(run['deck'])})", game_screen.mid_text_font, WHITE,
@@ -176,18 +175,17 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
                 y += bs * 0.25
 
         y += bs * 0.1
-        for line in _effect_lines(player_effects, "your"):
-            draw_text(line, game_screen.text_font, ui_common.HILITE,
-                      cx + bs * 0.4, y, game_screen.surface)
-            y += bs * 0.25
+        ui_common.draw_capped_lines(game_screen, _effect_lines(player_effects, "your"),
+                                    "text_font", ui_common.HILITE,
+                                    cx + bs * 0.4, y, 0.25)
 
-        _draw_own_relics(game_screen, run, hint_on)
 
         if can_swap:
             swap.update(game_screen)
         start.update(game_screen)
         back.update(game_screen)
 
+        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
         pygame.display.update()
         clock.tick(60)
 
@@ -197,24 +195,3 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
 def _wrap(items, per_row: int) -> list[list[str]]:
     return [items[i:i + per_row] for i in range(0, len(items), per_row)]
 
-
-def _draw_own_relics(game_screen: GameScreen, run: dict, detailed: bool) -> None:
-    """Your relics along the right edge; [F] spells out what each one does."""
-    bs = game_screen.block_size
-    relics = run.get("relics", [])
-    if not relics:
-        return
-    x = game_screen.display_width - bs * (3.4 if detailed else 2.4)
-    y = game_screen.display_height / 2 - bs * 1.55
-    draw_text("[F] your relics", game_screen.text_font, ui_common.DIM,
-              x, y, game_screen.surface)
-    y += bs * 0.3
-    for relic_id in relics:
-        ui_common.draw_auto(game_screen, ui_common.relic_label(relic_id), "text_font",
-                            ui_common.relic_color(relic_id), x, y)
-        y += bs * 0.25
-        if detailed:
-            for line in ui_common.wrap(ui_common.relic_text(relic_id), 30):
-                ui_common.draw_auto(game_screen, line, "small_text_font", ui_common.DIM,
-                                    x + bs * 0.12, y)
-                y += bs * 0.21

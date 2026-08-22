@@ -105,7 +105,6 @@ def main(game_screen: GameScreen, run: dict) -> None:
                 pygame.draw.rect(game_screen.surface, ui_common.HILITE, rect,
                                  ui_common.box_width(game_screen))
 
-        _draw_relics(game_screen, run, detailed=hint_on)
 
         if hovered:
             y = cy + bs * 1.9
@@ -120,31 +119,7 @@ def main(game_screen: GameScreen, run: dict) -> None:
         if hint_on and hovered:
             hint_box.update(mouse_x, mouse_y, hovered, game_screen)
 
+        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
         pygame.display.update()
         clock.tick(60)
 
-
-def _draw_relics(game_screen: GameScreen, run: dict, detailed: bool) -> None:
-    bs = game_screen.block_size
-    cy = game_screen.display_height / 2
-    x = game_screen.display_width / 2 + bs * 1.4
-    y = cy - bs * 1.5
-
-    relics = run.get("relics", [])
-    draw_text(f"relics ({len(relics)})", game_screen.mid_text_font, ui_common.RELIC,
-              x, cy - bs * 1.95, game_screen.surface)
-    if not relics:
-        draw_text("none yet", game_screen.text_font, ui_common.DIM,
-                  x, y, game_screen.surface)
-        return
-
-    for relic_id in relics:
-        ui_common.draw_auto(game_screen, ui_common.relic_label(relic_id), "text_font",
-                            ui_common.relic_color(relic_id), x, y)
-        y += bs * 0.28
-        if detailed:
-            for line in ui_common.wrap(ui_common.relic_text(relic_id), 34):
-                ui_common.draw_auto(game_screen, line, "small_text_font", ui_common.DIM,
-                                    x + bs * 0.12, y)
-                y += bs * 0.22
-            y += bs * 0.04

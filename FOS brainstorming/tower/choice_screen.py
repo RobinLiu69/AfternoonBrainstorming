@@ -41,6 +41,8 @@ from cards.factory import CardFactory
 from rendering.card_renderer import CardRenderer
 from utils.controls import key_pressed
 
+from rendering import style
+
 from tower import language, ui_common
 
 SKIP: int = -1
@@ -132,13 +134,13 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
 
         if run is not None:
             ui_common.draw_run_bar(game_screen, run)
-            ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
 
-        draw_text(title, game_screen.title_text_font, WHITE,
-                  cx - bs * 3.4, cy - bs * 3.0, game_screen.surface)
+        ui_common.draw_auto(game_screen, title, "title_text_font", WHITE,
+                            cx - bs * 3.4, ui_common.title_y(game_screen))
         if subtitle:
-            draw_text(subtitle, game_screen.mid_text_font, ui_common.GOLD,
-                      cx - bs * 3.4, cy - bs * 2.3, game_screen.surface)
+            ui_common.draw_auto(game_screen, subtitle, "mid_text_font",
+                                style.INK_MUTED, cx - bs * 3.4,
+                                ui_common.subtitle_y(game_screen))
 
         for i, option in enumerate(options):
             rect = rect_for(i)
@@ -147,27 +149,24 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
             if card is not None:
                 for render_object in card.get_render_data():
                     card_renderer.render(render_object)
-            else:
-                pygame.draw.rect(game_screen.surface, color, rect, box_width)
 
-            label_font = language.font(game_screen, "mid_text_font")
             label_lines = ui_common.wrap(option.get("label", ""), LABEL_WRAP)
             label_y = rect.y - bs * 0.5 - bs * 0.3 * (len(label_lines) - 1)
             for line in label_lines:
-                draw_text(line, label_font, color,
-                          rect.x - bs * 0.3, label_y, game_screen.surface)
+                ui_common.draw_auto(game_screen, line, "mid_text_font", color,
+                                    rect.x - bs * 0.3, label_y)
                 label_y += bs * 0.3
 
-            line_y = rect.y + bs * 1.15
-            body_font = language.font(game_screen, "text_font")
+            line_y = rect.y + (bs * 1.15 if card is not None else 0.0)
             for line in ui_common.wrap_all(option.get("lines", []), OPTION_WRAP):
-                draw_text(line, body_font, color,
-                          rect.x - bs * 0.3, line_y, game_screen.surface)
+                ui_common.draw_auto(game_screen, line, "text_font", color,
+                                    rect.x - bs * 0.3, line_y)
                 line_y += bs * 0.26
 
             if i == hover:
                 pygame.draw.rect(game_screen.surface, ui_common.HILITE,
-                                 rect.inflate(int(bs * 0.15), int(bs * 0.15)), box_width)
+                                 rect.inflate(int(bs * 0.15), int(bs * 0.15)),
+                                 box_width, border_radius=style.corner_radius(game_screen))
 
         if skip_button is not None:
             skip_button.update(game_screen)
@@ -178,6 +177,7 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
         if hint_on and hover >= 0 and options[hover].get("card"):
             hint_box.update(mouse_x, mouse_y, options[hover]["card"], game_screen)
 
+        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
         pygame.display.update()
         clock.tick(60)
 
