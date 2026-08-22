@@ -38,6 +38,28 @@ ACK_GATED_ACTIONS: tuple[str, ...] = (
 )
 
 
+STALEMATE_TURNS: int = 40
+
+
+def score_is_frozen(game_state: GameState) -> bool:
+    history = game_state.game_statistics.score_history
+    if len(history) < STALEMATE_TURNS:
+        return False
+    return len(set(history[-STALEMATE_TURNS:])) == 1
+
+
+def stalemate_winner(game_state: GameState) -> str:
+    if game_state.score != 0:
+        return "player1" if game_state.score < 0 else "player2"
+    for measure in (lambda player: len(player.on_board),
+                    lambda player: sum(card.health for card in player.on_board)):
+        mine = measure(game_state.player1)
+        theirs = measure(game_state.player2)
+        if mine != theirs:
+            return "player1" if mine > theirs else "player2"
+    return "draw"
+
+
 class BattlingDispatcher:
     def __init__(self, game_state: GameState, mode: str = "local",
                  reconnect_timeout: float = DEFAULT_PAUSE_TIMEOUT_SECONDS,
@@ -361,6 +383,13 @@ class BattlingDispatcher:
                 if abs(game_state.score) >= game_state.win_threshold:
                     winner = "player1" if game_state.score < 0 else "player2"
                     survives = getattr(game_state, "tower_on_defeat", None)
+                    if survives is None or not survives(game_state, winner):
+                        return ActionResult(True, message=winner, quit=True)
+                elif score_is_frozen(game_state):
+                    winner = stalemate_winner(game_state)
+                    survives = getattr(game_state, "tower_on_defeat", None)
+                    if winner == "draw":
+                        return ActionResult(True, message="draw", quit=True)
                     if survives is None or not survives(game_state, winner):
                         return ActionResult(True, message=winner, quit=True)
                 game_state.get_player(opponent).turn_start(game_state)

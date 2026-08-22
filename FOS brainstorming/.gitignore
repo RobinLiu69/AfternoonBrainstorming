@@ -7,4 +7,4 @@ net_tokens.json
 build/
 dist/
 data/
-*.spec
+*.specdevshots/
