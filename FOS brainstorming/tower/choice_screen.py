@@ -65,6 +65,62 @@ def _slots(count: int) -> list[float]:
     return [i * 1.6 - (count - 1) * 0.8 + 1.5 for i in range(count)]
 
 
+def render(game_screen: GameScreen, title: str, subtitle: str, options: list,
+           run, rect_for, display_cards: dict, card_renderer, box_width: int,
+           hover: int, hint_box, hint_on: bool, skip_button, cancel,
+           mouse_x: int, mouse_y: int) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+
+    if run is not None:
+        ui_common.draw_run_bar(game_screen, run)
+
+    ui_common.draw_auto(game_screen, title, "title_text_font", WHITE,
+                        cx - bs * 3.4, ui_common.title_y(game_screen))
+    if subtitle:
+        ui_common.draw_auto(game_screen, subtitle, "mid_text_font",
+                            style.INK_MUTED, cx - bs * 3.4,
+                            ui_common.subtitle_y(game_screen))
+
+    for i, option in enumerate(options):
+        rect = rect_for(i)
+        color = option.get("color", WHITE)
+        card = display_cards.get(i)
+        if card is not None:
+            for render_object in card.get_render_data():
+                card_renderer.render(render_object)
+
+        label_lines = ui_common.wrap(option.get("label", ""), LABEL_WRAP)
+        label_y = rect.y - bs * 0.5 - bs * 0.3 * (len(label_lines) - 1)
+        for line in label_lines:
+            ui_common.draw_auto(game_screen, line, "mid_text_font", color,
+                                rect.x - bs * 0.3, label_y)
+            label_y += bs * 0.3
+
+        line_y = rect.y + (bs * 1.15 if card is not None else 0.0)
+        for line in ui_common.wrap_all(option.get("lines", []), OPTION_WRAP):
+            ui_common.draw_auto(game_screen, line, "text_font", color,
+                                rect.x - bs * 0.3, line_y)
+            line_y += bs * 0.26
+
+        if i == hover:
+            pygame.draw.rect(game_screen.surface, ui_common.HILITE,
+                             rect.inflate(int(bs * 0.15), int(bs * 0.15)),
+                             box_width, border_radius=style.corner_radius(game_screen))
+
+    if skip_button is not None:
+        skip_button.update(game_screen)
+    if cancel is not None:
+        cancel.update(game_screen)
+
+    hint_box.turn_on = hint_on
+    if hint_on and hover >= 0 and options[hover].get("card"):
+        hint_box.update(mouse_x, mouse_y, options[hover]["card"], game_screen)
+
+    ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+
+
 def main(game_screen: GameScreen, title: str, options: list[dict],
          subtitle: str = "", run: Optional[dict] = None,
          skip_label: str = "", cancel_label: str = "") -> Optional[int]:
@@ -132,52 +188,9 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
             if event.type == pygame.QUIT:
                 raise QuitGame
 
-        if run is not None:
-            ui_common.draw_run_bar(game_screen, run)
-
-        ui_common.draw_auto(game_screen, title, "title_text_font", WHITE,
-                            cx - bs * 3.4, ui_common.title_y(game_screen))
-        if subtitle:
-            ui_common.draw_auto(game_screen, subtitle, "mid_text_font",
-                                style.INK_MUTED, cx - bs * 3.4,
-                                ui_common.subtitle_y(game_screen))
-
-        for i, option in enumerate(options):
-            rect = rect_for(i)
-            color = option.get("color", WHITE)
-            card = display_cards.get(i)
-            if card is not None:
-                for render_object in card.get_render_data():
-                    card_renderer.render(render_object)
-
-            label_lines = ui_common.wrap(option.get("label", ""), LABEL_WRAP)
-            label_y = rect.y - bs * 0.5 - bs * 0.3 * (len(label_lines) - 1)
-            for line in label_lines:
-                ui_common.draw_auto(game_screen, line, "mid_text_font", color,
-                                    rect.x - bs * 0.3, label_y)
-                label_y += bs * 0.3
-
-            line_y = rect.y + (bs * 1.15 if card is not None else 0.0)
-            for line in ui_common.wrap_all(option.get("lines", []), OPTION_WRAP):
-                ui_common.draw_auto(game_screen, line, "text_font", color,
-                                    rect.x - bs * 0.3, line_y)
-                line_y += bs * 0.26
-
-            if i == hover:
-                pygame.draw.rect(game_screen.surface, ui_common.HILITE,
-                                 rect.inflate(int(bs * 0.15), int(bs * 0.15)),
-                                 box_width, border_radius=style.corner_radius(game_screen))
-
-        if skip_button is not None:
-            skip_button.update(game_screen)
-        if cancel is not None:
-            cancel.update(game_screen)
-
-        hint_box.turn_on = hint_on
-        if hint_on and hover >= 0 and options[hover].get("card"):
-            hint_box.update(mouse_x, mouse_y, options[hover]["card"], game_screen)
-
-        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+        render(game_screen, title, subtitle, options, run, rect_for,
+               display_cards, card_renderer, box_width, hover, hint_box,
+               hint_on, skip_button, cancel, mouse_x, mouse_y)
         pygame.display.update()
         clock.tick(60)
 

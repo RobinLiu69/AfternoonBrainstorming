@@ -105,6 +105,53 @@ def _burn_card(game_screen: GameScreen, run: dict) -> bool:
     return run_state.spend_orb_to_remove(run, picked[0], picked[1])
 
 
+def render(game_screen: GameScreen, run: dict, stock: dict, buttons: list,
+           actions: dict, hovered, hint_box, hint_on: bool,
+           mouse_x: int, mouse_y: int) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+
+    ui_common.draw_run_bar(game_screen, run)
+
+    draw_text("Merchant", game_screen.title_text_font, ui_common.GOLD,
+              cx - bs * 3.8, cy - bs * 2.5, game_screen.surface)
+    draw_text(grants.slot_hint(run), game_screen.mid_text_font, WHITE,
+              cx - bs * 3.8, cy - bs * 2.0, game_screen.surface)
+
+    for btn, _item in buttons:
+        btn.update(game_screen)
+
+    for name, btn in actions.items():
+        if name == "scrap" and (stock["curse_scrapped"] or not shop.curses_held(run)):
+            btn.text_color = btn.box_color = ui_common.DIM
+        if name == "reroll" and not shop.can_reroll(run, stock):
+            btn.text_color = btn.box_color = ui_common.DIM
+        if name == "burn" and run.get("orbs", 0) <= 0:
+            btn.text_color = btn.box_color = ui_common.DIM
+        btn.update(game_screen)
+
+    if hovered is not None:
+        _label, text, color = _item_label(hovered)
+        y = cy + bs * 1.0
+        for line in ui_common.wrap(text, ui_common.PANEL_WRAP):
+            ui_common.draw_auto(game_screen, line, "mid_text_font", color,
+                                cx - bs * 3.8, y)
+            y += bs * 0.3
+        if hovered["kind"] == "card":
+            for line in ui_common.wrap_all(card_pool.enchant_lines(hovered["card"]),
+                                           ui_common.PANEL_WRAP):
+                ui_common.draw_auto(game_screen, line, "text_font",
+                                    card_picker.ENCHANT_COLOR, cx - bs * 3.8, y)
+                y += bs * 0.26
+
+    hint_box.turn_on = hint_on
+    if hint_on and hovered is not None and hovered["kind"] == "card":
+        hint_box.update(mouse_x, mouse_y, hovered["card"], game_screen)
+
+    ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+
+
 def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) -> None:
     running = True
     bs = game_screen.block_size
@@ -202,43 +249,7 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
             if event.type == pygame.QUIT:
                 raise QuitGame
 
-        ui_common.draw_run_bar(game_screen, run)
-
-        draw_text("Merchant", game_screen.title_text_font, ui_common.GOLD,
-                  cx - bs * 3.8, cy - bs * 2.5, game_screen.surface)
-        draw_text(grants.slot_hint(run), game_screen.mid_text_font, WHITE,
-                  cx - bs * 3.8, cy - bs * 2.0, game_screen.surface)
-
-        for btn, _item in buttons:
-            btn.update(game_screen)
-
-        for name, btn in actions.items():
-            if name == "scrap" and (stock["curse_scrapped"] or not shop.curses_held(run)):
-                btn.text_color = btn.box_color = ui_common.DIM
-            if name == "reroll" and not shop.can_reroll(run, stock):
-                btn.text_color = btn.box_color = ui_common.DIM
-            if name == "burn" and run.get("orbs", 0) <= 0:
-                btn.text_color = btn.box_color = ui_common.DIM
-            btn.update(game_screen)
-
-        if hovered is not None:
-            _label, text, color = _item_label(hovered)
-            y = cy + bs * 1.0
-            for line in ui_common.wrap(text, ui_common.PANEL_WRAP):
-                ui_common.draw_auto(game_screen, line, "mid_text_font", color,
-                                    cx - bs * 3.8, y)
-                y += bs * 0.3
-            if hovered["kind"] == "card":
-                for line in ui_common.wrap_all(card_pool.enchant_lines(hovered["card"]),
-                                               ui_common.PANEL_WRAP):
-                    ui_common.draw_auto(game_screen, line, "text_font",
-                                        card_picker.ENCHANT_COLOR, cx - bs * 3.8, y)
-                    y += bs * 0.26
-
-        hint_box.turn_on = hint_on
-        if hint_on and hovered is not None and hovered["kind"] == "card":
-            hint_box.update(mouse_x, mouse_y, hovered["card"], game_screen)
-
-        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+        render(game_screen, run, stock, buttons, actions, hovered,
+               hint_box, hint_on, mouse_x, mouse_y)
         pygame.display.update()
         clock.tick(60)

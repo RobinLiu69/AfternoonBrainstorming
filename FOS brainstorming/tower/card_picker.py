@@ -44,6 +44,44 @@ def _entry_color(zone: str, code: str) -> tuple[int, int, int]:
     return BENCH_COLOR if zone == "bench" else WHITE
 
 
+def render(game_screen: GameScreen, run: dict, title: str, subtitle: str,
+           buttons: list, cancel, hovered_code: str, hint_box, hint_on: bool,
+           mouse_x: int, mouse_y: int) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+
+    ui_common.draw_run_bar(game_screen, run)
+    title_lines = ui_common.wrap(title, ui_common.PANEL_WRAP)
+    for i, line in enumerate(title_lines):
+        ui_common.draw_auto(game_screen, line, "big_big_text_font", WHITE,
+                            cx - bs * 3.4,
+                            ui_common.title_y(game_screen) + bs * 0.42 * i)
+    if subtitle:
+        ui_common.draw_auto(game_screen, subtitle, "mid_text_font",
+                            style.INK_MUTED, cx - bs * 3.4,
+                            ui_common.subtitle_y(game_screen, len(title_lines)))
+
+    for btn, _zone, _index, _code, _usable in buttons:
+        btn.update(game_screen)
+    if cancel is not None:
+        cancel.update(game_screen)
+
+    if hovered_code:
+        y = cy + bs * 1.25
+        for line in ui_common.wrap_all(card_pool.enchant_lines(hovered_code),
+                                       ui_common.PANEL_WRAP)[:4]:
+            ui_common.draw_auto(game_screen, line, "mid_text_font",
+                                ENCHANT_COLOR, cx - bs * 3.4, y)
+            y += bs * 0.32
+
+    hint_box.turn_on = hint_on
+    if hint_on and hovered_code:
+        hint_box.update(mouse_x, mouse_y, hovered_code, game_screen)
+
+    ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+
+
 def main(game_screen: GameScreen, run: dict, title: str,
          subtitle: str = "", cancellable: bool = True,
          allowed: Optional[Callable[[str, int, str], bool]] = None,
@@ -118,35 +156,8 @@ def main(game_screen: GameScreen, run: dict, title: str,
             if event.type == pygame.QUIT:
                 raise QuitGame
 
-        ui_common.draw_run_bar(game_screen, run)
-        title_lines = ui_common.wrap(title, ui_common.PANEL_WRAP)
-        for i, line in enumerate(title_lines):
-            ui_common.draw_auto(game_screen, line, "big_big_text_font", WHITE,
-                                cx - bs * 3.4,
-                                ui_common.title_y(game_screen) + bs * 0.42 * i)
-        if subtitle:
-            ui_common.draw_auto(game_screen, subtitle, "mid_text_font",
-                                style.INK_MUTED, cx - bs * 3.4,
-                                ui_common.subtitle_y(game_screen, len(title_lines)))
-
-        for btn, _zone, _index, _code, _usable in buttons:
-            btn.update(game_screen)
-        if cancel is not None:
-            cancel.update(game_screen)
-
-        if hovered_code:
-            y = cy + bs * 1.25
-            for line in ui_common.wrap_all(card_pool.enchant_lines(hovered_code),
-                                           ui_common.PANEL_WRAP)[:4]:
-                ui_common.draw_auto(game_screen, line, "mid_text_font",
-                                    ENCHANT_COLOR, cx - bs * 3.4, y)
-                y += bs * 0.32
-
-        hint_box.turn_on = hint_on
-        if hint_on and hovered_code:
-            hint_box.update(mouse_x, mouse_y, hovered_code, game_screen)
-
-        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+        render(game_screen, run, title, subtitle, buttons, cancel,
+               hovered_code, hint_box, hint_on, mouse_x, mouse_y)
         pygame.display.update()
         clock.tick(60)
 

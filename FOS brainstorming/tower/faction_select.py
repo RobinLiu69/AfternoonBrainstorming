@@ -38,6 +38,30 @@ def _faction_color(tag: str) -> tuple[int, int, int]:
     return (r, g, b)
 
 
+def render(game_screen: GameScreen, buttons: list, chosen: list[str],
+           confirm, back) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    ready = len(chosen) == FACTION_PICK_COUNT
+
+    draw_text("Choose your factions", game_screen.title_text_font, WHITE,
+              cx - bs * 2.6, cy - bs * 2.9, game_screen.surface)
+    draw_text(f"White is always in. Pick {FACTION_PICK_COUNT} more - "
+              "cards, shops and enemies all come from them.",
+              game_screen.text_font, WHITE,
+              cx - bs * 3.4, cy - bs * 2.1, game_screen.surface)
+
+    for btn, _tag in buttons:
+        btn.update(game_screen)
+
+    confirm.text_color = WHITE if ready else ui_common.DIM
+    confirm.box_color = WHITE if ready else ui_common.DIM
+    confirm.text = "start climb" if ready else f"{len(chosen)}/{FACTION_PICK_COUNT} chosen"
+    confirm.update(game_screen)
+    back.update(game_screen)
+
+
 def main(game_screen: GameScreen) -> Optional[list[str]]:
     running = True
     bs = game_screen.block_size
@@ -104,21 +128,7 @@ def main(game_screen: GameScreen) -> Optional[list[str]]:
             if event.type == pygame.QUIT:
                 raise QuitGame
 
-        draw_text("Choose your factions", game_screen.title_text_font, WHITE,
-                  cx - bs * 2.6, cy - bs * 2.9, game_screen.surface)
-        draw_text(f"White is always in. Pick {FACTION_PICK_COUNT} more - "
-                  "cards, shops and enemies all come from them.",
-                  game_screen.text_font, WHITE,
-                  cx - bs * 3.4, cy - bs * 2.1, game_screen.surface)
-
-        for btn, _tag in buttons:
-            btn.update(game_screen)
-
-        confirm.text_color = WHITE if ready else ui_common.DIM
-        confirm.box_color = WHITE if ready else ui_common.DIM
-        confirm.text = "start climb" if ready else f"{len(chosen)}/{FACTION_PICK_COUNT} chosen"
-        confirm.update(game_screen)
-        back.update(game_screen)
+        render(game_screen, buttons, chosen, confirm, back)
 
         pygame.display.update()
         clock.tick(60)

@@ -98,6 +98,46 @@ def _option_lines(option: dict, blind: tuple[bool, bool]) -> list[str]:
     return lines
 
 
+def render(game_screen: GameScreen, run: dict, act_map, layers, layer, options,
+           current: int, blind, strip_x0: float, strip_y: float,
+           strip_w: float, strip_h: float, strip_gap: float, panel_y: float,
+           box_width: int, action_buttons: list, leave, roster, relics,
+           hint_on: bool) -> None:
+    bs = game_screen.block_size
+
+    ui_common.draw_run_bar(game_screen, run)
+
+    boss = tower_map.boss_of(act_map)
+    draw_text(f"act {run['act']}  -  {boss['label']} waits at the top",
+              game_screen.mid_text_font, ui_common.CURSE,
+              strip_x0, bs * 0.68, game_screen.surface)
+
+    for i, entry in enumerate(layers):
+        x = strip_x0 + i * (strip_w + strip_gap)
+        rect = pygame.Rect(int(x), int(strip_y), int(strip_w), int(strip_h))
+        tag, color = _layer_tag(run, entry, blind)
+        if entry["index"] < current:
+            color = ui_common.DONE
+        pygame.draw.rect(game_screen.surface, color, rect, box_width)
+        if entry["index"] == current:
+            pygame.draw.rect(game_screen.surface, ui_common.HILITE,
+                             rect.inflate(int(bs * 0.12), int(bs * 0.12)), box_width)
+        draw_text(str(entry["index"]), game_screen.small_text_font, color,
+                  rect.x + bs * 0.06, rect.y + bs * 0.04, game_screen.surface)
+        draw_text(tag, game_screen.small_text_font, color,
+                  rect.x + bs * 0.08, rect.y + bs * 0.35, game_screen.surface)
+
+    _draw_panel(game_screen, run, layer, options, panel_y, blind)
+
+    for btn, _pick in action_buttons:
+        btn.update(game_screen)
+    leave.update(game_screen)
+    roster.update(game_screen)
+    relics.update(game_screen)
+
+    ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+
+
 def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int]]]:
     running = True
     bs = game_screen.block_size
@@ -179,37 +219,10 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
             if event.type == pygame.QUIT:
                 raise QuitGame
 
-        ui_common.draw_run_bar(game_screen, run)
-
-        boss = tower_map.boss_of(act_map)
-        draw_text(f"act {run['act']}  -  {boss['label']} waits at the top",
-                  game_screen.mid_text_font, ui_common.CURSE,
-                  strip_x0, bs * 0.68, game_screen.surface)
-
-        for i, entry in enumerate(layers):
-            x = strip_x0 + i * (strip_w + strip_gap)
-            rect = pygame.Rect(int(x), int(strip_y), int(strip_w), int(strip_h))
-            tag, color = _layer_tag(run, entry, blind)
-            if entry["index"] < current:
-                color = ui_common.DONE
-            pygame.draw.rect(game_screen.surface, color, rect, box_width)
-            if entry["index"] == current:
-                pygame.draw.rect(game_screen.surface, ui_common.HILITE,
-                                 rect.inflate(int(bs * 0.12), int(bs * 0.12)), box_width)
-            draw_text(str(entry["index"]), game_screen.small_text_font, color,
-                      rect.x + bs * 0.06, rect.y + bs * 0.04, game_screen.surface)
-            draw_text(tag, game_screen.small_text_font, color,
-                      rect.x + bs * 0.08, rect.y + bs * 0.35, game_screen.surface)
-
-        _draw_panel(game_screen, run, layer, options, panel_y, blind)
-
-        for btn, _pick in action_buttons:
-            btn.update(game_screen)
-        leave.update(game_screen)
-        roster.update(game_screen)
-        relics.update(game_screen)
-
-        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+        render(game_screen, run, act_map, layers, layer, options, current,
+               blind, strip_x0, strip_y, strip_w, strip_h, strip_gap,
+               panel_y, box_width, action_buttons, leave, roster, relics,
+               hint_on)
         pygame.display.update()
         clock.tick(60)
 
