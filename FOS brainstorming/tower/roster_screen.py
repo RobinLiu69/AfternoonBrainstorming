@@ -35,16 +35,10 @@ from utils.controls import key_pressed
 from tower import card_picker, card_pool, run_state, ui_common
 
 
-def main(game_screen: GameScreen, run: dict) -> None:
-    running = True
+def layout(game_screen: GameScreen, run: dict):
     bs = game_screen.block_size
     cx = game_screen.display_width / 2
     cy = game_screen.display_height / 2
-
-    hint_box = HintBox(width=int(bs * 3), height=int(bs))
-    hint_on = load_setting("hint_on")
-    back = ui_common.back_button(game_screen, "back")
-
     columns = 3
     col_w = bs * 2.3
     grid_x = cx - bs * 3.9
@@ -58,6 +52,66 @@ def main(game_screen: GameScreen, run: dict) -> None:
         col, row = slot % columns, slot // columns
         return pygame.Rect(int(grid_x + col * col_w), int(grid_y + row * row_h),
                            int(col_w - bs * 0.1), int(row_h - bs * 0.04))
+
+    return entries, rect_for, grid_x
+
+
+def render(game_screen: GameScreen, run: dict, entries, rect_for, grid_x: float,
+           hovered: str, back, hint_box, hint_on: bool,
+           mouse_x: int, mouse_y: int) -> None:
+    bs = game_screen.block_size
+    cy = game_screen.display_height / 2
+
+    ui_common.draw_run_bar(game_screen, run)
+
+    draw_text("Your warband", game_screen.title_text_font, WHITE,
+              grid_x, cy - bs * 2.5, game_screen.surface)
+    draw_text(f"deck {len(run['deck'])}/{run_state.deck_limit(run)}"
+              f"    bench {len(run['bench'])}/{run_state.bench_limit(run)}"
+              f"    [F] details",
+              game_screen.mid_text_font, ui_common.GOLD,
+              grid_x, cy - bs * 1.95, game_screen.surface)
+
+    for slot, (zone, _index, code) in enumerate(entries):
+        rect = rect_for(slot)
+        color = (card_picker.BENCH_COLOR if zone == "bench"
+                 else card_picker.ENCHANT_COLOR if card_code.is_enchanted(code)
+                 else WHITE)
+        label = card_pool.display_name(code)
+        if zone == "bench":
+            label = f"[bench] {label}"
+        ui_common.draw_auto(game_screen, label, "text_font", color, rect.x, rect.y)
+        if code == hovered:
+            pygame.draw.rect(game_screen.surface, ui_common.HILITE, rect,
+                             ui_common.box_width(game_screen))
+
+    if hovered:
+        y = cy + bs * 1.9
+        for line in ui_common.wrap_all(card_pool.enchant_lines(hovered),
+                                       ui_common.PANEL_WRAP):
+            ui_common.draw_auto(game_screen, line, "mid_text_font",
+                                card_picker.ENCHANT_COLOR, grid_x, y)
+            y += bs * 0.32
+
+    back.update(game_screen)
+    hint_box.turn_on = hint_on
+    if hint_on and hovered:
+        hint_box.update(mouse_x, mouse_y, hovered, game_screen)
+
+    ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+
+
+def main(game_screen: GameScreen, run: dict) -> None:
+    running = True
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+
+    hint_box = HintBox(width=int(bs * 3), height=int(bs))
+    hint_on = load_setting("hint_on")
+    back = ui_common.back_button(game_screen, "back")
+
+    entries, rect_for, grid_x = layout(game_screen, run)
 
     clock = pygame.time.Clock()
 
@@ -82,44 +136,8 @@ def main(game_screen: GameScreen, run: dict) -> None:
             if event.type == pygame.QUIT:
                 raise QuitGame
 
-        ui_common.draw_run_bar(game_screen, run)
-
-        draw_text("Your warband", game_screen.title_text_font, WHITE,
-                  grid_x, cy - bs * 2.5, game_screen.surface)
-        draw_text(f"deck {len(run['deck'])}/{run_state.deck_limit(run)}"
-                  f"    bench {len(run['bench'])}/{run_state.bench_limit(run)}"
-                  f"    [F] details",
-                  game_screen.mid_text_font, ui_common.GOLD,
-                  grid_x, cy - bs * 1.95, game_screen.surface)
-
-        for slot, (zone, _index, code) in enumerate(entries):
-            rect = rect_for(slot)
-            color = (card_picker.BENCH_COLOR if zone == "bench"
-                     else card_picker.ENCHANT_COLOR if card_code.is_enchanted(code)
-                     else WHITE)
-            label = card_pool.display_name(code)
-            if zone == "bench":
-                label = f"[bench] {label}"
-            ui_common.draw_auto(game_screen, label, "text_font", color, rect.x, rect.y)
-            if code == hovered:
-                pygame.draw.rect(game_screen.surface, ui_common.HILITE, rect,
-                                 ui_common.box_width(game_screen))
-
-
-        if hovered:
-            y = cy + bs * 1.9
-            for line in ui_common.wrap_all(card_pool.enchant_lines(hovered),
-                                           ui_common.PANEL_WRAP):
-                ui_common.draw_auto(game_screen, line, "mid_text_font",
-                                    card_picker.ENCHANT_COLOR, grid_x, y)
-                y += bs * 0.32
-
-        back.update(game_screen)
-        hint_box.turn_on = hint_on
-        if hint_on and hovered:
-            hint_box.update(mouse_x, mouse_y, hovered, game_screen)
-
-        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+        render(game_screen, run, entries, rect_for, grid_x, hovered,
+               back, hint_box, hint_on, mouse_x, mouse_y)
         pygame.display.update()
         clock.tick(60)
 

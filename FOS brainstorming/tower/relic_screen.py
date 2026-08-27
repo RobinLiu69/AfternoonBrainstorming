@@ -115,6 +115,43 @@ class _Layout:
         return max(1, len(self.pages))
 
 
+def render(game_screen: GameScreen, run: dict, relics: list, layout: "_Layout",
+           page: int, back, prev_btn, next_btn) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    paged = layout.page_count() > 1
+
+    ui_common.draw_run_bar(game_screen, run)
+
+    draw_text(f"Relics  ({len(relics)})", game_screen.title_text_font,
+              ui_common.RELIC, layout.margin, bs * 0.72, game_screen.surface)
+
+    if not relics:
+        draw_text("nothing yet - beat an elite or crack open a chest",
+                  game_screen.mid_text_font, ui_common.DIM,
+                  layout.margin, layout.top, game_screen.surface)
+    else:
+        for block in layout.pages[page]:
+            draw_text(block.heading, layout.name_font,
+                      ui_common.relic_color(block.relic_id),
+                      block.x, block.y, game_screen.surface)
+            line_y = block.y + layout.name_step
+            for line in block.lines:
+                draw_text(line, layout.text_font, ui_common.DIM,
+                          block.x + bs * 0.14, line_y, game_screen.surface)
+                line_y += layout.line_step
+
+    if paged:
+        label = f"page {page + 1} / {layout.page_count()}"
+        draw_text(label, game_screen.text_font, WHITE,
+                  cx - game_screen.text_font.size(label)[0] / 2,
+                  game_screen.display_height - bs * 1.12, game_screen.surface)
+        prev_btn.update(game_screen)
+        next_btn.update(game_screen)
+
+    back.update(game_screen)
+
+
 def main(game_screen: GameScreen, run: dict) -> None:
     running = True
     bs = game_screen.block_size
@@ -159,34 +196,7 @@ def main(game_screen: GameScreen, run: dict) -> None:
             if event.type == pygame.QUIT:
                 raise QuitGame
 
-        ui_common.draw_run_bar(game_screen, run)
-
-        draw_text(f"Relics  ({len(relics)})", game_screen.title_text_font,
-                  ui_common.RELIC, layout.margin, bs * 0.72, game_screen.surface)
-
-        if not relics:
-            draw_text("nothing yet - beat an elite or crack open a chest",
-                      game_screen.mid_text_font, ui_common.DIM,
-                      layout.margin, layout.top, game_screen.surface)  # chrome
-        else:
-            for block in layout.pages[page]:
-                draw_text(block.heading, layout.name_font,
-                          ui_common.relic_color(block.relic_id),
-                          block.x, block.y, game_screen.surface)
-                line_y = block.y + layout.name_step
-                for line in block.lines:
-                    draw_text(line, layout.text_font, ui_common.DIM,
-                              block.x + bs * 0.14, line_y, game_screen.surface)
-                    line_y += layout.line_step
-
-        if paged:
-            label = f"page {page + 1} / {layout.page_count()}"
-            draw_text(label, game_screen.text_font, WHITE,
-                      cx - game_screen.text_font.size(label)[0] / 2,
-                      game_screen.display_height - bs * 1.12, game_screen.surface)
-            prev_btn.update(game_screen)
-            next_btn.update(game_screen)
-
-        back.update(game_screen)
+        render(game_screen, run, relics, layout, page,
+               back, prev_btn, next_btn)
         pygame.display.update()
         clock.tick(60)

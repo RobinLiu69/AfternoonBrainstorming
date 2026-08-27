@@ -30,6 +30,28 @@ from core.UI import Button
 from tower import ui_common
 
 
+def render(game_screen: GameScreen, title: str, lines: Sequence[str],
+           run: Optional[dict], color: Sequence[int], button, hint_on: bool) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+
+    if run is not None:
+        ui_common.draw_run_bar(game_screen, run)
+
+    ui_common.draw_auto(game_screen, title, "title_text_font", color,
+                        cx - bs * 2.6, cy - bs * 1.6)
+    y = cy - bs * 0.7
+    for line in lines:
+        ui_common.draw_auto(game_screen, line, "big_text_font", WHITE,
+                            cx - bs * 2.6, y)
+        y += bs * 0.45
+
+    button.update(game_screen)
+    if run is not None:
+        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+
+
 def main(game_screen: GameScreen, title: str, lines: Sequence[str],
          run: Optional[dict] = None, color: Sequence[int] = WHITE,
          button_text: str = "continue") -> None:
@@ -60,19 +82,6 @@ def main(game_screen: GameScreen, title: str, lines: Sequence[str],
             if event.type == pygame.QUIT:
                 raise QuitGame
 
-        if run is not None:
-            ui_common.draw_run_bar(game_screen, run)
-
-        ui_common.draw_auto(game_screen, title, "title_text_font", color,
-                            cx - bs * 2.6, cy - bs * 1.6)
-        y = cy - bs * 0.7
-        for line in lines:
-            ui_common.draw_auto(game_screen, line, "big_text_font", WHITE,
-                                cx - bs * 2.6, y)
-            y += bs * 0.45
-
-        button.update(game_screen)
-        if run is not None:
-            ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+        render(game_screen, title, lines, run, color, button, hint_on)
         pygame.display.update()
         clock.tick(60)

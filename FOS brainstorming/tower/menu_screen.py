@@ -29,8 +29,7 @@ from tower import ui_common
 from tower.content import FACTION_NAMES
 
 
-def main(game_screen: GameScreen, state: dict) -> Optional[str]:
-    running = True
+def make_buttons(game_screen: GameScreen, state: dict) -> list[tuple[str, Button]]:
     bs = game_screen.block_size
     cx = game_screen.display_width / 2
     cy = game_screen.display_height / 2
@@ -51,6 +50,38 @@ def main(game_screen: GameScreen, state: dict) -> Optional[str]:
     buttons.append(("new", Button(
         btn_w, btn_h, btn_x, y, box_width=box_width, font=game_screen.big_text_font,
         text="new climb" if not run else "new climb  (abandon current)")))
+    return buttons
+
+
+def render(game_screen: GameScreen, state: dict,
+           buttons: list[tuple[str, Button]], back: Button) -> None:
+    bs = game_screen.block_size
+    cx = game_screen.display_width / 2
+    cy = game_screen.display_height / 2
+    run = state.get("run")
+
+    draw_text("Tower", game_screen.title_text_font, WHITE,
+              cx - bs * 0.9, cy - bs * 2.7, game_screen.surface)
+    best_act = state.get("best_act", 0)
+    best_layer = state.get("best_layer", 0)
+    best = f"act {best_act} layer {best_layer}" if best_act else "none yet"
+    draw_text(f"best: {best}    climbs: {state.get('runs_played', 0)}",
+              game_screen.big_text_font, ui_common.GOLD,
+              cx - bs * 1.9, cy - bs * 1.9, game_screen.surface)
+
+    if run:
+        names = ", ".join(FACTION_NAMES[t] for t in run.get("factions", []))
+        draw_text(f"factions: White, {names}", game_screen.text_font, WHITE,
+                  cx - bs * 1.9, cy - bs * 1.4, game_screen.surface)
+
+    for _name, btn in buttons:
+        btn.update(game_screen)
+    back.update(game_screen)
+
+
+def main(game_screen: GameScreen, state: dict) -> Optional[str]:
+    running = True
+    buttons = make_buttons(game_screen, state)
 
     back = ui_common.back_button(game_screen)
     selected: Optional[str] = None
@@ -74,23 +105,7 @@ def main(game_screen: GameScreen, state: dict) -> Optional[str]:
             if event.type == pygame.QUIT:
                 raise QuitGame
 
-        draw_text("Tower", game_screen.title_text_font, WHITE,
-                  cx - bs * 0.9, cy - bs * 2.7, game_screen.surface)
-        best_act = state.get("best_act", 0)
-        best_layer = state.get("best_layer", 0)
-        best = f"act {best_act} layer {best_layer}" if best_act else "none yet"
-        draw_text(f"best: {best}    climbs: {state.get('runs_played', 0)}",
-                  game_screen.big_text_font, ui_common.GOLD,
-                  cx - bs * 1.9, cy - bs * 1.9, game_screen.surface)
-
-        if run:
-            names = ", ".join(FACTION_NAMES[t] for t in run.get("factions", []))
-            draw_text(f"factions: White, {names}", game_screen.text_font, WHITE,
-                      cx - bs * 1.9, cy - bs * 1.4, game_screen.surface)
-
-        for _name, btn in buttons:
-            btn.update(game_screen)
-        back.update(game_screen)
+        render(game_screen, state, buttons, back)
 
         pygame.display.update()
         clock.tick(60)
