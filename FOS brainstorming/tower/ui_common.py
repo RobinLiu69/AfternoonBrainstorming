@@ -143,21 +143,21 @@ def wrap_to_width(text: str, font, max_width: float) -> list[str]:
     return lines
 
 
-GOLD: tuple[int, int, int] = (255, 215, 0)
-ORB: tuple[int, int, int] = (150, 210, 255)
-RELIC: tuple[int, int, int] = (255, 215, 0)
-POWER: tuple[int, int, int] = (255, 140, 220)
+GOLD: tuple[int, int, int] = style.INK
+ORB: tuple[int, int, int] = style.INK
+RELIC: tuple[int, int, int] = style.INK
+POWER: tuple[int, int, int] = style.INK
 CURSE: tuple[int, int, int] = (255, 90, 90)
-DIM: tuple[int, int, int] = (120, 120, 120)
-DONE: tuple[int, int, int] = (90, 130, 90)
-ENEMY: tuple[int, int, int] = (255, 150, 90)
-HILITE: tuple[int, int, int] = (120, 255, 180)
+DIM: tuple[int, int, int] = style.INK_DISABLED
+DONE: tuple[int, int, int] = style.INK_DISABLED
+ENEMY: tuple[int, int, int] = style.INK_MUTED
+HILITE: tuple[int, int, int] = style.INK
 
 TIER_COLORS: dict[str, tuple[int, int, int]] = {
-    "common": WHITE,
-    "rare": (120, 200, 255),
-    "power": POWER,
-    "special": (255, 235, 140),
+    "common": style.INK_MUTED,
+    "rare": style.INK,
+    "power": style.INK,
+    "special": style.INK,
     "curse": CURSE,
 }
 
@@ -182,11 +182,9 @@ def relic_text(relic_id: str) -> str:
 
 
 def enemy_color(kind: str) -> tuple[int, int, int]:
-    if kind == "boss":
-        return CURSE
-    if kind == "elite":
-        return POWER
-    return ENEMY
+    if kind in ("boss", "elite"):
+        return style.INK
+    return style.INK_MUTED
 
 
 def room_label(kind: str) -> str:
@@ -237,9 +235,9 @@ def back_button(game_screen: GameScreen, text: str = "back") -> Button:
                   font=game_screen.big_text_font, text=text)
 
 
-TITLE_Y: float = 0.62
+TITLE_Y: float = 0.88
 SUBTITLE_GAP: float = 0.52
-CONTENT_TOP: float = 1.55
+CONTENT_TOP: float = 1.78
 
 
 def title_y(game_screen: GameScreen) -> float:
@@ -257,30 +255,46 @@ def content_top(game_screen: GameScreen) -> float:
     return game_screen.block_size * CONTENT_TOP
 
 
-def draw_run_bar(game_screen: GameScreen, run: dict) -> None:
-    """Act / layer / gold / orbs / relic count, along the top of the screen."""
-    bs = game_screen.block_size
-    y = bs * 0.35
-    draw_text(f"act {run['act']}   layer {run['layer']}",
-              game_screen.mid_text_font, WHITE, bs * 0.5, y, game_screen.surface)
-    draw_text(f"gold {run['gold']}", game_screen.mid_text_font, GOLD,
-              bs * 3.2, y, game_screen.surface)
-    draw_text(f"orbs {run.get('orbs', 0)}", game_screen.mid_text_font, ORB,
-              bs * 4.9, y, game_screen.surface)
-    draw_text(f"deck {len(run['deck'])}/{len(run['deck']) + len(run['bench'])}",
-              game_screen.mid_text_font, WHITE, bs * 6.4, y, game_screen.surface)
+RUN_BAR_H: float = 0.62
+
+
+def _run_bar_fields(run: dict) -> list[tuple[str, str]]:
+    fields = [("act", str(run["act"])),
+              ("layer", str(run["layer"])),
+              ("gold", str(run["gold"])),
+              ("orbs", str(run.get("orbs", 0))),
+              ("deck", f"{len(run['deck'])}/{len(run['deck']) + len(run['bench'])}")]
     relics = len(run.get("relics", []))
     if relics:
-        draw_text(f"relics {relics}  [F]", game_screen.mid_text_font, RELIC,
-                  bs * 8.2, y, game_screen.surface)
+        fields.append(("relics [F]", str(relics)))
     if run.get("debt"):
-        draw_text(f"debt {run['debt']}", game_screen.mid_text_font, CURSE,
-                  bs * 9.9, y, game_screen.surface)
+        fields.append(("debt", str(run["debt"])))
+    return fields
+
+
+def draw_run_bar(game_screen: GameScreen, run: dict) -> None:
+    bs = game_screen.block_size
+    height = bs * RUN_BAR_H
+    band = pygame.Surface((game_screen.display_width, int(height)), pygame.SRCALPHA)
+    band.fill(style.HEADER_FILL)
+    game_screen.surface.blit(band, (0, 0))
+    pygame.draw.line(game_screen.surface, style.DIVIDER,
+                     (0, height), (game_screen.display_width, height),
+                     style.edge_width(game_screen))
+
+    font = game_screen.mid_text_font
+    y = (height - font.get_linesize()) / 2
+    x = bs * 0.4
+    for label, value in _run_bar_fields(run):
+        draw_text(label, font, style.INK_MUTED, x, y, game_screen.surface)
+        x += font.size(label)[0] + bs * 0.14
+        draw_text(value, font, style.INK, x, y, game_screen.surface)
+        x += font.size(value)[0] + bs * 0.42
 
 
 def column_bottom(game_screen: GameScreen) -> float:
     """Last row a column may use before it runs into the button row."""
-    return game_screen.display_height - game_screen.block_size * 1.4
+    return game_screen.display_height - game_screen.block_size * 1.22
 
 
 def draw_capped_lines(game_screen: GameScreen, lines, size: str, color,

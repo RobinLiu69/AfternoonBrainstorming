@@ -32,6 +32,7 @@ from core.card_hint import HintBox
 from core.setting_config import load_setting
 from utils.controls import key_pressed
 
+from rendering import style
 from tower import card_picker, card_pool, choice_screen, grants, run_state, shop, ui_common
 
 
@@ -114,10 +115,10 @@ def render(game_screen: GameScreen, run: dict, stock: dict, buttons: list,
 
     ui_common.draw_run_bar(game_screen, run)
 
-    draw_text("Merchant", game_screen.title_text_font, ui_common.GOLD,
-              cx - bs * 3.8, cy - bs * 2.5, game_screen.surface)
-    draw_text(grants.slot_hint(run), game_screen.mid_text_font, WHITE,
-              cx - bs * 3.8, cy - bs * 2.0, game_screen.surface)
+    draw_text("Merchant", game_screen.title_text_font, style.INK,
+              cx - bs * 3.8, ui_common.title_y(game_screen), game_screen.surface)
+    style.muted_text(game_screen, grants.slot_hint(run), cx - bs * 3.8,
+                     ui_common.subtitle_y(game_screen), game_screen.mid_text_font)
 
     for btn, _item in buttons:
         btn.update(game_screen)

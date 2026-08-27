@@ -32,6 +32,7 @@ from core.card_hint import HintBox
 from core.setting_config import load_setting
 from utils.controls import key_pressed
 
+from rendering import style
 from tower import card_picker, card_pool, run_state, ui_common
 
 
@@ -42,7 +43,7 @@ def layout(game_screen: GameScreen, run: dict):
     columns = 3
     col_w = bs * 2.3
     grid_x = cx - bs * 3.9
-    grid_y = cy - bs * 1.5
+    grid_y = ui_common.content_top(game_screen)
     row_h = bs * 0.34
 
     entries = [("deck", i, code) for i, code in enumerate(run["deck"])]
@@ -64,13 +65,14 @@ def render(game_screen: GameScreen, run: dict, entries, rect_for, grid_x: float,
 
     ui_common.draw_run_bar(game_screen, run)
 
-    draw_text("Your warband", game_screen.title_text_font, WHITE,
-              grid_x, cy - bs * 2.5, game_screen.surface)
-    draw_text(f"deck {len(run['deck'])}/{run_state.deck_limit(run)}"
-              f"    bench {len(run['bench'])}/{run_state.bench_limit(run)}"
-              f"    [F] details",
-              game_screen.mid_text_font, ui_common.GOLD,
-              grid_x, cy - bs * 1.95, game_screen.surface)
+    draw_text("Your warband", game_screen.title_text_font, style.INK,
+              grid_x, ui_common.title_y(game_screen), game_screen.surface)
+    style.muted_text(game_screen,
+                     f"deck {len(run['deck'])}/{run_state.deck_limit(run)}"
+                     f"    bench {len(run['bench'])}/{run_state.bench_limit(run)}"
+                     f"    [F] details",
+                     grid_x, ui_common.subtitle_y(game_screen),
+                     game_screen.mid_text_font)
 
     for slot, (zone, _index, code) in enumerate(entries):
         rect = rect_for(slot)

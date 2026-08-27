@@ -32,6 +32,7 @@ from core.setting_config import load_setting
 from core.UI import Button
 from utils.controls import key_pressed
 
+from rendering import style
 from tower import card_pool, relic_screen, roster_screen, run_state, tower_map, ui_common
 from tower.content import ENEMY_LABELS
 
@@ -55,25 +56,25 @@ def _layer_tag(run: dict, layer: dict, blind: tuple[bool, bool]) -> tuple[str, t
     _hide_rooms, hide_enemies = blind
     kind = layer["kind"]
     if kind == "blessing":
-        return "Bless", ui_common.HILITE
+        return "Bless", style.INK
     if kind == "skip":
-        return "-", ui_common.DIM
+        return "-", style.INK_DISABLED
     if kind == "battle":
         enemy = layer["enemy"]
         if hide_enemies and enemy["kind"] != "boss":
-            return "???", ui_common.DIM
+            return "???", style.INK_MUTED
         return SHORT_ENEMY.get(enemy["kind"], "?"), ui_common.enemy_color(enemy["kind"])
     if kind == "branch":
-        return "Fork", WHITE
+        return "Fork", style.INK
 
     pick = run_state.pick_for(run, layer["source"])
     if pick is None:
-        return "?", ui_common.DIM
+        return "?", style.INK_MUTED
     option = tower_map.layer_at(run_state.current_map(run), layer["source"])["options"][pick]
     if kind == "battle_linked":
         enemy = option["enemy"]
         return SHORT_ENEMY.get(enemy["kind"], "?"), ui_common.enemy_color(enemy["kind"])
-    return SHORT_ROOM.get(option["rooms"][1]["kind"], "?"), ui_common.GOLD
+    return SHORT_ROOM.get(option["rooms"][1]["kind"], "?"), style.INK
 
 
 def _option_lines(option: dict, blind: tuple[bool, bool]) -> list[str]:
@@ -108,9 +109,10 @@ def render(game_screen: GameScreen, run: dict, act_map, layers, layer, options,
     ui_common.draw_run_bar(game_screen, run)
 
     boss = tower_map.boss_of(act_map)
-    draw_text(f"act {run['act']}  -  {boss['label']} waits at the top",
-              game_screen.mid_text_font, ui_common.CURSE,
-              strip_x0, bs * 0.68, game_screen.surface)
+    style.muted_text(game_screen,
+                     f"act {run['act']}  -  {boss['label']} waits at the top",
+                     strip_x0, ui_common.title_y(game_screen),
+                     game_screen.mid_text_font)
 
     for i, entry in enumerate(layers):
         x = strip_x0 + i * (strip_w + strip_gap)
@@ -247,15 +249,21 @@ def _draw_panel(game_screen: GameScreen, run: dict, layer: dict,
     cx = game_screen.display_width / 2
 
     if options:
-        draw_text("choose your route", game_screen.big_text_font, WHITE,
-                  cx - bs * 1.2, panel_y - bs * 0.4, game_screen.surface)
-        btn_w = bs * 2.6
-        total = len(options) * (btn_w + bs * 0.2) - bs * 0.2
-        for i, option in enumerate(options):
-            x = cx - total / 2 + i * (btn_w + bs * 0.2)
-            y = panel_y + bs * 0.25
-            for line in ui_common.wrap_all(_option_lines(option, blind), ROUTE_WRAP):
-                ui_common.draw_auto(game_screen, line, "text_font", WHITE, x, y)
+        pad = bs * style.PANEL_PAD
+        panel_w = bs * 3.1
+        total = len(options) * (panel_w + bs * 0.3) - bs * 0.3
+        top = panel_y - bs * 0.35
+        rows = [ui_common.wrap_all(_option_lines(option, blind), ROUTE_WRAP)
+                for option in options]
+        height = (bs * style.HEADER_HEIGHT + pad
+                  + bs * 0.28 * max(len(lines) for lines in rows) + pad * 0.5)
+        for i, lines in enumerate(rows):
+            x = cx - total / 2 + i * (panel_w + bs * 0.3)
+            style.section(game_screen, f"ROUTE {i + 1}", x, top, panel_w, height)
+            y = top + bs * style.HEADER_HEIGHT + pad * 0.8
+            for line in lines:
+                ui_common.draw_auto(game_screen, line, "text_font", style.INK,
+                                    x + pad, y)
                 y += bs * 0.28
         return
 

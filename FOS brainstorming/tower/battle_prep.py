@@ -26,6 +26,7 @@ from core.setting_config import load_setting
 from core.UI import Button
 from utils.controls import key_pressed
 
+from rendering import style
 from tower import card_picker, card_pool, run_state, ui_common
 
 DECK_ROWS: int = 7
@@ -73,20 +74,31 @@ def render(game_screen: GameScreen, run: dict, enemy: dict,
     ui_common.draw_run_bar(game_screen, run)
 
     draw_text(ui_common.enemy_label(enemy), game_screen.title_text_font,
-              ui_common.enemy_color(enemy["kind"]),
-              cx - bs * 3.6, cy - bs * 2.5, game_screen.surface)
+              style.INK, cx - bs * 3.6, ui_common.title_y(game_screen),
+              game_screen.surface)
     first_text, first_color = (("they move first", ui_common.CURSE)
                                if enemy.get("enemy_first")
                                else ("you move first", ui_common.HILITE))
     draw_text(first_text, game_screen.big_text_font, first_color,
-              cx - bs * 3.6, cy - bs * 2.0, game_screen.surface)
+              cx - bs * 3.6, ui_common.subtitle_y(game_screen), game_screen.surface)
     if enemy.get("note"):
         for i, line in enumerate(ui_common.wrap(enemy["note"], 34)):
             draw_text(line, game_screen.text_font, ui_common.CURSE,
                       cx - bs * 1.5, cy - bs * (2.0 - 0.26 * i), game_screen.surface)
 
-    y = cy - bs * 1.55
-    draw_text("enemy deck", game_screen.mid_text_font, WHITE,
+    pad = bs * style.PANEL_PAD
+    column_w = bs * 3.4
+    column_h = ui_common.column_bottom(game_screen) - ui_common.content_top(game_screen)
+    style.section(game_screen, "ENEMY", cx - bs * 3.75,
+                  ui_common.content_top(game_screen), column_w, column_h,
+                  right=ui_common.enemy_label(enemy))
+    style.section(game_screen, "YOURS", cx + bs * 0.25,
+                  ui_common.content_top(game_screen), column_w, column_h,
+                  right=f"{len(run['deck'])} cards")
+    inner_bottom = ui_common.content_top(game_screen) + column_h - pad
+
+    y = ui_common.content_top(game_screen) + bs * style.HEADER_HEIGHT + pad
+    draw_text("deck", game_screen.mid_text_font, style.INK_MUTED,
               cx - bs * 3.6, y, game_screen.surface)
     y += bs * 0.34
     enemy_names = sorted(card_pool.display_name(c) for c in enemy["deck"])
@@ -110,14 +122,14 @@ def render(game_screen: GameScreen, run: dict, enemy: dict,
     y += bs * 0.1
     ui_common.draw_capped_lines(game_screen, _effect_lines(enemy_effects, "enemy"),
                                 "text_font", ui_common.CURSE,
-                                cx - bs * 3.6, y, 0.25)
+                                cx - bs * 3.6, y, 0.25, inner_bottom)
 
-    y = cy - bs * 1.55
-    draw_text(f"your deck  ({len(run['deck'])})", game_screen.mid_text_font, WHITE,
+    y = ui_common.content_top(game_screen) + bs * style.HEADER_HEIGHT + pad
+    draw_text("deck", game_screen.mid_text_font, style.INK_MUTED,
               cx + bs * 0.4, y, game_screen.surface)
     y += bs * 0.34
     names = [card_pool.display_name(c) for c in run["deck"]]
-    rows = _wrap(names, 2)
+    rows = _wrap(names, 3)
     for chunk in rows[:DECK_ROWS]:
         ui_common.draw_auto(game_screen, "  ".join(chunk), "text_font", WHITE,
                             cx + bs * 0.4, y)
@@ -135,15 +147,15 @@ def render(game_screen: GameScreen, run: dict, enemy: dict,
                   game_screen.mid_text_font, card_picker.BENCH_COLOR,
                   cx + bs * 0.4, y, game_screen.surface)
         y += bs * 0.32
-        for code in run["bench"]:
-            ui_common.draw_auto(game_screen, card_pool.display_name(code), "text_font",
-                                card_picker.BENCH_COLOR, cx + bs * 0.4, y)
-            y += bs * 0.25
+        y = ui_common.draw_capped_lines(
+            game_screen, [card_pool.display_name(code) for code in run["bench"]],
+            "text_font", card_picker.BENCH_COLOR, cx + bs * 0.4, y, 0.25,
+            inner_bottom)
 
     y += bs * 0.1
     ui_common.draw_capped_lines(game_screen, _effect_lines(player_effects, "your"),
                                 "text_font", ui_common.HILITE,
-                                cx + bs * 0.4, y, 0.25)
+                                cx + bs * 0.4, y, 0.25, inner_bottom)
 
 
     if can_swap:

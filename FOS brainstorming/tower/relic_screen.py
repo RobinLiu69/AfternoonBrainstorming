@@ -36,6 +36,7 @@ from core.game_screen import GameScreen, draw_text, QuitGame
 from core.UI import Button
 from utils.controls import key_pressed
 
+from rendering import style
 from tower import language, ui_common
 from tower.content import RELICS
 
@@ -124,7 +125,8 @@ def render(game_screen: GameScreen, run: dict, relics: list, layout: "_Layout",
     ui_common.draw_run_bar(game_screen, run)
 
     draw_text(f"Relics  ({len(relics)})", game_screen.title_text_font,
-              ui_common.RELIC, layout.margin, bs * 0.72, game_screen.surface)
+              style.INK, layout.margin, ui_common.title_y(game_screen),
+              game_screen.surface)
 
     if not relics:
         draw_text("nothing yet - beat an elite or crack open a chest",
