@@ -69,7 +69,7 @@ class _Layout:
         self.name_font = language.font(game_screen, "mid_text_font")
         self.text_font = language.font(game_screen, "text_font")
 
-        self.top = bs * 1.35
+        self.top = ui_common.content_top(game_screen)
         self.bottom = game_screen.display_height - bs * 1.15
         self.margin = bs * 0.35
         gap = bs * 0.5

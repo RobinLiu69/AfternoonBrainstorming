@@ -170,7 +170,7 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
         for i, item in enumerate(stock["items"]):
             col, row = i // 4, i % 4
             x = cx - bs * 3.8 + col * (btn_w + bs * 0.3)
-            y = cy - bs * 1.7 + row * (btn_h + bs * 0.12)
+            y = ui_common.content_top(game_screen) + row * (btn_h + bs * 0.12)
             label, _text, color = _item_label(item)
             if item["sold"]:
                 label, color = "sold", ui_common.DIM
