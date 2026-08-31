@@ -143,22 +143,26 @@ def wrap_to_width(text: str, font, max_width: float) -> list[str]:
     return lines
 
 
-GOLD: tuple[int, int, int] = style.INK
-ORB: tuple[int, int, int] = style.INK
-RELIC: tuple[int, int, int] = style.INK
-POWER: tuple[int, int, int] = style.INK
+GOLD: tuple[int, int, int] = (255, 215, 0)
+ORB: tuple[int, int, int] = (150, 210, 255)
+RELIC: tuple[int, int, int] = (255, 215, 0)
+POWER: tuple[int, int, int] = (255, 140, 220)
 CURSE: tuple[int, int, int] = (255, 90, 90)
 DIM: tuple[int, int, int] = style.INK_DISABLED
-DONE: tuple[int, int, int] = style.INK_DISABLED
-ENEMY: tuple[int, int, int] = style.INK_MUTED
-HILITE: tuple[int, int, int] = style.INK
+DONE: tuple[int, int, int] = (90, 130, 90)
+ENEMY: tuple[int, int, int] = (255, 150, 90)
+HILITE: tuple[int, int, int] = (120, 255, 180)
 
 TIER_COLORS: dict[str, tuple[int, int, int]] = {
-    "common": style.INK_MUTED,
-    "rare": style.INK,
-    "power": style.INK,
-    "special": style.INK,
+    "common": WHITE,
+    "rare": (120, 200, 255),
+    "power": POWER,
+    "special": (255, 235, 140),
     "curse": CURSE,
+}
+
+RUN_BAR_COLORS: dict[str, tuple[int, int, int]] = {
+    "gold": GOLD, "orbs": ORB, "relics [F]": RELIC, "debt": CURSE,
 }
 
 
@@ -182,9 +186,11 @@ def relic_text(relic_id: str) -> str:
 
 
 def enemy_color(kind: str) -> tuple[int, int, int]:
-    if kind in ("boss", "elite"):
-        return style.INK
-    return style.INK_MUTED
+    if kind == "boss":
+        return CURSE
+    if kind == "elite":
+        return POWER
+    return ENEMY
 
 
 def room_label(kind: str) -> str:
@@ -288,7 +294,8 @@ def draw_run_bar(game_screen: GameScreen, run: dict) -> None:
     for label, value in _run_bar_fields(run):
         draw_text(label, font, style.INK_MUTED, x, y, game_screen.surface)
         x += font.size(label)[0] + bs * 0.14
-        draw_text(value, font, style.INK, x, y, game_screen.surface)
+        draw_text(value, font, RUN_BAR_COLORS.get(label, style.INK), x, y,
+                  game_screen.surface)
         x += font.size(value)[0] + bs * 0.42
 
 

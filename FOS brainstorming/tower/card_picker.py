@@ -34,8 +34,8 @@ from rendering import style
 
 from tower import card_pool, language, ui_common
 
-BENCH_COLOR: tuple[int, int, int] = style.INK_MUTED
-ENCHANT_COLOR: tuple[int, int, int] = style.INK
+BENCH_COLOR: tuple[int, int, int] = (255, 170, 60)
+ENCHANT_COLOR: tuple[int, int, int] = (170, 230, 255)
 
 
 def _entry_color(zone: str, code: str) -> tuple[int, int, int]:

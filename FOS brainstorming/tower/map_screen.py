@@ -56,25 +56,25 @@ def _layer_tag(run: dict, layer: dict, blind: tuple[bool, bool]) -> tuple[str, t
     _hide_rooms, hide_enemies = blind
     kind = layer["kind"]
     if kind == "blessing":
-        return "Bless", style.INK
+        return "Bless", ui_common.HILITE
     if kind == "skip":
-        return "-", style.INK_DISABLED
+        return "-", ui_common.DIM
     if kind == "battle":
         enemy = layer["enemy"]
         if hide_enemies and enemy["kind"] != "boss":
-            return "???", style.INK_MUTED
+            return "???", ui_common.DIM
         return SHORT_ENEMY.get(enemy["kind"], "?"), ui_common.enemy_color(enemy["kind"])
     if kind == "branch":
-        return "Fork", style.INK
+        return "Fork", WHITE
 
     pick = run_state.pick_for(run, layer["source"])
     if pick is None:
-        return "?", style.INK_MUTED
+        return "?", ui_common.DIM
     option = tower_map.layer_at(run_state.current_map(run), layer["source"])["options"][pick]
     if kind == "battle_linked":
         enemy = option["enemy"]
         return SHORT_ENEMY.get(enemy["kind"], "?"), ui_common.enemy_color(enemy["kind"])
-    return SHORT_ROOM.get(option["rooms"][1]["kind"], "?"), style.INK
+    return SHORT_ROOM.get(option["rooms"][1]["kind"], "?"), ui_common.GOLD
 
 
 def _option_lines(option: dict, blind: tuple[bool, bool]) -> list[str]:

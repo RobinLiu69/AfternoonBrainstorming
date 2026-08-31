@@ -38,10 +38,15 @@ def _effect_lines(effects: dict, subject: str) -> list[str]:
         lines.append(f"{subject} units {effects['unit_hp_plus']:+d} HP")
     if effects.get("unit_damage_plus"):
         lines.append(f"{subject} units {effects['unit_damage_plus']:+d} damage")
-    for job, amount in sorted(effects.get("job_hp_plus", {}).items()):
-        lines.append(f"{subject} {job} {amount:+d} HP")
-    for job, amount in sorted(effects.get("job_damage_plus", {}).items()):
-        lines.append(f"{subject} {job} {amount:+d} damage")
+    hp_by_job = effects.get("job_hp_plus", {})
+    damage_by_job = effects.get("job_damage_plus", {})
+    for job in sorted(set(hp_by_job) | set(damage_by_job)):
+        parts = []
+        if hp_by_job.get(job):
+            parts.append(f"{hp_by_job[job]:+d} HP")
+        if damage_by_job.get(job):
+            parts.append(f"{damage_by_job[job]:+d} damage")
+        lines.append(f"{subject} {job} {'  '.join(parts)}")
     if effects.get("hand_plus"):
         lines.append(f"{subject} start with {effects['hand_plus']:+d} cards")
     return lines
@@ -124,12 +129,12 @@ def render(game_screen: GameScreen, run: dict, enemy: dict,
                                 "text_font", ui_common.CURSE,
                                 cx - bs * 3.6, y, 0.25, inner_bottom)
 
-    y = ui_common.content_top(game_screen) + bs * style.HEADER_HEIGHT + pad
+    y = ui_common.content_top(game_screen) + bs * style.HEADER_HEIGHT + pad * 0.7
     draw_text("deck", game_screen.mid_text_font, style.INK_MUTED,
               cx + bs * 0.4, y, game_screen.surface)
-    y += bs * 0.34
+    y += bs * 0.32
     names = [card_pool.display_name(c) for c in run["deck"]]
-    rows = _wrap(names, 3)
+    rows = _wrap(names, 4)
     for chunk in rows[:DECK_ROWS]:
         ui_common.draw_auto(game_screen, "  ".join(chunk), "text_font", WHITE,
                             cx + bs * 0.4, y)
@@ -143,16 +148,16 @@ def render(game_screen: GameScreen, run: dict, enemy: dict,
 
     if run["bench"]:
         y += bs * 0.1
-        draw_text(f"bench  ({len(run['bench'])}/{run_state.bench_limit(run)})",
-                  game_screen.mid_text_font, card_picker.BENCH_COLOR,
+        label = f"bench  ({len(run['bench'])}/{run_state.bench_limit(run)})"
+        draw_text(label, game_screen.mid_text_font, card_picker.BENCH_COLOR,
                   cx + bs * 0.4, y, game_screen.surface)
-        y += bs * 0.32
-        y = ui_common.draw_capped_lines(
-            game_screen, [card_pool.display_name(code) for code in run["bench"]],
-            "text_font", card_picker.BENCH_COLOR, cx + bs * 0.4, y, 0.25,
-            inner_bottom)
+        names = "  ".join(card_pool.display_name(code) for code in run["bench"])
+        ui_common.draw_auto(game_screen, names, "text_font", card_picker.BENCH_COLOR,
+                            cx + bs * 0.4 + game_screen.mid_text_font.size(label)[0]
+                            + bs * 0.2, y)
+        y += bs * 0.34
 
-    y += bs * 0.1
+    y += bs * 0.06
     ui_common.draw_capped_lines(game_screen, _effect_lines(player_effects, "your"),
                                 "text_font", ui_common.HILITE,
                                 cx + bs * 0.4, y, 0.25, inner_bottom)
