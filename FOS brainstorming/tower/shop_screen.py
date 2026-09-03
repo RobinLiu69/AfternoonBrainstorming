@@ -107,7 +107,7 @@ def _burn_card(game_screen: GameScreen, run: dict) -> bool:
 
 
 def render(game_screen: GameScreen, run: dict, stock: dict, buttons: list,
-           actions: dict, hovered, hint_box, hint_on: bool,
+           actions: dict, hovered, hint_box, hint_on: bool, relics_open: bool,
            mouse_x: int, mouse_y: int) -> None:
     bs = game_screen.block_size
     cx = game_screen.display_width / 2
@@ -150,7 +150,7 @@ def render(game_screen: GameScreen, run: dict, stock: dict, buttons: list,
     if hint_on and hovered is not None and hovered["kind"] == "card":
         hint_box.update(mouse_x, mouse_y, hovered["card"], game_screen)
 
-    ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+    ui_common.draw_relic_strip(game_screen, run, detailed=relics_open)
 
 
 def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) -> None:
@@ -162,6 +162,7 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
 
     hint_box = HintBox(width=int(bs * 3), height=int(bs))
     hint_on = load_setting("hint_on")
+    relics_open = False
 
     def build_items() -> list[tuple[Button, dict]]:
         out: list[tuple[Button, dict]] = []
@@ -220,7 +221,7 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
                 if key == pygame.K_ESCAPE:
                     running = False
                 if key == pygame.K_f:
-                    hint_on = not hint_on
+                    relics_open = not relics_open
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if actions["leave"].touch(mouse_x, mouse_y):
                     running = False
@@ -251,6 +252,6 @@ def main(game_screen: GameScreen, run: dict, stock: dict, rng: random.Random) ->
                 raise QuitGame
 
         render(game_screen, run, stock, buttons, actions, hovered,
-               hint_box, hint_on, mouse_x, mouse_y)
+               hint_box, hint_on, relics_open, mouse_x, mouse_y)
         pygame.display.update()
         clock.tick(60)

@@ -103,7 +103,7 @@ def render(game_screen: GameScreen, run: dict, act_map, layers, layer, options,
            current: int, blind, strip_x0: float, strip_y: float,
            strip_w: float, strip_h: float, strip_gap: float, panel_y: float,
            box_width: int, action_buttons: list, leave, roster, relics,
-           hint_on: bool) -> None:
+           hint_on: bool, relics_open: bool) -> None:
     bs = game_screen.block_size
 
     ui_common.draw_run_bar(game_screen, run)
@@ -137,7 +137,7 @@ def render(game_screen: GameScreen, run: dict, act_map, layers, layer, options,
     roster.update(game_screen)
     relics.update(game_screen)
 
-    ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+    ui_common.draw_relic_strip(game_screen, run, detailed=relics_open)
 
 
 def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int]]]:
@@ -188,6 +188,7 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
                     text="[R] relics")
 
     hint_on = load_setting("hint_on")
+    relics_open = False
     result: Optional[tuple[str, Optional[int]]] = None
     clock = pygame.time.Clock()
 
@@ -205,7 +206,7 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
                 if key == pygame.K_r:
                     relic_screen.main(game_screen, run)
                 if key == pygame.K_f:
-                    hint_on = not hint_on
+                    relics_open = not relics_open
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if leave.touch(mouse_x, mouse_y):
                     running = False
@@ -224,7 +225,7 @@ def main(game_screen: GameScreen, run: dict) -> Optional[tuple[str, Optional[int
         render(game_screen, run, act_map, layers, layer, options, current,
                blind, strip_x0, strip_y, strip_w, strip_h, strip_gap,
                panel_y, box_width, action_buttons, leave, roster, relics,
-               hint_on)
+               hint_on, relics_open)
         pygame.display.update()
         clock.tick(60)
 

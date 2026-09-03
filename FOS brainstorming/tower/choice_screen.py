@@ -67,7 +67,7 @@ def _slots(count: int) -> list[float]:
 
 def render(game_screen: GameScreen, title: str, subtitle: str, options: list,
            run, rect_for, display_cards: dict, card_renderer, box_width: int,
-           hover: int, hint_box, hint_on: bool, skip_button, cancel,
+           hover: int, hint_box, hint_on: bool, relics_open: bool, skip_button, cancel,
            mouse_x: int, mouse_y: int) -> None:
     bs = game_screen.block_size
     cx = game_screen.display_width / 2
@@ -118,7 +118,7 @@ def render(game_screen: GameScreen, title: str, subtitle: str, options: list,
     if hint_on and hover >= 0 and options[hover].get("card"):
         hint_box.update(mouse_x, mouse_y, options[hover]["card"], game_screen)
 
-    ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+    ui_common.draw_relic_strip(game_screen, run, detailed=relics_open)
 
 
 def main(game_screen: GameScreen, title: str, options: list[dict],
@@ -133,6 +133,7 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
     card_renderer = CardRenderer(game_screen)
     hint_box = HintBox(width=int(bs * 3), height=int(bs))
     hint_on = load_setting("hint_on")
+    relics_open = False
 
     slots = _slots(len(options))
     display_cards: dict[int, object] = {}
@@ -175,7 +176,7 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
                 if key == pygame.K_ESCAPE:
                     running = False
                 if key == pygame.K_f:
-                    hint_on = not hint_on
+                    relics_open = not relics_open
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if cancel is not None and cancel.touch(mouse_x, mouse_y):
                     running = False
@@ -190,7 +191,7 @@ def main(game_screen: GameScreen, title: str, options: list[dict],
 
         render(game_screen, title, subtitle, options, run, rect_for,
                display_cards, card_renderer, box_width, hover, hint_box,
-               hint_on, skip_button, cancel, mouse_x, mouse_y)
+               hint_on, relics_open, skip_button, cancel, mouse_x, mouse_y)
         pygame.display.update()
         clock.tick(60)
 

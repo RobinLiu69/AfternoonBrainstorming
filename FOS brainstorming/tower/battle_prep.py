@@ -71,7 +71,7 @@ def _swap_bench(game_screen: GameScreen, run: dict) -> None:
 
 def render(game_screen: GameScreen, run: dict, enemy: dict,
            player_effects: dict, enemy_effects: dict, can_swap: bool,
-           swap, start, back, hint_on: bool) -> None:
+           swap, start, back, hint_on: bool, relics_open: bool) -> None:
     bs = game_screen.block_size
     cx = game_screen.display_width / 2
     cy = game_screen.display_height / 2
@@ -168,7 +168,7 @@ def render(game_screen: GameScreen, run: dict, enemy: dict,
     start.update(game_screen)
     back.update(game_screen)
 
-    ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+    ui_common.draw_relic_strip(game_screen, run, detailed=relics_open)
 
 
 def main(game_screen: GameScreen, run: dict, enemy: dict,
@@ -187,6 +187,7 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
 
     result = "back"
     hint_on = load_setting("hint_on")
+    relics_open = False
     clock = pygame.time.Clock()
 
     while running:
@@ -200,7 +201,7 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
                 if key == pygame.K_ESCAPE:
                     running = False
                 if key == pygame.K_f:
-                    hint_on = not hint_on
+                    relics_open = not relics_open
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if back.touch(mouse_x, mouse_y):
                     running = False
@@ -213,7 +214,7 @@ def main(game_screen: GameScreen, run: dict, enemy: dict,
                 raise QuitGame
 
         render(game_screen, run, enemy, player_effects, enemy_effects,
-               can_swap, swap, start, back, hint_on)
+               can_swap, swap, start, back, hint_on, relics_open)
         pygame.display.update()
         clock.tick(60)
 

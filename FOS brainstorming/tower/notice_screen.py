@@ -31,7 +31,7 @@ from tower import ui_common
 
 
 def render(game_screen: GameScreen, title: str, lines: Sequence[str],
-           run: Optional[dict], color: Sequence[int], button, hint_on: bool) -> None:
+           run: Optional[dict], color: Sequence[int], button, hint_on: bool, relics_open: bool) -> None:
     bs = game_screen.block_size
     cx = game_screen.display_width / 2
     cy = game_screen.display_height / 2
@@ -49,7 +49,7 @@ def render(game_screen: GameScreen, title: str, lines: Sequence[str],
 
     button.update(game_screen)
     if run is not None:
-        ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+        ui_common.draw_relic_strip(game_screen, run, detailed=relics_open)
 
 
 def main(game_screen: GameScreen, title: str, lines: Sequence[str],
@@ -65,6 +65,7 @@ def main(game_screen: GameScreen, title: str, lines: Sequence[str],
                     font=game_screen.big_text_font, text=button_text)
     clock = pygame.time.Clock()
     hint_on = False
+    relics_open = False
 
     while running:
         game_screen.render()
@@ -74,7 +75,7 @@ def main(game_screen: GameScreen, title: str, lines: Sequence[str],
             if event.type == pygame.KEYDOWN:
                 key = key_pressed(pygame.key.get_pressed())
                 if key == pygame.K_f:
-                    hint_on = not hint_on
+                    relics_open = not relics_open
                 elif key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_SPACE):
                     running = False
             if event.type == pygame.MOUSEBUTTONDOWN and button.touch(mouse_x, mouse_y):
@@ -82,6 +83,7 @@ def main(game_screen: GameScreen, title: str, lines: Sequence[str],
             if event.type == pygame.QUIT:
                 raise QuitGame
 
-        render(game_screen, title, lines, run, color, button, hint_on)
+        render(game_screen, title, lines, run, color, button,
+               hint_on, relics_open)
         pygame.display.update()
         clock.tick(60)

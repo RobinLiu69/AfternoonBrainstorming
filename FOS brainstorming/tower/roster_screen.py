@@ -58,7 +58,7 @@ def layout(game_screen: GameScreen, run: dict):
 
 
 def render(game_screen: GameScreen, run: dict, entries, rect_for, grid_x: float,
-           hovered: str, back, hint_box, hint_on: bool,
+           hovered: str, back, hint_box, hint_on: bool, relics_open: bool,
            mouse_x: int, mouse_y: int) -> None:
     bs = game_screen.block_size
     cy = game_screen.display_height / 2
@@ -100,7 +100,7 @@ def render(game_screen: GameScreen, run: dict, entries, rect_for, grid_x: float,
     if hint_on and hovered:
         hint_box.update(mouse_x, mouse_y, hovered, game_screen)
 
-    ui_common.draw_relic_strip(game_screen, run, detailed=hint_on)
+    ui_common.draw_relic_strip(game_screen, run, detailed=relics_open)
 
 
 def main(game_screen: GameScreen, run: dict) -> None:
@@ -111,6 +111,7 @@ def main(game_screen: GameScreen, run: dict) -> None:
 
     hint_box = HintBox(width=int(bs * 3), height=int(bs))
     hint_on = load_setting("hint_on")
+    relics_open = False
     back = ui_common.back_button(game_screen, "back")
 
     entries, rect_for, grid_x = layout(game_screen, run)
@@ -132,14 +133,14 @@ def main(game_screen: GameScreen, run: dict) -> None:
                 if key in (pygame.K_ESCAPE, pygame.K_d):
                     running = False
                 if key == pygame.K_f:
-                    hint_on = not hint_on
+                    relics_open = not relics_open
             if event.type == pygame.MOUSEBUTTONDOWN and back.touch(mouse_x, mouse_y):
                 running = False
             if event.type == pygame.QUIT:
                 raise QuitGame
 
         render(game_screen, run, entries, rect_for, grid_x, hovered,
-               back, hint_box, hint_on, mouse_x, mouse_y)
+               back, hint_box, hint_on, relics_open, mouse_x, mouse_y)
         pygame.display.update()
         clock.tick(60)
 
